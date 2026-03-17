@@ -1,0 +1,331 @@
+{
+  "version": "0.1",
+  "characters": [
+    {
+      "id": "ney",
+      "name": "Michel Ney",
+      "title": "埃尔辛根公爵，比萨克托斯王子",
+      "role": "marshal",
+      "loyalty": 55,
+      "temperament": "impulsive",
+      "ambition": 45,
+      "military_skill": 85,
+      "political_influence": 50,
+      "relationships": {
+        "napoleon": 60,
+        "grouchy": 30,
+        "davout": 45,
+        "soult": 40,
+        "drouet": 55
+      },
+      "special_trait": "hot_headed",
+      "starting_location": "besancon",
+      "available_from_day": 1,
+      "historical_note": "曾誓言将拿破仑装在铁笼里带回巴黎，但在儒安湾见面后立即倒戈。在滑铁卢以冲动的骑兵突击闻名。",
+      "key_events": ["ney_defection_day5", "quatre_bras_command", "waterloo_cavalry"]
+    },
+    {
+      "id": "grouchy",
+      "name": "Emmanuel de Grouchy",
+      "title": "格鲁希侯爵",
+      "role": "marshal",
+      "loyalty": 75,
+      "temperament": "cautious",
+      "ambition": 30,
+      "military_skill": 68,
+      "political_influence": 25,
+      "relationships": {
+        "napoleon": 72,
+        "ney": 30,
+        "davout": 60,
+        "soult": 50,
+        "drouet": 45
+      },
+      "special_trait": "literal_minded",
+      "starting_location": "paris",
+      "available_from_day": 20,
+      "historical_note": "百日王朝后期被任命为元帅。在滑铁卢战役中未能及时增援，争议至今。其谨慎性格导致他严格执行"追击普鲁士"命令而未能随机应变。",
+      "key_events": ["grouchy_appointment_day85", "wavre_pursuit", "waterloo_absence"]
+    },
+    {
+      "id": "davout",
+      "name": "Louis-Nicolas Davout",
+      "title": "奥尔施泰特公爵，埃克米尔王子",
+      "role": "marshal",
+      "loyalty": 95,
+      "temperament": "cautious",
+      "ambition": 20,
+      "military_skill": 92,
+      "political_influence": 70,
+      "relationships": {
+        "napoleon": 95,
+        "ney": 45,
+        "grouchy": 60,
+        "soult": 55,
+        "fouche": 40
+      },
+      "special_trait": "unbreakable_loyalty",
+      "starting_location": "paris",
+      "available_from_day": 20,
+      "historical_note": "拿破仑最可靠的元帅，从未战败。百日王朝期间担任战争部长（留守巴黎）。玩家面临的核心决策：把他留在巴黎维持秩序，还是派他上战场？",
+      "key_events": ["davout_war_minister_day20", "davout_field_command_option"]
+    },
+    {
+      "id": "soult",
+      "name": "Nicolas Jean-de-Dieu Soult",
+      "title": "达尔马提亚公爵",
+      "role": "marshal",
+      "loyalty": 60,
+      "temperament": "balanced",
+      "ambition": 55,
+      "military_skill": 80,
+      "political_influence": 65,
+      "relationships": {
+        "napoleon": 58,
+        "ney": 40,
+        "grouchy": 50,
+        "davout": 55,
+        "wellington": -80
+      },
+      "special_trait": "talented_administrator",
+      "starting_location": "paris",
+      "available_from_day": 20,
+      "historical_note": "百日王朝担任参谋长。在半岛战争中长期与威灵顿对峙。行政能力强但与其他将领关系复杂。",
+      "key_events": ["soult_chief_of_staff_day20"]
+    },
+    {
+      "id": "drouet",
+      "name": "Jean-Baptiste Drouet",
+      "title": "埃尔隆伯爵",
+      "role": "general",
+      "loyalty": 78,
+      "temperament": "balanced",
+      "ambition": 35,
+      "military_skill": 75,
+      "political_influence": 30,
+      "relationships": {
+        "napoleon": 75,
+        "ney": 55,
+        "grouchy": 45,
+        "davout": 65
+      },
+      "special_trait": "steady_commander",
+      "starting_location": "valenciennes",
+      "available_from_day": 25,
+      "historical_note": "在滑铁卢指挥第一军。在利尼和四臂村之间来回奔走的关键人物——两场战役他都没能参与。",
+      "key_events": ["ligny_march_confusion", "waterloo_first_corps"]
+    },
+    {
+      "id": "reille",
+      "name": "Honoré Charles Reille",
+      "title": "雷耶伯爵",
+      "role": "general",
+      "loyalty": 72,
+      "temperament": "cautious",
+      "ambition": 30,
+      "military_skill": 70,
+      "political_influence": 20,
+      "relationships": {
+        "napoleon": 70,
+        "ney": 60,
+        "drouet": 65
+      },
+      "special_trait": "peninsula_scarred",
+      "starting_location": "lille",
+      "available_from_day": 25,
+      "historical_note": "半岛战争老将，见过英国步兵的阵地防御能力，在攻击乌古蒙庄园时表现谨慎。",
+      "key_events": ["hougoumont_attack"]
+    },
+    {
+      "id": "lobau",
+      "name": "Georges Mouton",
+      "title": "洛博伯爵",
+      "role": "general",
+      "loyalty": 82,
+      "temperament": "balanced",
+      "ambition": 25,
+      "military_skill": 72,
+      "political_influence": 15,
+      "relationships": {
+        "napoleon": 82,
+        "davout": 70
+      },
+      "special_trait": "reserve_specialist",
+      "starting_location": "paris",
+      "available_from_day": 22,
+      "historical_note": "指挥预备队，在普鲁士军到来时负责防守侧翼。",
+      "key_events": ["plancenoit_defence"]
+    },
+    {
+      "id": "jerome",
+      "name": "Jérôme Bonaparte",
+      "title": "威斯特伐利亚前国王",
+      "role": "general",
+      "loyalty": 90,
+      "temperament": "impulsive",
+      "ambition": 60,
+      "military_skill": 55,
+      "political_influence": 50,
+      "relationships": {
+        "napoleon": 90,
+        "ney": 45,
+        "davout": 50
+      },
+      "special_trait": "napoleons_brother",
+      "starting_location": "paris",
+      "available_from_day": 20,
+      "historical_note": "拿破仑的弟弟，忠诚度高但军事才能有限。指挥乌古蒙庄园攻击，过度投入兵力造成资源消耗。",
+      "key_events": ["hougoumont_command"]
+    },
+    {
+      "id": "bertrand",
+      "name": "Henri-Gatien Bertrand",
+      "title": "卡斯提格利昂伯爵",
+      "role": "general",
+      "loyalty": 98,
+      "temperament": "balanced",
+      "ambition": 15,
+      "military_skill": 70,
+      "political_influence": 35,
+      "relationships": {
+        "napoleon": 98,
+        "davout": 75,
+        "soult": 65
+      },
+      "special_trait": "devoted_aide",
+      "starting_location": "elba",
+      "available_from_day": 1,
+      "historical_note": "从厄尔巴岛一同出逃的忠实伴随者。总司令部副官，拿破仑最信任的参谋之一。",
+      "key_events": ["elba_escape_day1"]
+    },
+    {
+      "id": "cambronne",
+      "name": "Pierre Cambronne",
+      "title": "老近卫军指挥官",
+      "role": "general",
+      "loyalty": 99,
+      "temperament": "reckless",
+      "ambition": 20,
+      "military_skill": 78,
+      "political_influence": 10,
+      "relationships": {
+        "napoleon": 99,
+        "ney": 60,
+        "davout": 70
+      },
+      "special_trait": "old_guard_spirit",
+      "starting_location": "elba",
+      "available_from_day": 1,
+      "historical_note": "\"近卫军赴死但不投降！\"（历史上争议是否说过著名的\"Merde!\"）。老近卫军的灵魂人物，拿破仑最后防线。",
+      "key_events": ["elba_escape_day1", "waterloo_last_stand"]
+    },
+    {
+      "id": "fouche",
+      "name": "Joseph Fouché",
+      "title": "奥特朗托公爵",
+      "role": "politician",
+      "loyalty": 20,
+      "temperament": "cautious",
+      "ambition": 85,
+      "military_skill": 10,
+      "political_influence": 90,
+      "relationships": {
+        "napoleon": 25,
+        "davout": 40,
+        "talleyrand": 60,
+        "lafayette": 55
+      },
+      "special_trait": "master_survivor",
+      "starting_location": "paris",
+      "available_from_day": 20,
+      "historical_note": "法国最危险的政客。先后效忠雅各宾派、督政府、执政府、帝国、波旁复辟。百日王朝中担任警察部长，同时与反拿破仑势力秘密联络。",
+      "key_events": ["fouche_conspiracy_risk", "fouche_police_minister"]
+    },
+    {
+      "id": "carnot",
+      "name": "Lazare Carnot",
+      "title": "\"胜利的组织者\"",
+      "role": "politician",
+      "loyalty": 70,
+      "temperament": "balanced",
+      "ambition": 40,
+      "military_skill": 60,
+      "political_influence": 75,
+      "relationships": {
+        "napoleon": 68,
+        "davout": 65,
+        "lafayette": 45,
+        "fouche": 30
+      },
+      "special_trait": "revolutionary_republican",
+      "starting_location": "paris",
+      "available_from_day": 20,
+      "historical_note": "大革命时期的传奇军事组织者。百日王朝担任内政部长。共和派代表，对帝制有保留但优先反对波旁复辟。",
+      "key_events": ["carnot_interior_minister"]
+    },
+    {
+      "id": "lafayette",
+      "name": "Gilbert du Motier",
+      "title": "拉法耶特侯爵",
+      "role": "politician",
+      "loyalty": 35,
+      "temperament": "balanced",
+      "ambition": 50,
+      "military_skill": 40,
+      "political_influence": 80,
+      "relationships": {
+        "napoleon": 32,
+        "carnot": 45,
+        "fouche": 55,
+        "davout": 50
+      },
+      "special_trait": "liberal_icon",
+      "starting_location": "paris",
+      "available_from_day": 20,
+      "historical_note": "美国独立战争英雄，法国自由派象征。对拿破仑的帝制始终持保留态度，是议会自由派的精神领袖。",
+      "key_events": ["chamber_deputies_speech", "waterloo_abdication_push"]
+    },
+    {
+      "id": "lavalette",
+      "name": "Antoine Marie Chamans de Lavalette",
+      "title": "邮政总长",
+      "role": "advisor",
+      "loyalty": 88,
+      "temperament": "cautious",
+      "ambition": 20,
+      "military_skill": 15,
+      "political_influence": 55,
+      "relationships": {
+        "napoleon": 88,
+        "davout": 60,
+        "carnot": 65
+      },
+      "special_trait": "intelligence_network",
+      "starting_location": "paris",
+      "available_from_day": 20,
+      "historical_note": "控制法国邮政系统，掌握全国情报网络。在拿破仑逃离厄尔巴岛后第一时间重新控制巴黎通讯网络，功不可没。",
+      "key_events": ["intelligence_network_activation"]
+    },
+    {
+      "id": "flahaut",
+      "name": "Charles de Flahaut",
+      "title": "弗拉奥伯爵",
+      "role": "advisor",
+      "loyalty": 80,
+      "temperament": "balanced",
+      "ambition": 45,
+      "military_skill": 65,
+      "political_influence": 60,
+      "relationships": {
+        "napoleon": 80,
+        "ney": 70,
+        "soult": 60
+      },
+      "special_trait": "diplomatic_charm",
+      "starting_location": "paris",
+      "available_from_day": 20,
+      "historical_note": "年轻的外交官和军官，可能是拿破仑的私生子（未证实）。擅长外交斡旋，可用于分化反法同盟。",
+      "key_events": ["secret_diplomacy_missions"]
+    }
+  ]
+}
