@@ -495,47 +495,95 @@ birds eye view, --ar 4:3
 
 ## 4. 技术选型
 
-|层面   |选型                                      |理由                                                      |
-|-----|----------------------------------------|--------------------------------------------------------|
-|引擎   |Godot 4 + GDScript                      |开源、轻量、2D友好、solo开发最优解                                    |
-|数据驱动 |JSON/YAML配置文件                           |所有历史事件/人物/政策外部配置，不硬编码，便于迭代和mod支持                        |
-|版本控制 |Git + GitHub                            |标准流程                                                    |
-|LLM集成|**离线批量生成**                              |文本内容（司汤达日记/微叙事/事件描述）全部预生成存入JSON，运行时不调用API               |
-|美术   |Stable Diffusion / Midjourney + Godot 2D|新古典主义数字油画肖像 + AI生成深色地形底图 + Godot矢量叠加层，对标Vic3/Anno 1800品质|
-|音乐   |AIVA / Suno生成 → 人工筛选                    |指定情感调性生成候选 → 筛选 → 简单后期                                  |
-|测试   |GDScript单元测试 + 自动化平衡测试脚本                |用蒙特卡洛模拟跑1000局验证系统平衡性                                    |
+|层面      |选型                                      |理由                                                          |
+|--------|----------------------------------------|------------------------------------------------------------|
+|前端引擎   |Godot 4 + GDScript                      |开源、轻量、2D友好、可视化编辑器大幅降低UI开发成本                                 |
+|**核心逻辑**|**Rust + gdext (godot-rust)**           |**编译期类型安全、100倍于GDScript的模拟速度、完全可移植；GDExtension接口与Godot通信** |
+|数据驱动   |JSON/YAML配置文件                           |所有历史事件/人物/政策外部配置，不硬编码，便于迭代和mod支持                            |
+|版本控制   |Git + GitHub                            |标准流程                                                        |
+|LLM集成  |**离线批量生成**                              |文本内容（司汤达日记/微叙事/事件描述）全部预生成存入JSON，运行时不调用API                   |
+|美术      |Stable Diffusion / Midjourney + Godot 2D|新古典主义数字油画肖像 + AI生成深色地形底图 + Godot矢量叠加层，对标Vic3/Anno 1800品质  |
+|音乐      |AIVA / Suno生成 → 人工筛选                    |指定情感调性生成候选 → 筛选 → 简单后期                                       |
+|测试      |`cargo test` + Python蒙特卡洛脚本             |Rust单元测试覆盖核心逻辑；蒙特卡洛1000局平衡验证（Rust版比GDScript快100倍以上）        |
 
-### 4.1 代码架构原则
+### 4.1 Rust-Godot 分层架构
+
+```
+┌────────────────────────────────────────────────────┐
+│              Godot 4 前端（GDScript）                │
+│  scene树 / UI组件 / 动画 / 音频 / 输入处理           │
+│  turn_manager.gd  game_state.gd  event_bus.gd       │
+└─────────────────────┬──────────────────────────────┘
+                      │  GDExtension API（gdext）
+                      │  Dictionary / Array / Variant
+┌─────────────────────▼──────────────────────────────┐
+│          cent-jours-core（Rust crate）               │
+│  ┌─────────────┐  ┌──────────────┐  ┌────────────┐ │
+│  │  battle/    │  │  politics/   │  │characters/ │ │
+│  │ 战斗解算    │  │ Rouge/Noir   │  │ 忠诚度网络  │ │
+│  │ 行军系统    │  │ 四势力模型   │  │ 命令偏差    │ │
+│  └─────────────┘  └──────────────┘  └────────────┘ │
+│  ┌──────────────────────────────────────────────┐   │
+│  │  simulation/ — 蒙特卡洛平衡测试（独立可执行）   │   │
+│  └──────────────────────────────────────────────┘   │
+└────────────────────────────────────────────────────┘
+
+职责边界：
+  Rust  ← 所有数值计算、状态转移、概率模型、平衡验证
+  Godot ← 所有UI渲染、用户输入、场景管理、音频、动画
+```
+
+**选择依据**：
+
+- **UI交互留在Godot**：策略游戏80%开发时间花在UI上；Godot可视化编辑器、信号系统、Tween动画远比用代码手写高效
+- **核心逻辑用Rust**：战斗解算/政治模型/命令偏差全是纯算法，Rust编译器是天然的质检员（类型错误编译期暴露，不是运行时）
+- **蒙特卡洛速度**：Rust版跑1000局<1秒，GDScript版需要数分钟；M2/M3阶段可以实时调参、即时验证平衡
+
+### 4.2 代码架构
 
 ```
 cent-jours/
 ├── project.godot
-├── src/
-│   ├── core/               # 核心游戏逻辑，无UI依赖
-│   │   ├── game_state.gd   # 全局状态管理
-│   │   ├── turn_manager.gd # 回合流程控制
-│   │   ├── campaign/       # 行军与战役系统
-│   │   ├── politics/       # 政治与合法性系统
-│   │   └── characters/     # 将领忠诚度网络
-│   ├── ui/                 # UI层，纯展示
-│   ├── data/               # JSON/YAML数据文件
-│   │   ├── map_nodes.json
-│   │   ├── characters.json
-│   │   ├── events.json
-│   │   ├── policies.json
-│   │   └── narratives/     # 司汤达日记/微叙事文本池
-│   └── audio/              # BGM + SFX
-├── assets/                 # 美术素材
-├── tests/                  # 单元测试 + 平衡测试
-└── docs/                   # 设计文档
+├── cent-jours-core/              # Rust crate（核心逻辑）
+│   ├── Cargo.toml
+│   └── src/
+│       ├── lib.rs                # GDExtension 绑定入口
+│       ├── battle/               # 战斗解算 + 行军系统
+│       │   ├── mod.rs
+│       │   ├── resolver.rs       # 战斗加权模型
+│       │   └── march.rs          # 行军/疲劳/补给
+│       ├── politics/             # Rouge/Noir + 四势力
+│       │   ├── mod.rs
+│       │   └── system.rs
+│       ├── characters/           # 将领忠诚度网络 + 命令偏差
+│       │   ├── mod.rs
+│       │   └── order_deviation.rs
+│       └── simulation/           # 蒙特卡洛平衡测试
+│           └── monte_carlo.rs
+├── src/                          # GDScript（UI层）
+│   ├── core/
+│   │   ├── game_state.gd         # Godot autoload（薄包装层）
+│   │   ├── turn_manager.gd       # 回合编排
+│   │   └── event_bus.gd          # 信号总线
+│   ├── ui/                       # 纯展示组件
+│   │   ├── theme/
+│   │   └── components/
+│   └── data/                     # JSON 数据文件
+│       ├── characters.json
+│       ├── map_nodes.json
+│       ├── design_tokens.json
+│       └── narratives/
+├── assets/                       # 美术素材
+├── tests/                        # Python 辅助脚本（快速原型）
+└── docs/                         # 设计文档 + UI原型
 ```
 
-- 核心逻辑与UI严格分离（便于测试和未来移植）
-- 数据驱动：修改JSON即可调整平衡性，无需改代码
-- 每行代码不超过100-120字符
-- 常量全大写（CONSTANTS）
-- 大函数拆分为子函数（>2行或语义复杂）
-- 图表文字英文，代码注释中文
+**编码规范**：
+
+- Rust：snake_case 函数/变量，SCREAMING_SNAKE_CASE 常量，每个公开函数有 doc comment
+- Rust 核心模块与 GDExtension 绑定严格分离（`src/lib.rs` 只做类型转换，不含业务逻辑）
+- GDScript：保持现有规范（中文注释，事件驱动，不持有 Rust 对象的直接引用）
+- 数据驱动：Rust 从 JSON 加载配置，修改 JSON 即可调整平衡，无需重编译 Godot 项目
 
 -----
 
@@ -560,6 +608,8 @@ W1──W2──W3────W7────W11────W14────W19─
 **交付物**:
 
 - [ ] Godot 4项目初始化 + Git仓库
+- [ ] **Rust开发环境：`rustup` + `cargo` + `gdext` crate，Hello World验证Rust-Godot通信**
+- [ ] **`cent-jours-core` crate骨架：模块结构 + `cargo test`通过**
 - [ ] 核心系统数学建模文档（将MILP/LightGBM经验映射到游戏系统）
 - [ ] 法国地图节点设计（30-40节点的拓扑结构）
 - [ ] 美术风格参考板（moodboard）：3-5张目标风格参考图
@@ -590,11 +640,12 @@ W1──W2──W3────W7────W11────W14────W19─
 
 **交付物**:
 
-- [ ] 地图节点系统（节点间移动 + 路径选择）
-- [ ] 回合流程：Dawn → Action → Dusk
-- [ ] 行军系统：部队移动 + 强行军 + 疲劳
-- [ ] 战斗自动解算模型（加权公式 + 随机因子）
-- [ ] 简易AI对手（反法同盟的自动集结逻辑）
+- [ ] **Rust：`battle::resolver` 战斗解算模块（含20+单元测试）**
+- [ ] **Rust：`battle::march` 行军/疲劳/补给模块**
+- [ ] **Rust：GDExtension 绑定层（`BattleEngine` + `MarchEngine` 暴露给Godot）**
+- [ ] 地图节点系统（Godot节点间移动 + 路径选择，调用Rust Dijkstra）
+- [ ] 回合流程：Dawn → Action → Dusk（GDScript编排，调用Rust计算）
+- [ ] 简易AI对手（反法同盟的自动集结逻辑，Rust实现）
 - [ ] **占位符UI使用M0.5组件模板**：正确的深色底+金色描边简化版，不做纹理和精细美术
 
 **⛳ GATE 1（W7结束）**: 核心循环是否好玩？
@@ -611,12 +662,12 @@ W1──W2──W3────W7────W11────W14────W19─
 
 **交付物**:
 
-- [ ] Rouge/Noir双指针数值模型
-- [ ] 四势力支持度系统
-- [ ] 每日政策行动选择界面
-- [ ] 政治-军事耦合逻辑（征兵影响民心、军费影响经济等）
-- [ ] 政治崩溃触发条件（任一势力<10 → 政变/叛乱风险）
-- [ ] 基础平衡调试（蒙特卡洛模拟100局）
+- [ ] **Rust：`politics::system` Rouge/Noir双指针 + 四势力完整模型**
+- [ ] **Rust：`simulation::monte_carlo` 平衡测试（`cargo run --bin balance-test`，1000局<1秒）**
+- [ ] **Rust：政治-战役耦合接口（GDExtension暴露给Godot）**
+- [ ] 每日政策行动选择界面（Godot UI）
+- [ ] 政治崩溃触发条件（Rust计算 → Godot事件）
+- [ ] 基础平衡调试（蒙特卡洛验证，Rust速度支持快速迭代参数）
 
 **内容同步**: devlog #4 —「如何用优化模型做政治博弈」
 
@@ -626,11 +677,11 @@ W1──W2──W3────W7────W11────W14────W19─
 
 **交付物**:
 
-- [ ] 15-20个角色的完整数据卡
-- [ ] 关系网络（角色间好感度矩阵）
-- [ ] 命令偏差模型实现（忠诚度 × 性格 × 距离 → 执行偏差）
-- [ ] 关键历史节点脚本：Ney倒戈、Grouchy追击、Davout分配
-- [ ] 三系统耦合测试
+- [ ] **Rust：`characters::order_deviation` 命令偏差模型（忠诚度×性格×距离，完整单元测试含Ney/Grouchy历史场景）**
+- [ ] **Rust：将领关系网络（图结构，动态忠诚度更新）**
+- [ ] **Rust：三系统耦合接口（battle + politics + characters联动）**
+- [ ] 关键历史节点脚本：Ney倒戈、Grouchy追击（Rust事件触发 → GDScript叙事展示）
+- [ ] 三系统耦合蒙特卡洛验证（Rust，<5秒跑1000局）
 
 **⛳ GATE 2（W14结束）**: 三系统耦合后复杂度是否可控？
 

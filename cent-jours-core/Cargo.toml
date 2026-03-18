@@ -1,0 +1,32 @@
+[package]
+name = "cent-jours-core"
+version = "0.1.0"
+edition = "2021"
+description = "Cent Jours — 核心游戏逻辑（战斗解算/政治系统/命令偏差/蒙特卡洛）"
+
+[lib]
+crate-type = ["cdylib", "rlib"]  # cdylib=GDExtension插件; rlib=供bin/tests链接
+
+[[bin]]
+name = "balance-test"
+path = "src/bin/balance_test.rs"
+
+[dependencies]
+# GDExtension 绑定（Godot 4 的 Rust 接口）
+godot = { version = "0.1", package = "godot", optional = true }
+
+# 随机数（命令偏差/战斗随机因子）
+rand = "0.8"
+
+# JSON 数据加载（人物/地图节点配置）
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+[features]
+default = []
+# 构建 Godot 插件时启用
+godot-extension = ["godot"]
+
+[dev-dependencies]
+# 浮点数近似比较（测试用）
+approx = "0.5"
