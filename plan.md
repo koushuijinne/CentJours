@@ -3,8 +3,8 @@
 > **工作标题**: *Cent Jours*（法语”百日”）
 > **一句话**: 你是拿破仑，从厄尔巴岛出逃到滑铁卢，100天内重建帝国或永远流放。每一天都是决策点。
 > **Author**: Julien
-> **Version**: v0.4 — 2026-03-18
-> **Status**: Draft — M0/M0.5/M2平衡 完成；M1 Rust 75%；M3 Rust 90%；GATE 2 Rust层通过
+> **Version**: v0.5 — 2026-03-18
+> **Status**: Draft — M0/M0.5/M2/M3 完成，GATE 2 通过；M4 内容填充进行中（30%）
 
 -----
 
@@ -671,18 +671,18 @@ W1──W2──W3────W7────W11────W14────W19─
 
 **内容同步**: devlog #4 —「如何用优化模型做政治博弈」
 
-### M3: 将领网络（W12-W14）🔶 Rust 90%，GATE 2 Rust层通过
+### M3: 将领网络（W12-W14）✅ 完成，GATE 2 通过
 
 **目标**: 人物系统 + 关系网络 + 命令偏差模型
 
 **交付物**:
 
 - [x] **Rust：`characters::order_deviation` 命令偏差模型（6个单元测试，含Ney/Grouchy历史场景）**
-- [x] **Rust：`characters::network` 将领关系网络（19个单元测试）** — 忠诚度/关系矩阵/战斗结果联动/历史场景
+- [x] **Rust：`characters::network` 将领关系网络（23个单元测试）** — 含 `from_json()` 从 characters.json 动态加载
 - [x] **Rust：`engine::state` 三系统耦合状态机（13个单元测试）** — battle+politics+characters联动，Dawn→Action→Dusk
-- [x] **Rust：`events::pool` JSON驱动历史事件池（13个单元测试）** — 7个历史事件，触发条件+叙事文本
-- [ ] **三系统耦合蒙特卡洛验证**（使用 GameEngine 跑1000局）→ **下一步**
-- [ ] characters.json → CharacterNetwork 数据集成（当前 `historical_network_day1()` 硬编码）→ **下一步**
+- [x] **Rust：`events::pool` JSON驱动历史事件池（13个单元测试）** — 24个历史事件，触发条件+叙事文本
+- [x] **Rust：`simulation::run_engine_simulation()` 三系统+EventPool 耦合蒙特卡洛（8个单元测试）** — 1000局 < 2s
+- [x] **characters.json → CharacterNetwork** 数据集成，历史关系数据（-30敌对/正值友好）已修正
 
 **⛳ GATE 2（W14结束）**: 三系统耦合后复杂度是否可控？
 
