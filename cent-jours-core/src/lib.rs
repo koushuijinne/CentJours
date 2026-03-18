@@ -237,4 +237,167 @@ mod gdext_bindings {
             d
         }
     }
+
+    // ── CentJoursEngine ───────────────────────────────────
+
+    /// GDExtension节点：统一游戏引擎（整局存活，有状态）
+    ///
+    /// GDScript 用法：
+    /// ```gdscript
+    /// var engine = CentJoursEngine.new()
+    /// engine.process_day_rest()
+    /// var report = engine.get_last_report()   # { stendhal, consequence }
+    /// var state  = engine.get_state()         # { day, legitimacy, troops, ... }
+    /// ```
+    #[derive(GodotClass)]
+    #[class(base = RefCounted)]
+    pub struct CentJoursEngine {
+        base:   Base<RefCounted>,
+        engine: crate::engine::GameEngine,
+        rng:    rand::rngs::StdRng,
+    }
+
+    #[godot_api]
+    impl IRefCounted for CentJoursEngine {
+        fn init(base: Base<RefCounted>) -> Self {
+            use rand::SeedableRng;
+            Self {
+                base,
+                engine: crate::engine::GameEngine::new(),
+                rng:    rand::rngs::StdRng::from_entropy(),
+            }
+        }
+    }
+
+    #[godot_api]
+    impl CentJoursEngine {
+        // ── 行动接口 ─────────────────────────────────────
+
+        /// 推进一天：玩家休整
+        #[func]
+        pub fn process_day_rest(&mut self) {
+            use crate::engine::PlayerAction;
+            self.engine.process_day(PlayerAction::Rest, &mut self.rng);
+        }
+
+        /// 推进一天：发动战役
+        /// general_id: 将领ID字符串，troops: 投入兵力，terrain: 地形字符串
+        #[func]
+        pub fn process_day_battle(&mut self, general_id: GString, troops: i64, terrain: GString) {
+            use crate::engine::PlayerAction;
+            use crate::battle::resolver::Terrain as T;
+            let t = match terrain.to_string().as_str() {
+                "hills"          => T::Hills,
+                "forest"         => T::Forest,
+                "urban"          => T::Urban,
+                "river_crossing" => T::RiverCrossing,
+                "ridgeline"      => T::Ridgeline,
+                _                => T::Plains,
+            };
+            self.engine.process_day(PlayerAction::LaunchBattle {
+                general_id: general_id.to_string(),
+                troops:     troops.max(0) as u32,
+                terrain:    t,
+            }, &mut self.rng);
+        }
+
+        /// 推进一天：颁布政策
+        /// policy_id: 政策ID（如 "conscription", "constitutional_promise" 等）
+        #[func]
+        pub fn process_day_policy(&mut self, policy_id: GString) {
+            use crate::engine::PlayerAction;
+            // GDScript传来的是String，需要转为&'static str
+            // 通过内联匹配实现（避免生命周期问题）
+            let action = match policy_id.to_string().as_str() {
+                "conscription"             => PlayerAction::EnactPolicy { policy_id: "conscription" },
+                "constitutional_promise"   => PlayerAction::EnactPolicy { policy_id: "constitutional_promise" },
+                "public_speech"            => PlayerAction::EnactPolicy { policy_id: "public_speech" },
+                "reduce_taxes"             => PlayerAction::EnactPolicy { policy_id: "reduce_taxes" },
+                "increase_military_budget" => PlayerAction::EnactPolicy { policy_id: "increase_military_budget" },
+                _ => PlayerAction::Rest,
+            };
+            self.engine.process_day(action, &mut self.rng);
+        }
+
+        /// 推进一天：强化将领忠诚度
+        #[func]
+        pub fn process_day_boost_loyalty(&mut self, general_id: GString) {
+            use crate::engine::PlayerAction;
+            self.engine.process_day(PlayerAction::BoostLoyalty {
+                general_id: general_id.to_string(),
+            }, &mut self.rng);
+        }
+
+        // ── 状态查询 ─────────────────────────────────────
+
+        /// 获取当前引擎状态快照
+        /// 返回 Dictionary，包含 day, legitimacy, rouge_noir, troops, victories,
+        ///   is_over, outcome, faction_support(Dict)
+        #[func]
+        pub fn get_state(&self) -> Dictionary {
+            let e = &self.engine;
+            let mut d = Dictionary::new();
+            d.insert("day",         e.day as i64);
+            d.insert("legitimacy",  e.politics.legitimacy);
+            d.insert("rouge_noir",  e.politics.rouge_noir_index);
+            d.insert("troops",      e.army.total_troops as i64);
+            d.insert("morale",      e.army.avg_morale);
+            d.insert("fatigue",     e.army.avg_fatigue);
+            d.insert("victories",   e.army.victories as i64);
+            d.insert("is_over",     e.is_over());
+            d.insert("outcome",     e.outcome()
+                .map(|o| o.as_str())
+                .unwrap_or("in_progress"));
+
+            let mut factions = Dictionary::new();
+            for (k, v) in &e.politics.faction_support {
+                factions.insert(k.as_str(), *v);
+            }
+            d.insert("factions", factions);
+            d
+        }
+
+        /// 获取最近一天的叙事报告
+        /// 返回 Dictionary：{ "stendhal": String|null, "consequence": String|null, "day": int }
+        #[func]
+        pub fn get_last_report(&self) -> Dictionary {
+            let mut d = Dictionary::new();
+            match self.engine.last_report() {
+                Some(r) => {
+                    d.insert("day",         r.day as i64);
+                    d.insert("stendhal",    r.stendhal.as_deref().unwrap_or(""));
+                    d.insert("consequence", r.consequence.as_deref().unwrap_or(""));
+                    d.insert("has_narrative", r.stendhal.is_some());
+                }
+                None => {
+                    d.insert("day",           0i64);
+                    d.insert("stendhal",      "");
+                    d.insert("consequence",   "");
+                    d.insert("has_narrative", false);
+                }
+            }
+            d
+        }
+
+        /// 获取已触发的历史事件 ID 列表（Array of String）
+        #[func]
+        pub fn get_triggered_events(&self) -> Array<GString> {
+            self.engine.triggered_events()
+                .iter()
+                .map(|s| GString::from(s.as_str()))
+                .collect()
+        }
+
+        /// 游戏是否已结束
+        #[func]
+        pub fn is_over(&self) -> bool {
+            self.engine.is_over()
+        }
+
+        /// 当前天数
+        #[func]
+        pub fn current_day(&self) -> i64 {
+            self.engine.current_day() as i64
+        }
+    }
 }
