@@ -8,7 +8,29 @@ use rand::Rng;
 use crate::battle::resolver::{ForceData, Terrain, BattleResult, resolve_battle};
 use crate::politics::system::{PoliticsState, default_policies};
 use crate::characters::network::{CharacterNetwork, historical_network_day1};
-use crate::simulation::monte_carlo::GameOutcome;
+
+// ── 游戏结局 ──────────────────────────────────────────
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum GameOutcome {
+    NapoleonVictory,
+    WaterlooHistorical,
+    WaterlooDefeat,
+    PoliticalCollapse,
+    MilitaryAnnihilation,
+}
+
+impl GameOutcome {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Self::NapoleonVictory      => "napoleon_victory",
+            Self::WaterlooHistorical   => "waterloo_historical",
+            Self::WaterlooDefeat       => "waterloo_defeat",
+            Self::PoliticalCollapse    => "political_collapse",
+            Self::MilitaryAnnihilation => "military_annihilation",
+        }
+    }
+}
 
 // ── 游戏阶段 ──────────────────────────────────────────
 

@@ -1,6 +1,7 @@
 pub mod monte_carlo;
 pub use monte_carlo::{
-    GameOutcome, GameRecord, PlayerStrategy,
+    GameRecord, PlayerStrategy,
     SimulationReport, TARGET_VICTORY_RATE_MAX, TARGET_VICTORY_RATE_MIN,
     print_report, run_simulation, simulate_one_game,
 };
+pub use crate::engine::GameOutcome;

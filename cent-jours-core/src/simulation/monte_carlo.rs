@@ -7,6 +7,8 @@ use rand::{Rng, SeedableRng};
 use rand::rngs::StdRng;
 
 use crate::battle::resolver::{ForceData, Terrain, resolve_battle};
+use crate::engine::{GameOutcome, GameEngine, PlayerAction};
+use crate::events::{EventPool, TriggerContext, EventEffects};
 use crate::politics::system::{PoliticsState, default_policies};
 
 // ── 模拟参数 ──────────────────────────────────────────
@@ -25,29 +27,6 @@ const BATTLE_DAYS: &[u32] = &[7, 20, 45, 60, 80, 86, 90, 100];
 /// 目标胜率范围（平衡测试基准）
 pub const TARGET_VICTORY_RATE_MIN: f64 = 0.15;
 pub const TARGET_VICTORY_RATE_MAX: f64 = 0.35;
-
-// ── 结局类型 ──────────────────────────────────────────
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum GameOutcome {
-    NapoleonVictory,
-    WaterlooHistorical,
-    WaterlooDefeat,
-    PoliticalCollapse,
-    MilitaryAnnihilation,
-}
-
-impl GameOutcome {
-    pub fn as_str(&self) -> &'static str {
-        match self {
-            Self::NapoleonVictory      => "napoleon_victory",
-            Self::WaterlooHistorical   => "waterloo_historical",
-            Self::WaterlooDefeat       => "waterloo_defeat",
-            Self::PoliticalCollapse    => "political_collapse",
-            Self::MilitaryAnnihilation => "military_annihilation",
-        }
-    }
-}
 
 // ── 策略类型 ──────────────────────────────────────────
 
