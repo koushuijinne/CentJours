@@ -1,0 +1,138 @@
+{
+  "_comment": "Cent Jours — Design Tokens v0.2 (对应 plan.md §3.7.2 + §3.7.5)",
+  "_usage": "此文件是 Godot theme、HTML/CSS prototype、AI prompt 的单一来源",
+
+  "color": {
+    "background": {
+      "primary":   { "hex": "#1A1A2E", "desc": "主背景，深海军蓝" },
+      "panel":     { "hex": "#1E1E32", "alpha": 0.85, "desc": "面板背景，半透明深色" },
+      "panel_dark":{ "hex": "#14141F", "alpha": 0.92, "desc": "深层面板（决策托盘）" },
+      "overlay":   { "hex": "#0D0D1A", "alpha": 0.6,  "desc": "模态遮罩" }
+    },
+
+    "border": {
+      "panel":     { "hex": "#3A3A5C", "desc": "面板外边框，暗紫灰" },
+      "gold_dim":  { "hex": "#8B7332", "desc": "次级金色边框，悬停态" },
+      "gold":      { "hex": "#C9A84C", "desc": "帝国金，主边框/高光/图标" },
+      "gold_bright": { "hex": "#E8C96A", "desc": "金色高光，焦点态" }
+    },
+
+    "accent": {
+      "gold":         { "hex": "#C9A84C", "desc": "帝国金，首要强调色" },
+      "gold_dark":    { "hex": "#8B7332", "desc": "暗金，次级强调" },
+      "rouge":        { "hex": "#8B2500", "desc": "Rouge红，革命/军事热情" },
+      "rouge_glow":   { "hex": "#D4421E", "desc": "Rouge指针高光" },
+      "rouge_light":  { "hex": "#E86040", "desc": "Rouge最亮点" },
+      "noir":         { "hex": "#2C2C3A", "desc": "Noir蓝黑，保守/制度/秩序" },
+      "noir_glow":    { "hex": "#4A6FA5", "desc": "Noir指针高光" },
+      "noir_light":   { "hex": "#6E9FD4", "desc": "Noir最亮点" }
+    },
+
+    "semantic": {
+      "positive":  { "hex": "#C9A84C", "desc": "正面效果数值，金色" },
+      "negative":  { "hex": "#A03020", "desc": "负面效果数值，暗红" },
+      "neutral":   { "hex": "#A09880", "desc": "中性信息，暗金灰" },
+      "warning":   { "hex": "#C87820", "desc": "警告/风险提示，琥珀" },
+      "critical":  { "hex": "#C83030", "desc": "危急状态，亮红" }
+    },
+
+    "text": {
+      "primary":   { "hex": "#E8E0D0", "desc": "正文主色，暖白" },
+      "secondary": { "hex": "#A09880", "desc": "说明文字，暗金灰" },
+      "heading":   { "hex": "#F0E6C8", "desc": "标题，亮金白" },
+      "disabled":  { "hex": "#5A5848", "desc": "禁用状态" },
+      "rouge_state":{ "hex": "#E8A090", "desc": "Rouge状态下的暖调文字" },
+      "noir_state": { "hex": "#90B0D8", "desc": "Noir状态下的冷调文字" }
+    },
+
+    "map": {
+      "land":      { "hex": "#1C2410", "desc": "陆地底色，深绿褐" },
+      "sea":       { "hex": "#0A1020", "desc": "海洋，深蓝黑" },
+      "river":     { "hex": "#304050", "alpha": 0.7, "desc": "河流，暗银" },
+      "border":    { "hex": "#C9A84C", "alpha": 0.6, "desc": "国境线，金色描边" },
+      "napoleon":  { "hex": "#C9A84C", "desc": "拿破仑控制区标记" },
+      "enemy":     { "hex": "#8B2500", "alpha": 0.4, "desc": "敌方区域" },
+      "neutral":   { "hex": "#3A3A2C", "alpha": 0.3, "desc": "中立区域" },
+      "fog":       { "hex": "#0A0A14", "alpha": 0.65, "desc": "战争迷雾" }
+    }
+  },
+
+  "typography": {
+    "heading": {
+      "en_primary":   "Playfair Display",
+      "en_fallback":  "Cormorant Garamond",
+      "zh":           "Noto Serif CJK SC",
+      "weight":       700,
+      "use":          "天数显示、面板标题、结局文字"
+    },
+    "body": {
+      "en_primary":   "Source Serif 4",
+      "en_fallback":  "Libre Baskerville",
+      "zh":           "Noto Serif CJK SC",
+      "weight":       400,
+      "use":          "司汤达日记、事件描述、微叙事文本"
+    },
+    "ui": {
+      "en_primary":   "Inter",
+      "en_fallback":  "Source Sans 3",
+      "zh":           "Noto Sans CJK SC",
+      "weight":       400,
+      "use":          "资源数值、按钮文字、提示信息、效果数值"
+    },
+    "script": {
+      "en_primary":   "Dancing Script",
+      "en_fallback":  "Great Vibes",
+      "weight":       400,
+      "use":          "阶段副标题、司汤达签名、信件落款（极少量）"
+    },
+    "scale": {
+      "xs":   12,
+      "sm":   14,
+      "base": 16,
+      "lg":   20,
+      "xl":   28,
+      "2xl":  40,
+      "3xl":  64
+    }
+  },
+
+  "spacing": {
+    "xs": 4,
+    "sm": 8,
+    "md": 16,
+    "lg": 24,
+    "xl": 32,
+    "2xl": 48
+  },
+
+  "border_radius": {
+    "sm": 2,
+    "md": 4,
+    "lg": 8,
+    "circle": 9999
+  },
+
+  "shadow": {
+    "panel":   "0 4px 16px rgba(0,0,0,0.4)",
+    "card":    "0 2px 8px rgba(0,0,0,0.5)",
+    "glow_gold":  "0 0 12px rgba(201,168,76,0.4)",
+    "glow_rouge": "0 0 16px rgba(212,66,30,0.5)",
+    "glow_noir":  "0 0 16px rgba(74,111,165,0.5)"
+  },
+
+  "animation": {
+    "fade_in":     "0.15s ease-out",
+    "panel_slide": "0.2s cubic-bezier(0.4,0,0.2,1)",
+    "rn_shift":    "2.0s ease-in-out",
+    "glow_pulse":  "1.5s ease-in-out infinite alternate"
+  },
+
+  "rouge_noir_shift": {
+    "_comment": "Rouge/Noir指针偏移时全局色调变化规则",
+    "rouge_bg_tint":  "rgba(139,37,0,VAL)",
+    "noir_bg_tint":   "rgba(44,44,58,VAL)",
+    "max_tint_alpha": 0.15,
+    "gold_hue_rouge": "#C88A3C",
+    "gold_hue_noir":  "#A8B8C9"
+  }
+}

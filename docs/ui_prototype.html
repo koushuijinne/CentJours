@@ -1,0 +1,1023 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cent Jours — UI Prototype (M0.5)</title>
+<style>
+/* ── Google Fonts ───────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Inter:wght@400;500&family=Dancing+Script&display=swap');
+
+/* ── Design Tokens ──────────────────────────────────── */
+:root {
+  --bg-primary:    #1A1A2E;
+  --bg-panel:      rgba(30, 30, 50, 0.88);
+  --bg-panel-dark: rgba(14, 14, 26, 0.95);
+  --border-panel:  #3A3A5C;
+  --gold:          #C9A84C;
+  --gold-dim:      #8B7332;
+  --gold-bright:   #E8C96A;
+  --rouge:         #8B2500;
+  --rouge-glow:    #D4421E;
+  --noir:          #2C2C3A;
+  --noir-glow:     #4A6FA5;
+  --text-primary:  #E8E0D0;
+  --text-secondary:#A09880;
+  --text-heading:  #F0E6C8;
+  --positive:      #C9A84C;
+  --negative:      #A03020;
+  --shadow-panel:  0 4px 24px rgba(0,0,0,0.6);
+  --shadow-glow-gold: 0 0 14px rgba(201,168,76,0.45);
+  --radius-sm: 3px;
+  --radius-md: 5px;
+  --font-heading: 'Playfair Display', 'Cormorant Garamond', serif;
+  --font-body:    'Cormorant Garamond', Georgia, serif;
+  --font-ui:      'Inter', sans-serif;
+  --font-script:  'Dancing Script', cursive;
+  --rn-val: 15; /* -100 to +100, positive = Rouge */
+}
+
+/* ── Reset & Base ───────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  width: 100%; height: 100%;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+  font-size: 14px;
+  overflow: hidden;
+  user-select: none;
+}
+
+/* ── Layout ─────────────────────────────────────────── */
+.game-root {
+  display: grid;
+  width: 100vw; height: 100vh;
+  grid-template-rows: 52px 1fr 140px;
+  grid-template-columns: 1fr 300px;
+  grid-template-areas:
+    "topbar  topbar"
+    "map     sidebar"
+    "tray    sidebar";
+}
+
+/* ── TOP BAR ─────────────────────────────────────────── */
+.topbar {
+  grid-area: topbar;
+  background: var(--bg-panel-dark);
+  border-bottom: 1px solid var(--border-panel);
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  gap: 24px;
+  position: relative;
+}
+.topbar::after {
+  content: '';
+  position: absolute;
+  bottom: -1px; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold-dim), transparent);
+  opacity: 0.5;
+}
+
+.topbar-day {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+  min-width: 120px;
+}
+.topbar-day .jour {
+  font-family: var(--font-heading);
+  font-size: 22px;
+  color: var(--text-heading);
+  letter-spacing: 0.02em;
+}
+.topbar-day .phase {
+  font-family: var(--font-script);
+  font-size: 12px;
+  color: var(--gold-dim);
+  margin-top: 1px;
+}
+
+.divider-v {
+  width: 1px;
+  height: 32px;
+  background: linear-gradient(180deg, transparent, var(--border-panel), transparent);
+}
+
+/* Rouge/Noir Slider */
+.rn-container {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 220px;
+}
+.rn-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.rn-labels .rouge-label { color: var(--rouge-glow); }
+.rn-labels .noir-label  { color: var(--noir-glow);  }
+
+.rn-track {
+  position: relative;
+  height: 8px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--rouge) 0%, var(--border-panel) 50%, var(--noir-glow) 100%);
+  border: 1px solid var(--border-panel);
+}
+.rn-indicator {
+  position: absolute;
+  top: 50%; transform: translateY(-50%);
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: var(--gold);
+  border: 2px solid var(--bg-primary);
+  box-shadow: var(--shadow-glow-gold);
+  left: calc(50% + var(--rn-val) * 0.5% - 7px);
+  transition: left 2s ease-in-out;
+}
+
+/* Resources */
+.resources {
+  display: flex;
+  gap: 18px;
+  margin-left: auto;
+}
+.resource {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-heading);
+  font-size: 14px;
+  color: var(--text-heading);
+}
+.resource .icon {
+  font-size: 16px;
+  filter: drop-shadow(0 0 4px var(--gold-dim));
+}
+.resource .label {
+  font-size: 10px;
+  color: var(--text-secondary);
+  margin-left: -4px;
+}
+
+/* Legitimacy bar */
+.legitimacy-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 140px;
+}
+.legitimacy-wrap .leg-label {
+  font-size: 10px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  display: flex;
+  justify-content: space-between;
+}
+.leg-bar-track {
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(58,58,92,0.6);
+  border: 1px solid var(--border-panel);
+  overflow: hidden;
+}
+.leg-bar-fill {
+  height: 100%;
+  width: 62%;
+  background: linear-gradient(90deg, var(--gold-dim), var(--gold));
+  border-radius: 3px;
+  box-shadow: 0 0 8px rgba(201,168,76,0.4);
+}
+
+/* ── MAP AREA ────────────────────────────────────────── */
+.map-area {
+  grid-area: map;
+  position: relative;
+  background:
+    radial-gradient(ellipse at 30% 40%, rgba(30,36,16,0.9) 0%, transparent 60%),
+    radial-gradient(ellipse at 70% 60%, rgba(10,16,32,0.8) 0%, transparent 60%),
+    linear-gradient(135deg, #0D1208 0%, #0A0F1A 50%, #0A0A16 100%);
+  overflow: hidden;
+}
+
+/* Map grid overlay for depth */
+.map-area::before {
+  content: '';
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(rgba(201,168,76,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(201,168,76,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+.map-title {
+  position: absolute;
+  top: 16px; left: 20px;
+  font-family: var(--font-heading);
+  font-size: 11px;
+  color: var(--gold-dim);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+/* Map nodes */
+.map-nodes { position: absolute; inset: 0; }
+.node {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.node:hover .node-dot { transform: scale(1.4); }
+.node:hover .node-label { opacity: 1; color: var(--gold-bright); }
+
+.node-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: var(--gold-dim);
+  border: 1px solid var(--gold);
+  box-shadow: 0 0 6px rgba(201,168,76,0.4);
+  transition: transform 0.2s, box-shadow 0.2s;
+  position: relative; z-index: 2;
+}
+.node.capital .node-dot {
+  width: 16px; height: 16px;
+  background: var(--gold);
+  box-shadow: 0 0 12px rgba(201,168,76,0.7), 0 0 24px rgba(201,168,76,0.3);
+}
+.node.napoleon-here .node-dot {
+  background: var(--gold-bright);
+  box-shadow: 0 0 16px rgba(232,201,106,0.8), 0 0 32px rgba(232,201,106,0.4);
+  animation: pulse-gold 1.5s ease-in-out infinite alternate;
+}
+.node.enemy .node-dot {
+  background: var(--rouge);
+  border-color: var(--rouge-glow);
+  box-shadow: 0 0 8px rgba(212,66,30,0.5);
+}
+
+@keyframes pulse-gold {
+  from { box-shadow: 0 0 12px rgba(232,201,106,0.7), 0 0 24px rgba(232,201,106,0.3); }
+  to   { box-shadow: 0 0 20px rgba(232,201,106,1.0), 0 0 40px rgba(232,201,106,0.6); }
+}
+
+.node-label {
+  position: absolute;
+  bottom: 14px; left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-size: 10px;
+  color: var(--text-secondary);
+  text-shadow: 0 1px 4px rgba(0,0,0,0.9);
+  opacity: 0.75;
+  transition: opacity 0.2s, color 0.2s;
+  pointer-events: none;
+}
+.node.capital .node-label {
+  font-family: var(--font-heading);
+  font-size: 12px;
+  color: var(--gold);
+  opacity: 1;
+  bottom: 18px;
+}
+
+/* SVG edges */
+.map-edges {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+}
+.edge { stroke: rgba(201,168,76,0.15); stroke-width: 1; fill: none; }
+.edge.route { stroke: rgba(201,168,76,0.5); stroke-width: 1.5; stroke-dasharray: 6 4;
+  animation: march-dash 1.5s linear infinite; }
+@keyframes march-dash { from { stroke-dashoffset: 0; } to { stroke-dashoffset: -20; } }
+
+/* Army marker */
+.army-marker {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  pointer-events: none;
+}
+.army-flag {
+  width: 28px; height: 20px;
+  background: var(--gold);
+  border: 1px solid var(--gold-bright);
+  border-radius: 2px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px;
+  box-shadow: 0 0 8px rgba(201,168,76,0.5);
+}
+.army-count {
+  font-family: var(--font-ui);
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text-heading);
+  background: rgba(14,14,26,0.85);
+  border: 1px solid var(--border-panel);
+  border-radius: 2px;
+  padding: 1px 4px;
+}
+
+/* ── SIDEBAR ─────────────────────────────────────────── */
+.sidebar {
+  grid-area: sidebar;
+  background: var(--bg-panel-dark);
+  border-left: 1px solid var(--border-panel);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Stendhal Diary */
+.stendhal-panel {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border-panel);
+  flex-shrink: 0;
+}
+.panel-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.panel-icon { font-size: 14px; color: var(--gold); }
+.panel-title {
+  font-family: var(--font-heading);
+  font-size: 13px;
+  color: var(--gold);
+  letter-spacing: 0.04em;
+}
+
+.stendhal-entry {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+.stendhal-portrait {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  border: 2px solid var(--gold-dim);
+  background: linear-gradient(135deg, #2A2010, #1A1408);
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+  box-shadow: 0 0 6px rgba(201,168,76,0.3);
+}
+.diary-text {
+  font-family: var(--font-body);
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--text-primary);
+  font-style: italic;
+}
+.diary-date {
+  margin-top: 6px;
+  font-size: 10px;
+  color: var(--text-secondary);
+  font-family: var(--font-script);
+}
+
+/* Generals Panel */
+.generals-panel {
+  flex: 1;
+  padding: 12px 16px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-panel) transparent;
+}
+.generals-panel .panel-header { margin-bottom: 12px; }
+
+.general-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  margin-bottom: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.general-card:hover {
+  background: rgba(201,168,76,0.06);
+  border-color: var(--gold-dim);
+}
+.general-card.selected {
+  background: rgba(201,168,76,0.1);
+  border-color: var(--gold);
+  box-shadow: 0 0 8px rgba(201,168,76,0.2);
+}
+
+.portrait-wrap {
+  position: relative;
+  width: 40px; height: 40px;
+  flex-shrink: 0;
+}
+.portrait-img {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #1A1808, #0E1020);
+  border: 2px solid var(--gold-dim);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px;
+  position: relative; z-index: 1;
+}
+.loyalty-ring {
+  position: absolute; inset: -3px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+}
+.loyalty-ring.high  { border-color: #4A9A4A; box-shadow: 0 0 6px rgba(74,154,74,0.4); }
+.loyalty-ring.med   { border-color: #C87820; box-shadow: 0 0 6px rgba(200,120,32,0.4); }
+.loyalty-ring.low   { border-color: #C03020; box-shadow: 0 0 6px rgba(192,48,32,0.4); }
+
+.general-info { flex: 1; min-width: 0; }
+.general-name {
+  font-family: var(--font-heading);
+  font-size: 12px;
+  color: var(--text-heading);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.general-role {
+  font-size: 10px;
+  color: var(--text-secondary);
+  margin-top: 1px;
+}
+.general-stats {
+  display: flex;
+  gap: 5px;
+  margin-top: 4px;
+}
+.stat-badge {
+  font-size: 9px;
+  padding: 1px 5px;
+  border-radius: 2px;
+  background: rgba(58,58,92,0.5);
+  border: 1px solid var(--border-panel);
+  color: var(--text-secondary);
+}
+.stat-badge.temperament-impulsive { color: var(--rouge-glow); border-color: var(--rouge); }
+.stat-badge.temperament-cautious  { color: var(--noir-glow);  border-color: var(--noir-glow); }
+.stat-badge.temperament-reckless  { color: #E87020; }
+
+.loyalty-val {
+  font-family: var(--font-heading);
+  font-size: 14px;
+  color: var(--gold);
+  min-width: 28px;
+  text-align: right;
+}
+
+/* Factions mini-bar */
+.factions-panel {
+  padding: 10px 16px;
+  border-top: 1px solid var(--border-panel);
+  background: rgba(14,14,26,0.5);
+  flex-shrink: 0;
+}
+.factions-panel .panel-header { margin-bottom: 8px; }
+
+.faction-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 5px;
+}
+.faction-icon { font-size: 12px; width: 16px; text-align: center; }
+.faction-name {
+  font-size: 10px;
+  color: var(--text-secondary);
+  width: 52px;
+  flex-shrink: 0;
+}
+.faction-bar-track {
+  flex: 1;
+  height: 5px;
+  border-radius: 3px;
+  background: rgba(58,58,92,0.5);
+  overflow: hidden;
+}
+.faction-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.5s ease;
+}
+.faction-val {
+  font-size: 10px;
+  font-family: var(--font-heading);
+  color: var(--gold);
+  width: 24px;
+  text-align: right;
+}
+
+/* ── DECISION TRAY ───────────────────────────────────── */
+.decision-tray {
+  grid-area: tray;
+  background: var(--bg-panel-dark);
+  border-top: 1px solid var(--border-panel);
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.tray-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.tray-title {
+  font-family: var(--font-heading);
+  font-size: 11px;
+  color: var(--gold);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+.actions-left {
+  margin-left: auto;
+  font-size: 10px;
+  color: var(--text-secondary);
+}
+.actions-left span {
+  color: var(--gold);
+  font-family: var(--font-heading);
+  font-size: 14px;
+}
+
+.cards-row {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.cards-row::-webkit-scrollbar { display: none; }
+
+.decision-card {
+  flex-shrink: 0;
+  width: 130px;
+  border: 1px solid var(--border-panel);
+  border-radius: var(--radius-md);
+  background: rgba(26,26,46,0.85);
+  cursor: pointer;
+  overflow: hidden;
+  transition: all 0.15s;
+}
+.decision-card:hover {
+  border-color: var(--gold-dim);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+}
+.decision-card.selected {
+  border-color: var(--gold);
+  box-shadow: var(--shadow-glow-gold), 0 4px 12px rgba(0,0,0,0.5);
+}
+.decision-card.cooldown {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.decision-card.cooldown:hover { transform: none; }
+
+.card-thumb {
+  height: 36px;
+  background: linear-gradient(135deg, #1A1810, #101828);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px;
+  border-bottom: 1px solid var(--border-panel);
+}
+.card-body { padding: 7px 8px; }
+.card-title {
+  font-family: var(--font-heading);
+  font-size: 11px;
+  color: var(--text-heading);
+  margin-bottom: 5px;
+  line-height: 1.3;
+}
+.card-effects { display: flex; flex-direction: column; gap: 2px; }
+.effect {
+  font-family: var(--font-ui);
+  font-size: 9.5px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+.effect.pos { color: var(--positive); }
+.effect.neg { color: var(--negative); }
+.effect.rn  { color: var(--rouge-glow); }
+
+/* ── Tooltip ─────────────────────────────────────────── */
+.tooltip {
+  position: fixed;
+  background: var(--bg-panel-dark);
+  border: 1px solid var(--gold-dim);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  max-width: 220px;
+  pointer-events: none;
+  z-index: 1000;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.6);
+  display: none;
+}
+.tooltip.visible { display: block; }
+.tooltip-title {
+  font-family: var(--font-heading);
+  font-size: 12px;
+  color: var(--gold);
+  margin-bottom: 6px;
+}
+.tooltip-text {
+  font-size: 11px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+/* ── Phase Indicator ─────────────────────────────────── */
+.phase-badge {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 12px;
+  border: 1px solid var(--gold-dim);
+  background: rgba(139,115,50,0.12);
+}
+.phase-badge .dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--gold);
+  box-shadow: 0 0 6px var(--gold);
+  animation: pulse-gold 1.2s ease-in-out infinite alternate;
+}
+.phase-badge .phase-text {
+  font-size: 10px;
+  color: var(--gold);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-family: var(--font-heading);
+}
+</style>
+</head>
+<body>
+<div class="game-root">
+
+  <!-- ── TOP BAR ── -->
+  <header class="topbar">
+    <div class="topbar-day">
+      <span class="jour">Jour 21 / 100</span>
+      <span class="phase">Le Vol de l'Aigle</span>
+    </div>
+
+    <div class="divider-v"></div>
+
+    <div class="phase-badge">
+      <div class="dot"></div>
+      <span class="phase-text">Action</span>
+    </div>
+
+    <div class="divider-v"></div>
+
+    <div class="rn-container">
+      <div class="rn-labels">
+        <span class="rouge-label">⚔ Rouge</span>
+        <span class="noir-label">Noir ⚖</span>
+      </div>
+      <div class="rn-track">
+        <div class="rn-indicator" style="--rn-val: 15"></div>
+      </div>
+    </div>
+
+    <div class="divider-v"></div>
+
+    <div class="legitimacy-wrap">
+      <div class="leg-label">
+        <span>Légitimité</span>
+        <span style="color:var(--gold)">62</span>
+      </div>
+      <div class="leg-bar-track">
+        <div class="leg-bar-fill" style="width:62%"></div>
+      </div>
+    </div>
+
+    <div class="divider-v"></div>
+
+    <div class="resources">
+      <div class="resource">
+        <span class="icon">⚜</span>
+        <span>120k</span>
+        <span class="label">soldats</span>
+      </div>
+      <div class="resource">
+        <span class="icon">💰</span>
+        <span>1.4M</span>
+        <span class="label">francs</span>
+      </div>
+      <div class="resource">
+        <span class="icon">🌾</span>
+        <span>68</span>
+        <span class="label">vivres</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ── MAP AREA ── -->
+  <main class="map-area">
+    <div class="map-title">FRANCE · BELGIQUE · 1815</div>
+
+    <!-- SVG edges -->
+    <svg class="map-edges" viewBox="0 0 800 600" preserveAspectRatio="none">
+      <!-- Southern route: Golfe-Juan → Grenoble → Lyon → Paris -->
+      <line class="edge" x1="72%" y1="82%" x2="65%" y2="69%"/>
+      <line class="edge" x1="65%" y1="69%" x2="58%" y2="62%"/>
+      <line class="edge route" x1="58%" y1="62%" x2="50%" y2="48%"/>
+      <line class="edge route" x1="50%" y1="48%" x2="44%" y2="34%"/>
+      <!-- Northern route: Paris → Belgium -->
+      <line class="edge" x1="44%" y1="34%" x2="46%" y2="22%"/>
+      <line class="edge" x1="46%" y1="22%" x2="47%" y2="16%"/>
+      <line class="edge" x1="47%" y1="16%" x2="48%" y2="10%"/>
+      <!-- Besançon branch -->
+      <line class="edge" x1="55%" y1="57%" x2="55%" y2="45%"/>
+    </svg>
+
+    <!-- Map nodes (positioned as % of container) -->
+    <div class="map-nodes">
+      <div class="node" style="left:72%;top:84%">
+        <div class="node-dot"></div>
+        <div class="node-label">Golfe-Juan</div>
+      </div>
+      <div class="node" style="left:65%;top:70%">
+        <div class="node-dot" style="width:12px;height:12px;background:var(--gold);box-shadow:0 0 8px rgba(201,168,76,0.5)"></div>
+        <div class="node-label" style="color:var(--gold);opacity:1">Grenoble</div>
+      </div>
+      <div class="node" style="left:58%;top:63%">
+        <div class="node-dot" style="width:12px;height:12px;background:var(--gold);box-shadow:0 0 8px rgba(201,168,76,0.5)"></div>
+        <div class="node-label" style="color:var(--gold);opacity:1">Lyon</div>
+      </div>
+      <div class="node" style="left:55%;top:56%">
+        <div class="node-dot"></div>
+        <div class="node-label">Besançon</div>
+      </div>
+      <div class="node capital napoleon-here" style="left:44%;top:33%">
+        <div class="node-dot"></div>
+        <div class="node-label">Paris ★</div>
+      </div>
+      <div class="node" style="left:46%;top:22%">
+        <div class="node-dot"></div>
+        <div class="node-label">Laon</div>
+      </div>
+      <div class="node" style="left:47%;top:16%">
+        <div class="node-dot"></div>
+        <div class="node-label">Maubeuge</div>
+      </div>
+      <div class="node enemy" style="left:48%;top:9%">
+        <div class="node-dot"></div>
+        <div class="node-label">Bruxelles ⚠</div>
+      </div>
+      <div class="node enemy" style="left:52%;top:12%">
+        <div class="node-dot"></div>
+        <div class="node-label">Waterloo</div>
+      </div>
+    </div>
+
+    <!-- Army marker at Paris -->
+    <div class="army-marker" style="position:absolute;left:40%;top:38%">
+      <div class="army-flag">🦅</div>
+      <div class="army-count">120k</div>
+    </div>
+  </main>
+
+  <!-- ── SIDEBAR ── -->
+  <aside class="sidebar">
+
+    <!-- Stendhal Diary -->
+    <div class="stendhal-panel">
+      <div class="panel-header">
+        <span class="panel-icon">📖</span>
+        <span class="panel-title">Journal de Stendhal</span>
+      </div>
+      <div class="stendhal-entry">
+        <div class="stendhal-portrait">✍</div>
+        <div>
+          <div class="diary-text">
+            "L'Empereur a signé le décret ce matin. Les libéraux applaudissent en façade,
+            mais leurs yeux calculent déjà les possibilités de demain."
+          </div>
+          <div class="diary-date">— Stendhal, Jour 21</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Generals -->
+    <div class="generals-panel">
+      <div class="panel-header">
+        <span class="panel-icon">⚔</span>
+        <span class="panel-title">Maréchaux</span>
+      </div>
+
+      <div class="general-card selected">
+        <div class="portrait-wrap">
+          <div class="portrait-img">👑</div>
+          <div class="loyalty-ring high"></div>
+        </div>
+        <div class="general-info">
+          <div class="general-name">Michel Ney</div>
+          <div class="general-role">Maréchal · Nord</div>
+          <div class="general-stats">
+            <span class="stat-badge temperament-impulsive">⚡ Impulsif</span>
+            <span class="stat-badge">Mil 85</span>
+          </div>
+        </div>
+        <div class="loyalty-val">78</div>
+      </div>
+
+      <div class="general-card">
+        <div class="portrait-wrap">
+          <div class="portrait-img">🎖</div>
+          <div class="loyalty-ring high"></div>
+        </div>
+        <div class="general-info">
+          <div class="general-name">L.-N. Davout</div>
+          <div class="general-role">Maréchal · Paris</div>
+          <div class="general-stats">
+            <span class="stat-badge temperament-cautious">🛡 Prudent</span>
+            <span class="stat-badge">Mil 92</span>
+          </div>
+        </div>
+        <div class="loyalty-val">95</div>
+      </div>
+
+      <div class="general-card">
+        <div class="portrait-wrap">
+          <div class="portrait-img">⚔</div>
+          <div class="loyalty-ring med"></div>
+        </div>
+        <div class="general-info">
+          <div class="general-name">E. de Grouchy</div>
+          <div class="general-role">Général · Est</div>
+          <div class="general-stats">
+            <span class="stat-badge temperament-cautious">🛡 Prudent</span>
+            <span class="stat-badge">Mil 68</span>
+          </div>
+        </div>
+        <div class="loyalty-val">60</div>
+      </div>
+
+      <div class="general-card">
+        <div class="portrait-wrap">
+          <div class="portrait-img">🕵</div>
+          <div class="loyalty-ring low"></div>
+        </div>
+        <div class="general-info">
+          <div class="general-name">J. Fouché</div>
+          <div class="general-role">Politique · Paris</div>
+          <div class="general-stats">
+            <span class="stat-badge">Pol 90</span>
+            <span class="stat-badge" style="color:#C87820;border-color:#C87820">⚠ Risque</span>
+          </div>
+        </div>
+        <div class="loyalty-val" style="color:var(--negative)">22</div>
+      </div>
+    </div>
+
+    <!-- Factions -->
+    <div class="factions-panel">
+      <div class="panel-header">
+        <span class="panel-icon">⚖</span>
+        <span class="panel-title">Factions</span>
+      </div>
+
+      <div class="faction-row">
+        <span class="faction-icon">📜</span>
+        <span class="faction-name">Libéraux</span>
+        <div class="faction-bar-track">
+          <div class="faction-bar-fill" style="width:52%;background:linear-gradient(90deg,#4A6FA5,#6E9FD4)"></div>
+        </div>
+        <span class="faction-val">52</span>
+      </div>
+      <div class="faction-row">
+        <span class="faction-icon">⚜</span>
+        <span class="faction-name">Noblesse</span>
+        <div class="faction-bar-track">
+          <div class="faction-bar-fill" style="width:30%;background:linear-gradient(90deg,#5A4020,#8B6030)"></div>
+        </div>
+        <span class="faction-val" style="color:var(--negative)">30</span>
+      </div>
+      <div class="faction-row">
+        <span class="faction-icon">👥</span>
+        <span class="faction-name">Peuple</span>
+        <div class="faction-bar-track">
+          <div class="faction-bar-fill" style="width:68%;background:linear-gradient(90deg,#8B2500,#D4421E)"></div>
+        </div>
+        <span class="faction-val">68</span>
+      </div>
+      <div class="faction-row">
+        <span class="faction-icon">🎺</span>
+        <span class="faction-name">Armée</span>
+        <div class="faction-bar-track">
+          <div class="faction-bar-fill" style="width:75%;background:linear-gradient(90deg,var(--gold-dim),var(--gold))"></div>
+        </div>
+        <span class="faction-val">75</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ── DECISION TRAY ── -->
+  <footer class="decision-tray">
+    <div class="tray-header">
+      <span class="panel-icon" style="font-size:12px;color:var(--gold)">⚡</span>
+      <span class="tray-title">Actions du Jour</span>
+      <span class="actions-left">Actions restantes: <span>2</span></span>
+    </div>
+
+    <div class="cards-row">
+
+      <div class="decision-card selected">
+        <div class="card-thumb">📜</div>
+        <div class="card-body">
+          <div class="card-title">Décret Constitutionnel</div>
+          <div class="card-effects">
+            <div class="effect pos">+15 Libéraux</div>
+            <div class="effect neg">-5 Noblesse</div>
+            <div class="effect neg">-8 Rouge</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="decision-card">
+        <div class="card-thumb">🎺</div>
+        <div class="card-body">
+          <div class="card-title">Augmenter Budget Militaire</div>
+          <div class="card-effects">
+            <div class="effect pos">+15 Armée</div>
+            <div class="effect neg">-10 Économie</div>
+            <div class="effect rn">+4 Rouge</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="decision-card">
+        <div class="card-thumb">📢</div>
+        <div class="card-body">
+          <div class="card-title">Discours Public</div>
+          <div class="card-effects">
+            <div class="effect pos">+12 Peuple</div>
+            <div class="effect neg">-3 Noblesse</div>
+            <div class="effect rn">+3 Rouge</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="decision-card">
+        <div class="card-thumb">💰</div>
+        <div class="card-body">
+          <div class="card-title">Réduire les Impôts</div>
+          <div class="card-effects">
+            <div class="effect pos">+10 Peuple</div>
+            <div class="effect neg">-8 Économie</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="decision-card cooldown">
+        <div class="card-thumb">🤝</div>
+        <div class="card-body">
+          <div class="card-title">Diplomatie Secrète</div>
+          <div class="card-effects">
+            <div class="effect neg" style="color:var(--text-secondary)">🔒 Refroidissement 8j</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </footer>
+
+</div>
+
+<!-- Simple interaction demo -->
+<script>
+document.querySelectorAll('.decision-card:not(.cooldown)').forEach(card => {
+  card.addEventListener('click', function() {
+    document.querySelectorAll('.decision-card').forEach(c => c.classList.remove('selected'));
+    this.classList.add('selected');
+  });
+});
+document.querySelectorAll('.general-card').forEach(card => {
+  card.addEventListener('click', function() {
+    document.querySelectorAll('.general-card').forEach(c => c.classList.remove('selected'));
+    this.classList.add('selected');
+  });
+});
+</script>
+</body>
+</html>
