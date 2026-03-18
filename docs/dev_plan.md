@@ -1,6 +1,6 @@
 # Cent Jours — 开发优先级计划
 
-> **更新**: 2026-03-18 v4
+> **更新**: 2026-03-18 v5
 > **当前分支**: `claude/review-project-plan-LKKTR`
 
 ---
@@ -230,10 +230,113 @@ macos.release = "res://cent-jours-core/target/release/libcent_jours_core.dylib"
 ⑤ 微叙事后果片段（6类×5条）  ✅
 ```
 
-**下一轮待开发**:
-- 叙事引擎：将 stendhal_diary / consequences 接入 GameEngine，process_day 后返回叙事文本
-- M4 剩余：更多事件文本变体（当前24条事件各只有3条叙事）
-- 待 Godot 安装后：GDExtension 集成测试、UI 接入
+---
+
+## 优先级 A — 当前轮（纯 Rust，无 Godot 依赖）
+
+### ① 叙事引擎：`narratives` 模块 + `DayReport`
+
+**目标**: 将 `stendhal_diary.json` 和 `consequences.json` 接入引擎。`process_day()` 执行后，可通过 `engine.last_report()` 获取当天叙事文本，Godot UI 直接渲染。
+
+**TDD 测试先行**:
+```rust
+fn 叙事池加载成功() {
+    let pool = NarrativePool::new();
+    assert!(pool.stendhal_count("conscription") > 0);
+    assert!(pool.consequence_count("conscription") > 0);
+}
+
+fn 执行征兵政策后有叙事() {
+    let mut engine = GameEngine::new();
+    let mut rng = StdRng::seed_from_u64(42);
+    engine.process_day(PlayerAction::EnactPolicy { policy_id: "conscription" }, &mut rng);
+    let report = engine.last_report().unwrap();
+    assert!(report.stendhal.is_some(), "征兵令应有司汤达评论");
+    assert!(report.consequence.is_some(), "征兵令应有后果片段");
+}
+
+fn 未知动作类型不崩溃() {
+    let mut engine = GameEngine::new();
+    let mut rng = StdRng::seed_from_u64(42);
+    engine.process_day(PlayerAction::Rest, &mut rng);
+    // Rest 无叙事，但不应 panic
+    let _ = engine.last_report();
+}
+```
+
+**改动**:
+- 新建 `cent-jours-core/src/narratives/mod.rs` — `NarrativePool` 结构体
+- 新建 `DayReport { day, stendhal, consequence }` 在 `engine/state.rs`
+- `GameEngine` 增加 `narratives: NarrativePool` 和 `last_report: Option<DayReport>` 字段
+- `process_day()` 末尾填充 `last_report`
+- 暴露 `engine.last_report() -> Option<&DayReport>`
+
+**行动类型 → 叙事 key 映射**:
+| PlayerAction | stendhal key | consequence key |
+|---|---|---|
+| LaunchBattle（胜） | `battle_victory` | `battle_victory` |
+| LaunchBattle（败） | `battle_defeat` | `battle_defeat` |
+| EnactPolicy `conscription` | `conscription` | `conscription` |
+| EnactPolicy `constitutional_promise` | `constitutional_promise` | `constitutional_promise` |
+| EnactPolicy `public_speech` | `public_speech` | — |
+| EnactPolicy `reduce_taxes` | `reduce_taxes` | `reduce_taxes` |
+| BoostLoyalty | `boost_loyalty` | — |
+| Rest | — | — |
+
+**文件**: `cent-jours-core/src/narratives/mod.rs`
+
+---
+
+### ② GameEngine GDExtension 节点
+
+**目标**: `lib.rs` 目前只暴露三个独立子系统。新增 `CentJoursEngine` GDExtension 节点，把 `GameEngine::process_day()` / `last_report()` / `triggered_events()` 等统一暴露给 Godot，装好 Godot 后直接可用。
+
+**文件**: `cent-jours-core/src/lib.rs`（gdext_bindings 模块追加）
+
+---
+
+### ③ Save/Load 序列化
+
+**目标**: `GameEngine` 实现 `serde::Serialize/Deserialize`，提供 `to_json()` / `from_json()` 方法，支持游戏存档。Godot 侧用 `FileAccess` 读写即可。
+
+**注意**: `EventPool` 的 `triggered_ids` 也需要序列化，保证存档读取后事件不重复触发。
+
+---
+
+## 优先级 B — 可并行（纯数据，无代码依赖）
+
+### ④ 扩充 24 个历史事件叙事变体（2-3 → 5 条/事件）
+
+当前每个事件只有 2-3 条叙事，重玩时文本重复率高。
+**文件**: `src/data/events/historical.json`
+
+### ⑤ 新增历史事件（24 → ~30 条）
+
+当前缺失的关键事件：
+- `laffrey_confrontation`（拉弗雷峡谷，Day 3-5）
+- `murat_naples_campaign`（缪拉那不勒斯战役，Day 30-50）
+- `napoleon_last_letter_to_tsar`（拿破仑致沙皇最后一封信，Day 40-60）
+- `waterloo_eve_rain`（滑铁卢雨夜，Day 84-85）
+- `la_bedoyere_defection`（拉贝多耶尔倒戈，Day 5-8）
+- `chamber_of_representatives_ultimatum`（众议院最后通牒，Day 90-95）
+
+**文件**: `src/data/events/historical.json`
+
+---
+
+## 开发顺序（新一轮）
+
+```
+① narratives 模块 + DayReport      ← 立即开发（Rust，TDD）
+        ↓ 完成即 commit + push
+② GameEngine GDExtension 节点
+        ↓ 完成即 commit + push
+③ Save/Load 序列化
+
+并行（随时可做，无依赖）：
+④ 扩充事件叙事变体
+⑤ 新增历史事件
+```
 
 ---
 
