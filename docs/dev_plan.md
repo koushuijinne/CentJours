@@ -1,6 +1,6 @@
 # Cent Jours — 开发优先级计划
 
-> **更新**: 2026-03-18 v3
+> **更新**: 2026-03-18 v4
 > **当前分支**: `claude/review-project-plan-LKKTR`
 
 ---
@@ -41,15 +41,15 @@
 ```
 M0  预研      ████████████ 100% ✅
 M0.5 视觉定调  ████████████ 100% ✅
-M1  核心循环   █████████░░░  75% 🔶 Rust层✅，Godot集成待安装
+M1  核心循环   ██████████░░  85% 🔶 Rust层✅，EventPool集成✅，Godot待安装
 M2  政治系统   ███████████░  90% ✅ Rust层✅，平衡达标，UI待Godot
 M3  将领网络   ████████████ 100% ✅ GATE 2 通过
-M4  内容填充   ████░░░░░░░░  30% 事件池24条✅，叙事文本0%
+M4  内容填充   ████████░░░░  65% 事件池24条✅，叙事文本✅(stendhal+consequences)，叙事引擎0%
 M5  美术音乐   ░░░░░░░░░░░░   0%
 M6  打磨发布   ░░░░░░░░░░░░   0%
 ```
 
-**86/86 单元测试全部通过**（最后运行：2026-03-18）
+**89/89 单元测试全部通过**（最后运行：2026-03-18）
 
 **平衡结果（不变）**: Military 24.2% ✅ | Political 21.2% ✅ | Balanced 22.4% ✅
 
@@ -66,18 +66,18 @@ M6  打磨发布   ░░░░░░░░░░░░   0%
 | 政治系统 | `politics/system.rs` | 8 | ✅ |
 | 命令偏差 | `characters/order_deviation.rs` | 6 | ✅ |
 | 将领关系网络 | `characters/network.rs` | 23 | ✅ 含from_json |
-| 三系统状态机 | `engine/state.rs` | 13 | ✅ |
+| 三系统状态机 | `engine/state.rs` | 16 | ✅ 含EventPool集成 3新测试 |
 | 历史事件池 | `events/pool.rs` | 13 | ✅ 24条事件 |
-| 蒙特卡洛模拟 | `simulation/monte_carlo.rs` | 8 | ✅ 含引擎耦合 |
+| 蒙特卡洛模拟 | `simulation/monte_carlo.rs` | 8 | ✅ 已简化（EventPool内嵌） |
 | GDExtension绑定 | `lib.rs` | — | ✅ |
 
-**合计**: 86 tests | 全部通过
+**合计**: 89 tests | 全部通过
 
 ---
 
-## 优先级 A — 下一步立即开发
+## 优先级 A — ✅ 全部完成（2026-03-18）
 
-### ① EventPool → GameEngine 内部集成
+### ① EventPool → GameEngine 内部集成 ✅
 
 **目标**: 当前 `run_engine_simulation()` 在外部手动调用 `event_pool.trigger_all()`。正式集成应该在 `GameEngine::process_day()` 的 Dawn 阶段**自动**触发事件，并将效果应用到三系统。这样 Godot 层只需调用 `process_day()`，不需要自己管理事件池。
 
@@ -122,7 +122,7 @@ fn 事件只触发一次() {
 
 ---
 
-### ② `.gdextension` 配置文件
+### ② `.gdextension` 配置文件 ✅
 
 **目标**: 写好 Godot 识别 Rust 插件的描述符，安装 Godot 后可直接测试 GDExtension 绑定。
 
@@ -146,7 +146,7 @@ macos.release = "res://cent-jours-core/target/release/libcent_jours_core.dylib"
 
 ---
 
-### ③ balance_notes.md — 记录最终平衡参数
+### ③ balance_notes.md — 记录最终平衡参数 ✅
 
 **目标**: 将当前有效的平衡参数整理成文档，M6 调参时直接查阅，避免重新推导。
 
@@ -161,9 +161,9 @@ macos.release = "res://cent-jours-core/target/release/libcent_jours_core.dylib"
 
 ---
 
-## 优先级 B — M4 内容填充（可随时并行）
+## 优先级 B — ✅ 全部完成（2026-03-18，并行执行）
 
-### ④ 司汤达日记文本池
+### ④ 司汤达日记文本池 ✅
 
 **文件**: `src/data/narratives/stendhal_diary.json`
 
@@ -191,7 +191,7 @@ macos.release = "res://cent-jours-core/target/release/libcent_jours_core.dylib"
 }
 ```
 
-### ⑤ 微叙事后果片段
+### ⑤ 微叙事后果片段 ✅
 
 **文件**: `src/data/narratives/consequences.json`
 
@@ -218,20 +218,22 @@ macos.release = "res://cent-jours-core/target/release/libcent_jours_core.dylib"
 
 ---
 
-## 开发顺序（当前阶段）
+## 开发顺序（当前阶段）— ✅ 本轮全部完成
 
 ```
-① EventPool→GameEngine 集成 (3-4h)   ← 立即开发
-        ↓ 完成后更新 dev_plan.md
-② .gdextension 配置 (30min)
-        ↓ 完成后更新 dev_plan.md
-③ balance_notes.md (30min)
-        ↓ 完成后更新 dev_plan.md + plan.md（M3全部勾选完成）
+① EventPool→GameEngine 集成  ✅ 89 tests 全通过
+② .gdextension 配置           ✅
+③ balance_notes.md            ✅
 
-并行（随时可做，无依赖）：
-④ 司汤达日记文本 + ⑤ 微叙事后果片段
-   每写完一个决策类型的文本就提交一次
+并行完成：
+④ 司汤达日记文本（8类×5条）  ✅
+⑤ 微叙事后果片段（6类×5条）  ✅
 ```
+
+**下一轮待开发**:
+- 叙事引擎：将 stendhal_diary / consequences 接入 GameEngine，process_day 后返回叙事文本
+- M4 剩余：更多事件文本变体（当前24条事件各只有3条叙事）
+- 待 Godot 安装后：GDExtension 集成测试、UI 接入
 
 ---
 
