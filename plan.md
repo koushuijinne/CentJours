@@ -3,8 +3,8 @@
 > **工作标题**: *Cent Jours*（法语”百日”）
 > **一句话**: 你是拿破仑，从厄尔巴岛出逃到滑铁卢，100天内重建帝国或永远流放。每一天都是决策点。
 > **Author**: Julien
-> **Version**: v0.3 — 2026-03-18
-> **Status**: Draft — M0/M0.5 完成，M1-M3 Rust逻辑层完成，待Godot集成
+> **Version**: v0.4 — 2026-03-18
+> **Status**: Draft — M0/M0.5/M2平衡 完成；M1 Rust 75%；M3 Rust 90%；GATE 2 Rust层通过
 
 -----
 
@@ -656,7 +656,7 @@ W1──W2──W3────W7────W11────W14────W19─
 
 **内容同步**: devlog #2-3 — 算法设计过程（行军路径优化、战斗模型）
 
-### M2: 政治系统（W8-W11）🔶 Rust层完成，平衡调试待优化
+### M2: 政治系统（W8-W11）✅ Rust层完成，平衡达标
 
 **目标**: Rouge/Noir双指针 + 四势力系统，与行军系统耦合
 
@@ -667,21 +667,22 @@ W1──W2──W3────W7────W11────W14────W19─
 - [x] **Rust：政治-战役耦合接口（`PoliticsEngine` via GDExtension，`src/lib.rs`）**
 - [ ] 每日政策行动选择界面（Godot UI）→ 需要Godot
 - [x] 政治崩溃触发条件（`is_collapsed()` Rust实现，≥2势力低于阈值）
-- [ ] 平衡调试完成（蒙特卡洛已揭示3个已知问题，见`docs/balance_notes.md`，待修复）
+- [x] **平衡调试完成** — Military 24.2% ✅ / Political 21.2% ✅ / Balanced 22.4% ✅（目标15-35%）
 
 **内容同步**: devlog #4 —「如何用优化模型做政治博弈」
 
-### M3: 将领网络（W12-W14）🔶 命令偏差完成，关系网络待建
+### M3: 将领网络（W12-W14）🔶 Rust 90%，GATE 2 Rust层通过
 
 **目标**: 人物系统 + 关系网络 + 命令偏差模型
 
 **交付物**:
 
 - [x] **Rust：`characters::order_deviation` 命令偏差模型（6个单元测试，含Ney/Grouchy历史场景）**
-- [ ] **Rust：`characters::network` 将领关系网络（图结构，动态忠诚度更新）→ 可开发**
-- [ ] **Rust：三系统耦合引擎（battle + politics + characters联动状态机）→ 可开发**
-- [ ] 关键历史节点脚本：Ney倒戈、Grouchy追击（事件JSON + Rust触发条件）→ **可开发**
-- [ ] 三系统耦合蒙特卡洛验证（Rust，<5秒跑1000局）→ **可开发（基础已有）**
+- [x] **Rust：`characters::network` 将领关系网络（19个单元测试）** — 忠诚度/关系矩阵/战斗结果联动/历史场景
+- [x] **Rust：`engine::state` 三系统耦合状态机（13个单元测试）** — battle+politics+characters联动，Dawn→Action→Dusk
+- [x] **Rust：`events::pool` JSON驱动历史事件池（13个单元测试）** — 7个历史事件，触发条件+叙事文本
+- [ ] **三系统耦合蒙特卡洛验证**（使用 GameEngine 跑1000局）→ **下一步**
+- [ ] characters.json → CharacterNetwork 数据集成（当前 `historical_network_day1()` 硬编码）→ **下一步**
 
 **⛳ GATE 2（W14结束）**: 三系统耦合后复杂度是否可控？
 

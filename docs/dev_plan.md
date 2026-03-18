@@ -1,6 +1,6 @@
 # Cent Jours — 开发优先级计划
 
-> **更新**: 2026-03-18
+> **更新**: 2026-03-18 v2
 > **当前分支**: `claude/review-project-plan-LKKTR`
 
 ---
@@ -22,135 +22,161 @@
 
 ---
 
-## 当前进度快照
+## 当前进度快照（2026-03-18）
 
 ```
 M0  预研      ████████████ 100% ✅
 M0.5 视觉定调  ████████████ 100% ✅
-M1  核心循环   ████████░░░░  65% 🔶 Rust层✅，Godot集成待安装
-M2  政治系统   ████████░░░░  70% 🔶 Rust层✅，UI待，平衡调试待
-M3  将领网络   ██████░░░░░░  50% 🔶 命令偏差✅，关系网络/耦合待
-M4  内容填充   ░░░░░░░░░░░░   0%
+M1  核心循环   █████████░░░  75% 🔶 Rust层✅，Godot集成待安装
+M2  政治系统   ███████████░  90% ✅ Rust层✅，平衡达标，UI待Godot
+M3  将领网络   ██████████░░  85% 🔶 三系统Rust✅，MC验证+数据集成待
+M4  内容填充   ██░░░░░░░░░░  10% 事件池7条，叙事文本0
 M5  美术音乐   ░░░░░░░░░░░░   0%
 M6  打磨发布   ░░░░░░░░░░░░   0%
 ```
 
-**约束**: 暂无 Godot 运行环境。以下所有任务均为纯 Rust，`cargo test` 可验证。
+**78/78 单元测试全部通过**
+**平衡结果**: Military 24.2% ✅ | Political 21.2% ✅ | Balanced 22.4% ✅（目标15-35%）
+
+**约束**: 暂无 Godot 运行环境。以下所有任务均为纯 Rust 或 JSON/数据工作。
+
+---
+
+## 已完成模块清单
+
+| 模块 | 文件 | 测试数 | 状态 |
+|------|------|--------|------|
+| 战斗解算 | `battle/resolver.rs` | 7 | ✅ |
+| 行军系统 | `battle/march.rs` | 6 | ✅ |
+| 政治系统 | `politics/system.rs` | 8 | ✅ |
+| 命令偏差 | `characters/order_deviation.rs` | 6 | ✅ |
+| 将领关系网络 | `characters/network.rs` | 19 | ✅ |
+| 三系统状态机 | `engine/state.rs` | 13 | ✅ |
+| 历史事件池 | `events/pool.rs` | 13 | ✅ |
+| 蒙特卡洛模拟 | `simulation/monte_carlo.rs` | 4 | ✅ |
+| GDExtension绑定 | `lib.rs` | — | ✅ |
 
 ---
 
 ## 优先级 A — 推进里程碑（立即开发）
 
-### ① `characters::network` — 将领关系图 【M3核心】
+### ① GATE 2 验收：三系统耦合蒙特卡洛 【M3收尾，最高优先级】
 
-**目标**: 动态将领关系矩阵，支持忠诚度更新和历史事件触发
+**目标**: 用 `GameEngine`（三系统耦合）代替简化的 `simulate_one_game` 跑蒙特卡洛，验证完整系统在1000局内稳定。
 
-**测试先行**:
-```rust
-// 内伊倒戈：loyalty<30 且 napoleon_bond>60 → 触发倒戈事件
-assert!(network.can_defect_to_napoleon("ney"));
-
-// 战胜提升忠诚度
-network.apply_battle_outcome("ney", BattleResult::MarginalVictory);
-assert!(network.loyalty("ney") > initial_loyalty);
-
-// 关系衰减：长时间无互动
-network.tick_day();
-assert!(network.relationship("ney", "grouchy") <= initial_bond);
-```
-
-**数据结构**:
-```
-CharacterNetwork {
-    generals: HashMap<String, GeneralData>       // 来自 characters.json
-    relationships: HashMap<(String,String), f64> // 双向关系强度 -100..100
-    loyalty_history: Vec<(u32, String, f64)>     // (day, id, delta) 审计日志
-}
-```
-
-**文件**: `cent-jours-core/src/characters/network.rs`
-
----
-
-### ② `engine::state` — 三系统耦合状态机 【M3/GATE2核心】
-
-**目标**: 统一持有 battle + politics + characters，按回合驱动三系统
+**为什么**: `simulation::monte_carlo` 当前使用的是平行但分离的系统，`engine::state` 耦合版本尚未做大规模验证。这是 GATE 2 的核心检查点。
 
 **测试先行**:
 ```rust
-// 战胜应同时提升军方支持和相关将领忠诚
-let mut engine = GameEngine::default();
-engine.process_battle_victory("ney", BattleResult::MarginalVictory);
-assert!(engine.politics.faction_support["military"] > 50.0);
-assert!(engine.characters.loyalty("ney") > 65.0);
+// engine集成蒙特卡洛：1000局不崩溃
+fn 三系统耦合1000局不崩溃() {
+    let report = run_engine_simulation(1000, 42);
+    let total: u32 = report.outcomes.values().sum();
+    assert_eq!(total, 1000);
+}
 
-// 政治崩溃应触发游戏结束事件
-engine.politics.rouge_noir_index = -80.0; // 极端Noir
-engine.process_day(42);
-assert!(engine.outcome() == Some(GameOutcome::PoliticalCollapse));
-```
-
-**文件**: `cent-jours-core/src/engine/state.rs` + `mod.rs`
-
----
-
-### ③ `events::pool` — JSON驱动历史事件池 【M3/M4衔接】
-
-**目标**: 100天事件池，按条件触发，支持叙事文本变体
-
-**事件 JSON 结构**:
-```json
-{
-  "id": "ney_defection",
-  "day_range": [5, 7],
-  "trigger": {
-    "napoleon_reputation": { "min": 60 },
-    "ney_loyalty": { "max": 40 },
-    "ney_relationship_napoleon": { "min": 55 }
-  },
-  "effects": {
-    "ney_loyalty": "+35",
-    "military_support": "+10",
-    "nobility_support": "-15"
-  },
-  "narratives": [
-    "内伊在路边停住马，望着山坡上那面熟悉的鹰旗，久久无语。",
-    "「皇帝」——他低声说，就好像这个词本身就能解释一切。"
-  ]
+// 事件触发率合理：内伊倒戈应在10-40%游戏中触发
+fn 内伊倒戈触发率合理() {
+    let report = run_engine_simulation(500, 2026);
+    let ney_rate = report.event_trigger_rates["ney_defection"];
+    assert!(ney_rate >= 0.10 && ney_rate <= 0.50);
 }
 ```
 
-**文件**:
-- `src/data/events/historical.json` — 历史触发事件（Ney倒戈、Grouchy追击等）
-- `cent-jours-core/src/events/pool.rs` — Rust 加载器 + 触发器
+**文件**: `cent-jours-core/src/simulation/monte_carlo.rs` 新增 `run_engine_simulation()`
 
 ---
 
-### ④ 平衡调试 — 修复3个已知问题 【M2收尾】
+### ② characters.json → CharacterNetwork 数据集成 【M3收尾】
 
-详见 `docs/balance_notes.md`。修复目标：三种策略胜率均落入 **15%–35%**。
+**目标**: 将 `src/data/characters.json`（已有15个历史人物数据）加载进 `CharacterNetwork`，替换当前 `historical_network_day1()` 的硬编码初始状态。
 
-| 问题 | 当前 | 目标 | 调整方向 |
-|------|------|------|----------|
-| 军事策略惩罚过重 | ~0% 胜率 | 15-25% | 降低敌军扩张速度，增加战胜奖励 |
-| 政治/平衡策略 100% 胜率 | 100% | 20-35% | 强化外交压力，增加后期随机危机 |
-| 滑铁卢无特殊规则 | 确定性结果 | 随机结果 | Day 80+ 触发联军会师加速机制 |
+**为什么**: 数据和逻辑应该分离。现在 network.rs 的初始值是硬编码常量，未来调整人物属性需要改 Rust 代码重新编译，而不是改 JSON。
+
+**接口设计**:
+```rust
+// 从 characters.json 构建网络
+impl CharacterNetwork {
+    pub fn from_json(json: &str) -> Result<Self, serde_json::Error>;
+    pub fn historical_day1() -> Self {
+        Self::from_json(include_str!("../../../src/data/characters.json")).unwrap()
+    }
+}
+```
+
+**文件**: `cent-jours-core/src/characters/network.rs` + `src/data/characters.json` 补全关系数据
+
+---
+
+### ③ 扩展历史事件池 【M3/M4衔接，高价值】
+
+**目标**: 当前 `historical.json` 只有 7 个事件，覆盖约 15 个关键天数。需要扩展到 **25-35 个事件**，覆盖完整100天叙事骨架。
+
+**为什么**: EventPool 系统已经完善，但内容极少。这是纯 JSON 工作，不需要改 Rust，投入产出比极高——每增加一个事件就增加一条游戏叙事线。
+
+**待添加事件（历史依据）**:
+
+| 事件 ID | 日期范围 | 触发条件 | 历史背景 |
+|---------|---------|---------|---------|
+| `return_to_paris` | Day 20-22 | `napoleon_reputation_min: 65` | 进入巴黎，路易十八出逃 |
+| `additional_act` | Day 25-35 | `rouge_noir_index_max: 20` | 颁布补充法案，承诺宪政 |
+| `congress_vienna_ultimatum` | Day 12-15 | — | 维也纳会议宣布拿破仑为公敌 |
+| `davout_war_minister` | Day 22-28 | `davout_loyalty_min: 75` | 达武任战争部长 |
+| `soult_chief_of_staff` | Day 25-30 | — | 苏尔特任参谋长（争议任命） |
+| `elba_veterans_rejoin` | Day 10-15 | — | 厄尔巴岛老兵陆续归队 |
+| `quatre_bras` | Day 83-85 | `day_min: 83` | 四臂村战役，内伊表现争议 |
+| `wellington_position` | Day 88-92 | — | 威灵顿占据圣让山脊防线 |
+| `prussian_regroup` | Day 85-88 | — | 布吕歇尔在利尼后重整旗鼓 |
+| `imperial_guard_elite` | Day 40-50 | `military_support_min: 65` | 老近卫军重建完成 |
+| `royalist_uprising` | Day 30-50 | `rouge_noir_index_max: -30` | 旺代保皇派动乱威胁 |
+| `british_subsidies` | Day 15-25 | — | 英国向普奥提供资助加速集结 |
+
+**文件**: `src/data/events/historical.json`
 
 ---
 
 ## 优先级 B — 内容积累（并行可做）
 
-### ⑤ 司汤达日记文本池
-`src/data/narratives/stendhal_diary.json`
-- 为每类决策预生成 5 个文体变体（冷峻 / 讽刺 / 心理分析）
-- 可用 Claude API 批量生成初稿，人工审核历史准确性
+### ④ 司汤达日记文本池
 
-### ⑥ 微叙事后果片段
-`src/data/narratives/consequences.json`
-- 每种政策/行动 20-30 个普通人视角片段（2-3句）
+**文件**: `src/data/narratives/stendhal_diary.json`
 
-### ⑦ `.gdextension` 配置文件
-Godot 识别 Rust 插件的描述符，写好后安装 Godot 即可直接调用：
+为以下决策类型各预生成 5 个文本变体（冷峻/讽刺/心理分析风格）：
+
+```json
+{
+  "conscription": [
+    "他今天又签了一道征兵令。他的笔迹很漂亮——即便是在做这种事的时候。",
+    "征兵令。士兵们的父亲会读报纸吗？不，但他们的妻子会。"
+  ],
+  "constitutional_promise": [...],
+  "public_speech": [...],
+  "battle_victory": [...],
+  "battle_defeat": [...]
+}
+```
+
+### ⑤ 微叙事后果片段
+
+**文件**: `src/data/narratives/consequences.json`
+
+每种政策/事件后，弹出一段普通人视角（2-3句）：
+
+```json
+{
+  "conscription": [
+    "里昂郊外，一个面包师的妻子目送第三个儿子走向集结点。",
+    "征兵官在诺曼底记录了一个哑巴的名字。他不会说话，但他会走路。"
+  ]
+}
+```
+
+### ⑥ `.gdextension` 配置文件
+
+Godot 识别 Rust 插件的描述符，写好后安装 Godot 即可直接测试：
+
+**文件**: `cent-jours-core/cent_jours_core.gdextension`
+
 ```ini
 [configuration]
 entry_symbol = "gdext_rust_init"
@@ -159,17 +185,64 @@ compatibility_minimum = "4.1"
 [libraries]
 linux.debug.x86_64 = "res://cent-jours-core/target/debug/libcent_jours_core.so"
 linux.release.x86_64 = "res://cent-jours-core/target/release/libcent_jours_core.so"
+windows.debug.x86_64 = "res://cent-jours-core/target/debug/cent_jours_core.dll"
+windows.release.x86_64 = "res://cent-jours-core/target/release/cent_jours_core.dll"
 ```
+
+---
+
+## 优先级 C — M4 准备（内容填充阶段前置工作）
+
+### ⑦ EventPool → GameEngine 集成
+
+将 `events::pool` 接入 `engine::state`：`process_day()` 每天调用 `event_pool.trigger_all(ctx)`，将事件效果应用到三系统。
+
+**文件**: `cent-jours-core/src/engine/state.rs`
+
+### ⑧ balance_notes.md 更新
+
+记录最终平衡参数，方便 M6 调参时回查：
+- 决战联军公式：`70_000 + cs * 1_400`
+- 胜利条件：`victories >= 5 AND legit >= 45`
+- 即时胜利触发：决战胜 + victories >= 5 → 立即结算
+
+**文件**: `docs/balance_notes.md`
 
 ---
 
 ## 开发顺序建议
 
 ```
-① network (3-4h) → ② engine::state (4-5h) → ④ balance (2h) → ③ events (4-5h)
-                                ↓
-                    GATE 2 验收：三系统蒙特卡洛 <5s/1000局
+① 耦合MC验证 (3-4h)
+        ↓
+② characters.json集成 (2-3h)
+        ↓
+③ 扩展事件池到25条 (3-4h，纯JSON)
+        ↓
+⑦ EventPool → GameEngine集成 (2-3h)
+        ↓
+    GATE 2 完整验收：
+    三系统+事件池 蒙特卡洛 <5s/1000局 ✅
+
+然后并行：
+④ 司汤达日记 + ⑤ 微叙事（纯文本，随时可做）
+⑥ .gdextension（30min，等Godot安装前准备好）
+⑧ balance_notes.md（文档，30min）
 ```
+
+---
+
+## 离 GATE 2 还差什么
+
+GATE 2 核心问题：**"三系统耦合后复杂度是否可控？平衡是否稳定？"**
+
+Rust 层已经满足条件：
+- ✅ battle + politics + characters 三系统有独立实现和测试
+- ✅ `engine::state` 实现三系统耦合状态机（13 tests）
+- ✅ 蒙特卡洛平衡验证机制存在（78 tests 全通过）
+- ⬜ **缺**: 用完整 GameEngine（含事件系统）跑耦合蒙特卡洛
+
+完成① + ② + ③ + ⑦ 后，GATE 2 Rust 层可宣告通过。
 
 ---
 
