@@ -304,6 +304,134 @@ pub fn print_report(report: &SimulationReport) {
     println!("{}\n", "=".repeat(60));
 }
 
+// ── 三系统耦合引擎模拟 ──────────────────────────────────
+
+/// 引擎模拟报告（含事件触发率）
+pub struct EngineSimReport {
+    pub n_runs:               u32,
+    pub outcomes:             HashMap<&'static str, u32>,
+    pub victory_rate:         f64,
+    /// 每个历史事件在多少比例的局中被触发（0.0-1.0）
+    pub event_trigger_rates:  HashMap<String, f64>,
+}
+
+/// 根据引擎状态构建事件触发上下文
+fn build_trigger_ctx(engine: &GameEngine) -> TriggerContext {
+    TriggerContext {
+        day:                      engine.day,
+        napoleon_reputation:      engine.politics.legitimacy,
+        ney_loyalty:              engine.characters.loyalty("ney"),
+        ney_napoleon_relationship: engine.characters.relationship("ney", "napoleon"),
+        grouchy_loyalty:          engine.characters.loyalty("grouchy"),
+        fouche_loyalty:           engine.characters.loyalty("fouche"),
+        rouge_noir_index:         engine.politics.rouge_noir_index,
+    }
+}
+
+/// 将事件效果应用到引擎三系统
+fn apply_event_effects(engine: &mut GameEngine, effects: &EventEffects) {
+    let day = engine.day;
+    if let Some(d) = effects.ney_loyalty_delta {
+        engine.characters.modify_loyalty("ney", d, day, "event");
+    }
+    if let Some(d) = effects.fouche_loyalty_delta {
+        engine.characters.modify_loyalty("fouche", d, day, "event");
+    }
+    if let Some(d) = effects.military_support_delta {
+        engine.politics.modify_faction("military", d);
+    }
+    if let Some(d) = effects.nobility_support_delta {
+        engine.politics.modify_faction("nobility", d);
+    }
+    if let Some(d) = effects.rouge_noir_delta {
+        engine.politics.rouge_noir_index =
+            (engine.politics.rouge_noir_index + d).clamp(-100.0, 100.0);
+    }
+    if let Some(d) = effects.legitimacy_delta {
+        engine.politics.legitimacy = (engine.politics.legitimacy + d).clamp(0.0, 100.0);
+    }
+    if let Some(bonus) = effects.napoleon_morale_bonus {
+        engine.army.avg_morale = (engine.army.avg_morale + bonus).min(100.0);
+    }
+}
+
+/// 根据引擎当天状态选择行动（Balanced策略）
+fn engine_action<R: Rng>(engine: &GameEngine, rng: &mut R) -> PlayerAction {
+    const BATTLE_DAYS: &[u32] = &[7, 20, 45, 60, 80, 86, 90, 100];
+    const POLICIES: &[&str] = &[
+        "conscription", "constitutional_promise", "public_speech",
+        "reduce_taxes", "increase_military_budget",
+    ];
+
+    let day = engine.current_day();
+
+    if BATTLE_DAYS.contains(&day) {
+        let terrains = [Terrain::Plains, Terrain::Plains, Terrain::Hills, Terrain::Ridgeline];
+        let terrain = terrains[rng.gen_range(0..4)];
+        return PlayerAction::LaunchBattle {
+            general_id: "ney".to_string(),
+            troops: (engine.army.total_troops / 2).max(1_000),
+            terrain,
+        };
+    }
+    if day % 3 == 0 {
+        let policy = POLICIES[rng.gen_range(0..POLICIES.len())];
+        return PlayerAction::EnactPolicy { policy_id: policy };
+    }
+    PlayerAction::Rest
+}
+
+/// 用完整 GameEngine + EventPool 运行 n_runs 局模拟
+pub fn run_engine_simulation(n_runs: u32, seed: u64) -> EngineSimReport {
+    const HISTORICAL_JSON: &str =
+        include_str!("../../../src/data/events/historical.json");
+
+    let mut rng = StdRng::seed_from_u64(seed);
+    let mut outcomes: HashMap<&'static str, u32> = HashMap::new();
+    let mut event_counts: HashMap<String, u32> = HashMap::new();
+
+    for _ in 0..n_runs {
+        let mut engine = GameEngine::new();
+        let mut pool = EventPool::from_json(HISTORICAL_JSON)
+            .expect("historical.json parse error");
+
+        // 最多跑到 Day 105，防止极端情况死循环
+        while !engine.is_over() && engine.current_day() <= 105 {
+            // Dawn：事件触发
+            let ctx = build_trigger_ctx(&engine);
+            let triggered = pool.trigger_all(&ctx, &mut rng);
+            for t in &triggered {
+                *event_counts.entry(t.id.clone()).or_insert(0) += 1;
+                apply_event_effects(&mut engine, &t.effects);
+            }
+
+            // Action + Dusk（引擎内部结算）
+            if !engine.is_over() {
+                let action = engine_action(&engine, &mut rng);
+                engine.process_day(action, &mut rng);
+            }
+        }
+
+        let result = engine.outcome().unwrap_or(GameOutcome::WaterlooDefeat);
+        *outcomes.entry(result.as_str()).or_insert(0) += 1;
+    }
+
+    let victory_count = outcomes.get("napoleon_victory").copied().unwrap_or(0);
+    let victory_rate  = victory_count as f64 / n_runs as f64;
+
+    let event_trigger_rates = event_counts
+        .into_iter()
+        .map(|(id, count)| (id, count as f64 / n_runs as f64))
+        .collect();
+
+    EngineSimReport {
+        n_runs,
+        outcomes,
+        victory_rate,
+        event_trigger_rates,
+    }
+}
+
 // ── 单元测试 ──────────────────────────────────────────
 
 #[cfg(test)]
@@ -343,5 +471,46 @@ mod tests {
             let report = run_simulation(500, strategy, 2026);
             assert!(report.victory_rate >= 0.0 && report.victory_rate <= 1.0);
         }
+    }
+
+    // ── 引擎耦合蒙特卡洛测试 ──────────────────────────────
+
+    #[test]
+    fn 三系统耦合1000局不崩溃() {
+        let report = run_engine_simulation(1000, 42);
+        let total: u32 = report.outcomes.values().sum();
+        assert_eq!(total, 1000, "1000局模拟结局计数应为1000");
+    }
+
+    #[test]
+    fn 引擎模拟胜率在合理范围内() {
+        // 引擎包含事件系统，平衡可能与简化版略有不同，但不应极端
+        let report = run_engine_simulation(500, 2026);
+        assert!(report.victory_rate <= 0.80,
+            "胜率不应过高: {:.1}%", report.victory_rate * 100.0);
+        assert!(report.victory_rate >= 0.0,
+            "胜率不应为负: {:.1}%", report.victory_rate * 100.0);
+    }
+
+    #[test]
+    fn 内伊倒戈事件在合理频率触发() {
+        let report = run_engine_simulation(500, 2026);
+        // 历史上内伊几乎必然倒戈（百日真实事件）
+        // 只在极少数Napoleon声望极低的局中不触发
+        // 预期触发率 > 50%（历史高概率事件）
+        let rate = report.event_trigger_rates
+            .get("ney_defection")
+            .copied()
+            .unwrap_or(0.0);
+        assert!(rate >= 0.50,
+            "内伊倒戈触发率 {:.1}% 过低，历史上此事件高概率发生", rate * 100.0);
+    }
+
+    #[test]
+    fn 所有结局类型均有可能出现() {
+        let report = run_engine_simulation(500, 1234);
+        // 不要求每种结局都出现，但至少应出现2种不同结局（游戏有多种走向）
+        assert!(report.outcomes.len() >= 2,
+            "500局中应出现至少2种不同结局，实际: {:?}", report.outcomes.keys().collect::<Vec<_>>());
     }
 }
