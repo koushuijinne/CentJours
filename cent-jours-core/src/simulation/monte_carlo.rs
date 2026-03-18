@@ -6,9 +6,8 @@ use std::collections::HashMap;
 use rand::{Rng, SeedableRng};
 use rand::rngs::StdRng;
 
-use crate::battle::resolver::{ForceData, Terrain, resolve_battle};
+use crate::battle::resolver::{ForceData, Terrain, resolve_battle, BattleResult, ratio_to_result};
 use crate::engine::{GameOutcome, GameEngine, PlayerAction};
-use crate::events::{EventPool, TriggerContext, EventEffects};
 use crate::politics::system::{PoliticsState, default_policies};
 
 // ── 模拟参数 ──────────────────────────────────────────
@@ -135,7 +134,6 @@ pub fn simulate_one_game(strategy: PlayerStrategy, rng: &mut StdRng) -> GameReco
             // 滑铁卢特殊规则：在标准结果基础上施加额外±25%战场迷雾
             // 代表格鲁希是否及时赶到、Ney是否冲动、雨后地面状况等不确定性
             let final_result = if is_decisive_battle {
-                use crate::battle::resolver::ratio_to_result;
                 let waterloo_chaos: f64 = rng.gen_range(-0.25..=0.25);
                 let adjusted_ratio = battle.ratio * (1.0 + waterloo_chaos);
                 ratio_to_result(adjusted_ratio)
@@ -149,7 +147,6 @@ pub fn simulate_one_game(strategy: PlayerStrategy, rng: &mut StdRng) -> GameReco
             let (morale_delta, _) = final_result.morale_deltas();
             morale = (morale + morale_delta).clamp(0.0, 100.0);
 
-            use crate::battle::resolver::BattleResult;
             if matches!(final_result, BattleResult::DecisiveVictory | BattleResult::MarginalVictory) {
                 victories += 1;
                 // 胜利"帝国万岁"效应：全派系士气提升
@@ -304,7 +301,7 @@ pub fn print_report(report: &SimulationReport) {
     println!("{}\n", "=".repeat(60));
 }
 
-// ── 三系统耦合引擎模拟 ──────────────────────────────────
+// ── 三系统耦合引擎模拟（EventPool 已内嵌于 GameEngine）──────────────────────────────────
 
 /// 引擎模拟报告（含事件触发率）
 pub struct EngineSimReport {
@@ -313,59 +310,6 @@ pub struct EngineSimReport {
     pub victory_rate:         f64,
     /// 每个历史事件在多少比例的局中被触发（0.0-1.0）
     pub event_trigger_rates:  HashMap<String, f64>,
-}
-
-/// 根据引擎状态构建事件触发上下文
-fn build_trigger_ctx(engine: &GameEngine) -> TriggerContext {
-    TriggerContext {
-        day:                      engine.day,
-        napoleon_reputation:      engine.politics.legitimacy,
-        ney_loyalty:              engine.characters.loyalty("ney"),
-        ney_napoleon_relationship: engine.characters.relationship("ney", "napoleon"),
-        grouchy_loyalty:          engine.characters.loyalty("grouchy"),
-        fouche_loyalty:           engine.characters.loyalty("fouche"),
-        rouge_noir_index:         engine.politics.rouge_noir_index,
-    }
-}
-
-/// 将事件效果应用到引擎三系统
-fn apply_event_effects(engine: &mut GameEngine, effects: &EventEffects) {
-    let day = engine.day;
-    if let Some(d) = effects.ney_loyalty_delta {
-        engine.characters.modify_loyalty("ney", d, day, "event");
-    }
-    if let Some(d) = effects.fouche_loyalty_delta {
-        engine.characters.modify_loyalty("fouche", d, day, "event");
-    }
-    if let Some(d) = effects.military_support_delta {
-        engine.politics.modify_faction("military", d);
-    }
-    if let Some(d) = effects.nobility_support_delta {
-        engine.politics.modify_faction("nobility", d);
-    }
-    if let Some(d) = effects.populace_support_delta {
-        engine.politics.modify_faction("populace", d);
-    }
-    if let Some(d) = effects.liberals_support_delta {
-        engine.politics.modify_faction("liberals", d);
-    }
-    if let Some(d) = effects.rouge_noir_delta {
-        engine.politics.rouge_noir_index =
-            (engine.politics.rouge_noir_index + d).clamp(-100.0, 100.0);
-    }
-    if let Some(d) = effects.legitimacy_delta {
-        engine.politics.legitimacy = (engine.politics.legitimacy + d).clamp(0.0, 100.0);
-    }
-    if let Some(bonus) = effects.napoleon_morale_bonus {
-        engine.army.avg_morale = (engine.army.avg_morale + bonus).min(100.0);
-    }
-    if let Some(delta) = effects.military_available_troops_delta {
-        if delta > 0 {
-            engine.army.total_troops += delta as u32;
-        } else {
-            engine.army.total_troops = engine.army.total_troops.saturating_sub((-delta) as u32);
-        }
-    }
 }
 
 /// 根据引擎当天状态选择行动（Balanced策略）
@@ -394,35 +338,25 @@ fn engine_action<R: Rng>(engine: &GameEngine, rng: &mut R) -> PlayerAction {
     PlayerAction::Rest
 }
 
-/// 用完整 GameEngine + EventPool 运行 n_runs 局模拟
+/// 用完整 GameEngine（含内嵌 EventPool）运行 n_runs 局模拟
 pub fn run_engine_simulation(n_runs: u32, seed: u64) -> EngineSimReport {
-    const HISTORICAL_JSON: &str =
-        include_str!("../../../src/data/events/historical.json");
-
     let mut rng = StdRng::seed_from_u64(seed);
     let mut outcomes: HashMap<&'static str, u32> = HashMap::new();
     let mut event_counts: HashMap<String, u32> = HashMap::new();
 
     for _ in 0..n_runs {
         let mut engine = GameEngine::new();
-        let mut pool = EventPool::from_json(HISTORICAL_JSON)
-            .expect("historical.json parse error");
 
         // 最多跑到 Day 105，防止极端情况死循环
+        // 事件触发现已在 process_day 的 Dawn 阶段自动完成
         while !engine.is_over() && engine.current_day() <= 105 {
-            // Dawn：事件触发
-            let ctx = build_trigger_ctx(&engine);
-            let triggered = pool.trigger_all(&ctx, &mut rng);
-            for t in &triggered {
-                *event_counts.entry(t.id.clone()).or_insert(0) += 1;
-                apply_event_effects(&mut engine, &t.effects);
-            }
+            let action = engine_action(&engine, &mut rng);
+            engine.process_day(action, &mut rng);
+        }
 
-            // Action + Dusk（引擎内部结算）
-            if !engine.is_over() {
-                let action = engine_action(&engine, &mut rng);
-                engine.process_day(action, &mut rng);
-            }
+        // 统计本局触发的事件（每局最多触发一次）
+        for id in engine.triggered_events() {
+            *event_counts.entry(id.clone()).or_insert(0) += 1;
         }
 
         let result = engine.outcome().unwrap_or(GameOutcome::WaterlooDefeat);

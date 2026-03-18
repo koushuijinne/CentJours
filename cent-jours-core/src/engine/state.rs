@@ -8,6 +8,7 @@ use rand::Rng;
 use crate::battle::resolver::{ForceData, Terrain, BattleResult, resolve_battle};
 use crate::politics::system::{PoliticsState, default_policies};
 use crate::characters::network::{CharacterNetwork, historical_network_day1};
+use crate::events::pool::{EventPool, TriggerContext, EventEffects};
 
 // ── 游戏结局 ──────────────────────────────────────────
 
@@ -141,10 +142,16 @@ pub struct GameEngine {
     pub history:    Vec<DayEvent>,
     /// 游戏结局（Some = 游戏已结束）
     outcome:        Option<GameOutcome>,
+    /// 内嵌事件池（Dawn 阶段自动触发）
+    event_pool:     EventPool,
+    /// 已触发事件 ID 列表（按触发顺序）
+    triggered_event_ids: Vec<String>,
 }
 
 impl Default for GameEngine {
     fn default() -> Self {
+        const HISTORICAL_JSON: &str =
+            include_str!("../../../src/data/events/historical.json");
         Self {
             day:        1,
             phase:      TurnPhase::Dawn,
@@ -153,6 +160,9 @@ impl Default for GameEngine {
             army:       ArmyState::default(),
             history:    Vec::new(),
             outcome:    None,
+            event_pool: EventPool::from_json(HISTORICAL_JSON)
+                .expect("historical.json parse error"),
+            triggered_event_ids: Vec::new(),
         }
     }
 }
@@ -179,6 +189,11 @@ impl GameEngine {
         self.day
     }
 
+    /// 已触发的历史事件 ID 列表（按触发顺序）
+    pub fn triggered_events(&self) -> &[String] {
+        &self.triggered_event_ids
+    }
+
     // ── 回合驱动 ──────────────────────────────────────
 
     /// 处理一整天（Dawn → Action → Dusk）
@@ -186,8 +201,20 @@ impl GameEngine {
     pub fn process_day<R: Rng>(&mut self, action: PlayerAction, rng: &mut R) {
         if self.is_over() { return; }
 
-        // Dawn：日志记录、事件触发（可扩展）
+        // Dawn：触发历史事件，效果直接作用于三系统
         self.phase = TurnPhase::Dawn;
+        let ctx = self.build_trigger_ctx();
+        let triggered = self.event_pool.trigger_all(&ctx, rng);
+        for t in triggered {
+            self.triggered_event_ids.push(t.id.clone());
+            self.apply_event_effects(&t.effects);
+            self.history.push(DayEvent {
+                day:         self.day,
+                event_type:  "historical_event",
+                description: format!("[{}] {}", t.label, t.narrative),
+                effects:     vec![],
+            });
+        }
 
         // Action：执行玩家行动
         self.phase = TurnPhase::Action;
@@ -357,6 +384,62 @@ impl GameEngine {
             } else {
                 GameOutcome::WaterlooDefeat
             });
+        }
+    }
+
+    // ── 事件系统 ──────────────────────────────────────
+
+    /// 根据当前引擎状态构建事件触发上下文快照
+    fn build_trigger_ctx(&self) -> TriggerContext {
+        TriggerContext {
+            day:                       self.day,
+            napoleon_reputation:       self.politics.legitimacy,
+            ney_loyalty:               self.characters.loyalty("ney"),
+            ney_napoleon_relationship: self.characters.relationship("ney", "napoleon"),
+            grouchy_loyalty:           self.characters.loyalty("grouchy"),
+            fouche_loyalty:            self.characters.loyalty("fouche"),
+            rouge_noir_index:          self.politics.rouge_noir_index,
+        }
+    }
+
+    /// 将事件效果应用到三系统
+    fn apply_event_effects(&mut self, effects: &EventEffects) {
+        let day = self.day;
+        if let Some(d) = effects.ney_loyalty_delta {
+            self.characters.modify_loyalty("ney", d, day, "event");
+        }
+        if let Some(d) = effects.fouche_loyalty_delta {
+            self.characters.modify_loyalty("fouche", d, day, "event");
+        }
+        if let Some(d) = effects.military_support_delta {
+            self.politics.modify_faction("military", d);
+        }
+        if let Some(d) = effects.nobility_support_delta {
+            self.politics.modify_faction("nobility", d);
+        }
+        if let Some(d) = effects.populace_support_delta {
+            self.politics.modify_faction("populace", d);
+        }
+        if let Some(d) = effects.liberals_support_delta {
+            self.politics.modify_faction("liberals", d);
+        }
+        if let Some(d) = effects.rouge_noir_delta {
+            self.politics.rouge_noir_index =
+                (self.politics.rouge_noir_index + d).clamp(-100.0, 100.0);
+        }
+        if let Some(d) = effects.legitimacy_delta {
+            self.politics.legitimacy = (self.politics.legitimacy + d).clamp(0.0, 100.0);
+        }
+        if let Some(bonus) = effects.napoleon_morale_bonus {
+            self.army.avg_morale = (self.army.avg_morale + bonus).min(100.0);
+        }
+        if let Some(delta) = effects.military_available_troops_delta {
+            if delta > 0 {
+                self.army.total_troops += delta as u32;
+            } else {
+                self.army.total_troops =
+                    self.army.total_troops.saturating_sub((-delta) as u32);
+            }
         }
     }
 
@@ -584,6 +667,55 @@ mod tests {
         engine.process_day(PlayerAction::Rest, &mut rng);
         assert!(engine.politics.faction_support["military"] < mil_before,
             "兵力危机应降低军方支持");
+    }
+
+    // ── 事件系统集成 ──────────────────────────────────
+
+    #[test]
+    fn 引擎内部自动触发内伊倒戈() {
+        let mut engine = GameEngine::new();
+        let mut rng = seeded_rng();
+        // 推进到 Day 6（内伊倒戈窗口）
+        for _ in 1..6 {
+            engine.process_day(PlayerAction::Rest, &mut rng);
+        }
+        // 引擎应已自动触发并记录事件（或效果已应用）
+        assert!(
+            engine.triggered_events().iter().any(|id| id == "ney_defection")
+                || engine.characters.loyalty("ney") > 55.0,
+            "Day 6 前后应自动触发或尝试内伊倒戈"
+        );
+    }
+
+    #[test]
+    fn 事件只触发一次() {
+        let mut engine = GameEngine::new();
+        let mut rng = seeded_rng();
+        for _ in 0..20 {
+            engine.process_day(PlayerAction::Rest, &mut rng);
+        }
+        let ney_count = engine.triggered_events()
+            .iter()
+            .filter(|id| *id == "ney_defection")
+            .count();
+        assert!(ney_count <= 1, "内伊倒戈不应重复触发，实际触发 {} 次", ney_count);
+    }
+
+    #[test]
+    fn 触发事件被记录到历史() {
+        let mut engine = GameEngine::new();
+        let mut rng = seeded_rng();
+        for _ in 0..20 {
+            engine.process_day(PlayerAction::Rest, &mut rng);
+        }
+        // 如果有事件被触发，历史中应有对应记录
+        let event_ids = engine.triggered_events();
+        if !event_ids.is_empty() {
+            assert!(
+                engine.history.iter().any(|e| e.event_type == "historical_event"),
+                "触发的历史事件应出现在 history 日志中"
+            );
+        }
     }
 
     // ── 联军增长 ──────────────────────────────────────
