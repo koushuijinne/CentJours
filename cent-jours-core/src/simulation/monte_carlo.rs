@@ -343,6 +343,12 @@ fn apply_event_effects(engine: &mut GameEngine, effects: &EventEffects) {
     if let Some(d) = effects.nobility_support_delta {
         engine.politics.modify_faction("nobility", d);
     }
+    if let Some(d) = effects.populace_support_delta {
+        engine.politics.modify_faction("populace", d);
+    }
+    if let Some(d) = effects.liberals_support_delta {
+        engine.politics.modify_faction("liberals", d);
+    }
     if let Some(d) = effects.rouge_noir_delta {
         engine.politics.rouge_noir_index =
             (engine.politics.rouge_noir_index + d).clamp(-100.0, 100.0);
@@ -352,6 +358,13 @@ fn apply_event_effects(engine: &mut GameEngine, effects: &EventEffects) {
     }
     if let Some(bonus) = effects.napoleon_morale_bonus {
         engine.army.avg_morale = (engine.army.avg_morale + bonus).min(100.0);
+    }
+    if let Some(delta) = effects.military_available_troops_delta {
+        if delta > 0 {
+            engine.army.total_troops += delta as u32;
+        } else {
+            engine.army.total_troops = engine.army.total_troops.saturating_sub((-delta) as u32);
+        }
     }
 }
 

@@ -22,23 +22,113 @@
     "historical_note": "1815年3月14日，内伊率部在格勒诺布尔附近倒戈，这是百日王朝成功的关键转折点之一。"
   },
   {
-    "id": "grouchy_assignment",
-    "label": "格鲁希的任命",
-    "day_range": [85, 90],
+    "id": "elba_veterans_rally",
+    "label": "厄尔巴岛老兵归队",
+    "day_range": [2, 12],
     "trigger": {
-      "grouchy_loyalty_min": 60,
-      "day_min": 85
+      "napoleon_reputation_min": 40
     },
     "effects": {
-      "grouchy_assigned_pursuit": true,
-      "prussian_threat_reduced": true
+      "military_support_delta": 8,
+      "military_available_troops_delta": 3000,
+      "napoleon_morale_bonus": 5
     },
     "narratives": [
-      "格鲁希接过命令，仔细读了两遍。「追击普鲁士人。」他合上纸张，点了点头——谨慎、忠诚、一丝不苟。",
-      "他的参谋们说他听见了炮声，应该向滑铁卢方向进军。格鲁希摇摇头：命令是追击普鲁士人，就追击普鲁士人。",
-      "这个决定将被历史争论两个世纪。"
+      "他们翻越山路，有些人光着脚。没有人叫他们来——他们只是听说皇帝回来了，就上路了。",
+      "一个老近卫军士兵举着他在奥斯特里茨保存下来的旗帜。旗面褪色了，但他没有。"
     ],
-    "historical_note": "格鲁希未能在关键时刻赶到滑铁卢支援，部分原因是他过于字面地执行了拿破仑的追击命令。"
+    "historical_note": "拿破仑从厄尔巴岛带来的老兵随着北上吸引越来越多的旧部归队，兵力在一周内迅速扩张。"
+  },
+  {
+    "id": "grenoble_garrison_joins",
+    "label": "格勒诺布尔驻军倒戈",
+    "day_range": [7, 10],
+    "trigger": {
+      "napoleon_reputation_min": 50
+    },
+    "effects": {
+      "military_available_troops_delta": 6000,
+      "military_support_delta": 10,
+      "napoleon_morale_bonus": 8
+    },
+    "narratives": [
+      "守城的军官命令士兵开枪。没有人开枪。有人扔掉了帽子上的百合花徽章。",
+      "格勒诺布尔的城门从里面打开了。"
+    ],
+    "historical_note": "1815年3月7日，格勒诺布尔守军拒绝向拿破仑开枪，整营倒戈，这是百日北上途中决定性的一幕。"
+  },
+  {
+    "id": "congress_vienna_ultimatum",
+    "label": "维也纳会议宣布拿破仑为公敌",
+    "day_range": [12, 16],
+    "trigger": {
+      "day_min": 12
+    },
+    "effects": {
+      "coalition_troops_bonus": 30000,
+      "legitimacy_delta": -5,
+      "nobility_support_delta": -8
+    },
+    "narratives": [
+      "维也纳的消息在一夜之间抹去了所有谈判的可能性。七大强国宣布拿破仑·波拿巴是世界和平的公敌。",
+      "这不是针对法国的战争，是针对一个人的战争。欧洲决定：百日必须结束。",
+      "大使馆纷纷关门。战争没有开始——它只是把自己的面具摘掉了。"
+    ],
+    "historical_note": "1815年3月13日，维也纳会议通过决议，宣布拿破仑是欧洲和平的破坏者，联军开始动员。"
+  },
+  {
+    "id": "allies_mobilization",
+    "label": "反法同盟正式宣战",
+    "day_range": [15, 20],
+    "trigger": {
+      "day_min": 15
+    },
+    "effects": {
+      "coalition_troops_bonus": 50000,
+      "legitimacy_delta": -3
+    },
+    "narratives": [
+      "英国、普鲁士、奥地利、俄国——七十万大军正在向法国边境行进。",
+      "战争部长的报告只有一行数字：三十个步兵师，六个骑兵军，七百门火炮。"
+    ],
+    "historical_note": "反法同盟调集约700,000人的联军，分路向法国推进，拿破仑必须在联军会合前主动出击。"
+  },
+  {
+    "id": "return_to_paris",
+    "label": "回到巴黎",
+    "day_range": [19, 23],
+    "trigger": {
+      "napoleon_reputation_min": 60
+    },
+    "effects": {
+      "legitimacy_delta": 10,
+      "military_support_delta": 8,
+      "populace_support_delta": 12,
+      "rouge_noir_delta": 10
+    },
+    "narratives": [
+      "巴黎的街道上，人群从窗口探出身子。有人哭泣，有人欢呼，有人只是沉默地看着。皇帝回来了。",
+      "二十天前他带着一千人离开厄尔巴岛。今天他带着法国回到了巴黎。"
+    ],
+    "historical_note": "1815年3月20日，拿破仑进入杜伊勒里宫，路易十八仓皇出逃。百日王朝正式开始。"
+  },
+  {
+    "id": "louis_xviii_flees",
+    "label": "路易十八出逃",
+    "day_range": [19, 22],
+    "trigger": {
+      "napoleon_reputation_min": 60
+    },
+    "effects": {
+      "rouge_noir_delta": -8,
+      "nobility_support_delta": -15,
+      "liberals_support_delta": 5
+    },
+    "narratives": [
+      "他在夜里走的，带走了皇家珠宝和一部分王室卫队。杜伊勒里宫的床还没有凉透。",
+      "波旁王朝的护卫队换上了三色旗帽徽——不是因为他们热爱革命，而是因为风向变了。"
+    ],
+    "historical_note": "路易十八于3月19日夜间出逃，前往根特，旧贵族和保皇派陷入恐慌，支持度暴跌。"
   },
   {
     "id": "davout_paris_assignment",
@@ -59,6 +149,25 @@
     "historical_note": "达武被任命为战争部长，镇守巴黎，是拿破仑百日期间政治稳定的重要支柱。"
   },
   {
+    "id": "additional_act_constitution",
+    "label": "颁布帝国补充法案",
+    "day_range": [25, 40],
+    "trigger": {
+      "rouge_noir_index_max": 20
+    },
+    "effects": {
+      "liberals_support_delta": 15,
+      "rouge_noir_delta": -10,
+      "legitimacy_delta": 5,
+      "nobility_support_delta": -5
+    },
+    "narratives": [
+      "法律文本很长，但核心只有一句话：皇帝承认议会的权力。自由派欢呼。保皇派沉默。",
+      "这份宪法是他们用六周讨论出来的。没有人完全满意——这大概就是宪政的本质。"
+    ],
+    "historical_note": "1815年4月22日颁布的帝国补充法案，试图以自由宪政框架稳定国内政治，但引发了皇权与议会权力的长期博弈。"
+  },
+  {
     "id": "fouche_conspiracy",
     "label": "富歇的暗中联络",
     "day_range": [30, 60],
@@ -68,8 +177,7 @@
     },
     "effects": {
       "fouche_loyalty_delta": -15,
-      "legitimacy_delta": -5,
-      "player_informed": true
+      "legitimacy_delta": -5
     },
     "narratives": [
       "有人在信件中看到了富歇的笔迹——那个永远在为自己留退路的警察部长，正在和维也纳通信。",
@@ -78,23 +186,94 @@
     "historical_note": "富歇在百日期间暗中与同盟国保持联络，最终在失败后协助推翻了拿破仑政权。"
   },
   {
-    "id": "allies_mobilization",
-    "label": "反法同盟正式宣战",
-    "day_range": [15, 20],
+    "id": "royalist_uprising_vendee",
+    "label": "旺代保皇派起义",
+    "day_range": [30, 55],
+    "trigger": {
+      "rouge_noir_index_max": -25
+    },
+    "effects": {
+      "military_available_troops_delta": -10000,
+      "military_support_delta": -5,
+      "legitimacy_delta": -8,
+      "rouge_noir_delta": -5
+    },
+    "narratives": [
+      "旺代再次燃起战火。那片土地上的人们不是在为波旁王室战斗——他们是在反对一切来自巴黎的命令。",
+      "镇压旺代需要兵力。每一个在内战中死去的士兵，都是不能去比利时的士兵。"
+    ],
+    "historical_note": "百日期间旺代地区爆发了保皇派武装起义，迫使拿破仑抽调数万兵力用于内部镇压，削弱了北线兵力。"
+  },
+  {
+    "id": "british_subsidies_coalition",
+    "label": "英国向盟国提供战争补贴",
+    "day_range": [15, 30],
     "trigger": {
       "day_min": 15
     },
     "effects": {
-      "coalition_troops_bonus": 50000,
-      "diplomacy_window_closed": true,
-      "military_threat_level": "high"
+      "coalition_troops_bonus": 20000,
+      "legitimacy_delta": -2
     },
     "narratives": [
-      "维也纳的消息在一夜之间抹去了所有谈判的可能性。七大强国宣布拿破仑·波拿巴是世界和平的公敌。",
-      "这不是针对法国的战争，是针对一个人的战争。欧洲决定：百日必须结束。",
-      "大使馆纷纷关门。战争没有开始——它只是把自己的面具摘掉了。"
+      "伦敦划拨了五百万英镑。奥地利、普鲁士、荷兰的军队开始加速集结。钱永远是战争最快的燃料。",
+      "威灵顿在布鲁塞尔收到了拨款通知，他的回复只有两个字：足够了。"
     ],
-    "historical_note": "1815年3月13日，维也纳会议通过决议，宣布拿破仑是欧洲和平的破坏者，联军开始动员。"
+    "historical_note": "英国向反法同盟各国提供大额战争补贴，加速了各国军队的动员速度。"
+  },
+  {
+    "id": "imperial_guard_rebuilt",
+    "label": "老近卫军重建完成",
+    "day_range": [40, 55],
+    "trigger": {
+      "napoleon_reputation_min": 55
+    },
+    "effects": {
+      "military_support_delta": 15,
+      "military_available_troops_delta": 12000,
+      "napoleon_morale_bonus": 10,
+      "rouge_noir_delta": 8
+    },
+    "narratives": [
+      "他们来自各地，有些人带着当年的旧制服，有些人只有记忆。老近卫军又在巴黎阅兵了。",
+      "十五年的战争没有让他们忘记怎么列队，怎么行军，怎么在炮火中保持阵形。"
+    ],
+    "historical_note": "百日王朝期间拿破仑重建了帝国近卫军精锐，这支部队是其最终防线，也是最后在滑铁卢发动冲锋的力量。"
+  },
+  {
+    "id": "diplomatic_offer_rejected",
+    "label": "秘密外交尝试失败",
+    "day_range": [20, 50],
+    "trigger": {
+      "rouge_noir_index_max": 30
+    },
+    "effects": {
+      "legitimacy_delta": -3,
+      "nobility_support_delta": -5
+    },
+    "narratives": [
+      "使者带回了维也纳的回复：同盟国拒绝任何形式的谈判，只要拿破仑在位一天，战争就不会结束。",
+      "他把信扔进了壁炉。他早就知道答案了。他只是想确认一下。"
+    ],
+    "historical_note": "拿破仑曾尝试通过外交渠道寻求和平解决，但维也纳会议各国坚决拒绝与他谈判，战争无法避免。"
+  },
+  {
+    "id": "chamber_opposition_grows",
+    "label": "代表院批评声浪上升",
+    "day_range": [35, 65],
+    "trigger": {
+      "rouge_noir_index_max": 15
+    },
+    "effects": {
+      "liberals_support_delta": -10,
+      "legitimacy_delta": -6,
+      "rouge_noir_delta": -5
+    },
+    "narratives": [
+      "拉法耶特在讲台上说：我们支持皇帝反抗入侵，但我们不支持独裁。掌声和嘘声同时响起。",
+      "议会从来不是他的地方。他习惯了命令，不习惯辩论。"
+    ],
+    "historical_note": "代表院（下议院）中自由派议员对拿破仑的战时权力日益不满，政治内耗成为百日失败的原因之一。"
   },
   {
     "id": "ligny_victory",
@@ -102,18 +281,88 @@
     "day_range": [82, 84],
     "trigger": {
       "day_min": 82,
-      "napoleon_reputation_min": 60
+      "napoleon_reputation_min": 50
     },
     "effects": {
-      "prussian_army_weakened": true,
       "military_support_delta": 15,
-      "napoleon_morale_bonus": 10
+      "napoleon_morale_bonus": 10,
+      "coalition_troops_bonus": -30000
     },
     "narratives": [
       "布吕歇尔从马上摔了下来，被马踩过，差点死在战场上。这位七十三岁的老元帅被部下救走，但他的军队溃散了。",
       "六月十六日，这是拿破仑最后一次获得完全意义上的胜利。他自己并不知道这一点。"
     ],
     "historical_note": "利尼之战（1815年6月16日），拿破仑击败普鲁士军，但未能彻底歼灭，为两天后的滑铁卢埋下隐患。"
+  },
+  {
+    "id": "quatre_bras_stalemate",
+    "label": "四臂村战斗",
+    "day_range": [82, 84],
+    "trigger": {
+      "day_min": 82
+    },
+    "effects": {
+      "military_support_delta": -5,
+      "napoleon_morale_bonus": -5
+    },
+    "narratives": [
+      "内伊在四臂村浪费了一整天。他离威灵顿只有几公里，却既没有赢得决定性胜利，也没有完全切断普军退路。",
+      "如果那天他行动再快一些——但历史不接受假设条件句。"
+    ],
+    "historical_note": "四臂村战斗（1815年6月16日）与利尼之战同日，内伊未能有效歼灭威灵顿的侧翼，埋下了滑铁卢失败的伏笔。"
+  },
+  {
+    "id": "grouchy_assignment",
+    "label": "格鲁希的任命",
+    "day_range": [85, 90],
+    "trigger": {
+      "grouchy_loyalty_min": 60,
+      "day_min": 85
+    },
+    "effects": {
+      "coalition_troops_bonus": -20000
+    },
+    "narratives": [
+      "格鲁希接过命令，仔细读了两遍。「追击普鲁士人。」他合上纸张，点了点头——谨慎、忠诚、一丝不苟。",
+      "他的参谋们说他听见了炮声，应该向滑铁卢方向进军。格鲁希摇摇头：命令是追击普鲁士人，就追击普鲁士人。",
+      "这个决定将被历史争论两个世纪。"
+    ],
+    "historical_note": "格鲁希未能在关键时刻赶到滑铁卢支援，部分原因是他过于字面地执行了拿破仑的追击命令。"
+  },
+  {
+    "id": "prussian_regroup_wavre",
+    "label": "普军在瓦夫尔重整旗鼓",
+    "day_range": [84, 87],
+    "trigger": {
+      "day_min": 84
+    },
+    "effects": {
+      "coalition_troops_bonus": 40000,
+      "legitimacy_delta": -3
+    },
+    "narratives": [
+      "布吕歇尔在担架上对他的参谋长说：我要么带着你们前进，要么让你们把我抬到战场上。",
+      "普鲁士军队在利尼后退的不是溃败，而是战略撤退——一个很重要的区别，拿破仑高估了自己造成的伤害。"
+    ],
+    "historical_note": "普鲁士军队在利尼失败后快速在瓦夫尔重整，两天后7万人赶到滑铁卢战场，成为决定性力量。"
+  },
+  {
+    "id": "wellington_ridge_position",
+    "label": "威灵顿占据圣让山脊",
+    "day_range": [88, 93],
+    "trigger": {
+      "day_min": 88,
+      "coalition_not_defeated": true
+    },
+    "effects": {
+      "legitimacy_delta": -4,
+      "napoleon_morale_bonus": -5
+    },
+    "narratives": [
+      "威灵顿骑马沿着山脊走了一遍，然后下马，把望远镜收起来。「这里，」他说，「就是这里。」",
+      "那条山脊是他在比利时地图上看过的。他知道守住那里需要什么，也知道攻克那里有多难。"
+    ],
+    "historical_note": "威灵顿选择圣让山脊作为防线，利用反斜面隐藏兵力，这一阵地选择被认为是滑铁卢战役胜利的关键因素之一。"
   },
   {
     "id": "waterloo_eve",
@@ -124,14 +373,70 @@
       "coalition_not_defeated": true
     },
     "effects": {
-      "waterloo_battle_triggered": true,
-      "weather_penalty": true,
-      "delayed_attack": true
+      "napoleon_morale_bonus": -8,
+      "legitimacy_delta": -2
     },
     "narratives": [
       "雨下了一整夜。拿破仑决定等地面干燥后再发动进攻——他的炮兵需要硬实的土地。这个决定让他失去了两个小时。",
       "六月十七日的夜晚，两支军队在圣让山脊两侧各自等待着早晨。历史也在等待。"
     ],
     "historical_note": "1815年6月17日夜间降雨导致拿破仑推迟了翌日进攻，这被一些史学家认为是关键失误之一。"
+  },
+  {
+    "id": "old_guard_last_charge",
+    "label": "老近卫军最后的冲锋",
+    "day_range": [96, 100],
+    "trigger": {
+      "day_min": 96,
+      "napoleon_reputation_min": 40
+    },
+    "effects": {
+      "military_support_delta": 20,
+      "napoleon_morale_bonus": 15,
+      "legitimacy_delta": 8
+    },
+    "narratives": [
+      "卡布罗纳举剑冲向英国方阵。他知道他们不会赢——但这不是关于赢的问题。",
+      "近卫军不投降。这不是命令，是他们自己选择的。"
+    ],
+    "historical_note": "老近卫军在滑铁卢战役最后阶段发动冲锋，历史上以这支部队的最终溃败标志着百日王朝的终结。"
+  },
+  {
+    "id": "abdication_pressure",
+    "label": "议院施压要求退位",
+    "day_range": [97, 100],
+    "trigger": {
+      "day_min": 97,
+      "rouge_noir_index_max": 0
+    },
+    "effects": {
+      "legitimacy_delta": -15,
+      "liberals_support_delta": -20,
+      "rouge_noir_delta": -15
+    },
+    "narratives": [
+      "拉法耶特站起来说：如果皇帝不退位，法国将失去更多。大厅里没有人反驳他。",
+      "他曾经解散过元老院。但这一次，他无法解散代表院——这是他自己承诺的宪政。"
+    ],
+    "historical_note": "滑铁卢失败后，代表院在拉法耶特领导下要求拿破仑退位，最终于1815年6月22日完成第二次退位。"
+  },
+  {
+    "id": "paris_falls_to_allies",
+    "label": "盟军逼近巴黎",
+    "day_range": [98, 100],
+    "trigger": {
+      "day_min": 98,
+      "coalition_not_defeated": true
+    },
+    "effects": {
+      "legitimacy_delta": -12,
+      "populace_support_delta": -15,
+      "military_support_delta": -18
+    },
+    "narratives": [
+      "斥候报告：普鲁士骑兵已经过了蒙特里。从那里到巴黎，快马只需三天。",
+      "街道上的人群不再欢呼了。他们开始清点家产，打包箱子，询问船期。"
+    ],
+    "historical_note": "滑铁卢后联军迅速向巴黎推进，7月7日进入巴黎，百日王朝正式结束。"
   }
 ]

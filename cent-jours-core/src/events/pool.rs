@@ -28,13 +28,15 @@ pub struct EventEffects {
     pub ney_loyalty_delta:              Option<f64>,
     pub military_support_delta:         Option<f64>,
     pub nobility_support_delta:         Option<f64>,
+    pub populace_support_delta:         Option<f64>,
+    pub liberals_support_delta:         Option<f64>,
     pub rouge_noir_delta:               Option<f64>,
     pub legitimacy_delta:               Option<f64>,
     pub fouche_loyalty_delta:           Option<f64>,
     pub paris_security_bonus:           Option<f64>,
     pub political_stability_bonus:      Option<f64>,
     pub military_available_troops_delta: Option<i64>,
-    pub coalition_troops_bonus:         Option<u32>,
+    pub coalition_troops_bonus:         Option<i32>,  // 允许负值（削减联军）
     pub napoleon_morale_bonus:          Option<f64>,
 }
 
@@ -225,7 +227,7 @@ mod tests {
     #[test]
     fn json加载成功且事件数量正确() {
         let pool = EventPool::from_json(HISTORICAL_JSON).expect("JSON解析失败");
-        assert!(pool.len() >= 6, "应有至少6个历史事件，实际: {}", pool.len());
+        assert!(pool.len() >= 20, "应有至少20个历史事件，实际: {}", pool.len());
     }
 
     #[test]
