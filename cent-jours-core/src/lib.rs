@@ -9,6 +9,7 @@ pub mod battle;
 pub mod characters;
 pub mod engine;
 pub mod events;
+pub mod narratives;
 pub mod politics;
 pub mod simulation;
 
