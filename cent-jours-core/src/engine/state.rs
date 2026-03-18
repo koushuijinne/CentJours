@@ -9,6 +9,7 @@ use crate::battle::resolver::{ForceData, Terrain, BattleResult, resolve_battle};
 use crate::politics::system::{PoliticsState, default_policies};
 use crate::characters::network::{CharacterNetwork, historical_network_day1};
 use crate::events::pool::{EventPool, TriggerContext, EventEffects};
+use crate::narratives::{NarrativePool, policy_narrative_key};
 
 // ── 游戏结局 ──────────────────────────────────────────
 
@@ -65,6 +66,18 @@ pub struct DayEvent {
     pub description: String,
     /// 事件对三系统的影响摘要
     pub effects:     Vec<String>,
+}
+
+// ── 每日叙事报告 ──────────────────────────────────────
+
+/// `process_day()` 完成后可从 `engine.last_report()` 获取的叙事文本
+#[derive(Debug, Clone)]
+pub struct DayReport {
+    pub day:         u32,
+    /// 司汤达当天的日记评论（基于玩家行动类型）
+    pub stendhal:    Option<String>,
+    /// 普通人视角的后果片段（基于玩家行动类型）
+    pub consequence: Option<String>,
 }
 
 // ── 全局游戏状态 ──────────────────────────────────────
@@ -130,6 +143,20 @@ impl ArmyState {
     }
 }
 
+// ── 叙事 key 提取 ─────────────────────────────────────
+
+/// 从 PlayerAction 提取叙事 key 和"是否战斗"标志。
+/// 战斗结果（胜/败）要在 execute_action 之后才能确定，所以返回 is_battle=true。
+fn narrative_key_for_action(action: &PlayerAction) -> (&'static str, bool) {
+    match action {
+        PlayerAction::LaunchBattle { .. }       => ("", true),
+        PlayerAction::EnactPolicy { policy_id } =>
+            (policy_narrative_key(policy_id).unwrap_or(""), false),
+        PlayerAction::BoostLoyalty { .. }       => ("boost_loyalty", false),
+        PlayerAction::Rest                      => ("", false),
+    }
+}
+
 // ── 核心引擎 ──────────────────────────────────────────
 
 /// 三系统耦合游戏引擎
@@ -146,6 +173,10 @@ pub struct GameEngine {
     event_pool:     EventPool,
     /// 已触发事件 ID 列表（按触发顺序）
     triggered_event_ids: Vec<String>,
+    /// 叙事文本池（司汤达日记 + 后果片段）
+    narratives:     NarrativePool,
+    /// 最近一天的叙事报告（可供 UI 层读取）
+    last_report:    Option<DayReport>,
 }
 
 impl Default for GameEngine {
@@ -163,6 +194,8 @@ impl Default for GameEngine {
             event_pool: EventPool::from_json(HISTORICAL_JSON)
                 .expect("historical.json parse error"),
             triggered_event_ids: Vec::new(),
+            narratives:  NarrativePool::new(),
+            last_report: None,
         }
     }
 }
@@ -194,6 +227,11 @@ impl GameEngine {
         &self.triggered_event_ids
     }
 
+    /// 最近一天的叙事报告（游戏刚开始还没处理过任何天时为 None）
+    pub fn last_report(&self) -> Option<&DayReport> {
+        self.last_report.as_ref()
+    }
+
     // ── 回合驱动 ──────────────────────────────────────
 
     /// 处理一整天（Dawn → Action → Dusk）
@@ -216,8 +254,11 @@ impl GameEngine {
             });
         }
 
-        // Action：执行玩家行动
+        // Action：提前提取叙事 key（action 下面会被消耗）
         self.phase = TurnPhase::Action;
+        let (base_key, is_battle) = narrative_key_for_action(&action);
+        let victories_before = self.army.victories;
+        let defeats_before   = self.army.defeats;
         let events = self.execute_action(action, rng);
 
         // Dusk：系统结算
@@ -228,6 +269,16 @@ impl GameEngine {
         for e in events {
             self.history.push(e);
         }
+
+        // 填充叙事报告（战斗结果在 execute_action 后才知道）
+        let narrative_key = if is_battle {
+            if self.army.victories > victories_before      { "battle_victory" }
+            else if self.army.defeats > defeats_before     { "battle_defeat"  }
+            else                                           { ""               } // 平局无叙事
+        } else {
+            base_key
+        };
+        self.last_report = Some(self.build_day_report(narrative_key, rng));
 
         // 推进日期
         self.day += 1;
@@ -384,6 +435,20 @@ impl GameEngine {
             } else {
                 GameOutcome::WaterlooDefeat
             });
+        }
+    }
+
+    // ── 叙事系统 ──────────────────────────────────────
+
+    /// 根据行动类型和战斗结果构建当日叙事报告
+    fn build_day_report<R: Rng>(&self, narrative_key: &str, rng: &mut R) -> DayReport {
+        if narrative_key.is_empty() {
+            return DayReport { day: self.day, stendhal: None, consequence: None };
+        }
+        DayReport {
+            day:         self.day,
+            stendhal:    self.narratives.pick_stendhal(narrative_key, rng),
+            consequence: self.narratives.pick_consequence(narrative_key, rng),
         }
     }
 
@@ -667,6 +732,43 @@ mod tests {
         engine.process_day(PlayerAction::Rest, &mut rng);
         assert!(engine.politics.faction_support["military"] < mil_before,
             "兵力危机应降低军方支持");
+    }
+
+    // ── 叙事引擎集成 ──────────────────────────────────
+
+    #[test]
+    fn 执行征兵政策后有叙事报告() {
+        let mut engine = GameEngine::new();
+        let mut rng = seeded_rng();
+        engine.process_day(PlayerAction::EnactPolicy { policy_id: "conscription" }, &mut rng);
+        let report = engine.last_report().expect("执行政策后应有叙事报告");
+        assert!(report.stendhal.is_some(), "征兵令应有司汤达评论");
+        assert!(report.consequence.is_some(), "征兵令应有后果片段");
+    }
+
+    #[test]
+    fn 执行休整后无叙事文本() {
+        let mut engine = GameEngine::new();
+        let mut rng = seeded_rng();
+        engine.process_day(PlayerAction::Rest, &mut rng);
+        let report = engine.last_report().expect("执行后应有报告");
+        assert!(report.stendhal.is_none(), "Rest 不应有司汤达文本");
+        assert!(report.consequence.is_none(), "Rest 不应有后果片段");
+    }
+
+    #[test]
+    fn 强化忠诚后有司汤达文本() {
+        let mut engine = GameEngine::new();
+        let mut rng = seeded_rng();
+        engine.process_day(PlayerAction::BoostLoyalty { general_id: "ney".to_string() }, &mut rng);
+        let report = engine.last_report().expect("BoostLoyalty 后应有报告");
+        assert!(report.stendhal.is_some(), "强化忠诚应有司汤达评论");
+    }
+
+    #[test]
+    fn 游戏开始前无叙事报告() {
+        let engine = GameEngine::new();
+        assert!(engine.last_report().is_none(), "初始状态应无叙事报告");
     }
 
     // ── 事件系统集成 ──────────────────────────────────
