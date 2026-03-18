@@ -13,7 +13,7 @@
       "political_influence": 50,
       "relationships": {
         "napoleon": 60,
-        "grouchy": 30,
+        "grouchy": -30,
         "davout": 45,
         "soult": 40,
         "drouet": 55
@@ -36,7 +36,7 @@
       "political_influence": 25,
       "relationships": {
         "napoleon": 72,
-        "ney": 30,
+        "ney": -30,
         "davout": 60,
         "soult": 50,
         "drouet": 45
@@ -44,7 +44,7 @@
       "special_trait": "literal_minded",
       "starting_location": "paris",
       "available_from_day": 20,
-      "historical_note": "百日王朝后期被任命为元帅。在滑铁卢战役中未能及时增援，争议至今。其谨慎性格导致他严格执行"追击普鲁士"命令而未能随机应变。",
+      "historical_note": "百日王朝后期被任命为元帅。在滑铁卢战役中未能及时增援，争议至今。其谨慎性格导致他严格执行「追击普鲁士」命令而未能随机应变。",
       "key_events": ["grouchy_appointment_day85", "wavre_pursuit", "waterloo_absence"]
     },
     {
@@ -244,7 +244,7 @@
     {
       "id": "carnot",
       "name": "Lazare Carnot",
-      "title": "\"胜利的组织者\"",
+      "title": "胜利的组织者",
       "role": "politician",
       "loyalty": 70,
       "temperament": "balanced",

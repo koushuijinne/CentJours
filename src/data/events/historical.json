@@ -4,9 +4,9 @@
     "label": "内伊倒戈",
     "day_range": [5, 7],
     "trigger": {
-      "napoleon_reputation_min": 55,
-      "ney_loyalty_min": 55,
-      "ney_napoleon_relationship_min": 60
+      "napoleon_reputation_min": 48,
+      "ney_loyalty_min": 52,
+      "ney_napoleon_relationship_min": 55
     },
     "effects": {
       "ney_loyalty_delta": 35,
