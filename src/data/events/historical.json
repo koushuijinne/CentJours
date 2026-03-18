@@ -1,0 +1,137 @@
+[
+  {
+    "id": "ney_defection",
+    "label": "内伊倒戈",
+    "day_range": [5, 7],
+    "trigger": {
+      "napoleon_reputation_min": 55,
+      "ney_loyalty_min": 55,
+      "ney_napoleon_relationship_min": 60
+    },
+    "effects": {
+      "ney_loyalty_delta": 35,
+      "military_support_delta": 12,
+      "nobility_support_delta": -10,
+      "rouge_noir_delta": 5
+    },
+    "narratives": [
+      "内伊在格勒诺布尔城外勒住马缰，久久凝视山坡上那面已经展开的鹰旗。「皇帝」——他低声说，就好像这个词本身就能解释一切。",
+      "他带来的六千人没有开一枪。他们只是把枪托朝天，走向了那个他们曾经跟随过的人。",
+      "路易十八派他来抓拿破仑，他却把自己送了回去。历史有时候就是这么简单。"
+    ],
+    "historical_note": "1815年3月14日，内伊率部在格勒诺布尔附近倒戈，这是百日王朝成功的关键转折点之一。"
+  },
+  {
+    "id": "grouchy_assignment",
+    "label": "格鲁希的任命",
+    "day_range": [85, 90],
+    "trigger": {
+      "grouchy_loyalty_min": 60,
+      "day_min": 85
+    },
+    "effects": {
+      "grouchy_assigned_pursuit": true,
+      "prussian_threat_reduced": true
+    },
+    "narratives": [
+      "格鲁希接过命令，仔细读了两遍。「追击普鲁士人。」他合上纸张，点了点头——谨慎、忠诚、一丝不苟。",
+      "他的参谋们说他听见了炮声，应该向滑铁卢方向进军。格鲁希摇摇头：命令是追击普鲁士人，就追击普鲁士人。",
+      "这个决定将被历史争论两个世纪。"
+    ],
+    "historical_note": "格鲁希未能在关键时刻赶到滑铁卢支援，部分原因是他过于字面地执行了拿破仑的追击命令。"
+  },
+  {
+    "id": "davout_paris_assignment",
+    "label": "达武留守巴黎",
+    "day_range": [20, 30],
+    "trigger": {
+      "davout_loyalty_min": 75
+    },
+    "effects": {
+      "paris_security_bonus": 20,
+      "political_stability_bonus": 8,
+      "military_available_troops_delta": -8000
+    },
+    "narratives": [
+      "达武没有表现出任何失望。他接过了战争部长的任命书，像接过一份战场命令一样，立刻问：现有多少人可以调度？",
+      "这是拿破仑最信任的元帅，也是最不需要战场荣耀的一个。巴黎需要他，这就够了。"
+    ],
+    "historical_note": "达武被任命为战争部长，镇守巴黎，是拿破仑百日期间政治稳定的重要支柱。"
+  },
+  {
+    "id": "fouche_conspiracy",
+    "label": "富歇的暗中联络",
+    "day_range": [30, 60],
+    "trigger": {
+      "fouche_loyalty_max": 50,
+      "rouge_noir_index_max": -20
+    },
+    "effects": {
+      "fouche_loyalty_delta": -15,
+      "legitimacy_delta": -5,
+      "player_informed": true
+    },
+    "narratives": [
+      "有人在信件中看到了富歇的笔迹——那个永远在为自己留退路的警察部长，正在和维也纳通信。",
+      "他从不背叛，他只是——从不把所有赌注压在同一匹马上。"
+    ],
+    "historical_note": "富歇在百日期间暗中与同盟国保持联络，最终在失败后协助推翻了拿破仑政权。"
+  },
+  {
+    "id": "allies_mobilization",
+    "label": "反法同盟正式宣战",
+    "day_range": [15, 20],
+    "trigger": {
+      "day_min": 15
+    },
+    "effects": {
+      "coalition_troops_bonus": 50000,
+      "diplomacy_window_closed": true,
+      "military_threat_level": "high"
+    },
+    "narratives": [
+      "维也纳的消息在一夜之间抹去了所有谈判的可能性。七大强国宣布拿破仑·波拿巴是世界和平的公敌。",
+      "这不是针对法国的战争，是针对一个人的战争。欧洲决定：百日必须结束。",
+      "大使馆纷纷关门。战争没有开始——它只是把自己的面具摘掉了。"
+    ],
+    "historical_note": "1815年3月13日，维也纳会议通过决议，宣布拿破仑是欧洲和平的破坏者，联军开始动员。"
+  },
+  {
+    "id": "ligny_victory",
+    "label": "利尼大捷",
+    "day_range": [82, 84],
+    "trigger": {
+      "day_min": 82,
+      "napoleon_reputation_min": 60
+    },
+    "effects": {
+      "prussian_army_weakened": true,
+      "military_support_delta": 15,
+      "napoleon_morale_bonus": 10
+    },
+    "narratives": [
+      "布吕歇尔从马上摔了下来，被马踩过，差点死在战场上。这位七十三岁的老元帅被部下救走，但他的军队溃散了。",
+      "六月十六日，这是拿破仑最后一次获得完全意义上的胜利。他自己并不知道这一点。"
+    ],
+    "historical_note": "利尼之战（1815年6月16日），拿破仑击败普鲁士军，但未能彻底歼灭，为两天后的滑铁卢埋下隐患。"
+  },
+  {
+    "id": "waterloo_eve",
+    "label": "滑铁卢前夜",
+    "day_range": [94, 95],
+    "trigger": {
+      "day_min": 94,
+      "coalition_not_defeated": true
+    },
+    "effects": {
+      "waterloo_battle_triggered": true,
+      "weather_penalty": true,
+      "delayed_attack": true
+    },
+    "narratives": [
+      "雨下了一整夜。拿破仑决定等地面干燥后再发动进攻——他的炮兵需要硬实的土地。这个决定让他失去了两个小时。",
+      "六月十七日的夜晚，两支军队在圣让山脊两侧各自等待着早晨。历史也在等待。"
+    ],
+    "historical_note": "1815年6月17日夜间降雨导致拿破仑推迟了翌日进攻，这被一些史学家认为是关键失误之一。"
+  }
+]

@@ -7,6 +7,8 @@
 
 pub mod battle;
 pub mod characters;
+pub mod engine;
+pub mod events;
 pub mod politics;
 pub mod simulation;
 
