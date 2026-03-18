@@ -23,7 +23,7 @@ pub const FACTION_WEIGHTS: [(&str, f64); 4] = [
     ("military", 0.25),
 ];
 
-pub const FACTION_RECOVERY_RATE: f64 = 0.4;   // 每日均衡恢复速率
+pub const FACTION_RECOVERY_RATE: f64 = 0.8;   // 每日均衡恢复速率（提升：帮助军事策略恢复政治稳定）
 
 // ── 政策结构 ──────────────────────────────────────────
 

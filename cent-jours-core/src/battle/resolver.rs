@@ -146,7 +146,7 @@ fn calculate_force_score(force: &ForceData, is_defender: bool, terrain: Terrain)
 }
 
 /// 根据力量比判断战斗结果
-fn ratio_to_result(ratio: f64) -> BattleResult {
+pub fn ratio_to_result(ratio: f64) -> BattleResult {
     if      ratio > 1.5 { BattleResult::DecisiveVictory }
     else if ratio > 1.1 { BattleResult::MarginalVictory }
     else if ratio > 0.9 { BattleResult::Stalemate }

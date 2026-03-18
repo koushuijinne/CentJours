@@ -132,33 +132,66 @@ pub fn simulate_one_game(strategy: PlayerStrategy, rng: &mut StdRng) -> GameReco
         if BATTLE_DAYS.contains(&day) {
             battles_fought += 1;
 
-            let enemy_troops = if day < 80 {
+            // Day 80+ 联军规模大幅提升（历史：威灵顿+布吕歇尔共200k+，且已全速集结）
+            // 需要额外±25%战场迷雾随机因子（滑铁卢特殊规则：命运之战）
+            let is_decisive_battle = day >= 80;
+            let enemy_troops = if !is_decisive_battle {
                 8_000 + (coalition_strength * 20.0) as u32
             } else {
-                50_000 + (coalition_strength * 100.0) as u32
+                // 决战：联军已在比利时集结，但仍有战场迷雾窗口
+                // 目标：拿破仑初始胜率约23%（±25%混沌因子后）
+                70_000 + (coalition_strength * 1_400.0) as u32
             };
 
             let napoleon_force = ForceData { troops, morale, fatigue, general_skill: 90.0, supply_ok: true };
-            let enemy_force    = ForceData { troops: enemy_troops, morale: 70.0, fatigue: 20.0, general_skill: 60.0, supply_ok: true };
+            let enemy_force    = ForceData {
+                troops: enemy_troops, morale: 72.0, fatigue: 15.0,
+                general_skill: 72.0, supply_ok: true
+            };
             let terrain = [Terrain::Plains, Terrain::Plains, Terrain::Hills, Terrain::Ridgeline]
                 [rng.gen_range(0..4)];
 
             let battle = resolve_battle(&napoleon_force, &enemy_force, terrain, rng);
 
+            // 滑铁卢特殊规则：在标准结果基础上施加额外±25%战场迷雾
+            // 代表格鲁希是否及时赶到、Ney是否冲动、雨后地面状况等不确定性
+            let final_result = if is_decisive_battle {
+                use crate::battle::resolver::ratio_to_result;
+                let waterloo_chaos: f64 = rng.gen_range(-0.25..=0.25);
+                let adjusted_ratio = battle.ratio * (1.0 + waterloo_chaos);
+                ratio_to_result(adjusted_ratio)
+            } else {
+                battle.result
+            };
+
             // 更新军队状态
-            let (atk_rate, _) = battle.result.casualty_rates();
+            let (atk_rate, _) = final_result.casualty_rates();
             troops = ((troops as f64) * (1.0 - atk_rate)) as u32;
-            let (morale_delta, _) = battle.result.morale_deltas();
+            let (morale_delta, _) = final_result.morale_deltas();
             morale = (morale + morale_delta).clamp(0.0, 100.0);
 
             use crate::battle::resolver::BattleResult;
-            if matches!(battle.result, BattleResult::DecisiveVictory | BattleResult::MarginalVictory) {
+            if matches!(final_result, BattleResult::DecisiveVictory | BattleResult::MarginalVictory) {
                 victories += 1;
-                politics.modify_faction("military", 5.0);
-                politics.modify_faction("populace", 3.0);
-            } else if matches!(battle.result, BattleResult::DecisiveDefeat) && day >= 86 {
-                outcome = Some(GameOutcome::WaterlooDefeat);
-                break;
+                // 胜利"帝国万岁"效应：全派系士气提升
+                politics.modify_faction("military", 10.0);
+                politics.modify_faction("populace", 10.0);
+                politics.modify_faction("liberals", 5.0);
+                politics.legitimacy = (politics.legitimacy + 2.0).min(100.0);
+
+                // 决战胜利立即结算：拿破仑赢得了他的滑铁卢
+                if is_decisive_battle && victories >= 5 && politics.legitimacy >= 45.0 {
+                    outcome = Some(GameOutcome::NapoleonVictory);
+                    break;
+                }
+            } else if matches!(final_result, BattleResult::MarginalDefeat | BattleResult::DecisiveDefeat)
+                      && is_decisive_battle {
+                // 决战失败：可能终结游戏（取决于政治合法性）
+                if matches!(final_result, BattleResult::DecisiveDefeat)
+                   || politics.legitimacy < 35.0 {
+                    outcome = Some(GameOutcome::WaterlooDefeat);
+                    break;
+                }
             }
         }
 
@@ -176,10 +209,14 @@ pub fn simulate_one_game(strategy: PlayerStrategy, rng: &mut StdRng) -> GameReco
     }
 
     let outcome = outcome.unwrap_or_else(|| {
-        if battles_fought > 0 && victories as f64 / battles_fought as f64 >= 0.6 {
-            GameOutcome::NapoleonVictory
+        let legit = politics.legitimacy;
+        // 胜利需要"军政双赢"：足够的胜场（含至少1场决战胜利）+ 维持政治合法性
+        if victories >= 5 && legit >= 45.0 {
+            GameOutcome::NapoleonVictory      // 均衡发展：扭转历史
+        } else if victories >= 3 && legit >= 35.0 {
+            GameOutcome::WaterlooHistorical   // 一方面成功：接近但未扭转历史
         } else {
-            GameOutcome::WaterlooHistorical
+            GameOutcome::WaterlooDefeat       // 双失：流放圣赫勒拿
         }
     });
 
