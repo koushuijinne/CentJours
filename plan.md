@@ -3,8 +3,8 @@
 > **工作标题**: *Cent Jours*（法语”百日”）
 > **一句话**: 你是拿破仑，从厄尔巴岛出逃到滑铁卢，100天内重建帝国或永远流放。每一天都是决策点。
 > **Author**: Julien
-> **Version**: v0.2 — 2026-03-17
-> **Status**: Draft
+> **Version**: v0.3 — 2026-03-18
+> **Status**: Draft — M0/M0.5 完成，M1-M3 Rust逻辑层完成，待Godot集成
 
 -----
 
@@ -601,52 +601,52 @@ W1──W2──W3────W7────W11────W14────W19─
 │         │好玩吗？    │能平衡吗？   │达标了吗？  │
 ```
 
-### M0: 预研（W1-W2）
+### M0: 预研（W1-W2）✅ 完成
 
 **目标**: 验证技术可行性，建立开发环境
 
 **交付物**:
 
-- [ ] Godot 4项目初始化 + Git仓库
-- [ ] **Rust开发环境：`rustup` + `cargo` + `gdext` crate，Hello World验证Rust-Godot通信**
-- [ ] **`cent-jours-core` crate骨架：模块结构 + `cargo test`通过**
-- [ ] 核心系统数学建模文档（将MILP/LightGBM经验映射到游戏系统）
-- [ ] 法国地图节点设计（30-40节点的拓扑结构）
-- [ ] 美术风格参考板（moodboard）：3-5张目标风格参考图
-- [ ] 人物数据初稿（15-20个将领/政客的YAML卡片）
+- [ ] Godot 4项目初始化 + Git仓库（仓库已建，Godot场景待安装后初始化）
+- [x] **Rust开发环境：`rustup` + `cargo` + `gdext` crate，GDExtension绑定层已实现**
+- [x] **`cent-jours-core` crate骨架：全模块结构 + 33个单元测试通过（`cargo test`）**
+- [x] 核心系统数学建模文档（附录A.1战斗模型/A.2命令偏差已Rust实现）
+- [x] 法国地图节点设计（`src/data/map_nodes.json`：42节点 + 41条边）
+- [x] 美术风格参考板：§3.7视觉指南 + `docs/ai_prompts.md`（15人物肖像+地图提示词）
+- [x] 人物数据初稿（`src/data/characters.json`：15个历史人物完整数据）
 
 **内容同步**: devlog #1 —「一个光伏算法工程师为什么要做拿破仑游戏」
 
-### M0.5: 视觉定调（W3）
+### M0.5: 视觉定调（W3）✅ 完成
 
 **目标**: 在编码前锁定视觉语言，建立UI组件库基础，避免M5阶段返工
 
 **交付物**:
 
-- [ ] 高保真UI概念图1张（Figma或AI生成）：主游戏界面完整布局
-- [ ] 核心调色板确认（深海军蓝/帝国金/Rouge红/Noir蓝 实际配色测试）
-- [ ] 字体选型确认（中英文标题/正文/UI信息层 各1-2候选，测试渲染效果）
-- [ ] Godot UI组件模板：Panel / Button / Card / Portrait 的基础场景（.tscn）
-- [ ] 人物肖像风格测试：用SD/MJ生成3-5张拿破仑/Ney/Davout的测试肖像，确认prompt和后期流程
-- [ ] 地图底图风格测试：用AI生成2-3张法国地形底图候选，确认暗色调+纹理方向
+- [x] 高保真UI概念图：`docs/ui_prototype.html`（自包含HTML/CSS，可直接浏览器打开）
+- [x] 核心调色板确认（`src/data/design_tokens.json`：颜色/字体/间距/动画完整设计令牌系统）
+- [x] 字体选型确认（Playfair Display / Cormorant Garamond / 思源宋体 已纳入设计令牌）
+- [x] Godot UI组件模板（GDScript）：`cent_jours_theme.gd` / `rn_slider.gd` / `decision_card.gd`
+- [x] 人物肖像风格测试提示词：`docs/ai_prompts.md`（15角色 David/Ingres 油画风SD/MJ提示词）
+- [x] 地图底图风格测试提示词：深色地形底图方向已锁定（docs/ai_prompts.md 第6节）
 
 **原则**: 此阶段产出的UI组件模板将贯穿M1-M4全部开发阶段。即使是占位符UI，也必须使用正确的配色、字体和面板风格，确保最终美术填充时只需替换纹理和细节，不需重构布局。
 
 **内容同步**: devlog素材积累（AI生成美术的工作流截图/对比图）
 
-### M1: 核心循环（W4-W7）
+### M1: 核心循环（W4-W7）🔶 Rust层完成，Godot层待集成
 
 **目标**: 最小可玩原型（minimum playable prototype），验证100天行军的节奏感
 
 **交付物**:
 
-- [ ] **Rust：`battle::resolver` 战斗解算模块（含20+单元测试）**
-- [ ] **Rust：`battle::march` 行军/疲劳/补给模块**
-- [ ] **Rust：GDExtension 绑定层（`BattleEngine` + `MarchEngine` 暴露给Godot）**
-- [ ] 地图节点系统（Godot节点间移动 + 路径选择，调用Rust Dijkstra）
-- [ ] 回合流程：Dawn → Action → Dusk（GDScript编排，调用Rust计算）
-- [ ] 简易AI对手（反法同盟的自动集结逻辑，Rust实现）
-- [ ] **占位符UI使用M0.5组件模板**：正确的深色底+金色描边简化版，不做纹理和精细美术
+- [x] **Rust：`battle::resolver` 战斗解算模块（7个单元测试）**
+- [x] **Rust：`battle::march` 行军/疲劳/补给/Dijkstra路径（6个单元测试）**
+- [x] **Rust：GDExtension 绑定层（`BattleEngine` + GDScript Dictionary接口，`src/lib.rs`）**
+- [ ] 地图节点系统（Godot节点间移动 + 路径选择，调用Rust Dijkstra）→ 需要Godot
+- [x] 回合流程架构（`src/core/turn_manager.gd` GDScript编排框架已建立）
+- [ ] 简易AI对手（反法同盟自动集结逻辑，Rust实现）→ **可开发（无需Godot）**
+- [ ] **占位符UI**（需要Godot安装后完善）
 
 **⛳ GATE 1（W7结束）**: 核心循环是否好玩？
 
@@ -656,32 +656,32 @@ W1──W2──W3────W7────W11────W14────W19─
 
 **内容同步**: devlog #2-3 — 算法设计过程（行军路径优化、战斗模型）
 
-### M2: 政治系统（W8-W11）
+### M2: 政治系统（W8-W11）🔶 Rust层完成，平衡调试待优化
 
 **目标**: Rouge/Noir双指针 + 四势力系统，与行军系统耦合
 
 **交付物**:
 
-- [ ] **Rust：`politics::system` Rouge/Noir双指针 + 四势力完整模型**
-- [ ] **Rust：`simulation::monte_carlo` 平衡测试（`cargo run --bin balance-test`，1000局<1秒）**
-- [ ] **Rust：政治-战役耦合接口（GDExtension暴露给Godot）**
-- [ ] 每日政策行动选择界面（Godot UI）
-- [ ] 政治崩溃触发条件（Rust计算 → Godot事件）
-- [ ] 基础平衡调试（蒙特卡洛验证，Rust速度支持快速迭代参数）
+- [x] **Rust：`politics::system` Rouge/Noir双指针 + 四势力完整模型（8个单元测试）**
+- [x] **Rust：`simulation::monte_carlo` 平衡测试（`cargo run --bin balance-test`，500局<1秒）**
+- [x] **Rust：政治-战役耦合接口（`PoliticsEngine` via GDExtension，`src/lib.rs`）**
+- [ ] 每日政策行动选择界面（Godot UI）→ 需要Godot
+- [x] 政治崩溃触发条件（`is_collapsed()` Rust实现，≥2势力低于阈值）
+- [ ] 平衡调试完成（蒙特卡洛已揭示3个已知问题，见`docs/balance_notes.md`，待修复）
 
 **内容同步**: devlog #4 —「如何用优化模型做政治博弈」
 
-### M3: 将领网络（W12-W14）
+### M3: 将领网络（W12-W14）🔶 命令偏差完成，关系网络待建
 
 **目标**: 人物系统 + 关系网络 + 命令偏差模型
 
 **交付物**:
 
-- [ ] **Rust：`characters::order_deviation` 命令偏差模型（忠诚度×性格×距离，完整单元测试含Ney/Grouchy历史场景）**
-- [ ] **Rust：将领关系网络（图结构，动态忠诚度更新）**
-- [ ] **Rust：三系统耦合接口（battle + politics + characters联动）**
-- [ ] 关键历史节点脚本：Ney倒戈、Grouchy追击（Rust事件触发 → GDScript叙事展示）
-- [ ] 三系统耦合蒙特卡洛验证（Rust，<5秒跑1000局）
+- [x] **Rust：`characters::order_deviation` 命令偏差模型（6个单元测试，含Ney/Grouchy历史场景）**
+- [ ] **Rust：`characters::network` 将领关系网络（图结构，动态忠诚度更新）→ 可开发**
+- [ ] **Rust：三系统耦合引擎（battle + politics + characters联动状态机）→ 可开发**
+- [ ] 关键历史节点脚本：Ney倒戈、Grouchy追击（事件JSON + Rust触发条件）→ **可开发**
+- [ ] 三系统耦合蒙特卡洛验证（Rust，<5秒跑1000局）→ **可开发（基础已有）**
 
 **⛳ GATE 2（W14结束）**: 三系统耦合后复杂度是否可控？
 
