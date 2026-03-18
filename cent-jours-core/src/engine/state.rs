@@ -8,6 +8,8 @@ use rand::Rng;
 use crate::battle::resolver::{ForceData, Terrain, BattleResult, resolve_battle};
 use crate::politics::system::{PoliticsState, default_policies};
 use crate::characters::network::{CharacterNetwork, historical_network_day1};
+use std::collections::HashMap;
+use serde::{Serialize, Deserialize};
 use crate::events::pool::{EventPool, TriggerContext, EventEffects};
 use crate::narratives::{NarrativePool, policy_narrative_key};
 
@@ -143,6 +145,34 @@ impl ArmyState {
     }
 }
 
+// ── 存档状态 ─────────────────────────────────────────
+
+/// 可序列化的完整游戏存档快照
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SaveState {
+    /// 存档格式版本（用于兼容性检查）
+    pub version:              u32,
+    pub day:                  u32,
+    // 政治系统
+    pub legitimacy:           f64,
+    pub rouge_noir:           f64,
+    pub factions:             HashMap<String, f64>,
+    pub actions_remaining:    u32,
+    // 军事系统
+    pub troops:               u32,
+    pub morale:               f64,
+    pub fatigue:              f64,
+    pub victories:            u32,
+    pub defeats:              u32,
+    // 将领网络（当前忠诚度 + 关系强度）
+    pub loyalty:              HashMap<String, f64>,
+    pub relationships:        Vec<(String, String, f64)>,
+    // 事件系统
+    pub triggered_event_ids:  Vec<String>,
+    // 结局（in_progress 表示游戏进行中）
+    pub outcome:              Option<String>,
+}
+
 // ── 叙事 key 提取 ─────────────────────────────────────
 
 /// 从 PlayerAction 提取叙事 key 和"是否战斗"标志。
@@ -230,6 +260,75 @@ impl GameEngine {
     /// 最近一天的叙事报告（游戏刚开始还没处理过任何天时为 None）
     pub fn last_report(&self) -> Option<&DayReport> {
         self.last_report.as_ref()
+    }
+
+    // ── 存档 / 读档 ───────────────────────────────────
+
+    /// 将当前引擎状态序列化为存档快照
+    pub fn save(&self) -> SaveState {
+        let relationships = self.characters.relationships.iter()
+            .map(|((a, b), v)| (a.clone(), b.clone(), *v))
+            .collect();
+
+        SaveState {
+            version:             1,
+            day:                 self.day,
+            legitimacy:          self.politics.legitimacy,
+            rouge_noir:          self.politics.rouge_noir_index,
+            factions:            self.politics.faction_support.clone(),
+            actions_remaining:   self.politics.actions_remaining as u32,
+            troops:              self.army.total_troops,
+            morale:              self.army.avg_morale,
+            fatigue:             self.army.avg_fatigue,
+            victories:           self.army.victories,
+            defeats:             self.army.defeats,
+            loyalty:             self.characters.loyalty.clone(),
+            relationships,
+            triggered_event_ids: self.triggered_event_ids.clone(),
+            outcome:             self.outcome.map(|o| o.as_str().to_string()),
+        }
+    }
+
+    /// 将存档快照序列化为 JSON 字符串
+    pub fn to_json(&self) -> String {
+        serde_json::to_string(&self.save()).expect("SaveState serialization failed")
+    }
+
+    /// 从存档快照恢复引擎状态
+    pub fn load(state: SaveState) -> Self {
+        let mut engine = Self::new();
+
+        engine.day                         = state.day;
+        engine.politics.legitimacy         = state.legitimacy;
+        engine.politics.rouge_noir_index   = state.rouge_noir;
+        engine.politics.faction_support    = state.factions;
+        engine.politics.actions_remaining  = state.actions_remaining as u8;
+        engine.army.total_troops           = state.troops;
+        engine.army.avg_morale             = state.morale;
+        engine.army.avg_fatigue            = state.fatigue;
+        engine.army.victories              = state.victories;
+        engine.army.defeats                = state.defeats;
+        engine.characters.loyalty          = state.loyalty;
+        engine.characters.relationships    = state.relationships
+            .into_iter().map(|(a, b, v)| ((a, b), v)).collect();
+        engine.triggered_event_ids         = state.triggered_event_ids.clone();
+        engine.event_pool.restore_triggered(state.triggered_event_ids);
+        engine.outcome = state.outcome.as_deref().and_then(|s| match s {
+            "napoleon_victory"      => Some(GameOutcome::NapoleonVictory),
+            "waterloo_historical"   => Some(GameOutcome::WaterlooHistorical),
+            "waterloo_defeat"       => Some(GameOutcome::WaterlooDefeat),
+            "political_collapse"    => Some(GameOutcome::PoliticalCollapse),
+            "military_annihilation" => Some(GameOutcome::MilitaryAnnihilation),
+            _                       => None,
+        });
+
+        engine
+    }
+
+    /// 从 JSON 字符串恢复引擎状态
+    pub fn from_json(json: &str) -> Result<Self, serde_json::Error> {
+        let state: SaveState = serde_json::from_str(json)?;
+        Ok(Self::load(state))
     }
 
     // ── 回合驱动 ──────────────────────────────────────
@@ -732,6 +831,63 @@ mod tests {
         engine.process_day(PlayerAction::Rest, &mut rng);
         assert!(engine.politics.faction_support["military"] < mil_before,
             "兵力危机应降低军方支持");
+    }
+
+    // ── Save/Load 序列化 ──────────────────────────────
+
+    #[test]
+    fn 存档后读档状态一致() {
+        let mut engine = GameEngine::new();
+        let mut rng = seeded_rng();
+        // 推进几天制造一些状态变化
+        engine.process_day(PlayerAction::EnactPolicy { policy_id: "conscription" }, &mut rng);
+        engine.process_day(PlayerAction::Rest, &mut rng);
+
+        let saved_day      = engine.day;
+        let saved_legit    = engine.politics.legitimacy;
+        let saved_troops   = engine.army.total_troops;
+        let saved_triggered = engine.triggered_event_ids.clone();
+
+        let json     = engine.to_json();
+        let restored = GameEngine::from_json(&json).expect("from_json 应成功");
+
+        assert_eq!(restored.day,                saved_day,   "day 应一致");
+        assert!((restored.politics.legitimacy - saved_legit).abs() < 0.001, "legitimacy 应一致");
+        assert_eq!(restored.army.total_troops,  saved_troops, "troops 应一致");
+        assert_eq!(restored.triggered_event_ids, saved_triggered, "已触发事件应一致");
+    }
+
+    #[test]
+    fn 读档后事件不重复触发() {
+        let mut engine = GameEngine::new();
+        let mut rng = seeded_rng();
+        // 推进到 Day 20，期间某些事件可能触发
+        for _ in 0..15 {
+            engine.process_day(PlayerAction::Rest, &mut rng);
+        }
+        let triggered_before = engine.triggered_event_ids.clone();
+
+        let json     = engine.to_json();
+        let restored = GameEngine::from_json(&json).expect("from_json 应成功");
+
+        // 读档后再推进，之前触发过的事件不应再触发
+        let mut rng2 = seeded_rng();
+        let mut restored = restored;
+        for _ in 0..5 {
+            restored.process_day(PlayerAction::Rest, &mut rng2);
+        }
+        for id in &triggered_before {
+            let count = restored.triggered_event_ids.iter().filter(|x| *x == id).count();
+            assert!(count <= 1, "事件 {} 读档后不应重复触发", id);
+        }
+    }
+
+    #[test]
+    fn json序列化反序列化完整往返() {
+        let engine = GameEngine::new();
+        let json = engine.to_json();
+        assert!(!json.is_empty(), "JSON 不应为空");
+        let _ = GameEngine::from_json(&json).expect("合法 JSON 应可反序列化");
     }
 
     // ── 叙事引擎集成 ──────────────────────────────────

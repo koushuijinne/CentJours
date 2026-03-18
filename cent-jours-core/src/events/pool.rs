@@ -184,6 +184,12 @@ impl EventPool {
     pub fn is_triggered(&self, id: &str) -> bool {
         self.triggered_ids.contains(id)
     }
+
+    /// 从存档恢复已触发事件集合（用于 Save/Load）
+    pub fn restore_triggered(&mut self, ids: impl IntoIterator<Item = String>) {
+        self.triggered_ids.clear();
+        self.triggered_ids.extend(ids);
+    }
 }
 
 // ── 触发结果 ──────────────────────────────────────────
