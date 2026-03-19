@@ -1,6 +1,6 @@
 # Cent Jours — 开发优先级计划
 
-> **更新**: 2026-03-19 v13
+> **更新**: 2026-03-19 v14
 > **当前分支**: `claude/review-project-plan-LKKTR`
 
 ---
@@ -113,7 +113,7 @@ M0.5 视觉定调  ████████████ 100% ✅
 M1  核心循环   ██████████░░  85% 🔶 Rust层✅，EventPool集成✅，Godot待安装
 M2  政治系统   ███████████░  90% 🔶 Rust层✅，平衡达标，UI待Godot
 M3  将领网络   ████████████ 100% ✅ GATE 2 通过
-M4  内容填充   ████████████ 100% ✅ GDScript桥接层✅，叙事全覆盖✅，存档系统✅，GDScript精简✅
+M4  内容填充   ████████████ 100% ✅ GDScript桥接层✅，叙事全覆盖✅，存档系统✅，GDScript全合规✅，loyalty闭环✅
 M5  美术音乐   ░░░░░░░░░░░░   0%
 M6  打磨发布   ░░░░░░░░░░░░   0%
 ```
@@ -147,6 +147,11 @@ M6  打磨发布   ░░░░░░░░░░░░   0%
 | 将领查询层 | `character_manager.gd` | — | ✅ v2 精简，移除冗余逻辑 |
 | 地图路径查询 | `march_system.gd` | — | ✅ v2 精简，仅保留路径/距离 |
 | 存档系统 | `save_manager.gd` + `lib.rs` | — | ✅ to_json/load_from_json 完整闭环 |
+| 战斗展示元数据 | `battle_resolver.gd` | — | ✅ v2 精简为展示常量（138行→35行，DRY修复） |
+| GameState 合规清理 | `game_state.gd` | — | ✅ v2 stub 违规方法，Bug修复（信号双发） |
+| 忠诚度引擎暴露 | `lib.rs` | — | ✅ 新增 `get_all_loyalties()` |
+| 忠诚度同步 | `turn_manager.gd` | — | ✅ `_sync_state_from_engine()` loyalty 闭环 |
+| 架构决策记录 | `docs/decisions/` | — | ✅ ADR-001（Rust+GDExtension）、ADR-002（只读缓存） |
 
 **合计**: 103 tests 全部通过
 
