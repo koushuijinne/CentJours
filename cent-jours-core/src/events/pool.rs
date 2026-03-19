@@ -3,6 +3,7 @@
 //! 从 JSON 加载事件定义，根据游戏状态触发，返回叙事文本和效果。
 //! TDD：测试先于实现。
 
+use std::collections::HashMap;
 use rand::Rng;
 use serde::Deserialize;
 
@@ -15,28 +16,36 @@ pub struct EventTrigger {
     pub ney_loyalty_min:                 Option<f64>,
     pub ney_napoleon_relationship_min:   Option<f64>,
     pub grouchy_loyalty_min:             Option<f64>,
-    pub davout_loyalty_min:              Option<f64>,
     pub fouche_loyalty_max:              Option<f64>,
     pub rouge_noir_index_max:            Option<f64>,
     pub day_min:                         Option<u32>,
     pub coalition_not_defeated:          Option<bool>,
+    /// 通用将领忠诚度下限：{ character_id: min_loyalty }
+    /// 替代原硬编码的 davout_loyalty_min 等字段，支持任意将领
+    #[serde(default)]
+    pub loyalty_min:                     HashMap<String, f64>,
+    /// 通用将领忠诚度上限：{ character_id: max_loyalty }
+    #[serde(default)]
+    pub loyalty_max:                     HashMap<String, f64>,
 }
 
 /// 事件效果（数值变化）
 #[derive(Debug, Clone, Deserialize, Default)]
 pub struct EventEffects {
-    pub ney_loyalty_delta:              Option<f64>,
+    /// 通用将领忠诚度变化：{ character_id: delta }
+    /// 替代原硬编码的 ney_loyalty_delta / fouche_loyalty_delta
+    #[serde(default)]
+    pub loyalty_deltas:                  HashMap<String, f64>,
     pub military_support_delta:         Option<f64>,
     pub nobility_support_delta:         Option<f64>,
     pub populace_support_delta:         Option<f64>,
     pub liberals_support_delta:         Option<f64>,
     pub rouge_noir_delta:               Option<f64>,
     pub legitimacy_delta:               Option<f64>,
-    pub fouche_loyalty_delta:           Option<f64>,
     pub paris_security_bonus:           Option<f64>,
     pub political_stability_bonus:      Option<f64>,
     pub military_available_troops_delta: Option<i64>,
-    pub coalition_troops_bonus:         Option<i32>,  // 允许负值（削减联军）
+    pub coalition_troops_bonus:         Option<i32>,
     pub napoleon_morale_bonus:          Option<f64>,
 }
 
@@ -85,6 +94,17 @@ impl HistoricalEvent {
         if let Some(min) = t.day_min {
             if ctx.day < min { return false; }
         }
+        // 通用将领忠诚度条件（loyalty_min / loyalty_max）
+        for (id, &min) in &t.loyalty_min {
+            if ctx.loyalty_map.get(id.as_str()).copied().unwrap_or(0.0) < min {
+                return false;
+            }
+        }
+        for (id, &max) in &t.loyalty_max {
+            if ctx.loyalty_map.get(id.as_str()).copied().unwrap_or(100.0) > max {
+                return false;
+            }
+        }
 
         true
     }
@@ -104,13 +124,16 @@ impl HistoricalEvent {
 /// 事件触发时传入的游戏状态快照
 #[derive(Debug, Clone, Default)]
 pub struct TriggerContext {
-    pub day:                      u32,
-    pub napoleon_reputation:      f64,
-    pub ney_loyalty:              f64,
+    pub day:                       u32,
+    pub napoleon_reputation:       f64,
+    pub ney_loyalty:               f64,
     pub ney_napoleon_relationship: f64,
-    pub grouchy_loyalty:          f64,
-    pub fouche_loyalty:           f64,
-    pub rouge_noir_index:         f64,
+    pub grouchy_loyalty:           f64,
+    pub fouche_loyalty:            f64,
+    pub rouge_noir_index:          f64,
+    /// 所有将领忠诚度快照（供 loyalty_min / loyalty_max 通用条件检查）
+    /// key = character_id，与 characters.json 一致
+    pub loyalty_map:               HashMap<String, f64>,
 }
 
 // ── 事件池 ────────────────────────────────────────────
@@ -225,6 +248,7 @@ mod tests {
             grouchy_loyalty:           72.0,
             fouche_loyalty:            45.0,
             rouge_noir_index:          10.0,
+            loyalty_map:               HashMap::new(),
         }
     }
 
@@ -366,8 +390,80 @@ mod tests {
         let mut rng = seeded_rng();
         let triggered = pool.trigger_all(&ctx, &mut rng);
         let ney_event = triggered.iter().find(|e| e.id == "ney_defection").unwrap();
-        let delta = ney_event.effects.ney_loyalty_delta.unwrap_or(0.0);
+        // 新格式：loyalty_deltas["ney"] 替代 ney_loyalty_delta
+        let delta = ney_event.effects.loyalty_deltas.get("ney").copied().unwrap_or(0.0);
         assert!(delta > 0.0, "内伊倒戈应提升忠诚度，实际delta={}", delta);
+    }
+
+    // ── 通用 loyalty_deltas + loyalty_min 数据驱动化 ──────
+
+    #[test]
+    fn loyalty_deltas通用字段支持任意将领() {
+        let json = r#"[{
+            "id": "test_event", "label": "测试", "day_range": [1, 100],
+            "trigger": {},
+            "effects": { "loyalty_deltas": {"davout": -20.0, "ney": 10.0} },
+            "narratives": ["test"]
+        }]"#;
+        let pool = EventPool::from_json(json).unwrap();
+        let ctx = TriggerContext { day: 50, ..Default::default() };
+        let available = pool.available_events(&ctx);
+        assert_eq!(available.len(), 1);
+        assert_eq!(available[0].effects.loyalty_deltas.get("davout").copied(), Some(-20.0));
+        assert_eq!(available[0].effects.loyalty_deltas.get("ney").copied(), Some(10.0));
+    }
+
+    #[test]
+    fn loyalty_min触发条件检查通用将领忠诚不足时不触发() {
+        let json = r#"[{
+            "id": "test_event", "label": "测试", "day_range": [1, 100],
+            "trigger": { "loyalty_min": {"davout": 75.0} },
+            "effects": {}, "narratives": ["test"]
+        }]"#;
+        let pool = EventPool::from_json(json).unwrap();
+        let ctx = TriggerContext {
+            day: 50,
+            loyalty_map: [("davout".to_string(), 60.0)].into_iter().collect(),
+            ..Default::default()
+        };
+        assert!(pool.available_events(&ctx).is_empty(), "达武忠诚不足不应触发");
+    }
+
+    #[test]
+    fn loyalty_min触发条件检查通用将领忠诚足够时触发() {
+        let json = r#"[{
+            "id": "test_event", "label": "测试", "day_range": [1, 100],
+            "trigger": { "loyalty_min": {"davout": 75.0} },
+            "effects": {}, "narratives": ["test"]
+        }]"#;
+        let pool = EventPool::from_json(json).unwrap();
+        let ctx = TriggerContext {
+            day: 50,
+            loyalty_map: [("davout".to_string(), 80.0)].into_iter().collect(),
+            ..Default::default()
+        };
+        assert_eq!(pool.available_events(&ctx).len(), 1, "达武忠诚足够应触发");
+    }
+
+    #[test]
+    fn 达武任命事件需要达武高忠诚() {
+        let pool = EventPool::from_json(HISTORICAL_JSON).unwrap();
+        // 达武忠诚不足 → 不触发
+        let ctx_low = TriggerContext {
+            day: 25,
+            loyalty_map: [("davout".to_string(), 60.0)].into_iter().collect(),
+            ..Default::default()
+        };
+        let ids: Vec<&str> = pool.available_events(&ctx_low).iter().map(|e| e.id.as_str()).collect();
+        assert!(!ids.contains(&"davout_paris_assignment"), "达武忠诚不足不应触发任命");
+        // 达武忠诚足够 → 触发
+        let ctx_high = TriggerContext {
+            day: 25,
+            loyalty_map: [("davout".to_string(), 80.0)].into_iter().collect(),
+            ..Default::default()
+        };
+        let ids: Vec<&str> = pool.available_events(&ctx_high).iter().map(|e| e.id.as_str()).collect();
+        assert!(ids.contains(&"davout_paris_assignment"), "达武忠诚足够应触发任命: {:?}", ids);
     }
 
     #[test]

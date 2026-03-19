@@ -12,7 +12,7 @@
       "ney_napoleon_relationship_min": 55
     },
     "effects": {
-      "ney_loyalty_delta": 35,
+      "loyalty_deltas": {"ney": 35},
       "military_support_delta": 12,
       "nobility_support_delta": -10,
       "rouge_noir_delta": 5
@@ -178,7 +178,7 @@
       30
     ],
     "trigger": {
-      "davout_loyalty_min": 75
+      "loyalty_min": {"davout": 75}
     },
     "effects": {
       "paris_security_bonus": 20,
@@ -231,7 +231,7 @@
       "rouge_noir_index_max": -20
     },
     "effects": {
-      "fouche_loyalty_delta": -15,
+      "loyalty_deltas": {"fouche": -15},
       "legitimacy_delta": -5
     },
     "narratives": [

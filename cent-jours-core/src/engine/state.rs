@@ -563,17 +563,17 @@ impl GameEngine {
             grouchy_loyalty:           self.characters.loyalty("grouchy"),
             fouche_loyalty:            self.characters.loyalty("fouche"),
             rouge_noir_index:          self.politics.rouge_noir_index,
+            // 全量忠诚度快照（供 loyalty_min/loyalty_max 通用触发条件使用）
+            loyalty_map:               self.characters.loyalty.clone(),
         }
     }
 
     /// 将事件效果应用到三系统
     fn apply_event_effects(&mut self, effects: &EventEffects) {
         let day = self.day;
-        if let Some(d) = effects.ney_loyalty_delta {
-            self.characters.modify_loyalty("ney", d, day, "event");
-        }
-        if let Some(d) = effects.fouche_loyalty_delta {
-            self.characters.modify_loyalty("fouche", d, day, "event");
+        // 通用将领忠诚度变化（数据驱动，支持任意将领）
+        for (char_id, &delta) in &effects.loyalty_deltas {
+            self.characters.modify_loyalty(char_id, delta, day, "event");
         }
         if let Some(d) = effects.military_support_delta {
             self.politics.modify_faction("military", d);

@@ -1,6 +1,6 @@
 # Cent Jours — 开发优先级计划
 
-> **更新**: 2026-03-19 v17
+> **更新**: 2026-03-19 v18
 > **当前分支**: `claude/review-project-plan-LKKTR`
 
 ---
@@ -123,7 +123,7 @@ M5  美术音乐   ░░░░░░░░░░░░   0%
 M6  打磨发布   ░░░░░░░░░░░░   0%
 ```
 
-**107/107 单元测试全部通过**（最后运行：2026-03-19，新增4个军事技能加载测试）
+**111/111 单元测试全部通过**（最后运行：2026-03-19，新增4个事件数据驱动测试）
 
 **平衡结果**: Military 24.2% ✅ | Political 21.2% ✅ | Balanced 22.4% ✅
 
@@ -187,47 +187,61 @@ M6  打磨发布   ░░░░░░░░░░░░   0%
 
 ---
 
-## 优先级 A — 当前轮（无需 Godot 环境）
+## 上轮完成摘要（本轮，2026-03-19）
 
-### 违规扫描结果（2026-03-19 上轮完成后重新扫描）
+| # | 文件 | 处理结果 |
+|---|------|---------|
+| ① | `pool.rs` + `state.rs` + `historical.json` | ✅ 事件效果/触发条件数据驱动化（TDD，4个新测试，111/111通过） |
 
-上轮 3 项 Priority A 全部完成。已完成扫描，当前**无新的 P0/P1 违规**。
-
-| # | 文件 | 剩余问题 | 严重程度 |
-|---|------|---------|---------|
-| ① | `engine/state.rs:561-576` | 事件效果仅硬编码作用于 ney/fouche（事件将领 ID 数据驱动化 ③-b 未完成） | 🟡 P2 |
-| ② | `engine/state.rs:561-564` | 事件触发上下文仅感知 ney/grouchy/fouche 三人（扩展性受限） | 🟡 P2 |
-
-> **注**：① 和 ② 是同一技术债的剩余部分（③-b 任务），改动量大，需 TDD + 数据格式设计，
-> 建议单独作为下一轮 Priority A 主任务。
+**本轮修复详情：**
+- `EventEffects.ney_loyalty_delta` / `fouche_loyalty_delta` → `loyalty_deltas: HashMap<String, f64>`
+- `EventTrigger.davout_loyalty_min`（定义但从未检查的 Bug）→ `loyalty_min: HashMap<String, f64>`
+- `TriggerContext` 新增 `loyalty_map` 全量将领忠诚度快照
+- `build_trigger_ctx()` 填充 `loyalty_map`，`apply_event_effects()` 迭代 `loyalty_deltas`
+- `historical.json` 3处旧格式迁移（ney_defection、davout_paris_assignment、fouche_conspiracy）
 
 ---
 
-### ① events — 事件效果将领 ID 数据驱动化（③-b） 🟡 P2
+## 优先级 A — 当前轮（无需 Godot 环境）
 
-**违反原则**：DRY、YAGNI（目前只有 ney/fouche 两人能被事件影响）
+### 违规扫描（2026-03-19，本轮完成后重新扫描）
 
-**现状**：`apply_event_effects()` 硬编码只有 ney 和 fouche 的忠诚度能被事件修改：
+完成事件数据驱动化后，对剩余代码重新扫描。**当前无 P0/P1 违规。**
+
+| # | 文件 | 问题 | 严重程度 |
+|---|------|------|---------|
+| ① | `network.rs:507` | 孤立 `#[test]` 属性（`危机将领列表正确识别()` 函数前缺少对应的属性声明，导致 compiler warning） | 🟡 P2 |
+| ② | `events/pool.rs` `EventTrigger` | `coalition_not_defeated` 字段定义但从未在 `can_trigger()` 中检查（与 davout_loyalty_min 同类 Bug） | 🟡 P2 |
+
+---
+
+### ① network.rs — 修复孤立 #[test] 属性 warning 🟡 P2
+
+**违反原则**：KISS（代码噪音，隐藏潜在测试遗漏）
+
+`network.rs:507` 有一个孤立的 `#[test]` 属性：
 
 ```rust
-// state.rs:573-576
-if let Some(d) = effects.ney_loyalty_delta {
-    self.characters.modify_loyalty("ney", d, day, "event");
-}
-if let Some(d) = effects.fouche_loyalty_delta {
-    self.characters.modify_loyalty("fouche", d, day, "event");
-}
+#[test]   // ← 494行：属于上一个测试的结束
+fn json解析失败返回错误() { ... }  // 513行：这个函数上方有两个 #[test]
 ```
 
-**目标**：将 `EventEffects` 中的 `ney_loyalty_delta` / `fouche_loyalty_delta` 替换为通用的
-`HashMap<String, f64>`，由事件数据携带将领 ID，不在代码层硬编码。
+导致 `duplicate_macro_attributes` warning。
 
-**TDD 子步骤**：
-1. Red — 写测试：事件效果应能作用于 davout
-2. Green — 修改 `EventEffects` 结构 + `apply_event_effects()`
-3. Refactor — 更新 `events/pool.rs` 中事件触发上下文
+**文件**: `cent-jours-core/src/characters/network.rs:494-513`
 
-**文件**: `cent-jours-core/src/engine/state.rs` + `cent-jours-core/src/events/`
+---
+
+### ② events/pool.rs — `coalition_not_defeated` 从未检查 🟡 P2
+
+**违反原则**：KISS（Dead code，与已修复的 `davout_loyalty_min` 同类 Bug）
+
+`EventTrigger.coalition_not_defeated: Option<bool>` 定义于 pool.rs，
+但 `can_trigger()` 中没有对应的检查逻辑，该条件永远不会生效。
+
+**目标**：在 `can_trigger()` 中添加检查，或在 `TriggerContext` 中添加对应字段 `coalition_defeated: bool`。
+
+**文件**: `cent-jours-core/src/events/pool.rs`
 
 ---
 
