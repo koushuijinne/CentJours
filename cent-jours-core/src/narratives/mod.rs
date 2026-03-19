@@ -72,12 +72,15 @@ impl Default for NarrativePool {
 /// 战斗的 key 取决于胜负，由调用方传入。
 pub fn policy_narrative_key(policy_id: &str) -> Option<&'static str> {
     match policy_id {
-        "conscription"            => Some("conscription"),
-        "constitutional_promise"  => Some("constitutional_promise"),
-        "public_speech"           => Some("public_speech"),
-        "reduce_taxes"            => Some("reduce_taxes"),
-        "increase_military_budget" => None, // 尚无对应文本
-        _                         => None,
+        "conscription"             => Some("conscription"),
+        "constitutional_promise"   => Some("constitutional_promise"),
+        "public_speech"            => Some("public_speech"),
+        "reduce_taxes"             => Some("reduce_taxes"),
+        "increase_military_budget" => Some("increase_military_budget"),
+        "grant_titles"             => Some("grant_titles"),
+        "secret_diplomacy"         => Some("diplomatic_secret"),
+        "print_money"              => Some("print_money"),
+        _                          => None,
     }
 }
 
@@ -106,12 +109,13 @@ mod tests {
     }
 
     #[test]
-    fn 司汤达8个行动类型全部有内容() {
+    fn 司汤达11个行动类型全部有内容() {
         let pool = NarrativePool::new();
         for key in &[
             "conscription", "constitutional_promise", "public_speech",
             "battle_victory", "battle_defeat", "reduce_taxes",
             "boost_loyalty", "diplomatic_secret",
+            "grant_titles", "increase_military_budget", "print_money",
         ] {
             assert!(pool.stendhal_count(key) > 0,
                 "stendhal_diary 缺少 '{}' 的条目", key);
@@ -119,11 +123,13 @@ mod tests {
     }
 
     #[test]
-    fn 后果6个类型全部有内容() {
+    fn 后果12个类型全部有内容() {
         let pool = NarrativePool::new();
         for key in &[
             "conscription", "reduce_taxes", "forced_march",
             "battle_victory", "battle_defeat", "constitutional_promise",
+            "public_speech", "boost_loyalty", "grant_titles",
+            "increase_military_budget", "diplomatic_secret", "print_money",
         ] {
             assert!(pool.consequence_count(key) > 0,
                 "consequences 缺少 '{}' 的条目", key);
@@ -164,9 +170,12 @@ mod tests {
 
     #[test]
     fn 政策key映射正确() {
-        assert_eq!(policy_narrative_key("conscription"), Some("conscription"));
-        assert_eq!(policy_narrative_key("public_speech"), Some("public_speech"));
-        assert_eq!(policy_narrative_key("increase_military_budget"), None);
-        assert_eq!(policy_narrative_key("unknown_policy"), None);
+        assert_eq!(policy_narrative_key("conscription"),             Some("conscription"));
+        assert_eq!(policy_narrative_key("public_speech"),            Some("public_speech"));
+        assert_eq!(policy_narrative_key("increase_military_budget"), Some("increase_military_budget"));
+        assert_eq!(policy_narrative_key("grant_titles"),             Some("grant_titles"));
+        assert_eq!(policy_narrative_key("secret_diplomacy"),         Some("diplomatic_secret"));
+        assert_eq!(policy_narrative_key("print_money"),              Some("print_money"));
+        assert_eq!(policy_narrative_key("unknown_policy"),           None);
     }
 }

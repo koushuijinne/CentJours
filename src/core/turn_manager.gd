@@ -1,5 +1,7 @@
-## TurnManager — 回合流程控制器
+## TurnManager — 回合流程控制器（v2，接入 CentJoursEngine）
 ## 管理 Dawn → Action → Dusk 三段式回合结构
+## 所有游戏逻辑通过 CentJoursEngine（Rust GDExtension）执行
+## GDScript 层只负责驱动 UI 信号
 
 extends Node
 
@@ -13,128 +15,129 @@ const PHASE_NAMES: Dictionary = {
 }
 
 var current_phase: Phase = Phase.DAWN
-var _phase_complete: bool = false
 
-# ── 依赖注入 ──────────────────────────────────────────
-@onready var campaign_system = $"../CampaignSystem"
-@onready var political_system = $"../PoliticalSystem"
-@onready var character_manager = $"../CharacterManager"
+# ── Rust 引擎节点（在场景中通过编辑器或代码连接）────────
+## CentJoursEngine GDExtension 节点，是游戏状态的唯一权威来源
+@export var engine: CentJoursEngine
 
 # ── 主循环 ────────────────────────────────────────────
+
 func start_new_turn() -> void:
-	GameState.current_day += 1
-	EventBus.turn_started.emit(GameState.current_day)
+	var day := engine.current_day()
+	EventBus.turn_started.emit(day)
 	_run_dawn_phase()
 
-## Dawn Phase（黎明阶段）：情报汇报，玩家获取信息，无决策
+## Dawn Phase：同步状态、显示情报、通知 UI 等待玩家确认
 func _run_dawn_phase() -> void:
 	current_phase = Phase.DAWN
 	GameState.current_phase = PHASE_NAMES[Phase.DAWN]
 	EventBus.phase_changed.emit("dawn")
 
-	# 收集情报
-	var intel := _gather_intelligence()
-	# 触发历史事件检查
-	_check_historical_events()
-	# 重置每日行动次数
-	GameState.actions_remaining = _get_daily_action_allowance()
+	# 同步引擎状态到 GameState 单例（供 UI 读取）
+	_sync_state_from_engine()
 
-	# 通知 UI 显示情报摘要，等待玩家确认
-	# （UI 确认后调用 begin_action_phase）
+	# 发射新触发的历史事件信号（引擎在 Dawn 阶段内部自动触发）
+	_emit_new_triggered_events()
 
-## Action Phase（决策阶段）：玩家做出军事和政治决策
+	# UI 调用 begin_action_phase() 后进入下一段
+
+## Action Phase：等待玩家做出决策
 func begin_action_phase() -> void:
 	current_phase = Phase.ACTION
 	GameState.current_phase = PHASE_NAMES[Phase.ACTION]
 	EventBus.phase_changed.emit("action")
-	# 等待玩家输入（由 UI 层调用 submit_actions）
 
-## 玩家提交行动后调用
-func submit_actions(military_orders: Array, political_actions: Array) -> void:
+## 玩家提交行动
+## action_type: "battle" | "policy" | "boost_loyalty" | "rest"
+## params: 对应行动所需参数
+##   battle       → { general_id: String, troops: int, terrain: String }
+##   policy       → { policy_id: String }
+##   boost_loyalty→ { general_id: String }
+##   rest         → {}
+func submit_action(action_type: String, params: Dictionary = {}) -> void:
 	if current_phase != Phase.ACTION:
-		push_warning("不在 Action Phase，无法提交行动")
+		push_warning("[TurnManager] 不在 Action Phase，无法提交行动")
 		return
-	# 处理行动在 _run_dusk_phase 中统一结算
-	_run_dusk_phase(military_orders, political_actions)
+	_run_dusk_phase(action_type, params)
 
-## Dusk Phase（黄昏阶段）：结算所有行动后果
-func _run_dusk_phase(military_orders: Array, political_actions: Array) -> void:
+## Dusk Phase：调用 Rust 引擎执行行动，同步结果，触发叙事
+func _run_dusk_phase(action_type: String, params: Dictionary) -> void:
 	current_phase = Phase.DUSK
 	GameState.current_phase = PHASE_NAMES[Phase.DUSK]
 	EventBus.phase_changed.emit("dusk")
 
-	# 1. 执行军事命令（含命令偏差）
-	character_manager.process_orders_with_deviation(military_orders)
+	# ── 调用 Rust 引擎处理完整一天 ──────────────────────
+	match action_type:
+		"battle":
+			engine.process_day_battle(
+				params.get("general_id", ""),
+				int(params.get("troops", 0)),
+				params.get("terrain", "plains")
+			)
+		"policy":
+			var policy_id: String = params.get("policy_id", "")
+			engine.process_day_policy(policy_id)
+			EventBus.policy_enacted.emit(policy_id)
+		"boost_loyalty":
+			engine.process_day_boost_loyalty(params.get("general_id", ""))
+		_:  # "rest" 及未知类型
+			engine.process_day_rest()
 
-	# 2. 执行政治行动
-	for action in political_actions:
-		political_system.enact_policy(action)
+	# ── 同步状态 ─────────────────────────────────────
+	_sync_state_from_engine()
 
-	# 3. 更新军队状态（疲劳、补给、士气）
-	campaign_system.update_army_states()
+	# ── 叙事报告 ─────────────────────────────────────
+	var report := engine.get_last_report()
+	var day: int = report.get("day", GameState.current_day)
+	if report.get("has_narrative", false):
+		var stendhal: String = report.get("stendhal", "")
+		if stendhal != "":
+			EventBus.stendhal_diary_entry.emit(day, stendhal)
+		var consequence: String = report.get("consequence", "")
+		if consequence != "":
+			EventBus.micro_narrative_shown.emit(action_type, consequence)
 
-	# 4. AI 行动（反法同盟集结）
-	_run_enemy_ai()
-
-	# 5. 更新人物关系
-	character_manager.update_relationships()
-
-	# 6. 触发叙事
-	_trigger_daily_narrative()
-
-	# 7. 检查游戏结束
-	var outcome := GameState.check_game_over()
-	if outcome != "":
-		EventBus.game_over.emit(outcome)
+	# ── 检查游戏结束 ─────────────────────────────────
+	if engine.is_over():
+		var state := engine.get_state()
+		EventBus.game_over.emit(state.get("outcome", "unknown"))
 		return
 
+	GameState.current_day = engine.current_day()
 	EventBus.turn_ended.emit(GameState.current_day)
 
 # ── 内部辅助 ──────────────────────────────────────────
 
-func _gather_intelligence() -> Dictionary:
-	## 收集当日情报（敌军动向、政治风向、将领状态）
-	var intel := {
-		"enemy_movements": campaign_system.get_enemy_movements() if campaign_system else [],
-		"at_risk_characters": character_manager.get_at_risk_characters() if character_manager else [],
-		"faction_trends": political_system.get_faction_trends() if political_system else {}
-	}
-	return intel
+## 从 CentJoursEngine 读取状态并同步到 GameState 单例
+func _sync_state_from_engine() -> void:
+	var state := engine.get_state()
 
-func _check_historical_events() -> void:
-	## 检查是否到达关键历史节点
-	var day := GameState.current_day
-	var events_by_day := {
-		5:  "ney_defection_window",
-		7:  "grenoble_arrival",
-		20: "paris_entry",
-		85: "grouchy_appointment_window",
-		86: "ligny_bataille",
-		87: "quatre_bras_aftermath",
-		100: "waterloo_eve"
-	}
-	if day in events_by_day:
-		var event_id: String = events_by_day[day]
-		if not event_id in GameState.triggered_events:
+	var old_legit: float = GameState.legitimacy
+	var old_rn: float    = GameState.rouge_noir_index
+
+	GameState.current_day      = engine.current_day()
+	GameState.legitimacy       = float(state.get("legitimacy", GameState.legitimacy))
+	GameState.rouge_noir_index = float(state.get("rouge_noir", GameState.rouge_noir_index))
+	GameState.total_troops     = int(state.get("troops",    0))
+	GameState.avg_morale       = float(state.get("morale",  70.0))
+	GameState.avg_fatigue      = float(state.get("fatigue", 20.0))
+	GameState.victories        = int(state.get("victories", 0))
+
+	var factions: Dictionary = state.get("factions", {})
+	for faction_id in factions:
+		var old_val: float = GameState.faction_support.get(faction_id, 50.0)
+		var new_val: float = float(factions[faction_id])
+		if absf(new_val - old_val) > 0.01:
+			GameState.faction_support[faction_id] = new_val
+			EventBus.faction_support_changed.emit(faction_id, old_val, new_val)
+
+	if absf(GameState.legitimacy - old_legit) > 0.01:
+		EventBus.legitimacy_changed.emit(old_legit, GameState.legitimacy)
+
+## 发射本次 Dawn 阶段新触发的历史事件信号
+func _emit_new_triggered_events() -> void:
+	var all_triggered: Array = Array(engine.get_triggered_events())
+	for event_id in all_triggered:
+		if not GameState.triggered_events.has(event_id):
 			GameState.triggered_events.append(event_id)
 			EventBus.historical_event_triggered.emit(event_id)
-
-func _get_daily_action_allowance() -> int:
-	## 基础2个行动，高合法性可额外获得1个
-	var base := 2
-	if GameState.legitimacy >= 70.0:
-		return base + 1
-	return base
-
-func _run_enemy_ai() -> void:
-	## 简单 AI：反法同盟逐步向法国边境集结
-	## 详细逻辑在 CampaignSystem 中
-	if campaign_system:
-		campaign_system.advance_coalition_forces()
-
-func _trigger_daily_narrative() -> void:
-	## 触发司汤达日记和微叙事
-	EventBus.stendhal_diary_entry.emit(
-		GameState.current_day,
-		"[Stendhal日记占位符 - Day %d]" % GameState.current_day
-	)
