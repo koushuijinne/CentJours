@@ -1,6 +1,6 @@
 [configuration]
 entry_symbol = "gdext_rust_init"
-compatibility_minimum = "4.1"
+compatibility_minimum = "4.6"
 
 [libraries]
 linux.debug.x86_64     = "res://cent-jours-core/target/debug/libcent_jours_core.so"

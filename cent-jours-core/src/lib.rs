@@ -20,6 +20,8 @@ pub mod simulation;
 mod gdext_bindings {
     use godot::prelude::*;
 
+    use godot::prelude::VarDictionary as Dictionary;
+
     use crate::battle::resolver::{ForceData, Terrain, resolve_battle};
     use crate::politics::system::{PoliticsState, default_policies};
     use crate::characters::order_deviation::{GeneralData, Temperament, calculate_deviation};
@@ -72,10 +74,11 @@ mod gdext_bindings {
             let outcome = resolve_battle(&attacker_force, &defender_force, terrain_val, &mut rng);
 
             let mut result = Dictionary::new();
-            result.insert("result",          outcome.result.as_str());
-            result.insert("attacker_score",  outcome.attacker_score);
-            result.insert("defender_score",  outcome.defender_score);
-            result.insert("random_factor",   outcome.random_factor);
+            result.insert("result",               outcome.result.as_str());
+            result.insert("ratio",                outcome.ratio);
+            result.insert("attacker_casualties",  outcome.attacker_casualties as i64);
+            result.insert("defender_casualties",  outcome.defender_casualties as i64);
+            result.insert("random_factor",        outcome.random_factor);
 
             let (atk_cas, def_cas) = outcome.result.casualty_rates();
             result.insert("attacker_casualty_rate", atk_cas);
@@ -91,11 +94,11 @@ mod gdext_bindings {
 
     fn dict_to_force(d: &Dictionary) -> ForceData {
         ForceData {
-            troops:        d.get("troops").map(|v| i64::from(v) as u32).unwrap_or(1000),
-            morale:        d.get("morale").map(|v| f64::from(v)).unwrap_or(70.0),
-            fatigue:       d.get("fatigue").map(|v| f64::from(v)).unwrap_or(20.0),
-            general_skill: d.get("general_skill").map(|v| f64::from(v)).unwrap_or(60.0),
-            supply_ok:     d.get("supply_ok").map(|v| bool::from(v)).unwrap_or(true),
+            troops:        d.get("troops").map(|v| v.to::<i64>() as u32).unwrap_or(1000),
+            morale:        d.get("morale").map(|v| v.to::<f64>()).unwrap_or(70.0),
+            fatigue:       d.get("fatigue").map(|v| v.to::<f64>()).unwrap_or(20.0),
+            general_skill: d.get("general_skill").map(|v| v.to::<f64>()).unwrap_or(60.0),
+            supply_ok:     d.get("supply_ok").map(|v| v.to::<bool>()).unwrap_or(true),
         }
     }
 
@@ -104,7 +107,7 @@ mod gdext_bindings {
             "hills"          => Terrain::Hills,
             "forest"         => Terrain::Forest,
             "urban"          => Terrain::Urban,
-            "river_crossing" => Terrain::RiverCrossing,
+            "river_crossing" => Terrain::RiverJunction,
             "ridgeline"      => Terrain::Ridgeline,
             _                => Terrain::Plains,
         }
@@ -207,15 +210,15 @@ mod gdext_bindings {
             let mut rng = rand::thread_rng();
 
             let temperament_str = general.get("temperament")
-                .map(|v| GString::from(v).to_string())
+                .map(|v| v.to::<GString>().to_string())
                 .unwrap_or_default();
 
             let general_data = GeneralData {
-                id:             general.get("id").map(|v| GString::from(v).to_string()).unwrap_or_default(),
-                name:           general.get("name").map(|v| GString::from(v).to_string()).unwrap_or_default(),
-                loyalty:        general.get("loyalty").map(|v| f64::from(v)).unwrap_or(50.0),
+                id:             general.get("id").map(|v| v.to::<GString>().to_string()).unwrap_or_default(),
+                name:           general.get("name").map(|v| v.to::<GString>().to_string()).unwrap_or_default(),
+                loyalty:        general.get("loyalty").map(|v| v.to::<f64>()).unwrap_or(50.0),
                 temperament:    Temperament::from_str(&temperament_str),
-                military_skill: general.get("military_skill").map(|v| f64::from(v)).unwrap_or(60.0),
+                military_skill: general.get("military_skill").map(|v| v.to::<f64>()).unwrap_or(60.0),
             };
 
             let result = calculate_deviation(
@@ -290,7 +293,7 @@ mod gdext_bindings {
                 "hills"          => T::Hills,
                 "forest"         => T::Forest,
                 "urban"          => T::Urban,
-                "river_crossing" => T::RiverCrossing,
+                "river_crossing" => T::RiverJunction,
                 "ridgeline"      => T::Ridgeline,
                 _                => T::Plains,
             };
