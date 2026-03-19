@@ -24,6 +24,12 @@ var armies: Dictionary = {}         # army_id -> ArmyData
 var map_control: Dictionary = {}    # node_id -> controller ("napoleon" / "enemy" / "neutral")
 var napoleon_location: String = "golfe_juan"
 
+# 军队摘要（从 CentJoursEngine.get_state() 同步，只读缓存）
+var total_troops: int   = 6000   # 当前总兵力
+var avg_morale:   float = 70.0   # 平均士气 0-100
+var avg_fatigue:  float = 20.0   # 平均疲劳 0-100
+var victories:    int   = 0      # 已赢得的战役场次
+
 # ── 政治状态 ──────────────────────────────────────────
 ## rouge_noir: -100（极端革命）到 +100（极端保守），0为均衡
 var rouge_noir_index: float = 0.0

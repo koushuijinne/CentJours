@@ -402,5 +402,21 @@ mod gdext_bindings {
         pub fn current_day(&self) -> i64 {
             self.engine.current_day() as i64
         }
+
+        /// 序列化引擎状态为 JSON 字符串（存档用）
+        #[func]
+        pub fn to_json(&self) -> GString {
+            GString::from(self.engine.to_json().as_str())
+        }
+
+        /// 从 JSON 字符串恢复引擎状态（读档用）
+        /// 成功返回 true，JSON 格式错误返回 false
+        #[func]
+        pub fn load_from_json(&mut self, json: GString) -> bool {
+            match crate::engine::GameEngine::from_json(json.to_string().as_str()) {
+                Ok(engine) => { self.engine = engine; true }
+                Err(_) => false,
+            }
+        }
     }
 }
