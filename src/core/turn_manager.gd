@@ -134,6 +134,17 @@ func _sync_state_from_engine() -> void:
 	if absf(GameState.legitimacy - old_legit) > 0.01:
 		EventBus.legitimacy_changed.emit(old_legit, GameState.legitimacy)
 
+	# 同步将领忠诚度（engine.get_all_loyalties() 是权威来源）
+	# engine.get_all_loyalties() 返回键：{ character_id(String): loyalty(float) }
+	var all_loyalties: Dictionary = engine.get_all_loyalties()
+	for char_id in all_loyalties:
+		if char_id in GameState.characters:
+			var old_loyalty: float = float(GameState.characters[char_id].get("loyalty", 50.0))
+			var new_loyalty: float = float(all_loyalties[char_id])
+			if absf(new_loyalty - old_loyalty) > 0.01:
+				GameState.characters[char_id]["loyalty"] = new_loyalty
+				EventBus.loyalty_changed.emit(char_id, old_loyalty, new_loyalty)
+
 ## 发射本次 Dawn 阶段新触发的历史事件信号
 func _emit_new_triggered_events() -> void:
 	var all_triggered: Array = Array(engine.get_triggered_events())

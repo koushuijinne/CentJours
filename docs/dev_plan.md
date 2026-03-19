@@ -1,6 +1,6 @@
 # Cent Jours — 开发优先级计划
 
-> **更新**: 2026-03-19 v12
+> **更新**: 2026-03-19 v13
 > **当前分支**: `claude/review-project-plan-LKKTR`
 
 ---
@@ -163,121 +163,22 @@ M6  打磨发布   ░░░░░░░░░░░░   0%
 
 ---
 
-## 优先级 A — 当前轮（无需 Godot 环境）
+## ✅ 优先级 A — 本轮已全部完成（2026-03-19）
 
-### 违规扫描（按严重程度排列）
-
-| # | 文件 | 违反原则 | 严重程度 |
+| # | 文件 | 违反原则 | 处理结果 |
 |---|------|---------|---------|
-| ① | `game_state.gd` | 单一状态源 + KISS（信号双发 Bug） | 🔴 P0 含 Bug |
-| ② | `battle_resolver.gd` | DRY + GDScript 薄层（完整解算逻辑重复） | 🟠 P1 技术债 |
-| ③ | `lib.rs` + `engine/` | 单一状态源（忠诚度未暴露给 GDScript） | 🟡 P2 功能缺口 |
-| ④ | `turn_manager.gd` | 单一状态源（loyalty 字段不从引擎同步） | 🟡 P2 依赖③ |
-| ⑤ | `docs/decisions/` | ADR 缺失（架构决策无记录） | 🔵 P3 文档债 |
+| ① | `game_state.gd` | 单一状态源 + KISS（信号双发 Bug） | ✅ Bug 修复，4 个违规方法已 stub |
+| ② | `battle_resolver.gd` | DRY + GDScript 薄层（138 行解算逻辑重复） | ✅ 精简为 35 行展示常量 |
+| ③ | `lib.rs` | 单一状态源（忠诚度未暴露给 GDScript） | ✅ 新增 `get_all_loyalties()` |
+| ④ | `turn_manager.gd` | 单一状态源（loyalty 不从引擎同步） | ✅ `_sync_state_from_engine()` 新增忠诚度同步块 |
+| ⑤ | `docs/decisions/` | ADR 缺失（架构决策无记录） | ✅ 新建 ADR-001、ADR-002 |
 
----
+**103/103 单元测试全部通过**（cargo test 验证，2026-03-19）
 
-### ① game_state.gd 清理 🔴 P0（含 Bug）
-
-**违反原则**：单一状态源、KISS
-
-**Bug**：`_check_loyalty_thresholds()` 在 `modify_loyalty()` 已发射一次信号后，
-再次以错误的参数值（`loyalty + 1.0` 作为 old_val）重复发射 `loyalty_changed`，
-会导致 UI 收到两次不一致的忠诚度变更通知。
-
-```gdscript
-# 当前错误实现（game_state.gd:133）
-func _check_loyalty_thresholds(character_id: String, loyalty: float) -> void:
-    if loyalty < DEFECTION_LOYALTY_THRESHOLD:
-        EventBus.loyalty_changed.emit(character_id, loyalty + 1.0, loyalty)  # ❌ 重复且参数错误
-```
-
-**目标**：
-- 删除 `_check_loyalty_thresholds()` 中的信号发射（信号已在 `modify_loyalty()` 中发射）
-- 将 `recalculate_legitimacy()` 替换为从 `engine.get_state()["legitimacy"]` 读取的只读同步入口
-- `modify_faction_support()` 和 `shift_rouge_noir()` 不应直接写入，应记录为"待通过 engine action 驱动"的注释桩
-
-**文件**: `src/core/game_state.gd`
-
----
-
-### ② battle_resolver.gd 精简 🟠 P1（技术债）
-
-**违反原则**：DRY、GDScript 薄层（SoC）
-
-`battle_resolver.gd` 包含完整的战斗解算逻辑（138 行），包括：
-- `_calculate_force_score()` — 与 Rust `BattleEngine` 完全重复
-- `_ratio_to_result()` — 阈值逻辑与 Rust 完全重复
-- `_calculate_casualties()` — 战损表与 Rust 完全重复
-- `_calculate_morale_impact()` — 士气表与 Rust 完全重复
-
-修改一条战斗规则（如地形加成），现在必须同时改两处。
-
-**目标**：精简为仅保留展示用元数据，战斗解算代理给 `BattleEngine`：
-
-```gdscript
-# 保留：UI Tooltip 展示用常量（纯展示，Rust 层无对应）
-const TERRAIN_DISPLAY_NAMES := { "plains": "平原", "hills": "山地", ... }
-const RESULT_DISPLAY_NAMES  := { "decisive_victory": "压倒性胜利", ... }
-
-# 移除：_calculate_force_score(), _ratio_to_result(),
-#        _calculate_casualties(), _calculate_morale_impact(), resolve()
-```
-
-**文件**: `src/core/campaign/battle_resolver.gd`
-
----
-
-### ③ CentJoursEngine 暴露将领忠诚度查询 🟡 P2
-
-**违反原则**：单一状态源（忠诚度目前只存在于 Rust 引擎内，GDScript 无法读取真实值）
-
-**目标**：在 `lib.rs` 中新增：
-
-```rust
-#[func]
-pub fn get_character_loyalty(&self, character_id: GString) -> f64 {
-    self.engine.get_loyalty(character_id.to_string().as_str())
-        .unwrap_or(50.0)
-}
-
-#[func]
-pub fn get_all_loyalties(&self) -> Dictionary {
-    // 返回 { character_id: loyalty_f64, ... }
-}
-```
-
-同时确认 `GameEngine` 有对应的 `get_loyalty()` 方法（或新增）。
-
-**文件**: `cent-jours-core/src/lib.rs` + `cent-jours-core/src/engine/`
-
----
-
-### ④ turn_manager.gd 补充 character loyalty 同步 🟡 P2（依赖③）
-
-在 `_sync_state_from_engine()` 中，通过 `engine.get_all_loyalties()` 更新
-`GameState.characters[id]["loyalty"]`，确保 UI 显示的忠诚度与引擎一致。
-
-**文件**: `src/core/turn_manager.gd`
-
----
-
-### ⑤ 补充 ADR 文档 🔵 P3
-
-在 `docs/decisions/` 目录下新建：
-- `ADR-001-rust-gdextension.md`：为何选 Rust + GDExtension 而非纯 GDScript
-- `ADR-002-gamestate-readonly-cache.md`：GameState 为只读缓存，不是第二个引擎
-
-格式（50 行以内）：
-```markdown
-# ADR-001: ...
-## 状态: 已采纳
-## 背景: ...
-## 决策: ...
-## 后果: ...
-```
-
-**文件**: `docs/decisions/`（新建目录）
+**GDScript 层现已完全合规**：
+- `GameState` → 只读缓存，无任何平行计算逻辑
+- `BattleResolver` → 纯展示常量，无业务逻辑
+- `TurnManager` → 单一同步入口，loyalty 闭环完成
 
 ---
 
@@ -294,21 +195,15 @@ pub fn get_all_loyalties(&self) -> Dictionary {
 
 ---
 
-## 开发顺序（当前轮）
+## GATE 3 前置条件（等待 Godot 环境）
 
-```
-① game_state.gd 清理        ← P0 Bug修复 + 状态源合规，独立可做
-② battle_resolver.gd 精简   ← P1 DRY违规修复，独立可做
-
-③ lib.rs get_all_loyalties   ← P2 Rust，需确认 engine 层接口
-④ turn_manager.gd loyalty同步 ← P2 GDScript，依赖③
-
-⑤ ADR 文档                  ← P3 纯文档，随时可做
-```
-
-**完成 ①②③④ → GDScript 层完全合规，角色状态闭环。**
-**完成 ① 同时修复已知 Bug。**
-届时进入 GATE 3 检查（等待 Godot 环境）。
+| 检查项 | 状态 |
+|--------|------|
+| GDScript 层完全合规（无业务逻辑、无平行计算） | ✅ 完成 |
+| GameState loyalty 与引擎闭环同步 | ✅ 完成 |
+| 103 单元测试全部通过 | ✅ 完成 |
+| GDExtension 集成测试（Godot 运行） | ⏳ 等待 Godot 环境 |
+| 完整回合流程端到端测试 | ⏳ 等待 Godot 环境 |
 
 ---
 

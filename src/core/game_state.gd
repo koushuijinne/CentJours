@@ -100,52 +100,28 @@ func _load_map() -> void:
 
 # ── 辅助方法 ──────────────────────────────────────────
 
-## 计算整体合法性（四势力加权平均）
-func recalculate_legitimacy() -> void:
-	var weights := {"liberals": 0.25, "nobility": 0.20, "populace": 0.30, "military": 0.25}
-	var total := 0.0
-	for faction_id in weights:
-		total += faction_support[faction_id] * weights[faction_id]
-	var old_legitimacy := legitimacy
-	legitimacy = total
-	if abs(legitimacy - old_legitimacy) > 0.01:
-		EventBus.legitimacy_changed.emit(old_legitimacy, legitimacy)
-
-## 获取角色当前忠诚度
+## 获取角色当前忠诚度（只读，供 CharacterManager / UI 查询）
 func get_loyalty(character_id: String) -> float:
 	if character_id in characters:
 		return float(characters[character_id].get("loyalty", 50))
 	return 0.0
 
-## 修改角色忠诚度，并发出信号
-func modify_loyalty(character_id: String, delta: float) -> void:
-	if not character_id in characters:
-		return
-	var old_val := float(characters[character_id]["loyalty"])
-	var new_val := clampf(old_val + delta, 0.0, 100.0)
-	characters[character_id]["loyalty"] = new_val
-	EventBus.loyalty_changed.emit(character_id, old_val, new_val)
-	_check_loyalty_thresholds(character_id, new_val)
+## [废弃] 合法性由 CentJoursEngine 权威维护，通过 TurnManager._sync_state_from_engine() 同步
+## 不应在 GDScript 层自行计算合法性
+func recalculate_legitimacy() -> void:
+	push_warning("[GameState] recalculate_legitimacy() 已废弃，legitimacy 由 CentJoursEngine 权威维护，请勿直接调用")
 
-func _check_loyalty_thresholds(character_id: String, loyalty: float) -> void:
-	if loyalty < DEFECTION_LOYALTY_THRESHOLD:
-		# 触发叛逃风险检查（由 CharacterManager 处理）
-		EventBus.loyalty_changed.emit(character_id, loyalty + 1.0, loyalty)
+## [废弃] 派系支持度由 CentJoursEngine 权威维护，变化须通过 TurnManager.submit_action() 驱动
+func modify_faction_support(_faction_id: String, _delta: float) -> void:
+	push_warning("[GameState] modify_faction_support() 已废弃，请通过 engine action 驱动派系变化")
 
-## 修改派系支持度
-func modify_faction_support(faction_id: String, delta: float) -> void:
-	if not faction_id in faction_support:
-		return
-	var old_val := faction_support[faction_id]
-	faction_support[faction_id] = clampf(old_val + delta, 0.0, 100.0)
-	EventBus.faction_support_changed.emit(faction_id, old_val, faction_support[faction_id])
-	if faction_support[faction_id] < POLITICAL_CRISIS_THRESHOLD:
-		EventBus.political_crisis.emit(faction_id, "critical")
-	recalculate_legitimacy()
+## [废弃] rouge_noir 由 CentJoursEngine 权威维护，TurnManager._sync_state_from_engine() 负责同步
+func shift_rouge_noir(_delta: float) -> void:
+	push_warning("[GameState] shift_rouge_noir() 已废弃，rouge_noir 由 CentJoursEngine 权威维护")
 
-## Rouge/Noir 指针移动（正值 → 偏Rouge，负值 → 偏Noir）
-func shift_rouge_noir(delta: float) -> void:
-	rouge_noir_index = clampf(rouge_noir_index + delta, -100.0, 100.0)
+## [废弃] 忠诚度由 CentJoursEngine 权威维护，将通过 engine.get_all_loyalties() 同步（见 task ③④）
+func modify_loyalty(_character_id: String, _delta: float) -> void:
+	push_warning("[GameState] modify_loyalty() 已废弃，忠诚度变化须通过 engine action 驱动")
 
 ## 检查游戏结束条件
 func check_game_over() -> String:

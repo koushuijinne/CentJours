@@ -403,6 +403,17 @@ mod gdext_bindings {
             self.engine.current_day() as i64
         }
 
+        /// 获取所有将领当前忠诚度快照
+        /// 返回 Dictionary：{ character_id(String): loyalty(float) }
+        #[func]
+        pub fn get_all_loyalties(&self) -> Dictionary {
+            let mut d = Dictionary::new();
+            for (id, &loyalty) in &self.engine.characters.loyalty {
+                d.insert(id.as_str(), loyalty);
+            }
+            d
+        }
+
         /// 序列化引擎状态为 JSON 字符串（存档用）
         #[func]
         pub fn to_json(&self) -> GString {
