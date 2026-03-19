@@ -1,6 +1,6 @@
 # Cent Jours — 开发优先级计划
 
-> **更新**: 2026-03-19 v15
+> **更新**: 2026-03-19 v16
 > **当前分支**: `claude/review-project-plan-LKKTR`
 
 ---
@@ -173,22 +173,123 @@ M6  打磨发布   ░░░░░░░░░░░░   0%
 
 ---
 
-## ✅ 优先级 A — 本轮已全部完成（2026-03-19）
+## 上轮完成摘要（2026-03-19）
 
-| # | 文件 | 违反原则 | 处理结果 |
+| # | 文件 | 处理结果 |
+|---|------|---------|
+| ① | `game_state.gd` | ✅ 信号双发 Bug 修复，4 个违规方法已 stub |
+| ② | `battle_resolver.gd` | ✅ 138 行→35 行，DRY 修复 |
+| ③ | `lib.rs` | ✅ 新增 `get_all_loyalties()` |
+| ④ | `turn_manager.gd` | ✅ loyalty 同步闭环 |
+| ⑤ | `docs/decisions/` | ✅ ADR-001、ADR-002 |
+
+---
+
+## 优先级 A — 当前轮（无需 Godot 环境）
+
+### 违规扫描结果（2026-03-19 重新扫描）
+
+| # | 文件 | 违反原则 | 严重程度 |
 |---|------|---------|---------|
-| ① | `game_state.gd` | 单一状态源 + KISS（信号双发 Bug） | ✅ Bug 修复，4 个违规方法已 stub |
-| ② | `battle_resolver.gd` | DRY + GDScript 薄层（138 行解算逻辑重复） | ✅ 精简为 35 行展示常量 |
-| ③ | `lib.rs` | 单一状态源（忠诚度未暴露给 GDScript） | ✅ 新增 `get_all_loyalties()` |
-| ④ | `turn_manager.gd` | 单一状态源（loyalty 不从引擎同步） | ✅ `_sync_state_from_engine()` 新增忠诚度同步块 |
-| ⑤ | `docs/decisions/` | ADR 缺失（架构决策无记录） | ✅ 新建 ADR-001、ADR-002 |
+| ① | `turn_manager.gd:91-146` | 边界契约缺失（Dictionary 键名无注释） | 🟠 P1 |
+| ② | `game_state.gd:12-14` vs `politics/system.rs` | DRY（忠诚度阈值常量两处定义，Rust 层无对应） | 🟡 P2 |
+| ③ | `engine/state.rs:561-623` | 硬编码将领 ID + 技能值（已知技术债，注释已承认） | 🟡 P2 |
 
-**103/103 单元测试全部通过**（cargo test 验证，2026-03-19）
+---
 
-**GDScript 层现已完全合规**：
-- `GameState` → 只读缓存，无任何平行计算逻辑
-- `BattleResolver` → 纯展示常量，无业务逻辑
-- `TurnManager` → 单一同步入口，loyalty 闭环完成
+### ① turn_manager.gd — 补充 Dictionary 边界契约注释 🟠 P1
+
+**违反原则**：边界契约（键名无注释，Rust 重命名时 GDScript 层会静默出错）
+
+`_sync_state_from_engine()` 和 `_run_dusk_phase()` 中访问三个未注释的 Dictionary：
+
+```gdscript
+# 当前无注释（turn_manager.gd:91-98）
+var report := engine.get_last_report()
+var day: int = report.get("day", ...)          # 键名来源？类型？
+if report.get("has_narrative", false):         # 键名来源？
+    var stendhal: String = report.get("stendhal", "")
+
+# 当前无注释（turn_manager.gd:119-124）
+var state := engine.get_state()
+GameState.legitimacy = float(state.get("legitimacy", ...))
+GameState.rouge_noir_index = float(state.get("rouge_noir", ...))
+```
+
+**目标**：在每处 `engine.*()` 调用前添加契约注释，说明返回键名和类型，来源指向 `lib.rs`。
+
+**文件**: `src/core/turn_manager.gd`
+
+---
+
+### ② game_state.gd — 忠诚度阈值常量 DRY 修复 🟡 P2
+
+**违反原则**：DRY
+
+GDScript 定义了三个阈值常量，Rust 层只有 `CRISIS_THRESHOLD` 有对应定义，
+忠诚度阈值在 Rust 层完全缺失：
+
+```gdscript
+# game_state.gd:12-14 — GDScript 侧
+const DEFECTION_LOYALTY_THRESHOLD: float   = 30.0
+const UNCONDITIONAL_LOYALTY_THRESHOLD: float = 80.0
+```
+
+```rust
+// characters/network.rs — Rust 侧：无对应常量
+// 如果引擎要判断叛逃风险，当前直接用魔法数字或不判断
+```
+
+**目标**：在 `cent-jours-core/src/characters/network.rs` 中新增：
+
+```rust
+pub const DEFECTION_LOYALTY_THRESHOLD: f64    = 30.0;
+pub const UNCONDITIONAL_LOYALTY_THRESHOLD: f64 = 80.0;
+```
+
+并在 `game_state.gd` 顶部注释说明这两个值与 Rust 层同源，修改须同步。
+
+**文件**: `cent-jours-core/src/characters/network.rs` + `src/core/game_state.gd`
+
+---
+
+### ③ engine/state.rs — 硬编码将领 ID 与技能值数据驱动化 🟡 P2
+
+**违反原则**：DRY、KISS（`characters.json` 已有数据，Rust 层重复硬编码）
+
+三处硬编码（`state.rs` 自身注释已承认这是技术债）：
+
+```rust
+// state.rs:615 — 注释："简化：实际应从 characters.json 加载"
+fn general_skill(id: &str) -> f64 {
+    match id {
+        "napoleon" => 98.0,
+        "ney"      => 85.0,
+        "davout"   => 82.0,
+        "grouchy"  => 68.0,
+        "soult"    => 72.0,
+        _          => 60.0,
+    }
+}
+
+// state.rs:561-564 — 事件触发上下文只感知 4 个人物
+ney_loyalty:     self.characters.loyalty("ney"),
+grouchy_loyalty: self.characters.loyalty("grouchy"),
+fouche_loyalty:  self.characters.loyalty("fouche"),
+
+// state.rs:573-576 — 事件效果只能作用于 ney/fouche
+self.characters.modify_loyalty("ney", d, day, "event");
+self.characters.modify_loyalty("fouche", d, day, "event");
+```
+
+**目标**：在 `GameEngine::new()` 初始化时从 `characters.json` 读取技能值，
+注入 `CharacterNetwork`；事件效果的将领 ID 改为由事件数据本身携带而非硬编码。
+
+**注意**：此任务改动量较大，需先写测试再实现（TDD）。拆分为子任务：
+- ③-a：`general_skill()` 改为从初始化参数读取（有测试保护）
+- ③-b：事件效果将领 ID 数据驱动化
+
+**文件**: `cent-jours-core/src/engine/state.rs` + `cent-jours-core/src/engine/`
 
 ---
 
@@ -196,11 +297,11 @@ M6  打磨发布   ░░░░░░░░░░░░   0%
 
 | 任务 | 阻塞原因 |
 |------|---------|
+| `rn_slider.gd:31-41` — `_process` 轮询改为 EventBus 信号订阅 | 需要 Godot 运行验证信号触发 |
 | UI 场景文件（.tscn） | 需要 Godot 编辑器 |
 | CentJoursEngine 节点挂载到场景树 | 需要 Godot 编辑器 |
 | GDExtension 集成测试 | 需要 Godot 运行环境 |
 | `decision_card.gd` 完整布局 | 需要可见 UI 布局确认 |
-| `rn_slider.gd` 信号化轮询（`_process` → 订阅信号） | 需要 Godot 运行确认 |
 | M5 美术资源 | 需要 Godot + 美术工具 |
 
 ---
