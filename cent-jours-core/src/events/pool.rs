@@ -94,6 +94,12 @@ impl HistoricalEvent {
         if let Some(min) = t.day_min {
             if ctx.day < min { return false; }
         }
+        // 反法同盟状态条件
+        if let Some(not_defeated) = t.coalition_not_defeated {
+            if not_defeated && ctx.coalition_defeated {
+                return false;
+            }
+        }
         // 通用将领忠诚度条件（loyalty_min / loyalty_max）
         for (id, &min) in &t.loyalty_min {
             if ctx.loyalty_map.get(id.as_str()).copied().unwrap_or(0.0) < min {
@@ -134,6 +140,9 @@ pub struct TriggerContext {
     /// 所有将领忠诚度快照（供 loyalty_min / loyalty_max 通用条件检查）
     /// key = character_id，与 characters.json 一致
     pub loyalty_map:               HashMap<String, f64>,
+    /// 反法同盟是否已被击败（对应 GameOutcome::NapoleonVictory）
+    /// Default = false（游戏进行中，联军尚未被击败）
+    pub coalition_defeated:        bool,
 }
 
 // ── 事件池 ────────────────────────────────────────────
@@ -249,6 +258,7 @@ mod tests {
             fouche_loyalty:            45.0,
             rouge_noir_index:          10.0,
             loyalty_map:               HashMap::new(),
+            coalition_defeated:        false,
         }
     }
 
@@ -477,5 +487,59 @@ mod tests {
         let available = pool.available_events(&ctx);
         let ids: Vec<&str> = available.iter().map(|e| e.id.as_str()).collect();
         assert!(ids.contains(&"allies_mobilization"), "Day 17应能触发同盟宣战: {:?}", ids);
+    }
+
+    // ── coalition_not_defeated 触发条件 ───────────────
+
+    #[test]
+    fn coalition_not_defeated为true时联军未败才触发() {
+        let json = r#"[{
+            "id": "battle_event", "label": "决战", "day_range": [1, 100],
+            "trigger": { "coalition_not_defeated": true },
+            "effects": {}, "narratives": ["test"]
+        }]"#;
+        let pool = EventPool::from_json(json).unwrap();
+        // 联军未被击败 → 应触发
+        let ctx_active = TriggerContext { day: 50, coalition_defeated: false, ..Default::default() };
+        assert_eq!(pool.available_events(&ctx_active).len(), 1, "联军未败应触发");
+        // 联军已被击败 → 不应触发
+        let ctx_defeated = TriggerContext { day: 50, coalition_defeated: true, ..Default::default() };
+        assert!(pool.available_events(&ctx_defeated).is_empty(), "联军已败不应触发");
+    }
+
+    #[test]
+    fn coalition_not_defeated为None时不影响触发() {
+        let json = r#"[{
+            "id": "neutral_event", "label": "中性事件", "day_range": [1, 100],
+            "trigger": {},
+            "effects": {}, "narratives": ["test"]
+        }]"#;
+        let pool = EventPool::from_json(json).unwrap();
+        // 无论联军状态均触发
+        let ctx = TriggerContext { day: 50, coalition_defeated: true, ..Default::default() };
+        assert_eq!(pool.available_events(&ctx).len(), 1, "无coalition_not_defeated条件应始终触发");
+    }
+
+    #[test]
+    fn 威灵顿山脊事件需要联军未败() {
+        let pool = EventPool::from_json(HISTORICAL_JSON).unwrap();
+        // 正常游戏中联军未被击败
+        let ctx_active = TriggerContext {
+            day: 90,
+            coalition_defeated: false,
+            napoleon_reputation: 65.0,
+            ..Default::default()
+        };
+        let ids: Vec<&str> = pool.available_events(&ctx_active).iter().map(|e| e.id.as_str()).collect();
+        assert!(ids.contains(&"wellington_ridge_position"), "联军未败时应触发威灵顿山脊: {:?}", ids);
+        // 联军已败则不触发
+        let ctx_defeated = TriggerContext {
+            day: 90,
+            coalition_defeated: true,
+            napoleon_reputation: 65.0,
+            ..Default::default()
+        };
+        let ids_d: Vec<&str> = pool.available_events(&ctx_defeated).iter().map(|e| e.id.as_str()).collect();
+        assert!(!ids_d.contains(&"wellington_ridge_position"), "联军已败不应触发威灵顿山脊");
     }
 }

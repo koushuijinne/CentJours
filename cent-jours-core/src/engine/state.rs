@@ -565,6 +565,8 @@ impl GameEngine {
             rouge_noir_index:          self.politics.rouge_noir_index,
             // 全量忠诚度快照（供 loyalty_min/loyalty_max 通用触发条件使用）
             loyalty_map:               self.characters.loyalty.clone(),
+            // 联军是否已被击败（仅 NapoleonVictory 结局表示联军被击败）
+            coalition_defeated:        matches!(self.outcome, Some(GameOutcome::NapoleonVictory)),
         }
     }
 

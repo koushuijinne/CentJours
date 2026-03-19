@@ -501,7 +501,6 @@ mod tests {
         assert_abs_diff_eq!(net.loyalty_log[0].delta, 5.0, epsilon = 0.001);
     }
 
-    #[test]
     // ── from_json 测试 ────────────────────────────────
 
     #[test]

@@ -1,6 +1,6 @@
 # Cent Jours — 开发优先级计划
 
-> **更新**: 2026-03-19 v18
+> **更新**: 2026-03-19 v19
 > **当前分支**: `claude/review-project-plan-LKKTR`
 
 ---
@@ -202,46 +202,36 @@ M6  打磨发布   ░░░░░░░░░░░░   0%
 
 ---
 
+## 上轮完成摘要（本轮 v19，2026-03-19）
+
+| # | 文件 | 处理结果 |
+|---|------|---------|
+| ① | `network.rs:507` | ✅ 删除孤立 `#[test]` 属性，消除 duplicate_macro_attributes warning |
+| ② | `pool.rs` + `state.rs` | ✅ `coalition_not_defeated` TDD 修复：`TriggerContext` 新增 `coalition_defeated: bool`；`can_trigger()` 添加检查；`build_trigger_ctx()` 从 `GameOutcome::NapoleonVictory` 推导；+3 新测试（111→113） |
+
+**113/113 单元测试全部通过**
+
+---
+
 ## 优先级 A — 当前轮（无需 Godot 环境）
 
-### 违规扫描（2026-03-19，本轮完成后重新扫描）
+### 违规扫描（2026-03-19，v19 完成后重新扫描）
 
-完成事件数据驱动化后，对剩余代码重新扫描。**当前无 P0/P1 违规。**
+**当前无 P0/P1/P2 违规。** 代码质量已全面合规。
 
 | # | 文件 | 问题 | 严重程度 |
 |---|------|------|---------|
-| ① | `network.rs:507` | 孤立 `#[test]` 属性（`危机将领列表正确识别()` 函数前缺少对应的属性声明，导致 compiler warning） | 🟡 P2 |
-| ② | `events/pool.rs` `EventTrigger` | `coalition_not_defeated` 字段定义但从未在 `can_trigger()` 中检查（与 davout_loyalty_min 同类 Bug） | 🟡 P2 |
+| — | — | 本轮扫描无新发现 | — |
 
 ---
 
-### ① network.rs — 修复孤立 #[test] 属性 warning 🟡 P2
+### 下一步建议
 
-**违反原则**：KISS（代码噪音，隐藏潜在测试遗漏）
+所有"无需 Godot"的 P0/P1/P2 问题已全部修复。优先级 A 任务清空。
 
-`network.rs:507` 有一个孤立的 `#[test]` 属性：
-
-```rust
-#[test]   // ← 494行：属于上一个测试的结束
-fn json解析失败返回错误() { ... }  // 513行：这个函数上方有两个 #[test]
-```
-
-导致 `duplicate_macro_attributes` warning。
-
-**文件**: `cent-jours-core/src/characters/network.rs:494-513`
-
----
-
-### ② events/pool.rs — `coalition_not_defeated` 从未检查 🟡 P2
-
-**违反原则**：KISS（Dead code，与已修复的 `davout_loyalty_min` 同类 Bug）
-
-`EventTrigger.coalition_not_defeated: Option<bool>` 定义于 pool.rs，
-但 `can_trigger()` 中没有对应的检查逻辑，该条件永远不会生效。
-
-**目标**：在 `can_trigger()` 中添加检查，或在 `TriggerContext` 中添加对应字段 `coalition_defeated: bool`。
-
-**文件**: `cent-jours-core/src/events/pool.rs`
+可选方向：
+1. **探索新的代码模块**，寻找尚未覆盖 TDD 的逻辑（如 `politics/system.rs`、`battle/resolver.rs`）
+2. **切换优先级 B**（需要 Godot 环境，见下方列表）
 
 ---
 
