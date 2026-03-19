@@ -51,7 +51,8 @@ pub struct GeneralData {
 
 pub const DISTANCE_PENALTY_PER_NODE: f64 = 0.05;   // 每个节点距离 +5% 偏差
 pub const MAX_DISTANCE_PENALTY:      f64 = 0.40;   // 最大通信距离惩罚 40%
-pub const DEFECTION_THRESHOLD:       f64 = 30.0;   // 忠诚度低于此值 → 可能拒绝命令
+/// 忠诚度低于此值 → 可能拒绝命令（单一来源：characters/network.rs::LOYALTY_CRISIS_THRESHOLD）
+pub use crate::characters::network::LOYALTY_CRISIS_THRESHOLD as DEFECTION_THRESHOLD;
 
 // ── 偏差结果 ──────────────────────────────────────────
 

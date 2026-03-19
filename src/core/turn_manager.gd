@@ -49,11 +49,11 @@ func begin_action_phase() -> void:
 
 ## 玩家提交行动
 ## action_type: "battle" | "policy" | "boost_loyalty" | "rest"
-## params: 对应行动所需参数
-##   battle       → { general_id: String, troops: int, terrain: String }
-##   policy       → { policy_id: String }
-##   boost_loyalty→ { general_id: String }
-##   rest         → {}
+## params 契约（来自 lib.rs CentJoursEngine 各 process_day_* 方法）:
+##   battle        → { general_id(String), troops(int), terrain(String) }
+##   policy        → { policy_id(String) }
+##   boost_loyalty → { general_id(String) }
+##   rest          → {}
 func submit_action(action_type: String, params: Dictionary = {}) -> void:
 	if current_phase != Phase.ACTION:
 		push_warning("[TurnManager] 不在 Action Phase，无法提交行动")
@@ -87,6 +87,11 @@ func _run_dusk_phase(action_type: String, params: Dictionary) -> void:
 	_sync_state_from_engine()
 
 	# ── 叙事报告 ─────────────────────────────────────
+	# engine.get_last_report() 返回键（来自 lib.rs CentJoursEngine::get_last_report）:
+	#   day(int)           — 发生该叙事的天数
+	#   has_narrative(bool)— 本回合是否有叙事内容
+	#   stendhal(String)   — 日记体叙事文本（可为空串）
+	#   consequence(String)— 行动后果文本（可为空串）
 	var report := engine.get_last_report()
 	var day: int = report.get("day", GameState.current_day)
 	if report.get("has_narrative", false):
@@ -99,6 +104,8 @@ func _run_dusk_phase(action_type: String, params: Dictionary) -> void:
 
 	# ── 检查游戏结束 ─────────────────────────────────
 	if engine.is_over():
+		# engine.get_state() 返回键（来自 lib.rs CentJoursEngine::get_state）:
+		#   outcome(String) — "waterloo_historical"|"political_collapse"|"triumph"|...
 		var state := engine.get_state()
 		EventBus.game_over.emit(state.get("outcome", "unknown"))
 		return
@@ -109,6 +116,18 @@ func _run_dusk_phase(action_type: String, params: Dictionary) -> void:
 # ── 内部辅助 ──────────────────────────────────────────
 
 ## 从 CentJoursEngine 读取状态并同步到 GameState 单例
+## engine.get_state() 返回键（来自 lib.rs CentJoursEngine::get_state）:
+##   day(int)         — 当前天数
+##   legitimacy(float)— 政治合法性 0-100
+##   rouge_noir(float)— 政治倾向 -100(极端革命)～+100(极端保守)
+##   troops(int)      — 当前总兵力
+##   morale(float)    — 平均士气 0-100
+##   fatigue(float)   — 平均疲劳 0-100
+##   victories(int)   — 已赢得战役场次
+##   is_over(bool)    — 游戏是否结束
+##   outcome(String)  — 结局标识（游戏进行中为 "in_progress"）
+##   factions(Dictionary) — { faction_id(String): support(float) }
+##     faction_id 取值: "liberals"|"nobility"|"populace"|"military"
 func _sync_state_from_engine() -> void:
 	var state := engine.get_state()
 
@@ -134,8 +153,9 @@ func _sync_state_from_engine() -> void:
 	if absf(GameState.legitimacy - old_legit) > 0.01:
 		EventBus.legitimacy_changed.emit(old_legit, GameState.legitimacy)
 
-	# 同步将领忠诚度（engine.get_all_loyalties() 是权威来源）
-	# engine.get_all_loyalties() 返回键：{ character_id(String): loyalty(float) }
+	# engine.get_all_loyalties() 返回键（来自 lib.rs CentJoursEngine::get_all_loyalties）:
+	#   { character_id(String): loyalty(float 0-100) }
+	#   character_id 取值: "ney"|"davout"|"grouchy"|"soult"|"fouche" 等（与 characters.json 一致）
 	var all_loyalties: Dictionary = engine.get_all_loyalties()
 	for char_id in all_loyalties:
 		if char_id in GameState.characters:
@@ -146,6 +166,7 @@ func _sync_state_from_engine() -> void:
 				EventBus.loyalty_changed.emit(char_id, old_loyalty, new_loyalty)
 
 ## 发射本次 Dawn 阶段新触发的历史事件信号
+## engine.get_triggered_events() 返回 Array[String]（事件 ID 列表，与 events/pool.rs 一致）
 func _emit_new_triggered_events() -> void:
 	var all_triggered: Array = Array(engine.get_triggered_events())
 	for event_id in all_triggered:

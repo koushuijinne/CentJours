@@ -1,6 +1,6 @@
 # Cent Jours — 开发优先级计划
 
-> **更新**: 2026-03-19 v16
+> **更新**: 2026-03-19 v17
 > **当前分支**: `claude/review-project-plan-LKKTR`
 
 ---
@@ -123,7 +123,7 @@ M5  美术音乐   ░░░░░░░░░░░░   0%
 M6  打磨发布   ░░░░░░░░░░░░   0%
 ```
 
-**103/103 单元测试全部通过**（最后运行：2026-03-19）
+**107/107 单元测试全部通过**（最后运行：2026-03-19，新增4个军事技能加载测试）
 
 **平衡结果**: Military 24.2% ✅ | Political 21.2% ✅ | Balanced 22.4% ✅
 
@@ -155,8 +155,10 @@ M6  打磨发布   ░░░░░░░░░░░░   0%
 | 战斗展示元数据 | `battle_resolver.gd` | — | ✅ v2 精简为展示常量（138行→35行，DRY修复） |
 | GameState 合规清理 | `game_state.gd` | — | ✅ v2 stub 违规方法，Bug修复（信号双发） |
 | 忠诚度引擎暴露 | `lib.rs` | — | ✅ 新增 `get_all_loyalties()` |
-| 忠诚度同步 | `turn_manager.gd` | — | ✅ `_sync_state_from_engine()` loyalty 闭环 |
+| 忠诚度同步 | `turn_manager.gd` | — | ✅ v3 `_sync_state_from_engine()` loyalty 闭环 + 全契约注释 |
 | 架构决策记录 | `docs/decisions/` | — | ✅ ADR-001（Rust+GDExtension）、ADR-002（只读缓存） |
+| 阈值常量 DRY 修复 | `order_deviation.rs` + `game_state.gd` | — | ✅ DEFECTION_THRESHOLD → re-export LOYALTY_CRISIS_THRESHOLD |
+| 将领技能数据驱动化 | `network.rs` + `state.rs` | 4 | ✅ TDD，修复 davout/soult 数值错误，107 tests |
 
 **合计**: 103 tests 全部通过
 
@@ -177,119 +179,55 @@ M6  打磨发布   ░░░░░░░░░░░░   0%
 
 | # | 文件 | 处理结果 |
 |---|------|---------|
-| ① | `game_state.gd` | ✅ 信号双发 Bug 修复，4 个违规方法已 stub |
-| ② | `battle_resolver.gd` | ✅ 138 行→35 行，DRY 修复 |
-| ③ | `lib.rs` | ✅ 新增 `get_all_loyalties()` |
-| ④ | `turn_manager.gd` | ✅ loyalty 同步闭环 |
-| ⑤ | `docs/decisions/` | ✅ ADR-001、ADR-002 |
+| ① | `turn_manager.gd` | ✅ 补充全部 Dictionary 边界契约注释（3 处 engine 调用） |
+| ② | `order_deviation.rs` / `game_state.gd` | ✅ DRY 修复：`DEFECTION_THRESHOLD` 改为 re-export `LOYALTY_CRISIS_THRESHOLD`；GDScript 侧注释 Rust 映射 |
+| ③ | `network.rs` + `state.rs` | ✅ 将领技能值数据驱动化（TDD，4 个新测试）；修复 davout(82→92)、soult(72→80) 数据错误 |
+
+**107/107 单元测试全部通过**
 
 ---
 
 ## 优先级 A — 当前轮（无需 Godot 环境）
 
-### 违规扫描结果（2026-03-19 重新扫描）
+### 违规扫描结果（2026-03-19 上轮完成后重新扫描）
 
-| # | 文件 | 违反原则 | 严重程度 |
+上轮 3 项 Priority A 全部完成。已完成扫描，当前**无新的 P0/P1 违规**。
+
+| # | 文件 | 剩余问题 | 严重程度 |
 |---|------|---------|---------|
-| ① | `turn_manager.gd:91-146` | 边界契约缺失（Dictionary 键名无注释） | 🟠 P1 |
-| ② | `game_state.gd:12-14` vs `politics/system.rs` | DRY（忠诚度阈值常量两处定义，Rust 层无对应） | 🟡 P2 |
-| ③ | `engine/state.rs:561-623` | 硬编码将领 ID + 技能值（已知技术债，注释已承认） | 🟡 P2 |
+| ① | `engine/state.rs:561-576` | 事件效果仅硬编码作用于 ney/fouche（事件将领 ID 数据驱动化 ③-b 未完成） | 🟡 P2 |
+| ② | `engine/state.rs:561-564` | 事件触发上下文仅感知 ney/grouchy/fouche 三人（扩展性受限） | 🟡 P2 |
+
+> **注**：① 和 ② 是同一技术债的剩余部分（③-b 任务），改动量大，需 TDD + 数据格式设计，
+> 建议单独作为下一轮 Priority A 主任务。
 
 ---
 
-### ① turn_manager.gd — 补充 Dictionary 边界契约注释 🟠 P1
+### ① events — 事件效果将领 ID 数据驱动化（③-b） 🟡 P2
 
-**违反原则**：边界契约（键名无注释，Rust 重命名时 GDScript 层会静默出错）
+**违反原则**：DRY、YAGNI（目前只有 ney/fouche 两人能被事件影响）
 
-`_sync_state_from_engine()` 和 `_run_dusk_phase()` 中访问三个未注释的 Dictionary：
-
-```gdscript
-# 当前无注释（turn_manager.gd:91-98）
-var report := engine.get_last_report()
-var day: int = report.get("day", ...)          # 键名来源？类型？
-if report.get("has_narrative", false):         # 键名来源？
-    var stendhal: String = report.get("stendhal", "")
-
-# 当前无注释（turn_manager.gd:119-124）
-var state := engine.get_state()
-GameState.legitimacy = float(state.get("legitimacy", ...))
-GameState.rouge_noir_index = float(state.get("rouge_noir", ...))
-```
-
-**目标**：在每处 `engine.*()` 调用前添加契约注释，说明返回键名和类型，来源指向 `lib.rs`。
-
-**文件**: `src/core/turn_manager.gd`
-
----
-
-### ② game_state.gd — 忠诚度阈值常量 DRY 修复 🟡 P2
-
-**违反原则**：DRY
-
-GDScript 定义了三个阈值常量，Rust 层只有 `CRISIS_THRESHOLD` 有对应定义，
-忠诚度阈值在 Rust 层完全缺失：
-
-```gdscript
-# game_state.gd:12-14 — GDScript 侧
-const DEFECTION_LOYALTY_THRESHOLD: float   = 30.0
-const UNCONDITIONAL_LOYALTY_THRESHOLD: float = 80.0
-```
+**现状**：`apply_event_effects()` 硬编码只有 ney 和 fouche 的忠诚度能被事件修改：
 
 ```rust
-// characters/network.rs — Rust 侧：无对应常量
-// 如果引擎要判断叛逃风险，当前直接用魔法数字或不判断
-```
-
-**目标**：在 `cent-jours-core/src/characters/network.rs` 中新增：
-
-```rust
-pub const DEFECTION_LOYALTY_THRESHOLD: f64    = 30.0;
-pub const UNCONDITIONAL_LOYALTY_THRESHOLD: f64 = 80.0;
-```
-
-并在 `game_state.gd` 顶部注释说明这两个值与 Rust 层同源，修改须同步。
-
-**文件**: `cent-jours-core/src/characters/network.rs` + `src/core/game_state.gd`
-
----
-
-### ③ engine/state.rs — 硬编码将领 ID 与技能值数据驱动化 🟡 P2
-
-**违反原则**：DRY、KISS（`characters.json` 已有数据，Rust 层重复硬编码）
-
-三处硬编码（`state.rs` 自身注释已承认这是技术债）：
-
-```rust
-// state.rs:615 — 注释："简化：实际应从 characters.json 加载"
-fn general_skill(id: &str) -> f64 {
-    match id {
-        "napoleon" => 98.0,
-        "ney"      => 85.0,
-        "davout"   => 82.0,
-        "grouchy"  => 68.0,
-        "soult"    => 72.0,
-        _          => 60.0,
-    }
+// state.rs:573-576
+if let Some(d) = effects.ney_loyalty_delta {
+    self.characters.modify_loyalty("ney", d, day, "event");
 }
-
-// state.rs:561-564 — 事件触发上下文只感知 4 个人物
-ney_loyalty:     self.characters.loyalty("ney"),
-grouchy_loyalty: self.characters.loyalty("grouchy"),
-fouche_loyalty:  self.characters.loyalty("fouche"),
-
-// state.rs:573-576 — 事件效果只能作用于 ney/fouche
-self.characters.modify_loyalty("ney", d, day, "event");
-self.characters.modify_loyalty("fouche", d, day, "event");
+if let Some(d) = effects.fouche_loyalty_delta {
+    self.characters.modify_loyalty("fouche", d, day, "event");
+}
 ```
 
-**目标**：在 `GameEngine::new()` 初始化时从 `characters.json` 读取技能值，
-注入 `CharacterNetwork`；事件效果的将领 ID 改为由事件数据本身携带而非硬编码。
+**目标**：将 `EventEffects` 中的 `ney_loyalty_delta` / `fouche_loyalty_delta` 替换为通用的
+`HashMap<String, f64>`，由事件数据携带将领 ID，不在代码层硬编码。
 
-**注意**：此任务改动量较大，需先写测试再实现（TDD）。拆分为子任务：
-- ③-a：`general_skill()` 改为从初始化参数读取（有测试保护）
-- ③-b：事件效果将领 ID 数据驱动化
+**TDD 子步骤**：
+1. Red — 写测试：事件效果应能作用于 davout
+2. Green — 修改 `EventEffects` 结构 + `apply_event_effects()`
+3. Refactor — 更新 `events/pool.rs` 中事件触发上下文
 
-**文件**: `cent-jours-core/src/engine/state.rs` + `cent-jours-core/src/engine/`
+**文件**: `cent-jours-core/src/engine/state.rs` + `cent-jours-core/src/events/`
 
 ---
 

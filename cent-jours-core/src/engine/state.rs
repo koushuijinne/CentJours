@@ -609,17 +609,9 @@ impl GameEngine {
 
     // ── 辅助方法 ──────────────────────────────────────
 
-    /// 获取将领军事技能（从网络中查，不存在返回60）
+    /// 获取将领军事技能（单一来源：characters.json，通过 CharacterNetwork 加载）
     fn general_skill(&self, id: &str) -> f64 {
-        // 简化：实际应从 characters.json 加载
-        match id {
-            "napoleon" => 98.0,
-            "ney"      => 85.0,
-            "davout"   => 82.0,
-            "grouchy"  => 68.0,
-            "soult"    => 72.0,
-            _          => 60.0,
-        }
+        self.characters.skill(id)
     }
 
     /// 构建当前联军兵力（随时间增长）

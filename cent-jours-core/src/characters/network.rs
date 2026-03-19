@@ -10,9 +10,10 @@ use crate::battle::resolver::BattleResult;
 
 #[derive(Debug, Deserialize)]
 struct CharacterEntry {
-    pub id:            String,
-    pub loyalty:       f64,
-    pub relationships: HashMap<String, f64>,
+    pub id:             String,
+    pub loyalty:        f64,
+    pub military_skill: f64,
+    pub relationships:  HashMap<String, f64>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -117,6 +118,8 @@ pub struct LoyaltyEvent {
 pub struct CharacterNetwork {
     /// 各将领当前忠诚度（0-100）
     pub loyalty: HashMap<String, f64>,
+    /// 各将领军事技能（0-100），从 characters.json 加载，唯一来源
+    pub skills: HashMap<String, f64>,
     /// 双向关系强度（-100..100），key=(id_a, id_b)，a<b字典序
     pub relationships: HashMap<(String, String), f64>,
     /// 审计日志
@@ -130,9 +133,15 @@ impl CharacterNetwork {
         Self::default()
     }
 
-    /// 添加将领（初始忠诚度）
+    /// 添加将领（初始忠诚度，技能值默认60）
     pub fn add_general(&mut self, id: &str, initial_loyalty: f64) {
         self.loyalty.insert(id.to_string(), initial_loyalty.clamp(0.0, 100.0));
+        self.skills.entry(id.to_string()).or_insert(60.0);
+    }
+
+    /// 获取将领军事技能（唯一来源：characters.json，未知将领返回60）
+    pub fn skill(&self, id: &str) -> f64 {
+        self.skills.get(id).copied().unwrap_or(60.0)
     }
 
     /// 设置两将领之间的初始关系值
@@ -249,9 +258,10 @@ impl CharacterNetwork {
         let data: CharactersFile = serde_json::from_str(json)?;
         let mut net = Self::new();
 
-        // 先添加所有将领的忠诚度
+        // 先添加所有将领的忠诚度和技能值
         for ch in &data.characters {
             net.add_general(&ch.id, ch.loyalty);
+            net.skills.insert(ch.id.clone(), ch.military_skill.clamp(0.0, 100.0));
         }
 
         // 再设置关系
@@ -524,6 +534,41 @@ mod tests {
     fn json解析失败返回错误() {
         let result = CharacterNetwork::from_json("{invalid json}");
         assert!(result.is_err());
+    }
+
+    // ── 军事技能加载（数据驱动化）────────────────────────
+
+    #[test]
+    fn json加载后达武技能值正确() {
+        // characters.json: davout.military_skill = 92（非 state.rs 硬编码的 82）
+        const JSON: &str = include_str!("../../../src/data/characters.json");
+        let net = CharacterNetwork::from_json(JSON).expect("parse error");
+        use approx::assert_abs_diff_eq;
+        assert_abs_diff_eq!(net.skill("davout"), 92.0, epsilon = 0.001);
+    }
+
+    #[test]
+    fn json加载后内伊技能值正确() {
+        const JSON: &str = include_str!("../../../src/data/characters.json");
+        let net = CharacterNetwork::from_json(JSON).expect("parse error");
+        use approx::assert_abs_diff_eq;
+        assert_abs_diff_eq!(net.skill("ney"), 85.0, epsilon = 0.001);
+    }
+
+    #[test]
+    fn json加载后苏尔特技能值正确() {
+        // characters.json: soult.military_skill = 80（非 state.rs 硬编码的 72）
+        const JSON: &str = include_str!("../../../src/data/characters.json");
+        let net = CharacterNetwork::from_json(JSON).expect("parse error");
+        use approx::assert_abs_diff_eq;
+        assert_abs_diff_eq!(net.skill("soult"), 80.0, epsilon = 0.001);
+    }
+
+    #[test]
+    fn 未知将领默认技能值60() {
+        let net = CharacterNetwork::new();
+        use approx::assert_abs_diff_eq;
+        assert_abs_diff_eq!(net.skill("unknown_general"), 60.0, epsilon = 0.001);
     }
 
     fn 危机将领列表正确识别() {
