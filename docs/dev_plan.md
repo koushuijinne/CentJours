@@ -1,6 +1,6 @@
 # Cent Jours — 开发优先级计划
 
-> **更新**: 2026-03-19 v10
+> **更新**: 2026-03-19 v11
 > **当前分支**: `claude/review-project-plan-LKKTR`
 
 ---
@@ -29,6 +29,15 @@
 > - 原则：文档反映当前真实状态，而非计划状态
 > - **已完成的轮次内容定期清除**，只保留当前优先级和模块清单
 
+> **完成大任务后立即更新 plan.md**
+>
+> 每完成一个里程碑（M 级）或大型功能组，立即：
+> - 清理本文档中已完成的优先级条目（不留"已完成"占位行）
+> - 重新扫描代码库，发现新的技术债或不一致
+> - 重排剩余任务优先级，确保 A 组始终是"现在就能做"的最高价值任务
+>
+> 判断标准：plan.md 超过一个工作轮次没有更新，说明流程出了问题。
+
 > **GDScript 薄层原则**
 >
 > GDScript 层不包含任何业务逻辑，只负责：
@@ -51,9 +60,9 @@
 M0  预研      ████████████ 100% ✅
 M0.5 视觉定调  ████████████ 100% ✅
 M1  核心循环   ██████████░░  85% 🔶 Rust层✅，EventPool集成✅，Godot待安装
-M2  政治系统   ███████████░  90% ✅ Rust层✅，平衡达标，UI待Godot
+M2  政治系统   ███████████░  90% 🔶 Rust层✅，平衡达标，UI待Godot
 M3  将领网络   ████████████ 100% ✅ GATE 2 通过
-M4  内容填充   ████████████ 100% GDScript桥接层✅，叙事全覆盖✅，存档系统✅，GDScript精简✅
+M4  内容填充   ████████████ 100% ✅ GDScript桥接层✅，叙事全覆盖✅，存档系统✅，GDScript精简✅
 M5  美术音乐   ░░░░░░░░░░░░   0%
 M6  打磨发布   ░░░░░░░░░░░░   0%
 ```
@@ -103,80 +112,88 @@ M6  打磨发布   ░░░░░░░░░░░░   0%
 
 ---
 
-## 优先级 A — 当前轮（⚠️ 含阻塞性 Bug）
+## 优先级 A — 当前轮（无需 Godot 环境）
 
-### ① game_state.gd 补充缺失字段 ⚠️
+### ① battle_resolver.gd 精简 ⚠️ 违反薄层原则
 
-`turn_manager.gd` v2 的 `_sync_state_from_engine()` 写入了 4 个未声明的字段，装上 Godot 即崩溃：
+`battle_resolver.gd` 包含完整的战斗解算逻辑（130+ 行），与 Rust `BattleEngine` 完全重复，
+严重违反 GDScript 薄层原则。
+
+**目标**：精简为仅保留地形常量映射和辅助展示方法，战斗解算代理给 `BattleEngine`：
 
 ```gdscript
-# 需追加到 game_state.gd「行军与战役状态」区块
-var total_troops: int   = 6000   # 从 CentJoursEngine 同步
-var avg_morale:   float = 70.0
-var avg_fatigue:  float = 20.0
-var victories:    int   = 0
+# 保留：地形字符串→显示名映射（UI Tooltip用）
+const TERRAIN_DISPLAY_NAMES := { "plains": "平原", "hills": "山地", ... }
+
+# 移除：_calculate_force_score(), _ratio_to_result(),
+#        _calculate_casualties(), _calculate_morale_impact()
+#        resolve() 整个解算方法
 ```
+
+**文件**: `src/core/campaign/battle_resolver.gd`
+
+---
+
+### ② game_state.gd 清理平行计算方法 ⚠️ 违反单一状态源原则
+
+`GameState` 中以下方法在 GDScript 层维护独立计算逻辑，与引擎状态源冲突：
+
+- `recalculate_legitimacy()` — 合法性已由 `CentJoursEngine.get_state()["legitimacy"]` 提供
+- `modify_faction_support()` — 派系支持不能直接从 GDScript 修改，应通过 engine action 驱动
+- `shift_rouge_noir()` — rouge_noir 由引擎决定，GDScript 不应直接写入
+
+**目标**：将上述方法替换为只读的同步入口，删除直接修改逻辑。
 
 **文件**: `src/core/game_state.gd`
 
 ---
 
-### ② lib.rs 补充 `load_from_json` GDExtension 方法
+### ③ CentJoursEngine 暴露将领忠诚度查询
 
-`CentJoursEngine` 有 `to_json()` 但缺 `load_from_json()`，存档读取无法闭环。
+当前 `get_state()` 只返回聚合军队数据，不含各将领忠诚度。
+`GameState.characters` 中的 `loyalty` 字段在游戏运行时从不更新，会与引擎内部状态漂移。
+
+**目标**：在 `lib.rs` 中新增：
 
 ```rust
 #[func]
-pub fn load_from_json(&mut self, json: GString) -> bool {
-    match crate::engine::GameEngine::from_json(json.to_string().as_str()) {
-        Ok(engine) => { self.engine = engine; true }
-        Err(_) => false,
-    }
+pub fn get_character_loyalty(&self, character_id: GString) -> f64 {
+    self.engine.get_loyalty(character_id.to_string().as_str())
+        .unwrap_or(50.0)
+}
+
+#[func]
+pub fn get_all_loyalties(&self) -> Dictionary {
+    // 返回 { character_id: loyalty_f64, ... }
 }
 ```
 
-**文件**: `cent-jours-core/src/lib.rs`
+同时确认 `GameEngine` 有对应的 `get_loyalty()` 方法（或新增）。
+
+**文件**: `cent-jours-core/src/lib.rs` + `cent-jours-core/src/engine/`
 
 ---
 
-### ③ 新建 save_manager.gd
+### ④ turn_manager.gd 补充 character loyalty 同步
 
-封装 `CentJoursEngine.to_json()` / `load_from_json()` 与 `FileAccess` 的交互，实现存读档。
+在 `_sync_state_from_engine()` 中，通过 `engine.get_all_loyalties()` 更新
+`GameState.characters[id]["loyalty"]`，确保 UI 显示的忠诚度与引擎一致。
 
-**文件**: `src/core/save_manager.gd`（新建）
+依赖 ③ 完成。
 
----
-
-## 优先级 B — 当前轮
-
-### ④ character_manager.gd 精简
-
-当前 175 行含命令偏差计算、忠诚度网络等已被 engine 接管的逻辑。精简为：
-- **保留**: `get_at_risk_characters()`、`get_available_commanders()`（UI查询）
-- **移除**: `process_orders_with_deviation()`、手写偏差计算
-
-**文件**: `src/core/characters/character_manager.gd`
+**文件**: `src/core/turn_manager.gd`
 
 ---
 
-### ⑤ march_system.gd 精简
-
-执行路径已被 engine 取代。精简为：
-- **保留**: `find_path()`、`get_distance()`（地图UI路径渲染用）
-- **移除**: `move_army()`、`update_supply()`、`rest_army()` 执行方法
-
-**文件**: `src/core/campaign/march_system.gd`
-
----
-
-## 优先级 C — 需要 Godot 环境
+## 优先级 B — 需要 Godot 环境
 
 | 任务 | 阻塞原因 |
 |------|---------|
 | UI 场景文件（.tscn） | 需要 Godot 编辑器 |
 | CentJoursEngine 节点挂载到场景树 | 需要 Godot 编辑器 |
 | GDExtension 集成测试 | 需要 Godot 运行环境 |
-| `decision_card.gd` 完整实现 | 需要可见 UI 布局 |
+| `decision_card.gd` 完整布局 | 需要可见 UI 布局确认 |
+| `rn_slider.gd` 信号化轮询（`_process` → 订阅信号） | 需要 Godot 运行确认 |
 | M5 美术资源 | 需要 Godot + 美术工具 |
 
 ---
@@ -184,16 +201,15 @@ pub fn load_from_json(&mut self, json: GString) -> bool {
 ## 开发顺序（当前轮）
 
 ```
-① game_state.gd 补充字段     ← ⚠️ 修复阻塞 Bug，5 分钟
-② lib.rs load_from_json      ← Rust，15 分钟，存档读取闭环
-③ save_manager.gd 新建       ← GDScript，配合②
+① battle_resolver.gd 精简     ← GDScript，薄层违规修复，独立可做
+② game_state.gd 清理          ← GDScript，状态源违规修复，独立可做
 
-并行：
-④ character_manager.gd 精简
-⑤ march_system.gd 精简
+③ lib.rs get_character_loyalty ← Rust，需先确认 engine 层接口
+④ turn_manager.gd loyalty 同步 ← GDScript，依赖 ③
 ```
 
-**完成 ①②③ = M4 100%**，等待 Godot 环境进入 M5。
+**完成 ①②③④ → GDScript 层完全合规，角色状态闭环。**
+届时进入 GATE 3 检查（等待 Godot 环境）。
 
 ---
 
