@@ -1,6 +1,6 @@
 # Cent Jours — 开发优先级计划
 
-> **更新**: 2026-03-19 v7
+> **更新**: 2026-03-19 v8
 > **当前分支**: `claude/review-project-plan-LKKTR`
 
 ---
@@ -44,7 +44,7 @@ M0.5 视觉定调  ████████████ 100% ✅
 M1  核心循环   ██████████░░  85% 🔶 Rust层✅，EventPool集成✅，Godot待安装
 M2  政治系统   ███████████░  90% ✅ Rust层✅，平衡达标，UI待Godot
 M3  将领网络   ████████████ 100% ✅ GATE 2 通过
-M4  内容填充   █████████░░░  82% 事件池30条✅，叙事✅，叙事引擎✅，GDExt节点✅，Save/Load✅，Godot4.6升级✅
+M4  内容填充   ███████████░  95% GDScript桥接层✅，全政策叙事覆盖✅，缺game_state字段补全
 M5  美术音乐   ░░░░░░░░░░░░   0%
 M6  打磨发布   ░░░░░░░░░░░░   0%
 ```
@@ -66,12 +66,15 @@ M6  打磨发布   ░░░░░░░░░░░░   0%
 | 政治系统 | `politics/system.rs` | 8 | ✅ |
 | 命令偏差 | `characters/order_deviation.rs` | 6 | ✅ |
 | 将领关系网络 | `characters/network.rs` | 23 | ✅ 含from_json |
-| 三系统状态机 | `engine/state.rs` | 16 | ✅ 含EventPool集成 3新测试 |
-| 历史事件池 | `events/pool.rs` | 13 | ✅ 30条事件（+6新增） |
-| 蒙特卡洛模拟 | `simulation/monte_carlo.rs` | 8 | ✅ 已简化（EventPool内嵌） |
-| 叙事引擎 | `narratives/mod.rs` | — | ✅ NarrativePool + DayReport |
-| GDExtension节点 | `lib.rs` | — | ✅ CentJoursEngine统一节点 |
+| 三系统状态机 | `engine/state.rs` | 16 | ✅ 含EventPool集成 |
+| 历史事件池 | `events/pool.rs` | 13 | ✅ 30条事件×5条叙事 |
+| 蒙特卡洛模拟 | `simulation/monte_carlo.rs` | 8 | ✅ |
+| 叙事引擎 | `narratives/mod.rs` | 8 | ✅ 11类stendhal + 12类consequence |
+| GDExtension节点 | `lib.rs` | — | ✅ 4节点（Battle/Politics/Character/Game） |
 | Save/Load序列化 | `engine/state.rs` | — | ✅ SaveState + to_json/from_json |
+| GDScript桥接层 | `turn_manager.gd` | — | ✅ v2 接入CentJoursEngine |
+| 政治UI层 | `political_system.gd` | — | ✅ v2 精简为展示层 |
+| 命令偏差代理 | `order_deviation.gd` | — | ✅ v2 CharacterManager代理 |
 
 **合计**: 103 tests | 全部通过
 
@@ -470,19 +473,163 @@ func daily_tick():
 
 ---
 
+## 开发顺序（v7 轮）✅ 全部完成（2026-03-19）
+
+```
+① turn_manager.gd 接入 CentJoursEngine    ✅
+② political_system.gd 精简为展示层        ✅
+③ order_deviation.gd 改为 CharacterManager 代理  ✅
+
+并行：
+④ 补全 4 个政策叙事文本（grant_titles/increase_military_budget/print_money/secret_diplomacy） ✅
+⑤ 历史事件叙事 2→5 条（已提前完成，无需补充） ✅
+```
+
+---
+
+## 优先级 A — 当前轮（⚠️ 含阻塞性 Bug，无 Godot 可完成）
+
+### ① game_state.gd 补充缺失字段 ⚠️ 阻塞性
+
+**问题**: `turn_manager.gd` v2 的 `_sync_state_from_engine()` 写入了 4 个 `GameState` 中不存在的字段：
+
+```gdscript
+GameState.total_troops  # ❌ 未声明
+GameState.avg_morale    # ❌ 未声明
+GameState.avg_fatigue   # ❌ 未声明
+GameState.victories     # ❌ 未声明
+```
+
+**影响**: 安装 Godot 后第一次运行即报错崩溃。
+
+**修复**（在 `game_state.gd` `# ── 行军与战役状态` 区块追加）:
+```gdscript
+# 军队摘要（从 CentJoursEngine 同步，只读）
+var total_troops: int   = 6000   # 当前总兵力
+var avg_morale:   float = 70.0   # 平均士气
+var avg_fatigue:  float = 20.0   # 平均疲劳
+var victories:    int   = 0      # 战役胜利次数
+```
+
+**文件**: `src/core/game_state.gd`
+
+---
+
+### ② 存档系统 GDScript 接口
+
+**目标**: 新建 `src/core/save_manager.gd`，封装 `CentJoursEngine.to_json()` / `from_json()` 与 Godot `FileAccess` 的交互，实现游戏存读档。
+
+**接口设计**:
+```gdscript
+class_name SaveManager
+extends Node
+
+const SAVE_PATH := "user://cent_jours_save.json"
+
+## 存档：调用 Rust 引擎序列化，写入磁盘
+static func save_game(engine: CentJoursEngine) -> bool:
+    var json_str: String = engine.to_json()
+    var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
+    if not file: return false
+    file.store_string(json_str)
+    return true
+
+## 读档：从磁盘加载，调用 Rust 引擎反序列化，返回是否成功
+static func load_game(engine: CentJoursEngine) -> bool:
+    if not FileAccess.file_exists(SAVE_PATH): return false
+    var file := FileAccess.open(SAVE_PATH, FileAccess.READ)
+    if not file: return false
+    return engine.load_from_json(file.get_as_text())
+
+static func has_save() -> bool:
+    return FileAccess.file_exists(SAVE_PATH)
+
+static func delete_save() -> void:
+    DirAccess.remove_absolute(SAVE_PATH)
+```
+
+**注意**: Rust `CentJoursEngine` 需要暴露 `load_from_json(json: GString) -> bool`，当前只有 `to_json()`，需在 `lib.rs` 补充该方法。
+
+**文件**: `src/core/save_manager.gd` + `cent-jours-core/src/lib.rs`
+
+---
+
+### ③ lib.rs 补充 `load_from_json` GDExtension 方法
+
+**目标**: `CentJoursEngine` 当前只有 `to_json() -> GString`，缺少 `load_from_json(GString) -> bool`，存档系统无法完成读档。
+
+**改动** (在 `lib.rs` 的 `CentJoursEngine` impl 中追加):
+```rust
+/// 从 JSON 字符串恢复引擎状态（读档）
+/// 成功返回 true，JSON 解析失败返回 false
+#[func]
+pub fn load_from_json(&mut self, json: GString) -> bool {
+    match crate::engine::GameEngine::from_json(json.to_string().as_str()) {
+        Ok(engine) => {
+            self.engine = engine;
+            true
+        }
+        Err(_) => false,
+    }
+}
+```
+
+**文件**: `cent-jours-core/src/lib.rs`
+
+---
+
+## 优先级 B — 当前轮（无 Godot 可完成）
+
+### ④ character_manager.gd 精简
+
+**目标**: `character_manager.gd` 当前有约 175 行，包含命令偏差计算、忠诚度网络、历史事件触发等自有实现——这些现在全由 `CentJoursEngine` 内部处理。精简为状态展示层（类似 `political_system.gd` v2 的思路）。
+
+**保留**: `get_at_risk_characters()`、`get_available_commanders()`（UI 用）
+
+**移除**: 命令偏差计算（已由 `CharacterManager` GDExtension 处理）、`process_orders_with_deviation()`（已由 `turn_manager.gd` v2 通过 engine 处理）
+
+**文件**: `src/core/characters/character_manager.gd`
+
+---
+
+### ⑤ march_system.gd 与 battle_resolver.gd 标记与精简
+
+**现状**: 两个文件仍有完整的 GDScript 侧计算实现，但执行路径已被 `CentJoursEngine` 取代。
+
+**行动**:
+- `march_system.gd`：保留 `find_path()` / `get_distance()` 等地图查询方法（供地图 UI 渲染路径使用），移除 `move_army()` / `update_supply()` 执行方法
+- `battle_resolver.gd`：添加文件头注释说明该文件已被 `CentJoursEngine` 取代，保留作为文档参考，实际不再调用
+
+**文件**: `src/core/campaign/march_system.gd`、`src/core/campaign/battle_resolver.gd`
+
+---
+
+## 优先级 C — 需要 Godot 环境
+
+| 任务 | 描述 | 阻塞原因 |
+|------|------|---------|
+| UI 场景文件 | `main_menu.tscn`, `game_screen.tscn`, `map_view.tscn` | 需要 Godot 编辑器 |
+| `decision_card.gd` 完整实现 | 卡片 UI 组件 | 需要可见 UI 布局 |
+| Rouge/Noir 滑块动画 | `rn_slider.gd` 动画效果 | 需要 Godot 预览 |
+| GDExtension 集成测试 | 验证 4 个 GDExtension 节点正确注册 | 需要 Godot 运行环境 |
+| CentJoursEngine 节点挂载 | 在场景树中创建节点并连接到 TurnManager | 需要 Godot 编辑器 |
+| M5 美术资源 | 地图美术、人物立绘、UI 主题 | 需要 Godot + 美术工具 |
+
+---
+
 ## 开发顺序（当前轮）
 
 ```
-① turn_manager.gd 接入 CentJoursEngine    ← 最高价值，是整个游戏运行的关键胶水
-② political_system.gd 完善               ← 同① 配套
-③ order_deviation.gd 完善               ← 同① 配套
+① game_state.gd 补充字段         ← ⚠️ 最高优先，修复阻塞性 Bug
+② lib.rs 补充 load_from_json     ← 存档读档闭环（Rust，15分钟）
+③ save_manager.gd 新建           ← 配合②，完成存档系统
 
 并行：
-④ 补全缺失叙事文本（4 个政策类型）        ← 纯 JSON，30 分钟
-⑤ 历史事件叙事变体扩充（早期事件 2→5 条）  ← 纯 JSON
+④ character_manager.gd 精简      ← 移除冗余逻辑
+⑤ march_system.gd 精简           ← 保留地图查询，移除执行逻辑
 ```
 
-**完成 ①②③ 后，M4 进度将达到约 95%**，剩余 5% 等待 Godot 环境进行集成测试。
+**完成 ①②③ 后，M4 进度将达到 100%**，等待 Godot 环境进行集成测试后进入 M5。
 
 ---
 
