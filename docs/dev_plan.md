@@ -1,13 +1,15 @@
 # Cent Jours — 开发优先级计划
 
-> **更新**: 2026-03-19 v11
+> **更新**: 2026-03-19 v12
 > **当前分支**: `claude/review-project-plan-LKKTR`
 
 ---
 
 ## 开发原则
 
-> **测试驱动开发（TDD）**
+### 一、核心原则（项目级）
+
+> **TDD（测试驱动开发）**
 >
 > 所有 Rust 模块遵循严格 TDD 流程：
 > 1. **Red** — 先写失败的单元测试，明确输入/输出契约
@@ -17,28 +19,7 @@
 > - 禁止在没有对应测试的情况下提交业务逻辑
 > - `cargo test` 全通过才能提交
 
-> **小步提交推送**
->
-> 每完成一个独立小功能立即 commit + push：
-> - 格式：`feat(模块): 描述` / `fix(模块): 描述` / `data: 描述`
-> - 永远不要积累"大提交"
-
-> **文档同步更新**
->
-> - 完成任务后立即更新本文档状态（✅/🔶）和进度快照
-> - 原则：文档反映当前真实状态，而非计划状态
-> - **已完成的轮次内容定期清除**，只保留当前优先级和模块清单
-
-> **完成大任务后立即更新 plan.md**
->
-> 每完成一个里程碑（M 级）或大型功能组，立即：
-> - 清理本文档中已完成的优先级条目（不留"已完成"占位行）
-> - 重新扫描代码库，发现新的技术债或不一致
-> - 重排剩余任务优先级，确保 A 组始终是"现在就能做"的最高价值任务
->
-> 判断标准：plan.md 超过一个工作轮次没有更新，说明流程出了问题。
-
-> **GDScript 薄层原则**
+> **GDScript 薄层原则（SoC — 关注点分离）**
 >
 > GDScript 层不包含任何业务逻辑，只负责：
 > - 调用 `CentJoursEngine` GDExtension 节点执行行动
@@ -47,10 +28,80 @@
 >
 > 判断标准：如果一段 GDScript 在没有 Godot UI 时仍然"有意义"，它就不应该在 GDScript 里。
 
-> **单一引擎状态源**
+> **单一状态源（Single Source of Truth）**
 >
 > `GameState` 单例中的所有运行时数值，必须从 `CentJoursEngine.get_state()` 同步，
 > 不自行维护平行计算逻辑。`GameState` 是 UI 的只读缓存，不是第二个游戏引擎。
+
+> **DRY（Don't Repeat Yourself）**
+>
+> 同一块逻辑只在一处定义：
+> - 战斗解算逻辑 → 仅在 `BattleEngine`（Rust）
+> - 政治计算逻辑 → 仅在 `PoliticsSystem`（Rust）
+> - 常量定义 → 仅在 Rust 层或 GDScript 展示层，绝不两处都写
+>
+> 判断标准：修改一条规则是否需要同时改两个文件？如是，则违反 DRY。
+
+> **YAGNI（You Aren't Gonna Need It）**
+>
+> 不实现当前不需要的功能；不为假设中的未来需求做抽象：
+> - M5 之前不做多余 UI 抽象层
+> - 不提前泛化只使用一次的逻辑
+> - 删除比保留更好，需要时再加回来
+
+> **KISS（Keep It Simple）**
+>
+> 最简方案优先；三行相似代码优于一个过早的抽象：
+> - 信号发射只做一次，不重复发射
+> - 数据流方向单一（引擎 → GameState → UI），不反向写入
+> - 判断分支优先用 `match`，避免嵌套 `if`
+
+### 二、契约与文档原则
+
+> **边界契约注释（轻量契约式编程）**
+>
+> Rust ↔ GDScript 之间传递 `Dictionary` 时，键名是字符串，无编译期保证。
+> 每个 GDExtension 函数必须在调用侧注释明确契约：
+>
+> ```gdscript
+> # engine.get_state() 返回键（来自 lib.rs get_state）:
+> # day(int) legitimacy(float) rouge_noir(float)
+> # troops(int) morale(float) fatigue(float) victories(int)
+> # is_over(bool) outcome(String) factions(Dictionary)
+> ```
+>
+> 判断标准：新开发者仅凭 GDScript 文件能否知道 Dictionary 中有哪些键？
+
+> **ADR（架构决策记录）**
+>
+> 每个重大技术选型（非显而易见的）记录于 `docs/decisions/ADR-NNN.md`：
+> - 背景、决策、后果三段式，50 行以内
+> - 已决策事项不在每次 PR 中重新讨论
+>
+> 待补充的决策：
+> - ADR-001: 为何选 Rust + GDExtension 而非纯 GDScript
+> - ADR-002: GameState 为只读缓存而非双向状态
+
+> **活文档（Living Documentation）**
+>
+> - 完成任务后立即更新本文档状态（✅/🔶）和进度快照
+> - 原则：文档反映当前真实状态，而非计划状态
+> - **已完成的轮次内容定期清除**，只保留当前优先级和模块清单
+
+### 三、提交与流程原则
+
+> **小步提交推送**
+>
+> 每完成一个独立小功能立即 commit + push：
+> - 格式：`feat(模块): 描述` / `fix(模块): 描述` / `data: 描述`
+> - 永远不要积累"大提交"
+
+> **完成大任务后立即更新计划**
+>
+> 每完成一个里程碑（M 级）或大型功能组，立即：
+> - 清理本文档中已完成的优先级条目
+> - 重新扫描代码库，发现新的技术债或不一致
+> - 重排剩余任务优先级，确保 A 组始终是"现在就能做"的最高价值任务
 
 ---
 
@@ -114,44 +165,72 @@ M6  打磨发布   ░░░░░░░░░░░░   0%
 
 ## 优先级 A — 当前轮（无需 Godot 环境）
 
-### ① battle_resolver.gd 精简 ⚠️ 违反薄层原则
+### 违规扫描（按严重程度排列）
 
-`battle_resolver.gd` 包含完整的战斗解算逻辑（130+ 行），与 Rust `BattleEngine` 完全重复，
-严重违反 GDScript 薄层原则。
+| # | 文件 | 违反原则 | 严重程度 |
+|---|------|---------|---------|
+| ① | `game_state.gd` | 单一状态源 + KISS（信号双发 Bug） | 🔴 P0 含 Bug |
+| ② | `battle_resolver.gd` | DRY + GDScript 薄层（完整解算逻辑重复） | 🟠 P1 技术债 |
+| ③ | `lib.rs` + `engine/` | 单一状态源（忠诚度未暴露给 GDScript） | 🟡 P2 功能缺口 |
+| ④ | `turn_manager.gd` | 单一状态源（loyalty 字段不从引擎同步） | 🟡 P2 依赖③ |
+| ⑤ | `docs/decisions/` | ADR 缺失（架构决策无记录） | 🔵 P3 文档债 |
 
-**目标**：精简为仅保留地形常量映射和辅助展示方法，战斗解算代理给 `BattleEngine`：
+---
+
+### ① game_state.gd 清理 🔴 P0（含 Bug）
+
+**违反原则**：单一状态源、KISS
+
+**Bug**：`_check_loyalty_thresholds()` 在 `modify_loyalty()` 已发射一次信号后，
+再次以错误的参数值（`loyalty + 1.0` 作为 old_val）重复发射 `loyalty_changed`，
+会导致 UI 收到两次不一致的忠诚度变更通知。
 
 ```gdscript
-# 保留：地形字符串→显示名映射（UI Tooltip用）
+# 当前错误实现（game_state.gd:133）
+func _check_loyalty_thresholds(character_id: String, loyalty: float) -> void:
+    if loyalty < DEFECTION_LOYALTY_THRESHOLD:
+        EventBus.loyalty_changed.emit(character_id, loyalty + 1.0, loyalty)  # ❌ 重复且参数错误
+```
+
+**目标**：
+- 删除 `_check_loyalty_thresholds()` 中的信号发射（信号已在 `modify_loyalty()` 中发射）
+- 将 `recalculate_legitimacy()` 替换为从 `engine.get_state()["legitimacy"]` 读取的只读同步入口
+- `modify_faction_support()` 和 `shift_rouge_noir()` 不应直接写入，应记录为"待通过 engine action 驱动"的注释桩
+
+**文件**: `src/core/game_state.gd`
+
+---
+
+### ② battle_resolver.gd 精简 🟠 P1（技术债）
+
+**违反原则**：DRY、GDScript 薄层（SoC）
+
+`battle_resolver.gd` 包含完整的战斗解算逻辑（138 行），包括：
+- `_calculate_force_score()` — 与 Rust `BattleEngine` 完全重复
+- `_ratio_to_result()` — 阈值逻辑与 Rust 完全重复
+- `_calculate_casualties()` — 战损表与 Rust 完全重复
+- `_calculate_morale_impact()` — 士气表与 Rust 完全重复
+
+修改一条战斗规则（如地形加成），现在必须同时改两处。
+
+**目标**：精简为仅保留展示用元数据，战斗解算代理给 `BattleEngine`：
+
+```gdscript
+# 保留：UI Tooltip 展示用常量（纯展示，Rust 层无对应）
 const TERRAIN_DISPLAY_NAMES := { "plains": "平原", "hills": "山地", ... }
+const RESULT_DISPLAY_NAMES  := { "decisive_victory": "压倒性胜利", ... }
 
 # 移除：_calculate_force_score(), _ratio_to_result(),
-#        _calculate_casualties(), _calculate_morale_impact()
-#        resolve() 整个解算方法
+#        _calculate_casualties(), _calculate_morale_impact(), resolve()
 ```
 
 **文件**: `src/core/campaign/battle_resolver.gd`
 
 ---
 
-### ② game_state.gd 清理平行计算方法 ⚠️ 违反单一状态源原则
+### ③ CentJoursEngine 暴露将领忠诚度查询 🟡 P2
 
-`GameState` 中以下方法在 GDScript 层维护独立计算逻辑，与引擎状态源冲突：
-
-- `recalculate_legitimacy()` — 合法性已由 `CentJoursEngine.get_state()["legitimacy"]` 提供
-- `modify_faction_support()` — 派系支持不能直接从 GDScript 修改，应通过 engine action 驱动
-- `shift_rouge_noir()` — rouge_noir 由引擎决定，GDScript 不应直接写入
-
-**目标**：将上述方法替换为只读的同步入口，删除直接修改逻辑。
-
-**文件**: `src/core/game_state.gd`
-
----
-
-### ③ CentJoursEngine 暴露将领忠诚度查询
-
-当前 `get_state()` 只返回聚合军队数据，不含各将领忠诚度。
-`GameState.characters` 中的 `loyalty` 字段在游戏运行时从不更新，会与引擎内部状态漂移。
+**违反原则**：单一状态源（忠诚度目前只存在于 Rust 引擎内，GDScript 无法读取真实值）
 
 **目标**：在 `lib.rs` 中新增：
 
@@ -174,14 +253,31 @@ pub fn get_all_loyalties(&self) -> Dictionary {
 
 ---
 
-### ④ turn_manager.gd 补充 character loyalty 同步
+### ④ turn_manager.gd 补充 character loyalty 同步 🟡 P2（依赖③）
 
 在 `_sync_state_from_engine()` 中，通过 `engine.get_all_loyalties()` 更新
 `GameState.characters[id]["loyalty"]`，确保 UI 显示的忠诚度与引擎一致。
 
-依赖 ③ 完成。
-
 **文件**: `src/core/turn_manager.gd`
+
+---
+
+### ⑤ 补充 ADR 文档 🔵 P3
+
+在 `docs/decisions/` 目录下新建：
+- `ADR-001-rust-gdextension.md`：为何选 Rust + GDExtension 而非纯 GDScript
+- `ADR-002-gamestate-readonly-cache.md`：GameState 为只读缓存，不是第二个引擎
+
+格式（50 行以内）：
+```markdown
+# ADR-001: ...
+## 状态: 已采纳
+## 背景: ...
+## 决策: ...
+## 后果: ...
+```
+
+**文件**: `docs/decisions/`（新建目录）
 
 ---
 
@@ -201,14 +297,17 @@ pub fn get_all_loyalties(&self) -> Dictionary {
 ## 开发顺序（当前轮）
 
 ```
-① battle_resolver.gd 精简     ← GDScript，薄层违规修复，独立可做
-② game_state.gd 清理          ← GDScript，状态源违规修复，独立可做
+① game_state.gd 清理        ← P0 Bug修复 + 状态源合规，独立可做
+② battle_resolver.gd 精简   ← P1 DRY违规修复，独立可做
 
-③ lib.rs get_character_loyalty ← Rust，需先确认 engine 层接口
-④ turn_manager.gd loyalty 同步 ← GDScript，依赖 ③
+③ lib.rs get_all_loyalties   ← P2 Rust，需确认 engine 层接口
+④ turn_manager.gd loyalty同步 ← P2 GDScript，依赖③
+
+⑤ ADR 文档                  ← P3 纯文档，随时可做
 ```
 
 **完成 ①②③④ → GDScript 层完全合规，角色状态闭环。**
+**完成 ① 同时修复已知 Bug。**
 届时进入 GATE 3 检查（等待 Godot 环境）。
 
 ---
