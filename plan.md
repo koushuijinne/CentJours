@@ -3,8 +3,8 @@
 > **工作标题**: *Cent Jours*（法语”百日”）
 > **一句话**: 你是拿破仑，从厄尔巴岛出逃到滑铁卢，100天内重建帝国或永远流放。每一天都是决策点。
 > **Author**: Julien
-> **Version**: v0.6 — 2026-03-18
-> **Status**: Draft — M0/M0.5/M2/M3 完成，GATE 2 通过；M4 内容填充进行中（65%）
+> **Version**: v0.7 — 2026-03-19
+> **Status**: Draft — M0/M0.5/M2/M3 完成，GATE 2 通过；M4 内容填充进行中（78%）
 
 -----
 
@@ -682,7 +682,7 @@ W1──W2──W3────W7────W11────W14────W19─
 - [x] **Rust：`characters::order_deviation` 命令偏差模型（6个单元测试，含Ney/Grouchy历史场景）**
 - [x] **Rust：`characters::network` 将领关系网络（23个单元测试）** — 含 `from_json()` 从 characters.json 动态加载
 - [x] **Rust：`engine::state` 三系统耦合状态机（13个单元测试）** — battle+politics+characters联动，Dawn→Action→Dusk
-- [x] **Rust：`events::pool` JSON驱动历史事件池（13个单元测试）** — 24个历史事件，触发条件+叙事文本
+- [x] **Rust：`events::pool` JSON驱动历史事件池（13个单元测试）** — 30个历史事件（+6新增），触发条件+叙事文本
 - [x] **Rust：`simulation::run_engine_simulation()` 三系统+EventPool 耦合蒙特卡洛（8个单元测试）** — 1000局 < 2s
 - [x] **characters.json → CharacterNetwork** 数据集成，历史关系数据（-30敌对/正值友好）已修正
 
@@ -694,16 +694,16 @@ W1──W2──W3────W7────W11────W14────W19─
 
 **内容同步**: 历史科普视频 —「拿破仑百日的真实决策：Ney为什么倒戈？」
 
-### M4: 内容填充（W15-W19）🔶 进行中 65%
+### M4: 内容填充（W15-W19）🔶 进行中 78%
 
 **目标**: 用LLM批量生成所有文本内容，填充100天的完整事件池
 
 **交付物**:
 
-- [ ] 100天历史事件池（每天3-5个可能事件，共300-500条）← 当前24条，需扩充
+- [x] 历史事件池（当前30条，含5条叙事/事件）`src/data/events/historical.json` ← 仍需扩充至300-500条
 - [x] 司汤达日记文本池（8类决策 × 5变体）`src/data/narratives/stendhal_diary.json`
 - [x] 微叙事后果片段池（6类 × 5条）`src/data/narratives/consequences.json`
-- [ ] **叙事引擎**：将两个文本池接入 GameEngine，process_day 后提供 DayReport ← 下一步
+- [x] **叙事引擎**：`NarrativePool` 接入 `GameEngine`，`process_day()` 后提供 `DayReport`
 - [ ] 政策描述 + 后果文本
 - [ ] 结局文本（4-6个主要结局路径 × 2-3个变体）
 - [ ] 文本质量审核（人工检查LLM输出的历史准确性和文风一致性）

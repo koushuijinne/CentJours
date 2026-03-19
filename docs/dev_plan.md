@@ -1,6 +1,6 @@
 # Cent Jours — 开发优先级计划
 
-> **更新**: 2026-03-18 v5
+> **更新**: 2026-03-19 v6
 > **当前分支**: `claude/review-project-plan-LKKTR`
 
 ---
@@ -36,7 +36,7 @@
 
 ---
 
-## 当前进度快照（2026-03-18）
+## 当前进度快照（2026-03-19）
 
 ```
 M0  预研      ████████████ 100% ✅
@@ -44,12 +44,12 @@ M0.5 视觉定调  ████████████ 100% ✅
 M1  核心循环   ██████████░░  85% 🔶 Rust层✅，EventPool集成✅，Godot待安装
 M2  政治系统   ███████████░  90% ✅ Rust层✅，平衡达标，UI待Godot
 M3  将领网络   ████████████ 100% ✅ GATE 2 通过
-M4  内容填充   ████████░░░░  65% 事件池24条✅，叙事文本✅(stendhal+consequences)，叙事引擎0%
+M4  内容填充   █████████░░░  78% 事件池30条✅，叙事文本✅(stendhal+consequences)，叙事引擎✅，GDExt节点✅，Save/Load✅
 M5  美术音乐   ░░░░░░░░░░░░   0%
 M6  打磨发布   ░░░░░░░░░░░░   0%
 ```
 
-**89/89 单元测试全部通过**（最后运行：2026-03-18）
+**103/103 单元测试全部通过**（最后运行：2026-03-19）
 
 **平衡结果（不变）**: Military 24.2% ✅ | Political 21.2% ✅ | Balanced 22.4% ✅
 
@@ -67,11 +67,13 @@ M6  打磨发布   ░░░░░░░░░░░░   0%
 | 命令偏差 | `characters/order_deviation.rs` | 6 | ✅ |
 | 将领关系网络 | `characters/network.rs` | 23 | ✅ 含from_json |
 | 三系统状态机 | `engine/state.rs` | 16 | ✅ 含EventPool集成 3新测试 |
-| 历史事件池 | `events/pool.rs` | 13 | ✅ 24条事件 |
+| 历史事件池 | `events/pool.rs` | 13 | ✅ 30条事件（+6新增） |
 | 蒙特卡洛模拟 | `simulation/monte_carlo.rs` | 8 | ✅ 已简化（EventPool内嵌） |
-| GDExtension绑定 | `lib.rs` | — | ✅ |
+| 叙事引擎 | `narratives/mod.rs` | — | ✅ NarrativePool + DayReport |
+| GDExtension节点 | `lib.rs` | — | ✅ CentJoursEngine统一节点 |
+| Save/Load序列化 | `engine/state.rs` | — | ✅ SaveState + to_json/from_json |
 
-**合计**: 89 tests | 全部通过
+**合计**: 103 tests | 全部通过
 
 ---
 
@@ -232,9 +234,9 @@ macos.release = "res://cent-jours-core/target/release/libcent_jours_core.dylib"
 
 ---
 
-## 优先级 A — 当前轮（纯 Rust，无 Godot 依赖）
+## 优先级 A — ✅ 全部完成（2026-03-19）
 
-### ① 叙事引擎：`narratives` 模块 + `DayReport`
+### ① 叙事引擎：`narratives` 模块 + `DayReport` ✅
 
 **目标**: 将 `stendhal_diary.json` 和 `consequences.json` 接入引擎。`process_day()` 执行后，可通过 `engine.last_report()` 获取当天叙事文本，Godot UI 直接渲染。
 
@@ -287,38 +289,36 @@ fn 未知动作类型不崩溃() {
 
 ---
 
-### ② GameEngine GDExtension 节点
+### ② GameEngine GDExtension 节点 ✅
 
-**目标**: `lib.rs` 目前只暴露三个独立子系统。新增 `CentJoursEngine` GDExtension 节点，把 `GameEngine::process_day()` / `last_report()` / `triggered_events()` 等统一暴露给 Godot，装好 Godot 后直接可用。
+**目标**: 新增 `CentJoursEngine` GDExtension 节点，把 `GameEngine::process_day()` / `last_report()` / `triggered_events()` 等统一暴露给 Godot。
 
-**文件**: `cent-jours-core/src/lib.rs`（gdext_bindings 模块追加）
-
----
-
-### ③ Save/Load 序列化
-
-**目标**: `GameEngine` 实现 `serde::Serialize/Deserialize`，提供 `to_json()` / `from_json()` 方法，支持游戏存档。Godot 侧用 `FileAccess` 读写即可。
-
-**注意**: `EventPool` 的 `triggered_ids` 也需要序列化，保证存档读取后事件不重复触发。
+**文件**: `cent-jours-core/src/lib.rs`
 
 ---
 
-## 优先级 B — 可并行（纯数据，无代码依赖）
+### ③ Save/Load 序列化 ✅
 
-### ④ 扩充 24 个历史事件叙事变体（2-3 → 5 条/事件）
+**目标**: `GameEngine` 实现 `serde::Serialize/Deserialize`，提供 `to_json()` / `from_json()` 方法，支持游戏存档。`EventPool` 的 `triggered_ids` 同步序列化，保证存档读取后事件不重复触发。
 
-当前每个事件只有 2-3 条叙事，重玩时文本重复率高。
+---
+
+## 优先级 B — ✅ 全部完成（2026-03-19）
+
+### ④ 扩充 24 个历史事件叙事变体（2-3 → 5 条/事件）✅
+
+所有 24 个事件均已扩展至 5 条叙事。
 **文件**: `src/data/events/historical.json`
 
-### ⑤ 新增历史事件（24 → ~30 条）
+### ⑤ 新增历史事件（24 → 30 条）✅
 
-当前缺失的关键事件：
-- `laffrey_confrontation`（拉弗雷峡谷，Day 3-5）
-- `murat_naples_campaign`（缪拉那不勒斯战役，Day 30-50）
-- `napoleon_last_letter_to_tsar`（拿破仑致沙皇最后一封信，Day 40-60）
-- `waterloo_eve_rain`（滑铁卢雨夜，Day 84-85）
-- `la_bedoyere_defection`（拉贝多耶尔倒戈，Day 5-8）
-- `chamber_of_representatives_ultimatum`（众议院最后通牒，Day 90-95）
+新增 6 个关键历史事件：
+- `laffrey_confrontation`（拉弗雷峡谷，Day 3-5）✅
+- `la_bedoyere_defection`（拉贝多耶尔倒戈，Day 5-8）✅
+- `chamber_ultimatum`（众议院最后通牒，Day 90-96）✅
+- `napoleon_last_letter_tsar`（致沙皇最后一封信，Day 40-60）✅
+- `waterloo_eve_rain`（滑铁卢雨夜，Day 84-86）✅
+- `murat_naples_betrayal`（缪拉那不勒斯背叛，Day 30-50）✅
 
 **文件**: `src/data/events/historical.json`
 
@@ -327,15 +327,13 @@ fn 未知动作类型不崩溃() {
 ## 开发顺序（新一轮）
 
 ```
-① narratives 模块 + DayReport      ← 立即开发（Rust，TDD）
-        ↓ 完成即 commit + push
-② GameEngine GDExtension 节点
-        ↓ 完成即 commit + push
-③ Save/Load 序列化
+① narratives 模块 + DayReport      ✅ commit + push
+② GameEngine GDExtension 节点      ✅ commit + push
+③ Save/Load 序列化                  ✅ commit + push
 
-并行（随时可做，无依赖）：
-④ 扩充事件叙事变体
-⑤ 新增历史事件
+并行完成：
+④ 扩充事件叙事变体                  ✅
+⑤ 新增历史事件（24→30）             ✅
 ```
 
 ---
