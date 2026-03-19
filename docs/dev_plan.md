@@ -1,6 +1,6 @@
 # Cent Jours — 开发优先级计划
 
-> **更新**: 2026-03-19 v6
+> **更新**: 2026-03-19 v7
 > **当前分支**: `claude/review-project-plan-LKKTR`
 
 ---
@@ -44,7 +44,7 @@ M0.5 视觉定调  ████████████ 100% ✅
 M1  核心循环   ██████████░░  85% 🔶 Rust层✅，EventPool集成✅，Godot待安装
 M2  政治系统   ███████████░  90% ✅ Rust层✅，平衡达标，UI待Godot
 M3  将领网络   ████████████ 100% ✅ GATE 2 通过
-M4  内容填充   █████████░░░  78% 事件池30条✅，叙事文本✅(stendhal+consequences)，叙事引擎✅，GDExt节点✅，Save/Load✅
+M4  内容填充   █████████░░░  82% 事件池30条✅，叙事✅，叙事引擎✅，GDExt节点✅，Save/Load✅，Godot4.6升级✅
 M5  美术音乐   ░░░░░░░░░░░░   0%
 M6  打磨发布   ░░░░░░░░░░░░   0%
 ```
@@ -53,7 +53,7 @@ M6  打磨发布   ░░░░░░░░░░░░   0%
 
 **平衡结果（不变）**: Military 24.2% ✅ | Political 21.2% ✅ | Balanced 22.4% ✅
 
-**约束**: 暂无 Godot 运行环境。以下所有任务均为纯 Rust 或 JSON/数据工作。
+**约束**: 暂无 Godot 运行环境。Rust/JSON/GDScript 均可开发，但 .tscn 场景无法运行测试。
 
 ---
 
@@ -345,12 +345,144 @@ fn 未知动作类型不崩溃() {
 | 检查项 | 状态 | 证据 |
 |--------|------|------|
 | 三系统独立实现 | ✅ | battle / politics / characters 各有完整测试 |
-| 三系统耦合状态机 | ✅ | `engine::state` 13 tests |
+| 三系统耦合状态机 | ✅ | `engine::state` 16 tests |
 | 耦合蒙特卡洛验证 | ✅ | `run_engine_simulation(1000)` < 2s |
-| 事件系统集成 | ✅ | 24条历史事件，触发率验证通过 |
+| 事件系统集成 | ✅ | 30条历史事件，触发率验证通过 |
 | 平衡三策略均在目标范围 | ✅ | 15%-35% 全部满足 |
+| Godot 4.6 升级 | ✅ | gdext 0.4.5, api-4-5, VarDictionary |
 
-**结论**: GATE 2 通过。下一里程碑为 M4 内容填充，目标完成度 100%（当前 30%）。
+**结论**: GATE 2 通过。M4 内容填充进行中（82%），目标：完成 GDScript 桥接层后进入 M5。
+
+---
+
+## 已完成技术升级清单（2026-03-19）
+
+| 项目 | 变更 |
+|------|------|
+| Godot 版本 | 4.3 → **4.6** (`project.godot`) |
+| gdext crate | `godot = "0.1"` → **`"0.4"` + `api-4-5`** |
+| GDExtension 最低版本 | `compatibility_minimum = "4.6"` |
+| API 迁移 | `Dictionary` → `VarDictionary`，`From<Variant>` → `.to::<T>()` |
+| 枚举修正 | `Terrain::RiverCrossing` → `RiverJunction`，`BattleOutcome` 字段对齐 |
+
+---
+
+## 优先级 A — 当前轮（无 Godot 可完成）
+
+### ① GDScript 桥接层：turn_manager.gd 接入 CentJoursEngine
+
+**目标**: `turn_manager.gd` 当前只管理回合流程，战斗/政治计算仍在 GDScript 侧（`battle_resolver.gd`、`political_system.gd`）。
+应改为调用 `CentJoursEngine` GDExtension 节点，让 Rust 核心作为权威状态源，GDScript 只负责 UI 驱动。
+
+**改动**:
+```gdscript
+# turn_manager.gd
+var engine: CentJoursEngine  # 挂载 GDExtension 节点
+
+func begin_action_phase():
+    # 玩家选择行动后：
+    engine.process_day_battle(general_id, troops, terrain)
+    # 或 engine.process_day_policy(policy_id)
+    # 或 engine.process_day_rest()
+
+func _run_dusk_phase():
+    var state = engine.get_state()
+    var report = engine.get_last_report()
+    EventBus.emit_signal("turn_ended", state, report)
+```
+
+**文件**: `src/core/turn_manager.gd`
+
+**优先原因**: 这是整个游戏可运行的最后一步胶水代码。完成后，安装 Godot 即可立即运行游戏。
+
+---
+
+### ② 完善占位符 GDScript：political_system.gd
+
+**目标**: 当前 `political_system.gd` 标注为"未完整"——政策定义写了，但 `enact_policy()` 没有接入 `PoliticsEngine` GDExtension 节点的逻辑。
+
+**改动**:
+```gdscript
+# political_system.gd
+var politics_engine: PoliticsEngine  # GDExtension 节点
+
+func enact_policy(policy_id: String) -> Dictionary:
+    return politics_engine.enact_policy(policy_id)
+
+func get_state() -> Dictionary:
+    return politics_engine.get_state()
+
+func daily_tick():
+    politics_engine.daily_tick()
+```
+
+**文件**: `src/core/politics/political_system.gd`
+
+---
+
+### ③ 完善占位符 GDScript：order_deviation.gd
+
+**目标**: `order_deviation.gd` 当前是纯 GDScript 实现（`TEMPERAMENT_PROFILES` + 手写计算），应改为调用 `CharacterManager` GDExtension 节点。
+
+**文件**: `src/core/characters/order_deviation.gd`
+
+---
+
+## 优先级 B — 内容扩充（无 Godot 可完成）
+
+### ④ 叙事文本补全：缺失的政策类型
+
+当前 `stendhal_diary.json` 和 `consequences.json` 覆盖 8 种行动类型，但以下政策尚无叙事 key：
+
+| 政策 ID | 当前状态 | 需补充 |
+|---------|---------|--------|
+| `increase_military_budget` | ❌ 无叙事 | stendhal + consequence |
+| `noble_titles` | ❌ 无叙事 | stendhal + consequence |
+| `print_money` | ❌ 无叙事 | stendhal + consequence |
+| `diplomatic_secret` | ✅ stendhal | ❌ 缺 consequence |
+
+**影响**: 调用这些政策时 `last_report().stendhal` 返回 `None`，UI 会显示空白。
+
+**文件**: `src/data/narratives/stendhal_diary.json` / `consequences.json`
+并在 `narratives/mod.rs` 的 `policy_narrative_key()` 补充映射。
+
+---
+
+### ⑤ 历史事件叙事文本扩充（30 条 × 剩余变体）
+
+`historical.json` 中有 30 条事件，每条有 2-5 条叙事。部分早期事件（M1 时写的）只有 2 条变体，建议扩展至 5 条以减少重复感。
+
+**优先扩充**: `elba_escape`、`grenoble_arrival`、`paris_entry`（最常触发的早期事件）
+
+**文件**: `src/data/events/historical.json`
+
+---
+
+## 优先级 C — 需要 Godot 环境
+
+| 任务 | 描述 | 阻塞原因 |
+|------|------|---------|
+| UI 场景文件 | `main_menu.tscn`, `game_screen.tscn`, `map_view.tscn` | 需要 Godot 编辑器 |
+| `decision_card.gd` 完整实现 | 卡片 UI 组件（`decision_card.gd` 当前为占位符） | 需要可见 UI 布局 |
+| Rouge/Noir 滑块动画 | `rn_slider.gd` 动画效果 | 需要 Godot 预览 |
+| GDExtension 集成测试 | 加载 `.so`/`.dll`，验证 GDExtension 节点注册 | 需要 Godot 运行环境 |
+| M5 美术资源 | 地图美术、人物立绘、UI 主题 | 需要 Godot + 美术工具 |
+
+---
+
+## 开发顺序（当前轮）
+
+```
+① turn_manager.gd 接入 CentJoursEngine    ← 最高价值，是整个游戏运行的关键胶水
+② political_system.gd 完善               ← 同① 配套
+③ order_deviation.gd 完善               ← 同① 配套
+
+并行：
+④ 补全缺失叙事文本（4 个政策类型）        ← 纯 JSON，30 分钟
+⑤ 历史事件叙事变体扩充（早期事件 2→5 条）  ← 纯 JSON
+```
+
+**完成 ①②③ 后，M4 进度将达到约 95%**，剩余 5% 等待 Godot 环境进行集成测试。
 
 ---
 
