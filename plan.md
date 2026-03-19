@@ -3,8 +3,8 @@
 > **工作标题**: *Cent Jours*（法语”百日”）
 > **一句话**: 你是拿破仑，从厄尔巴岛出逃到滑铁卢，100天内重建帝国或永远流放。每一天都是决策点。
 > **Author**: Julien
-> **Version**: v0.7 — 2026-03-19
-> **Status**: Draft — M0/M0.5/M2/M3 完成，GATE 2 通过；M4 内容填充进行中（78%）
+> **Version**: v0.8 — 2026-03-19
+> **Status**: Draft — M0/M0.5/M2/M3 完成，GATE 2 通过；M4 内容填充进行中（80%）
 
 -----
 
@@ -685,6 +685,7 @@ W1──W2──W3────W7────W11────W14────W19─
 - [x] **Rust：`events::pool` JSON驱动历史事件池（13个单元测试）** — 30个历史事件（+6新增），触发条件+叙事文本
 - [x] **Rust：`simulation::run_engine_simulation()` 三系统+EventPool 耦合蒙特卡洛（8个单元测试）** — 1000局 < 2s
 - [x] **characters.json → CharacterNetwork** 数据集成，历史关系数据（-30敌对/正值友好）已修正
+- [x] **数据驱动化重构**（2026-03-19）：将领技能值 `general_skill()` 改为从 `CharacterNetwork.skills` 读取（修复 davout 82→92、soult 72→80 数据错误）；`EventEffects` / `EventTrigger` 改为通用 HashMap（`loyalty_deltas` / `loyalty_min` / `loyalty_max`）；`coalition_not_defeated` 触发条件 Bug 修复；**113/113 单元测试通过**
 
 **⛳ GATE 2（W14结束）**: 三系统耦合后复杂度是否可控？
 
