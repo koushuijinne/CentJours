@@ -542,4 +542,42 @@ mod tests {
         let ids_d: Vec<&str> = pool.available_events(&ctx_defeated).iter().map(|e| e.id.as_str()).collect();
         assert!(!ids_d.contains(&"wellington_ridge_position"), "联军已败不应触发威灵顿山脊");
     }
+
+    // ── Day 13-19 新增事件覆盖测试 ───────────────────
+
+    #[test]
+    fn 里昂入城在Day10到14触发() {
+        let pool = EventPool::from_json(HISTORICAL_JSON).unwrap();
+        let ctx = TriggerContext {
+            day: 12,
+            napoleon_reputation: 55.0,
+            ..Default::default()
+        };
+        let ids: Vec<&str> = pool.available_events(&ctx).iter().map(|e| e.id.as_str()).collect();
+        assert!(ids.contains(&"lyon_artois_flees"), "Day 12应触发里昂入城: {:?}", ids);
+    }
+
+    #[test]
+    fn 勃艮第民众浪潮在Day14到17触发() {
+        let pool = EventPool::from_json(HISTORICAL_JSON).unwrap();
+        let ctx = TriggerContext {
+            day: 15,
+            napoleon_reputation: 55.0,
+            ..Default::default()
+        };
+        let ids: Vec<&str> = pool.available_events(&ctx).iter().map(|e| e.id.as_str()).collect();
+        assert!(ids.contains(&"burgundy_popular_surge"), "Day 15应触发勃艮第民众浪潮: {:?}", ids);
+    }
+
+    #[test]
+    fn 枫丹白露前夜在Day17到19触发() {
+        let pool = EventPool::from_json(HISTORICAL_JSON).unwrap();
+        let ctx = TriggerContext {
+            day: 18,
+            napoleon_reputation: 60.0,
+            ..Default::default()
+        };
+        let ids: Vec<&str> = pool.available_events(&ctx).iter().map(|e| e.id.as_str()).collect();
+        assert!(ids.contains(&"fontainebleau_eve"), "Day 18应触发枫丹白露前夜: {:?}", ids);
+    }
 }

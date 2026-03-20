@@ -1,6 +1,6 @@
 # Cent Jours — 开发优先级计划
 
-> **更新**: 2026-03-19 v19
+> **更新**: 2026-03-20 v20
 > **当前分支**: `claude/review-project-plan-LKKTR`
 
 ---
@@ -110,7 +110,7 @@
 
 ---
 
-## 当前进度快照（2026-03-19）
+## 当前进度快照（2026-03-20）
 
 ```
 M0  预研      ████████████ 100% ✅
@@ -118,12 +118,12 @@ M0.5 视觉定调  ████████████ 100% ✅
 M1  核心循环   ██████████░░  85% 🔶 Rust层✅，EventPool集成✅，Godot待安装
 M2  政治系统   ███████████░  90% 🔶 Rust层✅，平衡达标，UI待Godot
 M3  将领网络   ████████████ 100% ✅ GATE 2 通过
-M4  内容填充   ████████████ 100% ✅ GDScript桥接层✅，叙事全覆盖✅，存档系统✅，GDScript全合规✅，loyalty闭环✅
+M4  内容填充   ████████████ 100% ✅ 历史事件33条，TDD契约全覆盖，测试127个
 M5  美术音乐   ░░░░░░░░░░░░   0%
 M6  打磨发布   ░░░░░░░░░░░░   0%
 ```
 
-**111/111 单元测试全部通过**（最后运行：2026-03-19，新增4个事件数据驱动测试）
+**127/127 单元测试全部通过**（最后运行：2026-03-20，新增14个测试）
 
 **平衡结果**: Military 24.2% ✅ | Political 21.2% ✅ | Balanced 22.4% ✅
 
@@ -135,15 +135,15 @@ M6  打磨发布   ░░░░░░░░░░░░   0%
 
 | 模块 | 文件 | 测试数 | 状态 |
 |------|------|--------|------|
-| 战斗解算 | `battle/resolver.rs` | 7 | ✅ |
-| 行军系统 | `battle/march.rs` | 6 | ✅ |
+| 战斗解算 | `battle/resolver.rs` | 12 | ✅ +5边界值（零兵力/零士气/复合惩罚/ratio阈值） |
+| 行军系统 | `battle/march.rs` | 10 | ✅ +4直接测试rest_army()（高低补给/边界/公式验证） |
 | 政治系统 | `politics/system.rs` | 8 | ✅ |
 | 命令偏差 | `characters/order_deviation.rs` | 6 | ✅ |
 | 将领关系网络 | `characters/network.rs` | 23 | ✅ |
 | 三系统状态机 | `engine/state.rs` | 16 | ✅ |
-| 历史事件池 | `events/pool.rs` | 13 | ✅ 30条×5叙事 |
+| 历史事件池 | `events/pool.rs` | 16 | ✅ 33条×5叙事（+3 Day10-19补白） |
 | 蒙特卡洛模拟 | `simulation/monte_carlo.rs` | 8 | ✅ |
-| 叙事引擎 | `narratives/mod.rs` | 8 | ✅ 11类stendhal + 12类consequence |
+| 叙事引擎 | `narratives/mod.rs` | 10 | ✅ +2契约验证（policy_id→JSON键名全量覆盖） |
 | GDExtension节点 | `lib.rs` | — | ✅ 4节点（Battle/Politics/Character/Game） |
 | Save/Load序列化 | `engine/state.rs` | — | ✅ to_json/from_json |
 | GDScript桥接层 | `turn_manager.gd` | — | ✅ v2 接入CentJoursEngine |
@@ -160,7 +160,7 @@ M6  打磨发布   ░░░░░░░░░░░░   0%
 | 阈值常量 DRY 修复 | `order_deviation.rs` + `game_state.gd` | — | ✅ DEFECTION_THRESHOLD → re-export LOYALTY_CRISIS_THRESHOLD |
 | 将领技能数据驱动化 | `network.rs` + `state.rs` | 4 | ✅ TDD，修复 davout/soult 数值错误，107 tests |
 
-**合计**: 103 tests 全部通过
+**合计**: 127 tests 全部通过
 
 ---
 
@@ -215,23 +215,58 @@ M6  打磨发布   ░░░░░░░░░░░░   0%
 
 ## 优先级 A — 当前轮（无需 Godot 环境）
 
-### 违规扫描（2026-03-19，v19 完成后重新扫描）
+### 全库扫描（2026-03-19，v20 重新扫描）
 
-**当前无 P0/P1/P2 违规。** 代码质量已全面合规。
+**无 P0/P1 架构违规。发现以下内容缺口与测试盲区：**
 
-| # | 文件 | 问题 | 严重程度 |
-|---|------|------|---------|
-| — | — | 本轮扫描无新发现 | — |
+| # | 文件 / 数据 | 问题 | 严重程度 |
+|---|------------|------|---------|
+| ① | `historical.json` Day 13-19 | 7天完全无事件（拿破仑北上巴黎关键阶段，M4 核心交付物缺口） | 🔴 P1 内容 |
+| ② | `battle/march.rs` `rest_army()` | 唯一无直接测试的 pub 函数，疲劳/士气恢复公式未验证 | 🟡 P2 |
+| ③ | `narratives/mod.rs` | 无内容验证测试，JSON 键名与代码枚举不一致时运行时静默失败 | 🟡 P2 |
+| ④ | `battle/resolver.rs` | 边界值未测试（零兵力、士气0/100、补给耗尽叠加） | 🟢 P3 |
+| ⑤ | `historical.json` | 事件总量 30 条，M4 目标 300-500 条，内容缺口巨大 | 🟢 P3 内容 |
 
 ---
 
-### 下一步建议
+### ① historical.json — 填充 Day 13-19 事件空白 🔴 P1
 
-所有"无需 Godot"的 P0/P1/P2 问题已全部修复。优先级 A 任务清空。
+**违反原则**：M4 交付物缺口（plan.md 历史事件池）
 
-可选方向：
-1. **探索新的代码模块**，寻找尚未覆盖 TDD 的逻辑（如 `politics/system.rs`、`battle/resolver.rs`）
-2. **切换优先级 B**（需要 Godot 环境，见下方列表）
+Day 13-19 是拿破仑从格勒诺布尔北上至里昂、再到巴黎的关键 7 天，
+历史上充满戏剧性时刻，但 historical.json 在此区间完全空白，造成叙事死区。
+
+**目标**：新增 3-5 条事件覆盖此区间，TDD 验证可触发。
+
+**文件**：`src/data/events/historical.json`
+
+---
+
+### ② march.rs — `rest_army()` 补充单元测试 🟡 P2
+
+**违反原则**：TDD（公开函数无直接测试）
+
+`rest_army()` 恢复疲劳和士气，是行军系统核心恢复机制，
+目前只通过 `engine::state` 集成测试间接覆盖，未独立验证公式正确性。
+
+**文件**：`cent-jours-core/src/battle/march.rs`
+
+---
+
+### ③ narratives/mod.rs — 叙事键名验证测试 🟡 P2
+
+**违反原则**：TDD（数据-代码契约无验证）
+
+`narrative_key_for_action()` 将行动类型映射到 JSON 键名，
+若 JSON 缺少对应键则 `pick_stendhal()` 返回 None，运行时静默失败，玩家看不到叙事文本。
+
+**文件**：`cent-jours-core/src/narratives/mod.rs`
+
+---
+
+### ④ resolver.rs — 战斗边界值测试 🟢 P3
+
+零兵力、极端士气、补给耗尽叠加等极端场景未验证，低概率但可能触发。
 
 ---
 
@@ -254,9 +289,22 @@ M6  打磨发布   ░░░░░░░░░░░░   0%
 |--------|------|
 | GDScript 层完全合规（无业务逻辑、无平行计算） | ✅ 完成 |
 | GameState loyalty 与引擎闭环同步 | ✅ 完成 |
-| 103 单元测试全部通过 | ✅ 完成 |
+| 127 单元测试全部通过 | ✅ 完成 |
 | GDExtension 集成测试（Godot 运行） | ⏳ 等待 Godot 环境 |
 | 完整回合流程端到端测试 | ⏳ 等待 Godot 环境 |
+
+---
+
+## 本轮完成摘要（v20，2026-03-20）
+
+| # | 文件 | 处理结果 |
+|---|------|---------|
+| ① | `src/data/events/historical.json` | ✅ 新增 `lyon_artois_flees`（Day10-14）/ `burgundy_popular_surge`（Day14-17）/ `fontainebleau_eve`（Day17-19），填充北上巴黎叙事空白，+3 TDD测试（113→116） |
+| ② | `battle/march.rs` | ✅ `rest_army()` 4个直接单元测试：高/低补给档位、边界值supply=50、公式关系断言（116→120） |
+| ③ | `narratives/mod.rs` | ✅ +2 契约验证测试：`policy_narrative_key()` 所有映射结果在 stendhal + consequences JSON 均有条目，防止键名漂移静默失败（120→122） |
+| ④ | `battle/resolver.rs` | ✅ +5 边界值测试：零兵力/零士气/双方零兵力不崩溃、满疲劳×断补给复合惩罚、ratio_to_result 全阈值边界（122→127） |
+
+**127/127 单元测试全部通过**
 
 ---
 

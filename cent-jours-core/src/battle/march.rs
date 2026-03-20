@@ -373,4 +373,58 @@ mod tests {
         let severed = update_supply(&army, false, &map);
         assert!(severed.available < intact.available);
     }
+
+    // ── rest_army() 直接单元测试 ─────────────────────
+
+    #[test]
+    fn 补给充足时休整疲劳恢复40士气恢复10() {
+        let army = ArmyState {
+            id: "test".into(), location: "paris".into(),
+            troops: 50_000, morale: 70.0, fatigue: 60.0,
+            supply: 80.0,  // > 50
+        };
+        let (fat_rec, mor_rec) = rest_army(&army);
+        assert_eq!(fat_rec, REST_FATIGUE_RECOVERY + 10.0, "充足补给疲劳恢复应为40");
+        assert_eq!(mor_rec, 10.0, "充足补给士气恢复应为10");
+    }
+
+    #[test]
+    fn 补给不足时休整疲劳恢复30士气恢复5() {
+        let army = ArmyState {
+            id: "test".into(), location: "waterloo".into(),
+            troops: 50_000, morale: 70.0, fatigue: 60.0,
+            supply: 30.0,  // ≤ 50
+        };
+        let (fat_rec, mor_rec) = rest_army(&army);
+        assert_eq!(fat_rec, REST_FATIGUE_RECOVERY, "不足补给疲劳恢复应为30");
+        assert_eq!(mor_rec, 5.0, "不足补给士气恢复应为5");
+    }
+
+    #[test]
+    fn 补给恰好50时取低档() {
+        // supply = 50.0，条件 supply > 50.0 为 false → 低档
+        let army = ArmyState {
+            id: "test".into(), location: "paris".into(),
+            troops: 50_000, morale: 70.0, fatigue: 60.0,
+            supply: 50.0,
+        };
+        let (fat_rec, mor_rec) = rest_army(&army);
+        assert_eq!(fat_rec, REST_FATIGUE_RECOVERY, "supply=50时应取低档疲劳恢复");
+        assert_eq!(mor_rec, 5.0, "supply=50时应取低档士气恢复");
+    }
+
+    #[test]
+    fn 休整恢复量高于强行军消耗() {
+        // 休整疲劳恢复(30+) 应远大于强行军消耗(20)
+        let army = ArmyState {
+            id: "test".into(), location: "paris".into(),
+            troops: 50_000, morale: 70.0, fatigue: 60.0,
+            supply: 20.0,  // 低档
+        };
+        let (fat_rec, _) = rest_army(&army);
+        assert!(
+            fat_rec > FORCED_MARCH_FATIGUE,
+            "休整恢复({fat_rec})应大于强行军消耗({FORCED_MARCH_FATIGUE})"
+        );
+    }
 }

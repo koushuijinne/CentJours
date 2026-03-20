@@ -3,8 +3,8 @@
 > **工作标题**: *Cent Jours*（法语”百日”）
 > **一句话**: 你是拿破仑，从厄尔巴岛出逃到滑铁卢，100天内重建帝国或永远流放。每一天都是决策点。
 > **Author**: Julien
-> **Version**: v0.8 — 2026-03-19
-> **Status**: Draft — M0/M0.5/M2/M3 完成，GATE 2 通过；M4 内容填充进行中（80%）
+> **Version**: v0.9 — 2026-03-20
+> **Status**: Draft — M0/M0.5/M2/M3 完成，GATE 2 通过；M4 测试覆盖全面提升（127 tests，历史事件33条）
 
 -----
 
@@ -686,6 +686,7 @@ W1──W2──W3────W7────W11────W14────W19─
 - [x] **Rust：`simulation::run_engine_simulation()` 三系统+EventPool 耦合蒙特卡洛（8个单元测试）** — 1000局 < 2s
 - [x] **characters.json → CharacterNetwork** 数据集成，历史关系数据（-30敌对/正值友好）已修正
 - [x] **数据驱动化重构**（2026-03-19）：将领技能值 `general_skill()` 改为从 `CharacterNetwork.skills` 读取（修复 davout 82→92、soult 72→80 数据错误）；`EventEffects` / `EventTrigger` 改为通用 HashMap（`loyalty_deltas` / `loyalty_min` / `loyalty_max`）；`coalition_not_defeated` 触发条件 Bug 修复；**113/113 单元测试通过**
+- [x] **测试覆盖全面提升**（2026-03-20）：历史事件填充 Day10-19（+3事件：里昂/勃艮第/枫丹白露）；`rest_army()` 4个直接测试；`narratives` 键名契约验证 +2 测试；`resolver.rs` 边界值 +5 测试；**127/127 单元测试通过**
 
 **⛳ GATE 2（W14结束）**: 三系统耦合后复杂度是否可控？
 
@@ -695,13 +696,13 @@ W1──W2──W3────W7────W11────W14────W19─
 
 **内容同步**: 历史科普视频 —「拿破仑百日的真实决策：Ney为什么倒戈？」
 
-### M4: 内容填充（W15-W19）🔶 进行中 78%
+### M4: 内容填充（W15-W19）🔶 进行中 82%
 
 **目标**: 用LLM批量生成所有文本内容，填充100天的完整事件池
 
 **交付物**:
 
-- [x] 历史事件池（当前30条，含5条叙事/事件）`src/data/events/historical.json` ← 仍需扩充至300-500条
+- [x] 历史事件池（当前33条，含5条叙事/事件）`src/data/events/historical.json` ← 仍需扩充至300-500条，Day10-19已填充
 - [x] 司汤达日记文本池（8类决策 × 5变体）`src/data/narratives/stendhal_diary.json`
 - [x] 微叙事后果片段池（6类 × 5条）`src/data/narratives/consequences.json`
 - [x] **叙事引擎**：`NarrativePool` 接入 `GameEngine`，`process_day()` 后提供 `DayReport`

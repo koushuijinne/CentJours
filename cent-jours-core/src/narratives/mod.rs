@@ -178,4 +178,59 @@ mod tests {
         assert_eq!(policy_narrative_key("print_money"),              Some("print_money"));
         assert_eq!(policy_narrative_key("unknown_policy"),           None);
     }
+
+    // ── 键名契约验证：映射函数的所有返回键在 JSON 中必须存在 ──────────
+
+    /// 所有在 policy_narrative_key() 中声明的映射，
+    /// 其目标 key 必须在 stendhal_diary.json 中有对应条目。
+    /// 防止：政策表改了 key 但 JSON 忘更新 → 运行时静默返回 None。
+    #[test]
+    fn policy_narrative_key所有映射结果在stendhal中有条目() {
+        let pool = NarrativePool::new();
+        // 所有已注册的 policy_id
+        let policy_ids = [
+            "conscription",
+            "constitutional_promise",
+            "public_speech",
+            "reduce_taxes",
+            "increase_military_budget",
+            "grant_titles",
+            "secret_diplomacy",
+            "print_money",
+        ];
+        for pid in &policy_ids {
+            let key = policy_narrative_key(pid)
+                .unwrap_or_else(|| panic!("policy_id '{}' 未在 policy_narrative_key 中注册", pid));
+            assert!(
+                pool.stendhal_count(key) > 0,
+                "policy '{}' → key '{}' 在 stendhal_diary.json 中无条目，pick_stendhal 将静默失败",
+                pid, key
+            );
+        }
+    }
+
+    /// 所有在 policy_narrative_key() 中声明的映射，
+    /// 其目标 key 必须在 consequences.json 中有对应条目。
+    #[test]
+    fn policy_narrative_key所有映射结果在consequences中有条目() {
+        let pool = NarrativePool::new();
+        let policy_ids = [
+            "conscription",
+            "constitutional_promise",
+            "public_speech",
+            "reduce_taxes",
+            "increase_military_budget",
+            "grant_titles",
+            "secret_diplomacy",
+            "print_money",
+        ];
+        for pid in &policy_ids {
+            let key = policy_narrative_key(pid).unwrap();
+            assert!(
+                pool.consequence_count(key) > 0,
+                "policy '{}' → key '{}' 在 consequences.json 中无条目，pick_consequence 将静默失败",
+                pid, key
+            );
+        }
+    }
 }

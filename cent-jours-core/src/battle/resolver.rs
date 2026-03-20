@@ -302,4 +302,76 @@ mod tests {
         assert!(stalemate_count + victory_count > 0,
             "±15%随机因子应产生至少1次非失败结果");
     }
+
+    // ── 边界值测试 ─────────────────────────────────────
+
+    #[test]
+    fn 零兵力攻方不崩溃且判定惨败() {
+        let atk = make_army(0, 80.0, 0.0, 70.0);
+        let def = make_army(10_000, 70.0, 10.0, 60.0);
+        let out = resolve_battle(&atk, &def, Terrain::Plains, &mut rng_seeded(1));
+        // 零兵力得分=0，ratio ≈ 0 → DecisiveDefeat
+        assert_eq!(out.result, BattleResult::DecisiveDefeat, "零兵力攻方应判定惨败");
+        assert_eq!(out.attacker_casualties, 0, "零兵力无伤亡");
+    }
+
+    #[test]
+    fn 零士气攻方不崩溃且判定惨败() {
+        let atk = make_army(50_000, 0.0, 0.0, 70.0);
+        let def = make_army(10_000, 70.0, 10.0, 60.0);
+        let out = resolve_battle(&atk, &def, Terrain::Plains, &mut rng_seeded(2));
+        // morale=0 → score = troops × 0 × ... = 0 → DecisiveDefeat
+        assert_eq!(out.result, BattleResult::DecisiveDefeat, "零士气攻方应判定惨败（士气乘数为0）");
+    }
+
+    #[test]
+    fn 满疲劳叠加断补给比单项惩罚更严重() {
+        // 基准：疲劳0 + 补给正常
+        let baseline = ForceData { troops: 20_000, morale: 80.0, fatigue: 0.0,
+                                   general_skill: 70.0, supply_ok: true };
+        // 疲劳100%（-50%战力）
+        let fatigued = ForceData { fatigue: 100.0, supply_ok: true,  ..baseline.clone() };
+        // 断补给（-25%战力）
+        let no_supply = ForceData { fatigue: 0.0,  supply_ok: false, ..baseline.clone() };
+        // 双重叠加：疲劳100% + 断补给（理论战力 × 0.5 × 0.75 = ×0.375）
+        let both = ForceData { fatigue: 100.0, supply_ok: false, ..baseline.clone() };
+
+        let enemy = make_army(15_000, 70.0, 10.0, 60.0);
+        let r0 = resolve_battle(&baseline,  &enemy, Terrain::Plains, &mut rng_seeded(7));
+        let r1 = resolve_battle(&fatigued,  &enemy, Terrain::Plains, &mut rng_seeded(7));
+        let r2 = resolve_battle(&no_supply, &enemy, Terrain::Plains, &mut rng_seeded(7));
+        let r3 = resolve_battle(&both,      &enemy, Terrain::Plains, &mut rng_seeded(7));
+
+        // 双重叠加 < 单项惩罚 < 无惩罚
+        assert!(r3.ratio < r1.ratio, "双重叠加应比单纯疲劳更差");
+        assert!(r3.ratio < r2.ratio, "双重叠加应比单纯断补给更差");
+        assert!(r1.ratio < r0.ratio, "疲劳100%应比无惩罚更差");
+        assert!(r2.ratio < r0.ratio, "断补给应比无惩罚更差");
+    }
+
+    #[test]
+    fn 双方均零兵力不崩溃() {
+        let atk = make_army(0, 80.0, 0.0, 70.0);
+        let def = make_army(0, 80.0, 0.0, 70.0);
+        // def_score = 0 → max(1.0) 保护 → ratio = 0 → DecisiveDefeat，不 panic
+        let out = resolve_battle(&atk, &def, Terrain::Plains, &mut rng_seeded(0));
+        // 不崩溃即可；结果必然是 DecisiveDefeat（ratio ≈ 0）
+        assert_eq!(out.result, BattleResult::DecisiveDefeat);
+        assert_eq!(out.attacker_casualties, 0);
+        assert_eq!(out.defender_casualties, 0);
+    }
+
+    #[test]
+    fn ratio_to_result边界值覆盖() {
+        // 精确测试各阈值边界
+        assert_eq!(ratio_to_result(1.51), BattleResult::DecisiveVictory);
+        assert_eq!(ratio_to_result(1.50), BattleResult::MarginalVictory,  "1.5 不满足 >1.5");
+        assert_eq!(ratio_to_result(1.11), BattleResult::MarginalVictory);
+        assert_eq!(ratio_to_result(1.10), BattleResult::Stalemate,        "1.1 不满足 >1.1");
+        assert_eq!(ratio_to_result(0.91), BattleResult::Stalemate);
+        assert_eq!(ratio_to_result(0.90), BattleResult::MarginalDefeat,   "0.9 不满足 >0.9");
+        assert_eq!(ratio_to_result(0.61), BattleResult::MarginalDefeat);
+        assert_eq!(ratio_to_result(0.60), BattleResult::DecisiveDefeat,   "0.6 不满足 >0.6");
+        assert_eq!(ratio_to_result(0.0),  BattleResult::DecisiveDefeat);
+    }
 }
