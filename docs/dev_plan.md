@@ -1,6 +1,6 @@
 # Cent Jours — 开发优先级计划
 
-> **更新**: 2026-03-21 v23
+> **更新**: 2026-03-21 v24
 > **当前分支**: `claude/review-project-plan-LKKTR`
 
 ---
@@ -115,7 +115,7 @@
 ```
 M0  预研      ████████████ 100% ✅
 M0.5 视觉定调  ████████████ 100% ✅
-M1  核心循环   ███████████░  90% 🔶 Rust层✅，Godot打开✅，CentJoursEngine smoke test✅
+M1  核心循环   ████████████  95% 🔶 Rust层✅，Godot主场景骨架✅，CentJoursEngine smoke test✅
 M2  政治系统   ███████████░  90% 🔶 Rust层✅，平衡达标，Godot联调起点✅
 M3  将领网络   ████████████ 100% ✅ GATE 2 通过
 M4  内容填充   ████████████ 100% ✅ 历史事件33条，TDD契约全覆盖，测试127个
@@ -147,6 +147,7 @@ M6  打磨发布   ░░░░░░░░░░░░   0%
 | GDExtension节点 | `lib.rs` | — | ✅ 4节点（Battle/Politics/Character/Game） |
 | Save/Load序列化 | `engine/state.rs` | — | ✅ to_json/from_json |
 | GDScript桥接层 | `turn_manager.gd` | — | ✅ v2 接入CentJoursEngine |
+| 前端主场景骨架 | `main_menu.tscn` + `main_menu.gd` + `src/dev/engine_smoke_test_scene.tscn` | — | ✅ 正式入口脱离 smoke test，四区布局 + 组件接入 + 独立开发测试场景 |
 | Godot 集成修复 | `turn_manager.gd` + `character_manager.gd` | — | ✅ 修复原生类名冲突 + RefCounted 懒初始化 |
 | 仓库协作清理 | `.gitignore` + Git index | — | ✅ 忽略 `.godot/` / `cent-jours-core/target/` / 原生构建产物，并将已跟踪 `.godot` 缓存移出索引 |
 | 政治UI层 | `political_system.gd` | — | ✅ v2 精简展示层 |
@@ -258,98 +259,94 @@ M6  打磨发布   ░░░░░░░░░░░░   0%
 
 ---
 
-## 优先级 A — 当前轮（Godot 已可用）
+## 优先级 A — 当前轮（主场景已可展示，进入真实绑定期）
 
-### 全库扫描（2026-03-19，v20 重新扫描）
+### 全库扫描（2026-03-21，v24 重新扫描）
 
-**无 P0/P1 架构违规。发现以下内容缺口与测试盲区：**
+**当前无 P0/P1 架构违规。发现以下前端结构缺口：**
 
-| # | 文件 / 数据 | 问题 | 严重程度 |
+| # | 文件 / 模块 | 问题 | 严重程度 |
 |---|------------|------|---------|
-| ① | `historical.json` Day 13-19 | 7天完全无事件（拿破仑北上巴黎关键阶段，M4 核心交付物缺口） | 🔴 P1 内容 |
-| ② | `battle/march.rs` `rest_army()` | 唯一无直接测试的 pub 函数，疲劳/士气恢复公式未验证 | 🟡 P2 |
-| ③ | `narratives/mod.rs` | 无内容验证测试，JSON 键名与代码枚举不一致时运行时静默失败 | 🟡 P2 |
-| ④ | `battle/resolver.rs` | 边界值未测试（零兵力、士气0/100、补给耗尽叠加） | 🟢 P3 |
-| ⑤ | `historical.json` | 事件总量 30 条，M4 目标 300-500 条，内容缺口巨大 | 🟢 P3 内容 |
+| ① | `src/ui/main_menu.gd` | 顶栏仍只读取 `GameState` 当前值，尚未接入 `TurnManager` 驱动的一天流程刷新 | 🟡 P2 前端 |
+| ② | `src/ui/main_menu.gd` Sidebar | 右侧边栏仍是摘要占位，历史事件 / 司汤达文本尚未展示真实内容 | 🟡 P2 前端 |
+| ③ | `src/ui/main_menu.gd` Decision Tray | 卡片已可见，但仍未触发 `submit_action()` 或 `policy_enacted` 闭环 | 🟡 P2 前端 |
+| ④ | `src/ui/main_menu.gd` Map Area | 地图仍为静态战略感占位，尚未读取 `map_nodes.json` 做数据驱动布局 | 🟢 P3 前端 |
 
 ---
 
-### ① historical.json — 填充 Day 13-19 事件空白 🔴 P1
+### ① 顶栏数据绑定升级 🟡 P2
 
-**违反原则**：M4 交付物缺口（plan.md 历史事件池）
+**目标**：让 Top Bar 从“读取初始缓存”升级到“跟随真实回合刷新”。
 
-Day 13-19 是拿破仑从格勒诺布尔北上至里昂、再到巴黎的关键 7 天，
-历史上充满戏剧性时刻，但 historical.json 在此区间完全空白，造成叙事死区。
+**文件**：`src/ui/main_menu.gd` + `src/core/turn_manager.gd`
 
-**目标**：新增 3-5 条事件覆盖此区间，TDD 验证可触发。
-
-**文件**：`src/data/events/historical.json`
-
----
-
-### ② march.rs — `rest_army()` 补充单元测试 🟡 P2
-
-**违反原则**：TDD（公开函数无直接测试）
-
-`rest_army()` 恢复疲劳和士气，是行军系统核心恢复机制，
-目前只通过 `engine::state` 集成测试间接覆盖，未独立验证公式正确性。
-
-**文件**：`cent-jours-core/src/battle/march.rs`
+**要求**：
+- 由 `TurnManager.start_new_turn()` 驱动 Dawn 初始同步
+- 顶栏跟随 `EventBus.phase_changed` / `legitimacy_changed` / `loyalty_changed` 刷新
+- 至少验证一次 `Rest` 后数值可见变化
 
 ---
 
-### ③ narratives/mod.rs — 叙事键名验证测试 🟡 P2
+### ② Sidebar 占位升级 🟡 P2
 
-**违反原则**：TDD（数据-代码契约无验证）
+**目标**：把边栏从占位摘要变成真实信息承载区。
 
-`narrative_key_for_action()` 将行动类型映射到 JSON 键名，
-若 JSON 缺少对应键则 `pick_stendhal()` 返回 None，运行时静默失败，玩家看不到叙事文本。
+**文件**：`src/ui/main_menu.gd`
 
-**文件**：`cent-jours-core/src/narratives/mod.rs`
-
----
-
-### ④ resolver.rs — 战斗边界值测试 🟢 P3
-
-零兵力、极端士气、补给耗尽叠加等极端场景未验证，低概率但可能触发。
+**要求**：
+- 展示最近历史事件 ID 与司汤达文本
+- 扩展将领摘要，不止 3 名固定角色
+- 让局势摘要包含派系趋势而不是纯静态拼接
 
 ---
 
-## 优先级 B — 需要 Godot 环境
+### ③ Decision Tray 接入行动闭环 🟡 P2
 
-| 任务 | 阻塞原因 |
-|------|---------|
-| `rn_slider.gd:31-41` — `_process` 轮询改为 EventBus 信号订阅 | 需要 Godot 运行验证信号触发 |
-| UI 场景文件（.tscn） | 需要 Godot 编辑器 |
-| CentJoursEngine 节点挂载到场景树 | 需要 Godot 编辑器 |
-| GDExtension 集成测试 | 需要 Godot 运行环境 |
-| `decision_card.gd` 完整布局 | 需要可见 UI 布局确认 |
-| M5 美术资源 | 需要 Godot + 美术工具 |
+**目标**：让卡片从“会亮”变成“能推进一天”。
+
+**文件**：`src/ui/main_menu.gd` + `src/core/turn_manager.gd`
+
+**要求**：
+- 选择卡片后能提交对应 policy id
+- 处理选中态、不可用态和结果刷新
+- 与 `engine.process_day_policy()` 的真实可用政策保持一致
 
 ---
 
-## GATE 3 前置条件（等待 Godot 环境）
+## 优先级 B — 视觉与地图深化
+
+| 任务 | 说明 |
+|------|------|
+| 地图区读取 `map_nodes.json` | 用真实节点替换手写坐标 |
+| `rn_slider.gd` 轮询优化 | 从 `_process` 过渡到更明确的状态刷新机制 |
+| Sidebar 叙事样式 | 把事件/日记做成真正的阅读面板而非单段文本 |
+| 主场景视觉打磨 | 分隔线、字号层级、地图光效、托盘 hover 反馈 |
+
+---
+
+## GATE 3 前置条件（已进入 Godot 主场景迭代）
 
 | 检查项 | 状态 |
 |--------|------|
 | GDScript 层完全合规（无业务逻辑、无平行计算） | ✅ 完成 |
 | GameState loyalty 与引擎闭环同步 | ✅ 完成 |
-| 127 单元测试全部通过 | ✅ 完成 |
-| GDExtension 集成测试（Godot 运行） | ⏳ 等待 Godot 环境 |
-| 完整回合流程端到端测试 | ⏳ 等待 Godot 环境 |
+| 主场景四区骨架可见 | ✅ 完成 |
+| `RougeNoirSlider` / `DecisionCard` 已接入正式入口 | ✅ 完成 |
+| 完整回合流程端到端测试 | ⏳ 下一轮 |
 
 ---
 
-## 本轮完成摘要（v20，2026-03-20）
+## 本轮完成摘要（本轮 v24，2026-03-21）
 
 | # | 文件 | 处理结果 |
 |---|------|---------|
-| ① | `src/data/events/historical.json` | ✅ 新增 `lyon_artois_flees`（Day10-14）/ `burgundy_popular_surge`（Day14-17）/ `fontainebleau_eve`（Day17-19），填充北上巴黎叙事空白，+3 TDD测试（113→116） |
-| ② | `battle/march.rs` | ✅ `rest_army()` 4个直接单元测试：高/低补给档位、边界值supply=50、公式关系断言（116→120） |
-| ③ | `narratives/mod.rs` | ✅ +2 契约验证测试：`policy_narrative_key()` 所有映射结果在 stendhal + consequences JSON 均有条目，防止键名漂移静默失败（120→122） |
-| ④ | `battle/resolver.rs` | ✅ +5 边界值测试：零兵力/零士气/双方零兵力不崩溃、满疲劳×断补给复合惩罚、ratio_to_result 全阈值边界（122→127） |
+| ① | `src/ui/main_menu.tscn` | ✅ 从占位页重构为 Top Bar / Map Area / Sidebar / Decision Tray 四区主场景骨架 |
+| ② | `src/ui/main_menu.gd` | ✅ 新增主场景 UI 控制脚本，初始化 Theme、读取 `GameState`、接入 `RougeNoirSlider` 与 4 张 `DecisionCard` |
+| ③ | `src/dev/engine_smoke_test_scene.tscn` | ✅ 新增独立开发测试场景，正式入口彻底脱离 smoke test |
 
-**127/127 单元测试全部通过**
+**验证目标：**
+- 运行正式入口后，不再自动打印 smoke test 日志
+- 主场景可见四区布局、顶栏资源摘要、地图节点占位、边栏摘要和决策托盘
 
 ---
 

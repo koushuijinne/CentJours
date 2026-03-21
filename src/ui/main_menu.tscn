@@ -1,21 +1,313 @@
-; 最小主菜单场景，确保 run/main_scene 能正确加载。
-[gd_scene format=3]
+[gd_scene load_steps=2 format=3 uid="uid://he3lqjn2d43k"]
 
-; 根节点 Control 充满视口。
+[ext_resource type="Script" path="res://src/ui/main_menu.gd" id="1_0h1pf"]
+
 [node name="MainMenu" type="Control"]
+layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_0h1pf")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.0862745, 0.0941176, 0.152941, 1)
+
+[node name="RootLayout" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 16.0
+offset_top = 16.0
+offset_right = -16.0
+offset_bottom = -16.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 14
+
+[node name="TopBar" type="PanelContainer" parent="RootLayout"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 74)
+
+[node name="TopBarMargin" type="MarginContainer" parent="RootLayout/TopBar"]
+layout_mode = 2
+theme_override_constants/margin_left = 18
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 18
+theme_override_constants/margin_bottom = 12
+
+[node name="TopBarRow" type="HBoxContainer" parent="RootLayout/TopBar/TopBarMargin"]
+layout_mode = 2
+theme_override_constants/separation = 18
+
+[node name="DayBlock" type="VBoxContainer" parent="RootLayout/TopBar/TopBarMargin/TopBarRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(126, 0)
+
+[node name="DayLabel" type="Label" parent="RootLayout/TopBar/TopBarMargin/TopBarRow/DayBlock"]
+layout_mode = 2
+text = "Jour 1"
+
+[node name="PhaseLabel" type="Label" parent="RootLayout/TopBar/TopBarMargin/TopBarRow/DayBlock"]
+layout_mode = 2
+text = "Aube · 情报阶段"
+
+[node name="RNBlock" type="VBoxContainer" parent="RootLayout/TopBar/TopBarMargin/TopBarRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 4
+
+[node name="RNLabel" type="Label" parent="RootLayout/TopBar/TopBarMargin/TopBarRow/RNBlock"]
+layout_mode = 2
+text = "Rouge / Noir"
+
+[node name="RougeNoirSlot" type="Control" parent="RootLayout/TopBar/TopBarMargin/TopBarRow/RNBlock"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(280, 36)
+
+[node name="LegitimacyBlock" type="VBoxContainer" parent="RootLayout/TopBar/TopBarMargin/TopBarRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(180, 0)
+theme_override_constants/separation = 6
+
+[node name="LegitimacyHeader" type="HBoxContainer" parent="RootLayout/TopBar/TopBarMargin/TopBarRow/LegitimacyBlock"]
+layout_mode = 2
+
+[node name="LegitimacyCaption" type="Label" parent="RootLayout/TopBar/TopBarMargin/TopBarRow/LegitimacyBlock/LegitimacyHeader"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Legitimacy"
+
+[node name="LegitimacyValue" type="Label" parent="RootLayout/TopBar/TopBarMargin/TopBarRow/LegitimacyBlock/LegitimacyHeader"]
+layout_mode = 2
+text = "50.0"
+horizontal_alignment = 2
+
+[node name="LegitimacyBar" type="ProgressBar" parent="RootLayout/TopBar/TopBarMargin/TopBarRow/LegitimacyBlock"]
+layout_mode = 2
+size_flags_horizontal = 3
+value = 50.0
+
+[node name="ResourceBlock" type="HBoxContainer" parent="RootLayout/TopBar/TopBarMargin/TopBarRow"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="TroopsBlock" type="VBoxContainer" parent="RootLayout/TopBar/TopBarMargin/TopBarRow/ResourceBlock"]
+layout_mode = 2
+
+[node name="TroopsCaption" type="Label" parent="RootLayout/TopBar/TopBarMargin/TopBarRow/ResourceBlock/TroopsBlock"]
+layout_mode = 2
+text = "Troops"
+
+[node name="TroopsValue" type="Label" parent="RootLayout/TopBar/TopBarMargin/TopBarRow/ResourceBlock/TroopsBlock"]
+layout_mode = 2
+text = "6,000"
+
+[node name="MoraleBlock" type="VBoxContainer" parent="RootLayout/TopBar/TopBarMargin/TopBarRow/ResourceBlock"]
+layout_mode = 2
+
+[node name="MoraleCaption" type="Label" parent="RootLayout/TopBar/TopBarMargin/TopBarRow/ResourceBlock/MoraleBlock"]
+layout_mode = 2
+text = "Morale"
+
+[node name="MoraleValue" type="Label" parent="RootLayout/TopBar/TopBarMargin/TopBarRow/ResourceBlock/MoraleBlock"]
+layout_mode = 2
+text = "70"
+
+[node name="FatigueBlock" type="VBoxContainer" parent="RootLayout/TopBar/TopBarMargin/TopBarRow/ResourceBlock"]
+layout_mode = 2
+
+[node name="FatigueCaption" type="Label" parent="RootLayout/TopBar/TopBarMargin/TopBarRow/ResourceBlock/FatigueBlock"]
+layout_mode = 2
+text = "Fatigue"
+
+[node name="FatigueValue" type="Label" parent="RootLayout/TopBar/TopBarMargin/TopBarRow/ResourceBlock/FatigueBlock"]
+layout_mode = 2
+text = "20"
+
+[node name="MainArea" type="HBoxContainer" parent="RootLayout"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 14
+
+[node name="LeftColumn" type="VBoxContainer" parent="RootLayout/MainArea"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 14
+
+[node name="MapArea" type="PanelContainer" parent="RootLayout/MainArea/LeftColumn"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="MapMargin" type="MarginContainer" parent="RootLayout/MainArea/LeftColumn/MapArea"]
+layout_mode = 2
+theme_override_constants/margin_left = 18
+theme_override_constants/margin_top = 18
+theme_override_constants/margin_right = 18
+theme_override_constants/margin_bottom = 18
+
+[node name="MapContent" type="Control" parent="RootLayout/MainArea/LeftColumn/MapArea/MapMargin"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="MapTitle" type="Label" parent="RootLayout/MainArea/LeftColumn/MapArea/MapMargin/MapContent"]
+layout_mode = 0
+offset_right = 260.0
+offset_bottom = 22.0
+text = "THEATRE OF OPERATIONS"
+
+[node name="MapSubtitle" type="Label" parent="RootLayout/MainArea/LeftColumn/MapArea/MapMargin/MapContent"]
+layout_mode = 0
+offset_top = 22.0
+offset_right = 320.0
+offset_bottom = 42.0
+text = "Northward march to Paris and the Belgian frontier"
+
+[node name="MapCanvas" type="Control" parent="RootLayout/MainArea/LeftColumn/MapArea/MapMargin/MapContent"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = 52.0
 grow_horizontal = 2
 grow_vertical = 2
 
-; 标题标签在全屏居中显示。
-[node name="Title" type="Label" parent="."]
-text = "Cent Jours"
-horizontal_alignment = 1
-vertical_alignment = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
+[node name="DecisionTray" type="PanelContainer" parent="RootLayout/MainArea/LeftColumn"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 188)
+
+[node name="TrayMargin" type="MarginContainer" parent="RootLayout/MainArea/LeftColumn/DecisionTray"]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 14
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 14
+
+[node name="TrayContent" type="VBoxContainer" parent="RootLayout/MainArea/LeftColumn/DecisionTray/TrayMargin"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="TrayHeader" type="HBoxContainer" parent="RootLayout/MainArea/LeftColumn/DecisionTray/TrayMargin/TrayContent"]
+layout_mode = 2
+
+[node name="TrayTitle" type="Label" parent="RootLayout/MainArea/LeftColumn/DecisionTray/TrayMargin/TrayContent/TrayHeader"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Decision Tray"
+
+[node name="TrayHint" type="Label" parent="RootLayout/MainArea/LeftColumn/DecisionTray/TrayMargin/TrayContent/TrayHeader"]
+layout_mode = 2
+text = "Priority A placeholder cards"
+
+[node name="DecisionScroll" type="ScrollContainer" parent="RootLayout/MainArea/LeftColumn/DecisionTray/TrayMargin/TrayContent"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+horizontal_scroll_mode = 2
+
+[node name="DecisionRow" type="HBoxContainer" parent="RootLayout/MainArea/LeftColumn/DecisionTray/TrayMargin/TrayContent/DecisionScroll"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Sidebar" type="PanelContainer" parent="RootLayout/MainArea"]
+layout_mode = 2
+custom_minimum_size = Vector2(320, 0)
+size_flags_vertical = 3
+
+[node name="SidebarMargin" type="MarginContainer" parent="RootLayout/MainArea/Sidebar"]
+layout_mode = 2
+theme_override_constants/margin_left = 14
+theme_override_constants/margin_top = 14
+theme_override_constants/margin_right = 14
+theme_override_constants/margin_bottom = 14
+
+[node name="SidebarContent" type="VBoxContainer" parent="RootLayout/MainArea/Sidebar/SidebarMargin"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="SidebarTitle" type="Label" parent="RootLayout/MainArea/Sidebar/SidebarMargin/SidebarContent"]
+layout_mode = 2
+text = "Empire Briefing"
+
+[node name="SituationPanel" type="PanelContainer" parent="RootLayout/MainArea/Sidebar/SidebarMargin/SidebarContent"]
+layout_mode = 2
+
+[node name="SituationMargin" type="MarginContainer" parent="RootLayout/MainArea/Sidebar/SidebarMargin/SidebarContent/SituationPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 10
+
+[node name="SituationBox" type="VBoxContainer" parent="RootLayout/MainArea/Sidebar/SidebarMargin/SidebarContent/SituationPanel/SituationMargin"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="SituationHeading" type="Label" parent="RootLayout/MainArea/Sidebar/SidebarMargin/SidebarContent/SituationPanel/SituationMargin/SituationBox"]
+layout_mode = 2
+text = "Current Situation"
+
+[node name="SituationBody" type="Label" parent="RootLayout/MainArea/Sidebar/SidebarMargin/SidebarContent/SituationPanel/SituationMargin/SituationBox"]
+layout_mode = 2
+text = "Loading..."
+
+[node name="LoyaltyPanel" type="PanelContainer" parent="RootLayout/MainArea/Sidebar/SidebarMargin/SidebarContent"]
+layout_mode = 2
+
+[node name="LoyaltyMargin" type="MarginContainer" parent="RootLayout/MainArea/Sidebar/SidebarMargin/SidebarContent/LoyaltyPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 10
+
+[node name="LoyaltyBox" type="VBoxContainer" parent="RootLayout/MainArea/Sidebar/SidebarMargin/SidebarContent/LoyaltyPanel/LoyaltyMargin"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="LoyaltyHeading" type="Label" parent="RootLayout/MainArea/Sidebar/SidebarMargin/SidebarContent/LoyaltyPanel/LoyaltyMargin/LoyaltyBox"]
+layout_mode = 2
+text = "Marshal Loyalty"
+
+[node name="LoyaltyList" type="VBoxContainer" parent="RootLayout/MainArea/Sidebar/SidebarMargin/SidebarContent/LoyaltyPanel/LoyaltyMargin/LoyaltyBox"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="NarrativePanel" type="PanelContainer" parent="RootLayout/MainArea/Sidebar/SidebarMargin/SidebarContent"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="NarrativeMargin" type="MarginContainer" parent="RootLayout/MainArea/Sidebar/SidebarMargin/SidebarContent/NarrativePanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 10
+
+[node name="NarrativeBox" type="VBoxContainer" parent="RootLayout/MainArea/Sidebar/SidebarMargin/SidebarContent/NarrativePanel/NarrativeMargin"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 6
+
+[node name="NarrativeHeading" type="Label" parent="RootLayout/MainArea/Sidebar/SidebarMargin/SidebarContent/NarrativePanel/NarrativeMargin/NarrativeBox"]
+layout_mode = 2
+text = "History & Narrative"
+
+[node name="NarrativeBody" type="Label" parent="RootLayout/MainArea/Sidebar/SidebarMargin/SidebarContent/NarrativePanel/NarrativeMargin/NarrativeBox"]
+layout_mode = 2
+size_flags_vertical = 3
+text = "Loading..."

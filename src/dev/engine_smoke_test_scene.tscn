@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/core/engine_smoke_test.gd" id="1_efl3n"]
+
+[node name="EngineSmokeTestScene" type="Node"]
+script = ExtResource("1_efl3n")

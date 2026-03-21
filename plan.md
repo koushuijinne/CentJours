@@ -3,8 +3,8 @@
 > **工作标题**: *Cent Jours*（法语”百日”）
 > **一句话**: 你是拿破仑，从厄尔巴岛出逃到滑铁卢，100天内重建帝国或永远流放。每一天都是决策点。
 > **Author**: Julien
-> **Version**: v0.12 — 2026-03-21
-> **Status**: Draft — M0/M0.5/M2/M3 完成，GATE 2 通过；M4 测试覆盖全面提升（127 tests，历史事件33条）；Godot 编辑器已打开项目，`CentJoursEngine` smoke test 通过；仓库已完成跨平台协作清理（忽略并去索引 `.godot` 缓存），主菜单入口已解除临时测试脚本挂载
+> **Version**: v0.13 — 2026-03-21
+> **Status**: Draft — M0/M0.5/M2/M3 完成，GATE 2 通过；M4 测试覆盖全面提升（127 tests，历史事件33条）；Godot 编辑器已打开项目，`CentJoursEngine` smoke test 通过；仓库已完成跨平台协作清理（忽略并去索引 `.godot` 缓存），主场景四区骨架已可见，smoke test 已迁出正式入口
 
 -----
 
@@ -634,7 +634,7 @@ W1──W2──W3────W7────W11────W14────W19─
 
 **内容同步**: devlog素材积累（AI生成美术的工作流截图/对比图）
 
-### M1: 核心循环（W4-W7）🔶 Rust层完成，Godot 联调已打通最小闭环
+### M1: 核心循环（W4-W7）🔶 Rust层完成，Godot 联调已打通，主场景骨架已可见
 
 **目标**: 最小可玩原型（minimum playable prototype），验证100天行军的节奏感
 
@@ -647,11 +647,12 @@ W1──W2──W3────W7────W11────W14────W19─
 - [x] `CentJoursEngine` 最小 smoke test（`new()` / `get_state()` / `get_all_loyalties()` / `process_day_rest()` / `get_last_report()`）
 - [x] Godot 解析修复：`character_manager.gd` 去除冲突 `class_name`，`turn_manager.gd` 改为懒初始化原生引擎（见 ADR-003）
 - [x] 跨平台仓库清理：忽略 `.godot/`、`cent-jours-core/target/` 与原生构建产物，并将已跟踪 `.godot` 缓存移出 Git 索引
-- [x] 主菜单入口恢复：移除临时 `engine_smoke_test.gd` 挂载，避免提交联调用场景改动
+- [x] 主场景骨架：`main_menu.tscn` 已具备 Top Bar / Map Area / Sidebar / Decision Tray 四区布局
+- [x] 正式入口与 smoke test 分离：`src/dev/engine_smoke_test_scene.tscn`
 - [ ] 地图节点系统（Godot节点间移动 + 路径选择，调用Rust Dijkstra）→ 需要Godot
 - [x] 回合流程架构（`src/core/turn_manager.gd` GDScript编排框架已建立）
 - [ ] 简易AI对手（反法同盟自动集结逻辑，Rust实现）→ **可开发（无需Godot）**
-- [ ] **占位符UI**（需要Godot安装后完善）
+- [x] **占位符UI**（`RougeNoirSlider` / `DecisionCard` / `GameState` HUD 已接入正式入口）
 
 **⛳ GATE 1（W7结束）**: 核心循环是否好玩？
 
