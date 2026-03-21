@@ -1,6 +1,6 @@
 # Cent Jours — 开发优先级计划
 
-> **更新**: 2026-03-20 v20
+> **更新**: 2026-03-21 v23
 > **当前分支**: `claude/review-project-plan-LKKTR`
 
 ---
@@ -110,24 +110,24 @@
 
 ---
 
-## 当前进度快照（2026-03-20）
+## 当前进度快照（2026-03-21）
 
 ```
 M0  预研      ████████████ 100% ✅
 M0.5 视觉定调  ████████████ 100% ✅
-M1  核心循环   ██████████░░  85% 🔶 Rust层✅，EventPool集成✅，Godot待安装
-M2  政治系统   ███████████░  90% 🔶 Rust层✅，平衡达标，UI待Godot
+M1  核心循环   ███████████░  90% 🔶 Rust层✅，Godot打开✅，CentJoursEngine smoke test✅
+M2  政治系统   ███████████░  90% 🔶 Rust层✅，平衡达标，Godot联调起点✅
 M3  将领网络   ████████████ 100% ✅ GATE 2 通过
 M4  内容填充   ████████████ 100% ✅ 历史事件33条，TDD契约全覆盖，测试127个
 M5  美术音乐   ░░░░░░░░░░░░   0%
 M6  打磨发布   ░░░░░░░░░░░░   0%
 ```
 
-**127/127 单元测试全部通过**（最后运行：2026-03-20，新增14个测试）
+**127/127 单元测试全部通过 + Godot smoke test 已通过**（最后运行：2026-03-21）
 
 **平衡结果**: Military 24.2% ✅ | Political 21.2% ✅ | Balanced 22.4% ✅
 
-**约束**: 暂无 Godot 运行环境。Rust/GDScript 均可开发，.tscn 场景无法运行测试。
+**约束**: Godot 编辑器已可运行；WSL 音频仍回落 dummy driver，但不阻塞脚本解析和 GDExtension 联调。
 
 ---
 
@@ -147,6 +147,8 @@ M6  打磨发布   ░░░░░░░░░░░░   0%
 | GDExtension节点 | `lib.rs` | — | ✅ 4节点（Battle/Politics/Character/Game） |
 | Save/Load序列化 | `engine/state.rs` | — | ✅ to_json/from_json |
 | GDScript桥接层 | `turn_manager.gd` | — | ✅ v2 接入CentJoursEngine |
+| Godot 集成修复 | `turn_manager.gd` + `character_manager.gd` | — | ✅ 修复原生类名冲突 + RefCounted 懒初始化 |
+| 仓库协作清理 | `.gitignore` + Git index | — | ✅ 忽略 `.godot/` / `cent-jours-core/target/` / 原生构建产物，并将已跟踪 `.godot` 缓存移出索引 |
 | 政治UI层 | `political_system.gd` | — | ✅ v2 精简展示层 |
 | 命令偏差代理 | `order_deviation.gd` | — | ✅ v2 CharacterManager代理 |
 | 将领查询层 | `character_manager.gd` | — | ✅ v2 精简，移除冗余逻辑 |
@@ -156,7 +158,7 @@ M6  打磨发布   ░░░░░░░░░░░░   0%
 | GameState 合规清理 | `game_state.gd` | — | ✅ v2 stub 违规方法，Bug修复（信号双发） |
 | 忠诚度引擎暴露 | `lib.rs` | — | ✅ 新增 `get_all_loyalties()` |
 | 忠诚度同步 | `turn_manager.gd` | — | ✅ v3 `_sync_state_from_engine()` loyalty 闭环 + 全契约注释 |
-| 架构决策记录 | `docs/decisions/` | — | ✅ ADR-001（Rust+GDExtension）、ADR-002（只读缓存） |
+| 架构决策记录 | `docs/decisions/` | — | ✅ ADR-001/002/003（Rust+GDExtension、只读缓存、原生类集成边界） |
 | 阈值常量 DRY 修复 | `order_deviation.rs` + `game_state.gd` | — | ✅ DEFECTION_THRESHOLD → re-export LOYALTY_CRISIS_THRESHOLD |
 | 将领技能数据驱动化 | `network.rs` + `state.rs` | 4 | ✅ TDD，修复 davout/soult 数值错误，107 tests |
 
@@ -172,6 +174,49 @@ M6  打磨发布   ░░░░░░░░░░░░   0%
 | 蒙特卡洛平衡验证 | Military 24.2% / Political 21.2% / Balanced 22.4%，均在 15%-35% |
 | 30条历史事件集成 | 触发率验证通过 |
 | Godot 4.6 升级 | gdext 0.4.5, api-4-5, VarDictionary |
+
+---
+
+## 上轮完成摘要（本轮 v23，2026-03-21）
+
+| # | 文件 | 处理结果 |
+|---|------|---------|
+| ① | `main_menu.tscn` | ✅ 解除 `engine_smoke_test.gd` 的临时挂载，主菜单恢复为正常入口场景 |
+| ② | 提交流程建议 | ✅ 明确不建议直接 `git add .`，应按“代码修复 / 文档 / 仓库清理”选择性暂存 |
+
+**验证结果：**
+- `src/ui/main_menu.tscn` 已不再引用 `res://src/core/engine_smoke_test.gd`
+- `engine_smoke_test.gd` 仍可作为临时开发验证脚本单独保留或后续删除
+
+---
+
+## 上轮完成摘要（本轮 v22，2026-03-21）
+
+| # | 文件 | 处理结果 |
+|---|------|---------|
+| ① | `.gitignore` | ✅ 补充 Godot 缓存、Rust target、Windows/Linux/macOS 原生构建产物忽略规则 |
+| ② | Git index | ✅ 已跟踪 `.godot` 缓存全部执行 `git rm -r --cached .godot`，本地文件保留 |
+| ③ | `engine_smoke_test.gd` / `main_menu.tscn` | ✅ 判定为临时联调改动：测试脚本可保留为开发工具，但当前挂载到主菜单的场景改动不建议提交 |
+
+**验证结果：**
+- `git status --short` 已确认 `.godot` 变为索引删除，后续会受 `.gitignore` 保护
+- `.gdextension` / `*.import` / `*.uid` 未被纳入忽略，保留跨平台协作所需元数据
+
+---
+
+## 上轮完成摘要（本轮 v21，2026-03-21）
+
+| # | 文件 | 处理结果 |
+|---|------|---------|
+| ① | `character_manager.gd` | ✅ 删除冲突的 `class_name CharacterManager`，避免遮蔽 Rust 原生类 |
+| ② | `turn_manager.gd` | ✅ `CentJoursEngine` 改为懒初始化，移除非法 `@export RefCounted` 用法 |
+| ③ | `docs/decisions/ADR-003-gdscript-native-class-integration.md` | ✅ 记录报错背景、决策与 smoke test 验证路径 |
+| ④ | Godot 4.6.1 编辑器 + 手动 smoke test | ✅ `CentJoursEngine.new()`、`get_state()`、`process_day_rest()` 闭环验证通过 |
+
+**验证结果：**
+- `cargo test --features godot-extension` 已于 2026-03-21 通过（127/127）
+- 用户在 Godot 中执行 smoke test：
+  `current_day()`、`get_state()`、`get_all_loyalties()`、`process_day_rest()`、`get_last_report()` 全部返回正常
 
 ---
 
@@ -213,7 +258,7 @@ M6  打磨发布   ░░░░░░░░░░░░   0%
 
 ---
 
-## 优先级 A — 当前轮（无需 Godot 环境）
+## 优先级 A — 当前轮（Godot 已可用）
 
 ### 全库扫描（2026-03-19，v20 重新扫描）
 

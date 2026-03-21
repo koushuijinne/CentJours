@@ -2,7 +2,8 @@
 ## 执行逻辑已移至 CentJoursEngine（Rust）
 ## 本脚本只提供 UI 所需的将领列表和风险查询
 
-class_name CharacterManager
+# 注意：此脚本不再声明全局 class_name，
+# 避免与 Rust GDExtension 注册的原生 CharacterManager 类重名。
 extends Node
 
 # ── 查询方法（供 UI 和 TurnManager 调用）──────────────────

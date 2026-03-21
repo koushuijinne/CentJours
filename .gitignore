@@ -1,1 +1,21 @@
 /target
+
+# Godot editor/cache
+/.godot/
+
+# Rust build output
+/cent-jours-core/target/
+
+# Native build artifacts fallback
+*.dll
+*.so
+*.dylib
+*.lib
+*.pdb
+*.exp
+*.ilk
+*.exe
+
+# Windows junk
+Thumbs.db
+Desktop.ini

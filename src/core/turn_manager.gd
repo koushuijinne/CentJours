@@ -17,12 +17,17 @@ const PHASE_NAMES: Dictionary = {
 var current_phase: Phase = Phase.DAWN
 
 # ── Rust 引擎节点（在场景中通过编辑器或代码连接）────────
-## CentJoursEngine GDExtension 节点，是游戏状态的唯一权威来源
-@export var engine: CentJoursEngine
+## CentJoursEngine 是 GDExtension 暴露的 RefCounted，
+## 不能作为 @export 字段挂到 Inspector，因此改为运行时懒初始化。
+var engine: CentJoursEngine = null
 
 # ── 主循环 ────────────────────────────────────────────
 
+func _ready() -> void:
+	_ensure_engine()
+
 func start_new_turn() -> void:
+	_ensure_engine()
 	var day := engine.current_day()
 	EventBus.turn_started.emit(day)
 	_run_dawn_phase()
@@ -62,6 +67,7 @@ func submit_action(action_type: String, params: Dictionary = {}) -> void:
 
 ## Dusk Phase：调用 Rust 引擎执行行动，同步结果，触发叙事
 func _run_dusk_phase(action_type: String, params: Dictionary) -> void:
+	_ensure_engine()
 	current_phase = Phase.DUSK
 	GameState.current_phase = PHASE_NAMES[Phase.DUSK]
 	EventBus.phase_changed.emit("dusk")
@@ -129,6 +135,7 @@ func _run_dusk_phase(action_type: String, params: Dictionary) -> void:
 ##   factions(Dictionary) — { faction_id(String): support(float) }
 ##     faction_id 取值: "liberals"|"nobility"|"populace"|"military"
 func _sync_state_from_engine() -> void:
+	_ensure_engine()
 	var state := engine.get_state()
 
 	var old_legit: float = GameState.legitimacy
@@ -168,8 +175,14 @@ func _sync_state_from_engine() -> void:
 ## 发射本次 Dawn 阶段新触发的历史事件信号
 ## engine.get_triggered_events() 返回 Array[String]（事件 ID 列表，与 events/pool.rs 一致）
 func _emit_new_triggered_events() -> void:
+	_ensure_engine()
 	var all_triggered: Array = Array(engine.get_triggered_events())
 	for event_id in all_triggered:
 		if not GameState.triggered_events.has(event_id):
 			GameState.triggered_events.append(event_id)
 			EventBus.historical_event_triggered.emit(event_id)
+
+## 确保 TurnManager 生命周期内始终复用同一个原生引擎实例。
+func _ensure_engine() -> void:
+	if engine == null:
+		engine = CentJoursEngine.new()
