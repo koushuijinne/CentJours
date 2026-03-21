@@ -1,15 +1,18 @@
 ; Engine configuration file.
 ; It's best edited using the editor UI and not directly,
-; but you can still edit it manually.
-; Format: https://docs.godotengine.org/en/stable/classes/class_configfile.html
+; since the parameters that go here are not all obvious.
+;
+; Format:
+;   [section] ; section goes between []
+;   param=value ; assign values to parameters
 
 config_version=5
 
 [application]
 
 config/name="Cent Jours"
-config/version="0.1.0"
 config/description="你是拿破仑，从厄尔巴岛出逃到滑铁卢，100天内重建帝国或永远流放。"
+config/version="0.1.0"
 run/main_scene="res://src/ui/main_menu.tscn"
 config/features=PackedStringArray("4.6", "Forward Plus")
 config/icon="res://assets/icon.svg"
@@ -23,8 +26,3 @@ EventBus="*res://src/core/event_bus.gd"
 
 window/size/viewport_width=1920
 window/size/viewport_height=1080
-window/size/resizable=true
-
-[rendering]
-
-renderer/rendering_method="forward_plus"

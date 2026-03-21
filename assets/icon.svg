@@ -1,0 +1,11 @@
+<!-- 占位图标：用于避免 Godot 导入时报缺少图标 -->
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-label="Cent Jours Icon">
+  <!-- 背景圆形 -->
+  <circle cx="128" cy="128" r="120" fill="#1A1A2E" stroke="#C9A84C" stroke-width="10"/>
+  <!-- 简化字母 C -->
+  <path d="M170 76
+           A64 64 0 1 0 170 180"
+        fill="none" stroke="#E8C96A" stroke-width="18" stroke-linecap="round"/>
+  <!-- 中心点 -->
+  <circle cx="128" cy="128" r="6" fill="#E8C96A"/>
+</svg>

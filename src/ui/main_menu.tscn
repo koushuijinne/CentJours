@@ -1,0 +1,21 @@
+; 最小主菜单场景，确保 run/main_scene 能正确加载。
+[gd_scene format=3]
+
+; 根节点 Control 充满视口。
+[node name="MainMenu" type="Control"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+; 标题标签在全屏居中显示。
+[node name="Title" type="Label" parent="."]
+text = "Cent Jours"
+horizontal_alignment = 1
+vertical_alignment = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
