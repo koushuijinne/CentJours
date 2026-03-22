@@ -1,112 +1,43 @@
 # Cent Jours — 开发优先级计划
 
-> **更新**: 2026-03-22 v29
+> **更新**: 2026-03-22 v31
 > **当前分支**: `claude/review-project-plan-vgQTN`
+> **通用原则**: 项目长期稳定原则详见 `docs/development_principles.md`
 
 ---
 
 ## 开发原则
 
-### 一、核心原则（项目级）
+> 项目级完整原则以 `docs/development_principles.md` 为准。本文只保留当前技术轮次直接相关的默认原则与流程要求，避免和总原则文档重复漂移。
 
-> **TDD（测试驱动开发）**
->
-> 所有 Rust 模块遵循严格 TDD 流程：
-> 1. **Red** — 先写失败的单元测试，明确输入/输出契约
-> 2. **Green** — 写最少实现代码使测试通过
-> 3. **Refactor** — 在测试保护下重构，不破坏已有行为
->
-> - 禁止在没有对应测试的情况下提交业务逻辑
-> - `cargo test` 全通过才能提交
+### 一、当前轮默认适用原则
 
-> **GDScript 薄层原则（SoC — 关注点分离）**
->
-> GDScript 层不包含任何业务逻辑，只负责：
-> - 调用 `CentJoursEngine` GDExtension 节点执行行动
-> - 读取引擎状态并发射 `EventBus` 信号驱动 UI
-> - 提供 UI 展示所需的静态元数据（政策名称、描述等）
->
-> 判断标准：如果一段 GDScript 在没有 Godot UI 时仍然"有意义"，它就不应该在 GDScript 里。
+- `核心循环优先`：新功能优先服务 Dawn / Action / Dusk 主循环。
+- `TDD`：Rust 规则层改动默认先补测试，或至少先写明验收检查项。
+- `单一状态源`：引擎是真实状态，`GameState` 只做 UI 只读缓存。
+- `GDScript 薄层`：Godot 脚本负责桥接、展示、信号，不复制核心规则。
+- `数据驱动设计`：角色、事件、地图、平衡参数优先外置，不散写到脚本。
 
-> **单一状态源（Single Source of Truth）**
->
-> `GameState` 单例中的所有运行时数值，必须从 `CentJoursEngine.get_state()` 同步，
-> 不自行维护平行计算逻辑。`GameState` 是 UI 的只读缓存，不是第二个游戏引擎。
+### 二、文档与提交流程要求
 
-> **DRY（Don't Repeat Yourself）**
->
-> 同一块逻辑只在一处定义：
-> - 战斗解算逻辑 → 仅在 `BattleEngine`（Rust）
-> - 政治计算逻辑 → 仅在 `PoliticsSystem`（Rust）
-> - 常量定义 → 仅在 Rust 层或 GDScript 展示层，绝不两处都写
->
-> 判断标准：修改一条规则是否需要同时改两个文件？如是，则违反 DRY。
+- `活文档`：完成任务后立即更新本文档状态（✅/🔶）和进度快照。
+- `同提交同步`：`docs/dev_plan.md` 的更新应和对应代码变更放在同一次 commit。
+- `ADR`：跨层接口、状态流、重要架构选型继续沉淀到 `docs/decisions/ADR-XXX.md`。
+- `边界契约`：Rust ↔ GDScript 的 `Dictionary` / `Array` 返回结构要在调用侧或桥接层写清键名和语义。
 
-> **YAGNI（You Aren't Gonna Need It）**
->
-> 不实现当前不需要的功能；不为假设中的未来需求做抽象：
-> - M5 之前不做多余 UI 抽象层
-> - 不提前泛化只使用一次的逻辑
-> - 删除比保留更好，需要时再加回来
+### 三、提交前强制检查
 
-> **KISS（Keep It Simple）**
->
-> 最简方案优先；三行相似代码优于一个过早的抽象：
-> - 信号发射只做一次，不重复发射
-> - 数据流方向单一（引擎 → GameState → UI），不反向写入
-> - 判断分支优先用 `match`，避免嵌套 `if`
+1. 将已完成项标记 ✅ 并移入模块清单。
+2. 更新进度快照和完成描述。
+3. 重新扫描代码库，记录新出现的技术债或残留风险。
+4. 重排下一轮优先级，确保 Priority A 仍是现在就能做的最高价值任务。
+5. 将文档更新与实现改动放入同一次 commit。
 
-### 二、契约与文档原则
+### 四、小步提交
 
-> **边界契约注释（轻量契约式编程）**
->
-> Rust ↔ GDScript 之间传递 `Dictionary` 时，键名是字符串，无编译期保证。
-> 每个 GDExtension 函数必须在调用侧注释明确契约：
->
-> ```gdscript
-> # engine.get_state() 返回键（来自 lib.rs get_state）:
-> # day(int) legitimacy(float) rouge_noir(float)
-> # troops(int) morale(float) fatigue(float) victories(int)
-> # is_over(bool) outcome(String) factions(Dictionary)
-> ```
->
-> 判断标准：新开发者仅凭 GDScript 文件能否知道 Dictionary 中有哪些键？
-
-> **ADR（架构决策记录）**
->
-> 每个重大技术选型（非显而易见的）记录于 `docs/decisions/ADR-NNN.md`：
-> - 背景、决策、后果三段式，50 行以内
-> - 已决策事项不在每次 PR 中重新讨论
->
-> 待补充的决策：
-> - ADR-001: 为何选 Rust + GDExtension 而非纯 GDScript
-> - ADR-002: GameState 为只读缓存而非双向状态
-
-> **活文档（Living Documentation）**
->
-> - 完成任务后立即更新本文档状态（✅/🔶）和进度快照
-> - 原则：文档反映当前真实状态，而非计划状态
-> - **已完成的轮次内容定期清除**，只保留当前优先级和模块清单
-
-### 三、提交与流程原则
-
-> **完成任务后的强制清单（每次不可跳过）**
->
-> 完成任何代码任务后，**在提交前**必须完成：
-> 1. 将已完成项标记 ✅ 并移入模块清单
-> 2. 更新进度快照（进度条 + 描述）
-> 3. 重新扫描代码库，找新的技术债
-> 4. 重排下一轮优先级（Priority A = 现在就能做的最高价值任务）
-> 5. **dev_plan.md 更新与代码变更放同一次 commit**
->
-> 判断标准：dev_plan.md 超过一个工作轮次没有更新，说明流程出了问题。
-> 详细规则见根目录 `CLAUDE.md`。
-
-> **小步提交推送**
->
-> 每完成一个独立小功能立即 commit + push：
-> - 格式：`feat(模块): 描述` / `fix(模块): 描述` / `data: 描述`
-> - 永远不要积累"大提交"
+- 每完成一个独立小功能立即 commit + push。
+- 推荐格式：`feat(模块): 描述` / `fix(模块): 描述` / `data: 描述`。
+- 不积累“难以复盘的大提交”。
 
 ---
 
@@ -128,6 +59,15 @@ M6  打磨发布   ░░░░░░░░░░░░   0%
 **平衡结果**: Military 24.2% ✅ | Political 21.2% ✅ | Balanced 22.4% ✅
 
 **约束**: Godot 编辑器已可运行；WSL 音频仍回落 dummy driver，但不阻塞脚本解析和 GDExtension 联调。
+
+## 当前前端最高优先级（2026-03-22）
+
+- `ADR-006` 已记录主场景展示问题的分阶段修复策略。
+- 第一轮只处理三项布局稳定性问题：
+  - 顶栏垂直裁切
+  - 决策托盘内容截断
+  - Sidebar 忠诚度 / 叙事面板空间挤压
+- 详细任务拆解见 `docs/frontend_dev_plan.md`。
 
 ---
 
@@ -325,6 +265,7 @@ M6  打磨发布   ░░░░░░░░░░░░   0%
 ### Tier 2 — 战略纵深（3-4 轮，空间维度）
 
 > 行军系统接入，玩家决策从”选什么政策”扩展到”去哪里、何时打”。
+> 工作量标记：`[L]` = Large（跨层/大模块），`[M]` = Medium（中等任务），`[S]` = Small（局部补完）。
 
 #### 2.1 Rust: PlayerAction::March + 引擎集成 [L]
 **文件**: `cent-jours-core/src/engine/state.rs`

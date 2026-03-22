@@ -746,7 +746,7 @@ func _on_game_over(outcome: String) -> void:
 	panel.custom_minimum_size = Vector2(420, 320)
 	panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
 	var style := StyleBoxFlat.new()
-	style.bg_color = CentJoursTheme.COLOR["bg_main"]
+	style.bg_color = CentJoursTheme.COLOR["bg_primary"]
 	style.border_color = CentJoursTheme.COLOR["gold_bright"]
 	style.set_border_width_all(2)
 	style.set_corner_radius_all(8)
