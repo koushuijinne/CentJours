@@ -1,6 +1,6 @@
 # Cent Jours — 开发优先级计划
 
-> **更新**: 2026-03-22 v28
+> **更新**: 2026-03-22 v29
 > **当前分支**: `claude/review-project-plan-vgQTN`
 
 ---
@@ -299,44 +299,26 @@ M6  打磨发布   ░░░░░░░░░░░░   0%
 
 ---
 
-### Tier 1 — 最小可玩（2-3 轮，核心玩法闭环）
+### Tier 1 — 最小可玩 ✅（v29 完成）
 
-> 玩家能战斗、能强化忠诚、游戏能正常结束和重来。
 > **这是第一个”真正可玩”的里程碑。**
 
-#### 1.1 战斗选择 UI [M]
-**新文件**: `src/ui/dialogs/battle_setup_dialog.gd`
-**修改**: `src/ui/main_menu.gd`
+#### 1.1 战斗选择 UI ✅
+- 决策托盘新增”发动战役”卡片 → 弹出 PopupPanel（将领/兵力/地形）→ `submit_action(“battle”)`
+- 战斗结果通过现有叙事管线（get_last_report → stendhal/consequence）展示
 
-- 决策托盘新增”发动战役”卡片
-- 点击后弹出 PopupPanel：
-  - 将领下拉（从 `GameState.characters` 筛选 role=marshal）
-  - 兵力滑块（min 1000, max GameState.total_troops）
-  - 地形选择（plains/hills/forest/urban）
-  - 确认/取消
-- 确认后调 `TurnManager.submit_action(“battle”, {general_id, troops, terrain})`
+#### 1.2 忠诚度强化 UI ✅
+- 决策托盘新增”亲自接见将领”卡片 → 弹出将领列表 → `submit_action(“boost_loyalty”)`
+- 合法性 < 10 时确认按钮自动禁用
 
-#### 1.2 战斗结果展示 [S]
-**修改**: `src/ui/main_menu.gd` / `src/core/turn_manager.gd`
+#### 1.3 游戏结束画面 ✅
+- 全屏遮罩 + 居中面板：5 种结局中文标题/描述 + 最终统计 + “重新开始”按钮
+- `TurnManager.reset_engine()` 支持重置引擎重来
 
-- 从 `engine.get_last_report()` 读取叙事文本展示
-- 对比战前战后 troops/morale 差值，在顶栏闪烁
+#### 1.4 冷却逻辑 ✅
+- `_refresh_card_cooldowns()` 跳过 rest/battle/boost_loyalty 非政策卡
 
-#### 1.3 忠诚度强化 UI [S]
-**修改**: `src/ui/main_menu.gd`
-
-- 决策托盘新增”强化将领”卡片（消耗 5 合法性 → 忠诚度 +8）
-- 点击后弹出将领列表，选中 → 确认 → `TurnManager.submit_action(“boost_loyalty”, {general_id})`
-
-#### 1.4 游戏结束画面 [S]
-**修改**: `src/ui/main_menu.gd` `_on_game_over()`
-
-- 全屏半透明遮罩 + 居中 PanelContainer
-- 结局标题（NapoleonVictory / WaterlooHistorical / WaterlooDefeat / PoliticalCollapse / MilitaryAnnihilation）
-- 最终统计（天数、合法性、胜场、兵力）
-- “重新开始”按钮
-
-**Tier 1 完成标志**: 玩家每回合能选择”休整 / 政策 / 战斗 / 强化忠诚”四种行动，游戏结束时看到结局画面并可重来。
+**Tier 1 完成**: 玩家可选”休整/政策/战斗/强化忠诚”四种行动，游戏结束有完整画面并可重来。
 
 ---
 
@@ -456,6 +438,17 @@ Tier 0 ──→ Tier 1 ──→ Tier 2 ──→ Tier 3
 | 主场景四区骨架可见 | ✅ 完成 |
 | `RougeNoirSlider` / `DecisionCard` 已接入正式入口 | ✅ 完成 |
 | 完整回合流程端到端测试 | ✅ 完成（TurnManager autoload + confirm button 闭环） |
+
+---
+
+## 本轮完成摘要（本轮 v29，2026-03-22）
+
+| # | 文件 | 处理结果 |
+|---|------|---------|
+| ① | `src/ui/main_menu.gd` | ✅ 新增战斗卡+忠诚度卡（BATTLE_CARD_META/BOOST_CARD_META）；战斗弹窗（将领/兵力/地形选择）；忠诚度弹窗（将领选择+合法性检查）；游戏结束全屏面板（5种结局+统计+重启） |
+| ② | `src/core/turn_manager.gd` | ✅ 新增 `reset_engine()` 支持重新开始游戏 |
+
+**无 Rust 改动，无新文件。** TurnManager 的 battle/boost_loyalty 分支已在 v25 实现，本轮只补前端 UI 入口。
 
 ---
 

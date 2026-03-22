@@ -1,7 +1,7 @@
 # Cent Jours — 前端开发优先级计划
 
-> **更新**: 2026-03-22 v6
-> **当前分支**: `claude/review-project-plan-LKKTR`
+> **更新**: 2026-03-22 v7
+> **当前分支**: `claude/review-project-plan-vgQTN`
 > **目标**: 用最少轮次把 Godot 入口从“占位页 + 联调脚本”推进到“可展示、可讲解、可继续绑定数据”的主场景
 
 ---

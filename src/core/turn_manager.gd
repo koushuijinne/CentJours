@@ -187,6 +187,14 @@ func _emit_new_triggered_events() -> void:
 			GameState.triggered_events.append(event_id)
 			EventBus.historical_event_triggered.emit(event_id)
 
+## 重置引擎，用于重新开始游戏
+func reset_engine() -> void:
+	engine = CentJoursEngine.new()
+	current_phase = Phase.DAWN
+	# 重新加载角色数据
+	GameState._load_all_data()
+	GameState.triggered_events.clear()
+
 ## 确保 TurnManager 生命周期内始终复用同一个原生引擎实例。
 func _ensure_engine() -> void:
 	if engine == null:

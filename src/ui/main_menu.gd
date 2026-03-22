@@ -77,6 +77,61 @@ const POLICY_EFFECTS := {
 	]
 }
 
+## 战斗行动卡元数据（非政策，直接触发战斗参数弹窗）
+const BATTLE_CARD_META := {
+	"policy_id": "battle",
+	"name": "发动战役",
+	"emoji": "⚔️",
+	"effects": [
+		{"label": "Risk", "value": 0, "type": "negative"}
+	]
+}
+
+## 忠诚度强化卡元数据（消耗5合法性→忠诚度+8）
+const BOOST_CARD_META := {
+	"policy_id": "boost_loyalty",
+	"name": "亲自接见将领",
+	"emoji": "🤝",
+	"effects": [
+		{"label": "Legitimacy", "value": -5, "type": "negative"},
+		{"label": "Loyalty", "value": 8, "type": "positive"}
+	]
+}
+
+## 结局 ID → 中文标题和描述（Rust GameOutcome.as_str() 返回值）
+const OUTCOME_TEXT := {
+	"napoleon_victory": {
+		"title": "拿破仑的凯旋",
+		"desc": "合法性与军事胜利兼得，帝国重建。历史被改写。"
+	},
+	"waterloo_historical": {
+		"title": "滑铁卢 — 历史重演",
+		"desc": "合法性尚存但胜场不足，百日王朝以滑铁卢告终。"
+	},
+	"waterloo_defeat": {
+		"title": "彻底败亡",
+		"desc": "合法性崩塌，军事失利。拿破仑被流放至圣赫勒拿岛。"
+	},
+	"political_collapse": {
+		"title": "政治崩溃",
+		"desc": "派系全面倒戈，帝国从内部瓦解。拿破仑被迫再次退位。"
+	},
+	"military_annihilation": {
+		"title": "军事覆灭",
+		"desc": "兵力耗尽，法军不复存在。反法联军长驱直入巴黎。"
+	}
+}
+
+## 地形 ID → 显示名（与 lib.rs terrain match 一致）
+const TERRAIN_OPTIONS := {
+	"plains": "平原",
+	"hills": "丘陵",
+	"forest": "森林",
+	"urban": "城镇",
+	"river_crossing": "河口",
+	"ridgeline": "山脊"
+}
+
 # 地图数据从 map_nodes.json 动态加载（替代硬编码占位）
 var _map_nodes: Array = []    # JSON nodes[] 数组
 var _map_edges: Array = []    # JSON edges[] 数组
@@ -149,6 +204,8 @@ const NARRATIVE_MAX_ENTRIES: int = 5
 var _rn_slider: RougeNoirSlider
 var _confirm_button: Button       # 执行行动确认按钮（动态创建）
 var _rn_overlay: ColorRect        # 全屏 Rouge/Noir 氛围叠加层（极低 alpha）
+var _battle_popup: PopupPanel = null   # 战斗参数选择弹窗
+var _boost_popup: PopupPanel = null    # 忠诚度强化选择弹窗
 var _selected_policy_id: String = ""
 var _awaiting_action: bool = false  # 是否处于等待玩家操作的 Action Phase
 var _narrative_log: Array = []    # 叙事日志，最新条目在前，最多 NARRATIVE_MAX_ENTRIES 条
@@ -268,6 +325,26 @@ func _build_decision_cards() -> void:
 		card.effects = POLICY_EFFECTS.get(policy_id, [])
 		card.card_selected.connect(_on_policy_selected)
 		_decision_row.add_child(card)
+
+	# 战斗行动卡（点击后弹出将领/兵力/地形选择弹窗）
+	var battle_card := DecisionCard.new()
+	battle_card.policy_id = BATTLE_CARD_META["policy_id"]
+	battle_card.policy_name = BATTLE_CARD_META["name"]
+	battle_card.thumbnail_emoji = BATTLE_CARD_META["emoji"]
+	battle_card.cost_actions = 1
+	battle_card.effects = BATTLE_CARD_META["effects"]
+	battle_card.card_selected.connect(_on_policy_selected)
+	_decision_row.add_child(battle_card)
+
+	# 忠诚度强化卡（消耗5合法性，目标将领忠诚度+8）
+	var boost_card := DecisionCard.new()
+	boost_card.policy_id = BOOST_CARD_META["policy_id"]
+	boost_card.policy_name = BOOST_CARD_META["name"]
+	boost_card.thumbnail_emoji = BOOST_CARD_META["emoji"]
+	boost_card.cost_actions = 1
+	boost_card.effects = BOOST_CARD_META["effects"]
+	boost_card.card_selected.connect(_on_policy_selected)
+	_decision_row.add_child(boost_card)
 
 ## 全屏 Rouge/Noir 氛围叠加层，alpha 最大 0.15，不遮挡交互（ADR-004）
 func _build_rn_overlay() -> void:
@@ -584,6 +661,10 @@ func _on_policy_selected(policy_id: String) -> void:
 	# 叙事面板显示临时预览，不进入日志（ADR-004）
 	if policy_id == "rest":
 		_narrative_body.text = "休整 · 养精蓄锐\n\n让军队获得喘息之机，为下一步行动积蓄力量。"
+	elif policy_id == "battle":
+		_narrative_body.text = "发动战役\n\n选择将领和兵力，与反法联军决战。点击确认后选择参数。"
+	elif policy_id == "boost_loyalty":
+		_narrative_body.text = "亲自接见将领\n\n消耗 5 合法性，目标将领忠诚度 +8。需合法性 >= 10。"
 	else:
 		var meta: Dictionary = PoliticalSystem.POLICY_META.get(policy_id, {})
 		_narrative_body.text = "▷ %s\n\n%s" % [
@@ -592,9 +673,16 @@ func _on_policy_selected(policy_id: String) -> void:
 		]
 	_narrative_body.add_theme_color_override("font_color", CentJoursTheme.COLOR["text_secondary"])
 
-## 玩家点击"执行行动"：提交政策或休整，进入 Dusk 结算
+## 玩家点击"执行行动"：分派到对应行动类型
 func _on_confirm_pressed() -> void:
 	if not _awaiting_action:
+		return
+	# 战斗和忠诚度强化需要弹窗选择参数，不直接提交
+	if _selected_policy_id == "battle":
+		_show_battle_popup()
+		return
+	if _selected_policy_id == "boost_loyalty":
+		_show_boost_popup()
 		return
 	_set_tray_interactive(false)
 	# "rest" policy_id 和空选均映射到 rest 行动（ADR-004）
@@ -606,9 +694,10 @@ func _on_confirm_pressed() -> void:
 	_update_card_selection()
 
 ## 从 GameState.policy_cooldowns 刷新所有卡片的冷却状态（Rust 引擎权威数据）
+## 跳过 rest/battle/boost_loyalty（它们不属于政策冷却系统）
 func _refresh_card_cooldowns() -> void:
 	for child in _decision_row.get_children():
-		if child is DecisionCard and child.policy_id != "rest":
+		if child is DecisionCard and child.policy_id not in ["rest", "battle", "boost_loyalty"]:
 			var cd: int = int(GameState.policy_cooldowns.get(child.policy_id, 0))
 			child.on_cooldown = cd > 0
 			child.cooldown_days = cd
@@ -641,11 +730,220 @@ func _on_stendhal_entry(day: int, text: String) -> void:
 func _on_micro_narrative(action_type: String, consequence: String) -> void:
 	_append_narrative("▸ [%s]\n%s" % [action_type, consequence], CentJoursTheme.COLOR["text_primary"])
 
-## 游戏结束：禁用所有交互并显示结局
+## 游戏结束：全屏遮罩 + 结局面板 + 统计 + 重启按钮
 func _on_game_over(outcome: String) -> void:
 	_set_tray_interactive(false)
-	_narrative_body.text = "— Fin —\n\n结局: %s" % outcome
-	_narrative_body.add_theme_color_override("font_color", CentJoursTheme.COLOR["gold_bright"])
+
+	# 全屏半透明遮罩，阻断下层交互
+	var overlay := ColorRect.new()
+	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	overlay.color = Color(0, 0, 0, 0.7)
+	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(overlay)
+
+	# 居中结局面板
+	var panel := PanelContainer.new()
+	panel.custom_minimum_size = Vector2(420, 320)
+	panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	var style := StyleBoxFlat.new()
+	style.bg_color = CentJoursTheme.COLOR["bg_main"]
+	style.border_color = CentJoursTheme.COLOR["gold_bright"]
+	style.set_border_width_all(2)
+	style.set_corner_radius_all(8)
+	style.set_content_margin_all(24)
+	panel.add_theme_stylebox_override("panel", style)
+
+	var vbox := VBoxContainer.new()
+	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+
+	# 结局标题和描述
+	var info: Dictionary = OUTCOME_TEXT.get(outcome, {"title": "— Fin —", "desc": outcome})
+	var title_label := Label.new()
+	title_label.text = info["title"]
+	title_label.add_theme_font_size_override("font_size", 24)
+	title_label.add_theme_color_override("font_color", CentJoursTheme.COLOR["gold_bright"])
+	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(title_label)
+
+	var desc_label := Label.new()
+	desc_label.text = info["desc"]
+	desc_label.add_theme_color_override("font_color", CentJoursTheme.COLOR["text_secondary"])
+	desc_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	desc_label.autowrap_mode = TextServer.AUTOWRAP_WORD
+	vbox.add_child(desc_label)
+
+	# 最终统计
+	var stats := Label.new()
+	stats.text = "\n最终统计\n天数: %d  |  合法性: %.0f\n胜场: %d  |  兵力: %d  |  士气: %.0f" % [
+		GameState.current_day, GameState.legitimacy,
+		GameState.victories, GameState.total_troops, GameState.avg_morale
+	]
+	stats.add_theme_color_override("font_color", CentJoursTheme.COLOR["text_primary"])
+	stats.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(stats)
+
+	# 重新开始按钮
+	var restart_btn := Button.new()
+	restart_btn.text = "重新开始"
+	restart_btn.custom_minimum_size = Vector2(140, 36)
+	restart_btn.pressed.connect(_on_restart_pressed.bind(overlay))
+	vbox.add_child(restart_btn)
+
+	panel.add_child(vbox)
+	overlay.add_child(panel)
+
+## 重新开始游戏：销毁结局遮罩，重置引擎，重建 UI
+func _on_restart_pressed(overlay: Control) -> void:
+	overlay.queue_free()
+	TurnManager.reset_engine()
+	_build_decision_cards()
+	_start_game()
+	_refresh_ui()
+
+# ── 战斗参数选择弹窗 ──────────────────────────────────────
+
+## 弹出战斗参数面板：选择将领、兵力、地形后调用 TurnManager.submit_action("battle", ...)
+func _show_battle_popup() -> void:
+	if _battle_popup != null:
+		_battle_popup.queue_free()
+	_battle_popup = PopupPanel.new()
+	var vbox := VBoxContainer.new()
+	vbox.custom_minimum_size = Vector2(320, 300)
+
+	# 标题
+	var title := Label.new()
+	title.text = "发动战役"
+	title.add_theme_font_size_override("font_size", 18)
+	vbox.add_child(title)
+
+	# 将领选择（筛选 role=marshal 的角色）
+	var gen_label := Label.new()
+	gen_label.text = "指挥将领："
+	vbox.add_child(gen_label)
+	var gen_option := OptionButton.new()
+	for char_id in GameState.characters:
+		var c: Dictionary = GameState.characters[char_id]
+		if c.get("role", "") == "marshal":
+			var loyalty: float = float(c.get("loyalty", 50))
+			var skill: int = int(c.get("military_skill", 50))
+			gen_option.add_item("%s (技能:%d 忠诚:%.0f)" % [c.get("name", char_id), skill, loyalty])
+			gen_option.set_item_metadata(gen_option.item_count - 1, char_id)
+	vbox.add_child(gen_option)
+
+	# 兵力滑块
+	var troop_label := Label.new()
+	troop_label.text = "投入兵力："
+	vbox.add_child(troop_label)
+	var troop_slider := HSlider.new()
+	troop_slider.min_value = 1000
+	troop_slider.max_value = max(GameState.total_troops, 1000)
+	troop_slider.step = 1000
+	troop_slider.value = GameState.total_troops / 2
+	vbox.add_child(troop_slider)
+	var troop_value := Label.new()
+	troop_value.text = "%d 人" % int(troop_slider.value)
+	troop_slider.value_changed.connect(func(v: float): troop_value.text = "%d 人" % int(v))
+	vbox.add_child(troop_value)
+
+	# 地形选择（与 lib.rs terrain match 一致）
+	var terrain_label := Label.new()
+	terrain_label.text = "战场地形："
+	vbox.add_child(terrain_label)
+	var terrain_option := OptionButton.new()
+	for tid in TERRAIN_OPTIONS:
+		terrain_option.add_item(TERRAIN_OPTIONS[tid])
+		terrain_option.set_item_metadata(terrain_option.item_count - 1, tid)
+	vbox.add_child(terrain_option)
+
+	# 按钮行
+	var btn_row := HBoxContainer.new()
+	var confirm_btn := Button.new()
+	confirm_btn.text = "确认出战"
+	confirm_btn.pressed.connect(_on_battle_confirmed.bind(gen_option, troop_slider, terrain_option))
+	btn_row.add_child(confirm_btn)
+	var cancel_btn := Button.new()
+	cancel_btn.text = "取消"
+	cancel_btn.pressed.connect(func(): _battle_popup.hide())
+	btn_row.add_child(cancel_btn)
+	vbox.add_child(btn_row)
+
+	_battle_popup.add_child(vbox)
+	add_child(_battle_popup)
+	_battle_popup.popup_centered()
+
+## 战斗确认回调：提取参数并提交行动
+func _on_battle_confirmed(gen_opt: OptionButton, troop_slider: HSlider, terrain_opt: OptionButton) -> void:
+	var general_id: String = gen_opt.get_item_metadata(gen_opt.selected)
+	var troops: int = int(troop_slider.value)
+	var terrain: String = terrain_opt.get_item_metadata(terrain_opt.selected)
+	_battle_popup.hide()
+	_set_tray_interactive(false)
+	# TurnManager "battle" 分支已实现（turn_manager.gd L77-82）
+	TurnManager.submit_action("battle", {
+		"general_id": general_id,
+		"troops": troops,
+		"terrain": terrain
+	})
+	_selected_policy_id = ""
+	_update_card_selection()
+
+# ── 忠诚度强化弹窗 ──────────────────────────────────────
+
+## 弹出将领选择面板：选中后调用 TurnManager.submit_action("boost_loyalty", ...)
+func _show_boost_popup() -> void:
+	if _boost_popup != null:
+		_boost_popup.queue_free()
+	_boost_popup = PopupPanel.new()
+	var vbox := VBoxContainer.new()
+	vbox.custom_minimum_size = Vector2(300, 220)
+
+	var title := Label.new()
+	title.text = "亲自接见将领（-5 合法性 → +8 忠诚度）"
+	title.add_theme_font_size_override("font_size", 16)
+	vbox.add_child(title)
+
+	# 合法性不足警告
+	if GameState.legitimacy < 10.0:
+		var warn := Label.new()
+		warn.text = "合法性不足（需 >= 10，当前 %.0f）" % GameState.legitimacy
+		warn.add_theme_color_override("font_color", Color(1, 0.3, 0.3))
+		vbox.add_child(warn)
+
+	# 将领列表（全部角色，按忠诚度排序更有参考价值）
+	var gen_option := OptionButton.new()
+	for char_id in GameState.characters:
+		var c: Dictionary = GameState.characters[char_id]
+		var loyalty: float = float(c.get("loyalty", 50))
+		gen_option.add_item("%s (忠诚度: %.0f)" % [c.get("name", char_id), loyalty])
+		gen_option.set_item_metadata(gen_option.item_count - 1, char_id)
+	vbox.add_child(gen_option)
+
+	# 按钮行
+	var btn_row := HBoxContainer.new()
+	var confirm_btn := Button.new()
+	confirm_btn.text = "确认接见"
+	confirm_btn.disabled = GameState.legitimacy < 10.0
+	confirm_btn.pressed.connect(_on_boost_confirmed.bind(gen_option))
+	btn_row.add_child(confirm_btn)
+	var cancel_btn := Button.new()
+	cancel_btn.text = "取消"
+	cancel_btn.pressed.connect(func(): _boost_popup.hide())
+	btn_row.add_child(cancel_btn)
+	vbox.add_child(btn_row)
+
+	_boost_popup.add_child(vbox)
+	add_child(_boost_popup)
+	_boost_popup.popup_centered()
+
+## 忠诚度强化确认回调：提取将领ID并提交行动
+func _on_boost_confirmed(gen_opt: OptionButton) -> void:
+	var general_id: String = gen_opt.get_item_metadata(gen_opt.selected)
+	_boost_popup.hide()
+	_set_tray_interactive(false)
+	# TurnManager "boost_loyalty" 分支已实现（turn_manager.gd L87-88）
+	TurnManager.submit_action("boost_loyalty", {"general_id": general_id})
+	_selected_policy_id = ""
+	_update_card_selection()
 
 func _on_phase_changed(_phase: String) -> void:
 	_refresh_ui()
