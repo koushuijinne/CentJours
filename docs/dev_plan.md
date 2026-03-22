@@ -1,6 +1,6 @@
 # Cent Jours — 开发优先级计划
 
-> **更新**: 2026-03-22 v27
+> **更新**: 2026-03-22 v28
 > **当前分支**: `claude/review-project-plan-vgQTN`
 
 ---
@@ -282,25 +282,20 @@ M6  打磨发布   ░░░░░░░░░░░░   0%
 
 ---
 
-### Tier 0 — 快速修复（1 轮，解锁现有系统）
+### Tier 0 — 快速修复 ✅（v28 完成）
 
 > 不需要新架构，只是接通已有管线。
 
-#### 0.1 GDExt 补全 3 条缺失政策 [S]
-**文件**: `cent-jours-core/src/lib.rs` (约 L314-321)
-- `process_day_policy()` 的 match 添加 `grant_titles`、`secret_diplomacy`、`print_money` 三个分支
-- 同步更新蒙特卡洛 AI 策略覆盖（`simulation/monte_carlo.rs`）
-- `cargo test` 验证
+#### 0.1 GDExt 补全 3 条缺失政策 ✅
+- `lib.rs` match 添加 `grant_titles`、`secret_diplomacy`、`print_money`
+- 蒙特卡洛 AI 策略覆盖全部 8 条（Military +print_money, Political +grant_titles, engine_action 全量）
+- `cargo test` 127/127 通过
 
-#### 0.2 UI 显示全部 8 张政策卡片 [S]
-**文件**: `src/ui/main_menu.gd` (L7-12 `PRIORITY_POLICY_IDS`)
-- 扩展为 8 条 policy ID（新增 `grant_titles`, `reduce_taxes`, `secret_diplomacy`, `print_money`）
-- 为新增卡片添加 emoji 和效果描述
-- 若空间不足可改为 ScrollContainer 横向滚动
+#### 0.2 UI 显示全部 8 张政策卡片 ✅
+- `PRIORITY_POLICY_IDS` 扩展为 8 条
+- `POLICY_EMOJIS` / `POLICY_EFFECTS` 补全 4 条新卡片数据
 
-#### 0.3 文档同步 [S]
-
-**Tier 0 完成标志**: 玩家能使用全部 8 种政策，包括 2 行动点的秘密外交。
+**Tier 0 完成**: 玩家能使用全部 8 种政策，包括 2 行动点的秘密外交。
 
 ---
 
@@ -461,6 +456,19 @@ Tier 0 ──→ Tier 1 ──→ Tier 2 ──→ Tier 3
 | 主场景四区骨架可见 | ✅ 完成 |
 | `RougeNoirSlider` / `DecisionCard` 已接入正式入口 | ✅ 完成 |
 | 完整回合流程端到端测试 | ✅ 完成（TurnManager autoload + confirm button 闭环） |
+
+---
+
+## 本轮完成摘要（本轮 v28，2026-03-22）
+
+| # | 文件 | 处理结果 |
+|---|------|---------|
+| ① | `cent-jours-core/src/lib.rs` | ✅ `process_day_policy()` match 补全 grant_titles/secret_diplomacy/print_money |
+| ② | `cent-jours-core/src/simulation/monte_carlo.rs` | ✅ AI 策略覆盖全部 8 条政策（Military +print_money, Political +grant_titles, engine_action 全量） |
+| ③ | `src/ui/main_menu.gd` | ✅ PRIORITY_POLICY_IDS 扩展为 8 条 + POLICY_EMOJIS/EFFECTS 补全 4 条新卡片 |
+| ④ | `docs/dev_plan.md` + `plan.md` | ✅ Tier 0 标记完成 |
+
+**验证**: 127/127 cargo test 通过
 
 ---
 

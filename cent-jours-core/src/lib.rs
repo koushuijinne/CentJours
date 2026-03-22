@@ -317,6 +317,10 @@ mod gdext_bindings {
                 "public_speech"            => PlayerAction::EnactPolicy { policy_id: "public_speech" },
                 "reduce_taxes"             => PlayerAction::EnactPolicy { policy_id: "reduce_taxes" },
                 "increase_military_budget" => PlayerAction::EnactPolicy { policy_id: "increase_military_budget" },
+                // 补全缺失的 3 条政策（之前静默退化为 Rest）
+                "grant_titles"             => PlayerAction::EnactPolicy { policy_id: "grant_titles" },
+                "secret_diplomacy"         => PlayerAction::EnactPolicy { policy_id: "secret_diplomacy" },
+                "print_money"              => PlayerAction::EnactPolicy { policy_id: "print_money" },
                 _ => PlayerAction::Rest,
             };
             self.engine.process_day(action, &mut self.rng);

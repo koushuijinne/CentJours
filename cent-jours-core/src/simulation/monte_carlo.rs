@@ -40,11 +40,13 @@ impl PlayerStrategy {
     pub fn select_policy<'a>(&self, policies: &'a [&'a str], rng: &mut impl Rng) -> &'a str {
         match self {
             Self::Military  => {
-                let mil = ["conscription", "increase_military_budget"];
+                // 军事向：征兵 + 军费 + 印钞应急
+                let mil = ["conscription", "increase_military_budget", "print_money"];
                 mil[rng.gen_range(0..mil.len())]
             }
             Self::Political => {
-                let pol = ["constitutional_promise", "public_speech", "reduce_taxes"];
+                // 政治向：宪政 + 演说 + 减税 + 授衔
+                let pol = ["constitutional_promise", "public_speech", "reduce_taxes", "grant_titles"];
                 pol[rng.gen_range(0..pol.len())]
             }
             Self::Balanced  => policies[rng.gen_range(0..policies.len())],
@@ -315,9 +317,11 @@ pub struct EngineSimReport {
 /// 根据引擎当天状态选择行动（Balanced策略）
 fn engine_action<R: Rng>(engine: &GameEngine, rng: &mut R) -> PlayerAction {
     const BATTLE_DAYS: &[u32] = &[7, 20, 45, 60, 80, 86, 90, 100];
+    // 全部 8 条政策供 Balanced 策略随机选择
     const POLICIES: &[&str] = &[
         "conscription", "constitutional_promise", "public_speech",
         "reduce_taxes", "increase_military_budget",
+        "grant_titles", "secret_diplomacy", "print_money",
     ];
 
     let day = engine.current_day();

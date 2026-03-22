@@ -4,18 +4,28 @@
 
 extends Control
 
+## 全部 8 条政策 ID（与 Rust default_policies() 一致）
 const PRIORITY_POLICY_IDS := [
 	"conscription",
 	"public_speech",
 	"constitutional_promise",
-	"increase_military_budget"
+	"increase_military_budget",
+	"grant_titles",
+	"reduce_taxes",
+	"secret_diplomacy",
+	"print_money"
 ]
 
+## 政策卡片图标（UI 展示用）
 const POLICY_EMOJIS := {
 	"conscription": "🪖",
 	"public_speech": "📣",
 	"constitutional_promise": "📜",
-	"increase_military_budget": "💰"
+	"increase_military_budget": "💰",
+	"grant_titles": "👑",
+	"reduce_taxes": "🪙",
+	"secret_diplomacy": "🕵️",
+	"print_money": "🏦"
 }
 
 const POLICY_EFFECTS := {
@@ -38,6 +48,32 @@ const POLICY_EFFECTS := {
 		{"label": "Military", "value": 6, "type": "positive"},
 		{"label": "Economy", "value": -4, "type": "negative"},
 		{"label": "Rouge", "value": 4, "type": "rn"}
+	],
+	## 数据来源：politics/system.rs grant_titles — 贵族+12, 自由派-5, 民众-3, Noir-5
+	"grant_titles": [
+		{"label": "Nobility", "value": 12, "type": "positive"},
+		{"label": "Liberals", "value": -5, "type": "negative"},
+		{"label": "Populace", "value": -3, "type": "negative"},
+		{"label": "Noir", "value": -5, "type": "rn"}
+	],
+	## 数据来源：politics/system.rs reduce_taxes — 民众+10, 自由派+3, 经济-8
+	"reduce_taxes": [
+		{"label": "Populace", "value": 10, "type": "positive"},
+		{"label": "Liberals", "value": 3, "type": "positive"},
+		{"label": "Economy", "value": -8, "type": "negative"}
+	],
+	## 数据来源：politics/system.rs secret_diplomacy — 2行动点, Noir-3, CD15天
+	"secret_diplomacy": [
+		{"label": "Cost", "value": 2, "type": "negative"},
+		{"label": "Noir", "value": -3, "type": "rn"}
+	],
+	## 数据来源：politics/system.rs print_money — 经济+15, 全派系负面, Rouge+8, CD20天
+	"print_money": [
+		{"label": "Economy", "value": 15, "type": "positive"},
+		{"label": "Populace", "value": -5, "type": "negative"},
+		{"label": "Liberals", "value": -8, "type": "negative"},
+		{"label": "Nobility", "value": -5, "type": "negative"},
+		{"label": "Rouge", "value": 8, "type": "rn"}
 	]
 }
 
