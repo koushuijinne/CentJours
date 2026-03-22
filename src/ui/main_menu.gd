@@ -65,7 +65,19 @@ const FACTION_LABELS := {
 	"nobility": "旧贵族"
 }
 
-const LOYALTY_HEROES := ["davout", "ney", "fouche"]
+# 休整卡元数据（固定出现在托盘最左侧）
+const REST_CARD_META := {
+	"policy_id": "rest",
+	"name": "休整",
+	"emoji": "🌙",
+	"effects": [
+		{"label": "Fatigue", "value": -10, "type": "positive"},
+		{"label": "Morale",  "value":   3, "type": "positive"}
+	]
+}
+
+# 叙事日志最大保留条数（超出后移除最旧条目）
+const NARRATIVE_MAX_ENTRIES: int = 5
 
 @onready var _top_bar: PanelContainer = $RootLayout/TopBar
 @onready var _day_label: Label = $RootLayout/TopBar/TopBarMargin/TopBarRow/DayBlock/DayLabel
@@ -92,8 +104,10 @@ const LOYALTY_HEROES := ["davout", "ney", "fouche"]
 
 var _rn_slider: RougeNoirSlider
 var _confirm_button: Button       # 执行行动确认按钮（动态创建）
+var _rn_overlay: ColorRect        # 全屏 Rouge/Noir 氛围叠加层（极低 alpha）
 var _selected_policy_id: String = ""
 var _awaiting_action: bool = false  # 是否处于等待玩家操作的 Action Phase
+var _narrative_log: Array = []    # 叙事日志，最新条目在前，最多 NARRATIVE_MAX_ENTRIES 条
 
 func _ready() -> void:
 	# 统一入口主题，保证占位骨架先具备正式视觉语言。
@@ -103,6 +117,7 @@ func _ready() -> void:
 	_build_rouge_noir_slider()
 	_build_decision_cards()
 	_build_confirm_button()
+	_build_rn_overlay()
 	_connect_signals()
 	call_deferred("_refresh_ui")
 	call_deferred("_rebuild_map_nodes")
@@ -142,9 +157,19 @@ func _build_rouge_noir_slider() -> void:
 	_rn_slot.add_child(_rn_slider)
 
 func _build_decision_cards() -> void:
-	# 托盘卡片直接绑定现有政策元数据，后续接 TurnManager 时无需重排布局。
+	# 托盘卡片：先放固定"休整"卡，再放政策卡（ADR-004）
 	for child in _decision_row.get_children():
 		child.queue_free()
+
+	# 休整卡固定在最左侧，始终可用
+	var rest_card := DecisionCard.new()
+	rest_card.policy_id       = REST_CARD_META["policy_id"]
+	rest_card.policy_name     = REST_CARD_META["name"]
+	rest_card.thumbnail_emoji = REST_CARD_META["emoji"]
+	rest_card.cost_actions    = 1
+	rest_card.effects         = REST_CARD_META["effects"]
+	rest_card.card_selected.connect(_on_policy_selected)
+	_decision_row.add_child(rest_card)
 
 	for policy_id in PRIORITY_POLICY_IDS:
 		var meta: Dictionary = PoliticalSystem.POLICY_META.get(policy_id, {})
@@ -156,6 +181,30 @@ func _build_decision_cards() -> void:
 		card.effects = POLICY_EFFECTS.get(policy_id, [])
 		card.card_selected.connect(_on_policy_selected)
 		_decision_row.add_child(card)
+
+## 全屏 Rouge/Noir 氛围叠加层，alpha 最大 0.15，不遮挡交互（ADR-004）
+func _build_rn_overlay() -> void:
+	_rn_overlay = ColorRect.new()
+	_rn_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_rn_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_rn_overlay.color = Color(0, 0, 0, 0)
+	add_child(_rn_overlay)
+	# 移到最顶层子节点确保叠加在所有面板之上
+	move_child(_rn_overlay, get_child_count() - 1)
+
+## 游戏开始时初始化叙事面板占位文本
+func _init_narrative_panel() -> void:
+	_narrative_log.clear()
+	_narrative_body.text = "Jour 1 · 厄尔巴岛出发\n\n选择行动，历史将在此处展开。"
+	_narrative_body.add_theme_color_override("font_color", CentJoursTheme.COLOR["text_secondary"])
+
+## 向叙事日志追加一条新记录，最多保留 NARRATIVE_MAX_ENTRIES 条（ADR-004）
+func _append_narrative(entry: String, color: Color) -> void:
+	_narrative_log.push_front(entry)
+	if _narrative_log.size() > NARRATIVE_MAX_ENTRIES:
+		_narrative_log.pop_back()
+	_narrative_body.text = "\n─────\n".join(_narrative_log)
+	_narrative_body.add_theme_color_override("font_color", color)
 
 ## 在 TrayHeader 右侧动态创建"执行行动"确认按钮
 func _build_confirm_button() -> void:
@@ -173,6 +222,7 @@ func _start_game() -> void:
 	TurnManager.begin_action_phase()
 	_awaiting_action = true
 	_set_tray_interactive(true)
+	_init_narrative_panel()
 
 ## 控制托盘卡片与确认按钮的可交互状态
 func _set_tray_interactive(enabled: bool) -> void:
@@ -208,7 +258,8 @@ func _refresh_ui() -> void:
 		_rn_slider.set_value(GameState.rouge_noir_index)
 	_refresh_situation_panel()
 	_refresh_loyalty_panel()
-	_refresh_narrative_panel()
+	# 叙事面板有独立更新路径（_append_narrative / _on_policy_selected），不在此处刷新（ADR-004）
+	_apply_rn_atmosphere()
 	_update_card_selection()
 
 func _refresh_situation_panel() -> void:
@@ -229,7 +280,11 @@ func _refresh_loyalty_panel() -> void:
 	for child in _loyalty_list.get_children():
 		child.queue_free()
 
-	for hero_id in LOYALTY_HEROES:
+	# 按忠诚度降序显示全部将领，不再写死 3 人（ADR-004）
+	var all_ids: Array = GameState.characters.keys()
+	all_ids.sort_custom(func(a, b): return GameState.get_loyalty(a) > GameState.get_loyalty(b))
+
+	for hero_id in all_ids:
 		var row := HBoxContainer.new()
 		row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 
@@ -247,22 +302,12 @@ func _refresh_loyalty_panel() -> void:
 
 		_loyalty_list.add_child(row)
 
-func _refresh_narrative_panel() -> void:
-	var base_text := "主场景骨架已就位。\n这块面板后续承接司汤达日记、历史事件和行动后果。"
-	if _selected_policy_id != "":
-		var meta: Dictionary = PoliticalSystem.POLICY_META.get(_selected_policy_id, {})
-		base_text = "已选政策: %s\n%s" % [
-			String(meta.get("name", _selected_policy_id)),
-			String(meta.get("summary", "等待接入真实结算与微叙事。"))
-		]
-	elif not GameState.triggered_events.is_empty():
-		base_text = "已触发历史事件 %d 条。\n最近事件 ID: %s" % [
-			GameState.triggered_events.size(),
-			String(GameState.triggered_events.back())
-		]
-
-	_narrative_body.text = base_text
-	_narrative_body.add_theme_color_override("font_color", CentJoursTheme.COLOR["text_primary"])
+## Rouge/Noir 氛围叠加：把 get_rn_tint() 的 bg_tint 写入全屏覆盖层（ADR-004）
+func _apply_rn_atmosphere() -> void:
+	if _rn_overlay == null:
+		return
+	var tint := CentJoursTheme.get_rn_tint(GameState.rouge_noir_index)
+	_rn_overlay.color = tint["bg_tint"]
 
 func _update_card_selection() -> void:
 	for child in _decision_row.get_children():
@@ -290,16 +335,16 @@ func _rebuild_map_nodes() -> void:
 		_add_map_node(node_info, points[node_info["id"]])
 
 func _add_map_route(start: Vector2, target: Vector2) -> void:
-	var route := ColorRect.new()
-	route.color = Color(CentJoursTheme.COLOR["gold_dim"].r,
+	# 用 Line2D 替代旋转 ColorRect，消除锯齿（ADR-004）
+	var line := Line2D.new()
+	line.add_point(start)
+	line.add_point(target)
+	line.width = 1.5
+	line.default_color = Color(
+		CentJoursTheme.COLOR["gold_dim"].r,
 		CentJoursTheme.COLOR["gold_dim"].g,
-		CentJoursTheme.COLOR["gold_dim"].b, 0.28)
-	route.position = start
-	route.size = Vector2(start.distance_to(target), 2.0)
-	route.pivot_offset = Vector2(0.0, 1.0)
-	route.rotation = (target - start).angle()
-	route.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_map_canvas.add_child(route)
+		CentJoursTheme.COLOR["gold_dim"].b, 0.35)
+	_map_canvas.add_child(line)
 
 func _add_map_node(node_info: Dictionary, point: Vector2) -> void:
 	var container := Control.new()
@@ -345,15 +390,25 @@ func _on_policy_selected(policy_id: String) -> void:
 	if not _awaiting_action:
 		return
 	_selected_policy_id = policy_id
-	_refresh_narrative_panel()
 	_update_card_selection()
+	# 叙事面板显示临时预览，不进入日志（ADR-004）
+	if policy_id == "rest":
+		_narrative_body.text = "休整 · 养精蓄锐\n\n让军队获得喘息之机，为下一步行动积蓄力量。"
+	else:
+		var meta: Dictionary = PoliticalSystem.POLICY_META.get(policy_id, {})
+		_narrative_body.text = "▷ %s\n\n%s" % [
+			String(meta.get("name", policy_id)),
+			String(meta.get("summary", "等待结算…"))
+		]
+	_narrative_body.add_theme_color_override("font_color", CentJoursTheme.COLOR["text_secondary"])
 
 ## 玩家点击"执行行动"：提交政策或休整，进入 Dusk 结算
 func _on_confirm_pressed() -> void:
 	if not _awaiting_action:
 		return
 	_set_tray_interactive(false)
-	if _selected_policy_id != "":
+	# "rest" policy_id 和空选均映射到 rest 行动（ADR-004）
+	if _selected_policy_id != "" and _selected_policy_id != "rest":
 		TurnManager.submit_action("policy", {"policy_id": _selected_policy_id})
 	else:
 		TurnManager.submit_action("rest", {})
@@ -370,14 +425,13 @@ func _begin_next_turn() -> void:
 	TurnManager.begin_action_phase()
 	_set_tray_interactive(true)
 
-## 司汤达日记文本写入叙事面板
+## 司汤达日记：进入滚动日志，金色调以区分于普通后果文本（ADR-004）
 func _on_stendhal_entry(day: int, text: String) -> void:
-	_narrative_body.text = "Jour %d — Stendhal\n\n%s" % [day, text]
-	_narrative_body.add_theme_color_override("font_color", CentJoursTheme.COLOR["gold_dim"])
+	_append_narrative("Jour %d — Stendhal\n%s" % [day, text], CentJoursTheme.COLOR["gold_dim"])
 
-## 行动后果微叙事追加到叙事面板
+## 行动后果微叙事：进入滚动日志（ADR-004）
 func _on_micro_narrative(action_type: String, consequence: String) -> void:
-	_narrative_body.text += "\n\n▸ [%s]\n%s" % [action_type, consequence]
+	_append_narrative("▸ [%s]\n%s" % [action_type, consequence], CentJoursTheme.COLOR["text_primary"])
 
 ## 游戏结束：禁用所有交互并显示结局
 func _on_game_over(outcome: String) -> void:

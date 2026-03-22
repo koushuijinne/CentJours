@@ -30,15 +30,8 @@ const INDICATOR_SIZE := 14.0
 
 func _ready() -> void:
 	_build_ui()
+	# phase_changed 在每次引擎同步后必然触发，用信号驱动替代每帧轮询（ADR-004）
 	EventBus.phase_changed.connect(_on_phase_changed)
-	# 订阅 Rouge/Noir 变化（通过 GameState 直接轮询或信号）
-	set_process(true)
-
-func _process(_delta: float) -> void:
-	# 每帧检查是否需要更新（GameState 没有专用 RN 信号，在 political_system 里 shift 后触发）
-	var game_rn: float = GameState.rouge_noir_index
-	if abs(game_rn - _target_value) > 0.1:
-		set_value(game_rn)
 
 # ── 公开 API ──────────────────────────────────────────
 
@@ -131,4 +124,5 @@ func _update_visual(val: float) -> void:
 	_indicator.color = tint["gold_tint"]
 
 func _on_phase_changed(_phase: String) -> void:
-	pass  # 可以在特定阶段禁用交互
+	# 每次阶段切换时同步引擎最新的 rouge_noir 值，替代原有的每帧轮询
+	set_value(GameState.rouge_noir_index)

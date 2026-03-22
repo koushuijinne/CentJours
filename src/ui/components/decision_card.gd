@@ -32,6 +32,8 @@ func _ready() -> void:
 	mouse_exited.connect(_on_mouse_exited)
 	gui_input.connect(_on_gui_input)
 	custom_minimum_size = Vector2(130, 110)
+	# 以卡片中心为缩放原点，避免 hover scale 偏移（ADR-004）
+	pivot_offset = custom_minimum_size / 2.0
 
 # ── 公开 API ──────────────────────────────────────────
 
@@ -184,7 +186,9 @@ func _apply_current_style() -> void:
 		add_theme_stylebox_override("panel", _style_normal)
 
 func _animate_hover(enter: bool) -> void:
+	# 用 scale 替代 position 偏移：HBoxContainer 会覆盖 position，scale 不受容器干涉（ADR-004）
 	var tween := create_tween()
 	tween.set_ease(Tween.EASE_OUT)
-	tween.tween_property(self, "position:y",
-		position.y + (-2.0 if enter else 2.0), 0.1)
+	tween.set_trans(Tween.TRANS_BACK)
+	tween.tween_property(self, "scale",
+		Vector2(1.04, 1.04) if enter else Vector2.ONE, 0.12)
