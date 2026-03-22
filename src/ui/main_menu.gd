@@ -280,11 +280,15 @@ func _refresh_loyalty_panel() -> void:
 	for child in _loyalty_list.get_children():
 		child.queue_free()
 
-	# 按忠诚度降序显示全部将领，不再写死 3 人（ADR-004）
+	# 按忠诚度降序，最多显示 8 位（ADR-004 补丁：侧栏无 ScrollContainer，15人会溢出）
+	const MAX_VISIBLE: int = 8
 	var all_ids: Array = GameState.characters.keys()
 	all_ids.sort_custom(func(a, b): return GameState.get_loyalty(a) > GameState.get_loyalty(b))
 
-	for hero_id in all_ids:
+	var visible_ids := all_ids.slice(0, MAX_VISIBLE)
+	var hidden_count: int = all_ids.size() - visible_ids.size()
+
+	for hero_id in visible_ids:
 		var row := HBoxContainer.new()
 		row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 
@@ -301,6 +305,13 @@ func _refresh_loyalty_panel() -> void:
 		row.add_child(value_label)
 
 		_loyalty_list.add_child(row)
+
+	# 溢出提示：告知玩家还有多少将领未展示
+	if hidden_count > 0:
+		var overflow := Label.new()
+		overflow.text = "…另 %d 位将领" % hidden_count
+		overflow.add_theme_color_override("font_color", CentJoursTheme.COLOR["text_secondary"])
+		_loyalty_list.add_child(overflow)
 
 ## Rouge/Noir 氛围叠加：把 get_rn_tint() 的 bg_tint 写入全屏覆盖层（ADR-004）
 func _apply_rn_atmosphere() -> void:
