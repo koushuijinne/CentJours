@@ -140,21 +140,77 @@ var _map_x_min: float = 0.0
 var _map_x_max: float = 1.0
 var _map_y_min: float = 0.0
 var _map_y_max: float = 1.0
+var _map_node_index: Dictionary = {}
+var _map_adjacency_by_node: Dictionary = {}
 
-# 节点类型对应的圆点尺寸和标签字号
-const NODE_SIZE_MAP := {
-	"capital": {"dot": 16, "font": 13, "show_label": true},
-	"major_city": {"dot": 12, "font": 11, "show_label": true},
-	"fortress_city": {"dot": 10, "font": 10, "show_label": true},
-	"regional_capital": {"dot": 8, "font": 9, "show_label": true},
-	"fortress_town": {"dot": 7, "font": 9, "show_label": false},
-	"fortress": {"dot": 7, "font": 9, "show_label": false},
-	"small_town": {"dot": 5, "font": 8, "show_label": false},
-	"village": {"dot": 5, "font": 9, "show_label": true},
-	"crossroads": {"dot": 4, "font": 8, "show_label": true},
-	"palace_town": {"dot": 6, "font": 9, "show_label": false},
-	"royal_palace": {"dot": 8, "font": 10, "show_label": true},
-	"coastal_landing": {"dot": 6, "font": 9, "show_label": true},
+const MAP_LABEL_ANCHORS := ["right_up", "right_down", "left_up", "left_down"]
+const MAP_LABEL_GAP := 6.0
+const MAP_HOTSPOT_MIN_SIZE := 24.0
+const MAP_LABEL_PADDING_X := 8.0
+const MAP_LABEL_PADDING_Y := 4.0
+const MAP_RESERVED_TOP_LEFT := Vector2(360.0, 42.0)
+
+const NODE_LABEL_POLICY := {
+	"capital": {
+		"dot": 16, "font": 13,
+		"always_show": false, "default_visible": true, "hover_only": false,
+		"label_priority": 100
+	},
+	"major_city": {
+		"dot": 12, "font": 11,
+		"always_show": false, "default_visible": true, "hover_only": false,
+		"label_priority": 90
+	},
+	"fortress_city": {
+		"dot": 10, "font": 10,
+		"always_show": false, "default_visible": true, "hover_only": false,
+		"label_priority": 82
+	},
+	"regional_capital": {
+		"dot": 8, "font": 9,
+		"always_show": false, "default_visible": true, "hover_only": false,
+		"label_priority": 72
+	},
+	"royal_palace": {
+		"dot": 8, "font": 10,
+		"always_show": false, "default_visible": true, "hover_only": false,
+		"label_priority": 78
+	},
+	"coastal_landing": {
+		"dot": 6, "font": 9,
+		"always_show": false, "default_visible": true, "hover_only": false,
+		"label_priority": 70
+	},
+	"fortress_town": {
+		"dot": 7, "font": 9,
+		"always_show": false, "default_visible": false, "hover_only": true,
+		"label_priority": 58
+	},
+	"fortress": {
+		"dot": 7, "font": 9,
+		"always_show": false, "default_visible": false, "hover_only": true,
+		"label_priority": 56
+	},
+	"small_town": {
+		"dot": 5, "font": 8,
+		"always_show": false, "default_visible": false, "hover_only": true,
+		"label_priority": 36
+	},
+	"village": {
+		"dot": 5, "font": 9,
+		"always_show": false, "default_visible": false, "hover_only": true,
+		"label_priority": 40
+	},
+	"crossroads": {
+		"dot": 4, "font": 8,
+		"always_show": false, "default_visible": false, "hover_only": true,
+		"label_priority": 34
+	},
+	"palace_town": {
+		"dot": 6, "font": 9,
+		"always_show": false, "default_visible": false, "hover_only": true,
+		"label_priority": 46
+	}
 }
 
 const FACTION_LABELS := {
@@ -178,27 +234,49 @@ const REST_CARD_META := {
 # 叙事日志最大保留条数（超出后移除最旧条目）
 const NARRATIVE_MAX_ENTRIES: int = 5
 
+@onready var _root_layout: VBoxContainer = $RootLayout
 @onready var _top_bar: PanelContainer = $RootLayout/TopBar
+@onready var _top_bar_margin: MarginContainer = $RootLayout/TopBar/TopBarMargin
+@onready var _top_bar_row: HBoxContainer = $RootLayout/TopBar/TopBarMargin/TopBarRow
 @onready var _day_label: Label = $RootLayout/TopBar/TopBarMargin/TopBarRow/DayBlock/DayLabel
 @onready var _phase_label: Label = $RootLayout/TopBar/TopBarMargin/TopBarRow/DayBlock/PhaseLabel
+@onready var _rn_block: VBoxContainer = $RootLayout/TopBar/TopBarMargin/TopBarRow/RNBlock
 @onready var _rn_slot: Control = $RootLayout/TopBar/TopBarMargin/TopBarRow/RNBlock/RougeNoirSlot
 @onready var _legitimacy_value: Label = $RootLayout/TopBar/TopBarMargin/TopBarRow/LegitimacyBlock/LegitimacyHeader/LegitimacyValue
 @onready var _legitimacy_bar: ProgressBar = $RootLayout/TopBar/TopBarMargin/TopBarRow/LegitimacyBlock/LegitimacyBar
 @onready var _troops_value: Label = $RootLayout/TopBar/TopBarMargin/TopBarRow/ResourceBlock/TroopsBlock/TroopsValue
 @onready var _morale_value: Label = $RootLayout/TopBar/TopBarMargin/TopBarRow/ResourceBlock/MoraleBlock/MoraleValue
 @onready var _fatigue_value: Label = $RootLayout/TopBar/TopBarMargin/TopBarRow/ResourceBlock/FatigueBlock/FatigueValue
+@onready var _main_area: HBoxContainer = $RootLayout/MainArea
+@onready var _left_column: VBoxContainer = $RootLayout/MainArea/LeftColumn
 @onready var _map_area: PanelContainer = $RootLayout/MainArea/LeftColumn/MapArea
+@onready var _map_content: Control = $RootLayout/MainArea/LeftColumn/MapArea/MapMargin/MapContent
+@onready var _map_title: Label = $RootLayout/MainArea/LeftColumn/MapArea/MapMargin/MapContent/MapTitle
+@onready var _map_subtitle: Label = $RootLayout/MainArea/LeftColumn/MapArea/MapMargin/MapContent/MapSubtitle
 @onready var _map_canvas: Control = $RootLayout/MainArea/LeftColumn/MapArea/MapMargin/MapContent/MapCanvas
+@onready var _map_inspector_panel: PanelContainer = $RootLayout/MainArea/LeftColumn/MapArea/MapMargin/MapContent/MapInspectorPanel
+@onready var _map_inspector_title: Label = $RootLayout/MainArea/LeftColumn/MapArea/MapMargin/MapContent/MapInspectorPanel/MapInspectorMargin/MapInspectorBox/MapInspectorTitle
+@onready var _map_inspector_meta: Label = $RootLayout/MainArea/LeftColumn/MapArea/MapMargin/MapContent/MapInspectorPanel/MapInspectorMargin/MapInspectorBox/MapInspectorMeta
+@onready var _map_inspector_stats: Label = $RootLayout/MainArea/LeftColumn/MapArea/MapMargin/MapContent/MapInspectorPanel/MapInspectorMargin/MapInspectorBox/MapInspectorStats
+@onready var _map_inspector_history: Label = $RootLayout/MainArea/LeftColumn/MapArea/MapMargin/MapContent/MapInspectorPanel/MapInspectorMargin/MapInspectorBox/MapInspectorHistory
 @onready var _sidebar: PanelContainer = $RootLayout/MainArea/Sidebar
+@onready var _sidebar_margin: MarginContainer = $RootLayout/MainArea/Sidebar/SidebarMargin
+@onready var _sidebar_content: VBoxContainer = $RootLayout/MainArea/Sidebar/SidebarMargin/SidebarContent
 @onready var _situation_panel: PanelContainer = $RootLayout/MainArea/Sidebar/SidebarMargin/SidebarContent/SituationPanel
+@onready var _situation_box: VBoxContainer = $RootLayout/MainArea/Sidebar/SidebarMargin/SidebarContent/SituationPanel/SituationMargin/SituationBox
 @onready var _situation_body: Label = $RootLayout/MainArea/Sidebar/SidebarMargin/SidebarContent/SituationPanel/SituationMargin/SituationBox/SituationBody
 @onready var _loyalty_panel: PanelContainer = $RootLayout/MainArea/Sidebar/SidebarMargin/SidebarContent/LoyaltyPanel
-@onready var _loyalty_list: VBoxContainer = $RootLayout/MainArea/Sidebar/SidebarMargin/SidebarContent/LoyaltyPanel/LoyaltyMargin/LoyaltyBox/LoyaltyList
+@onready var _loyalty_scroll: ScrollContainer = $RootLayout/MainArea/Sidebar/SidebarMargin/SidebarContent/LoyaltyPanel/LoyaltyMargin/LoyaltyBox/LoyaltyScroll
+@onready var _loyalty_list: VBoxContainer = $RootLayout/MainArea/Sidebar/SidebarMargin/SidebarContent/LoyaltyPanel/LoyaltyMargin/LoyaltyBox/LoyaltyScroll/LoyaltyList
 @onready var _narrative_panel: PanelContainer = $RootLayout/MainArea/Sidebar/SidebarMargin/SidebarContent/NarrativePanel
+@onready var _narrative_box: VBoxContainer = $RootLayout/MainArea/Sidebar/SidebarMargin/SidebarContent/NarrativePanel/NarrativeMargin/NarrativeBox
 @onready var _narrative_body: Label = $RootLayout/MainArea/Sidebar/SidebarMargin/SidebarContent/NarrativePanel/NarrativeMargin/NarrativeBox/NarrativeBody
 @onready var _decision_tray: PanelContainer = $RootLayout/MainArea/LeftColumn/DecisionTray
+@onready var _tray_margin: MarginContainer = $RootLayout/MainArea/LeftColumn/DecisionTray/TrayMargin
+@onready var _tray_content: VBoxContainer = $RootLayout/MainArea/LeftColumn/DecisionTray/TrayMargin/TrayContent
 @onready var _tray_header: HBoxContainer = $RootLayout/MainArea/LeftColumn/DecisionTray/TrayMargin/TrayContent/TrayHeader
 @onready var _tray_hint: Label = $RootLayout/MainArea/LeftColumn/DecisionTray/TrayMargin/TrayContent/TrayHeader/TrayHint
+@onready var _decision_scroll: ScrollContainer = $RootLayout/MainArea/LeftColumn/DecisionTray/TrayMargin/TrayContent/DecisionScroll
 @onready var _decision_row: HBoxContainer = $RootLayout/MainArea/LeftColumn/DecisionTray/TrayMargin/TrayContent/DecisionScroll/DecisionRow
 
 var _rn_slider: RougeNoirSlider
@@ -214,6 +292,12 @@ var _prev_faction_support: Dictionary = {}
 var _prev_legitimacy: float = 50.0
 var _prev_troops: int = 0
 var _prev_morale: float = 70.0
+var _hovered_map_node_id: String = ""
+var _selected_map_node_id: String = ""
+var _map_points_by_id: Dictionary = {}
+var _map_node_controls_by_id: Dictionary = {}
+var _map_edge_lines_by_node: Dictionary = {}
+var _map_rebuild_in_progress: bool = false
 
 func _ready() -> void:
 	# 统一入口主题，保证占位骨架先具备正式视觉语言。
@@ -226,6 +310,8 @@ func _ready() -> void:
 	_build_confirm_button()
 	_build_rn_overlay()
 	_connect_signals()
+	resized.connect(_on_main_menu_resized)
+	call_deferred("_apply_responsive_layout")
 	call_deferred("_refresh_ui")
 	call_deferred("_rebuild_map_nodes")
 	# 引导 TurnManager 进入第一回合，必须在所有节点就绪后执行。
@@ -246,6 +332,21 @@ func _load_map_data() -> void:
 	var data: Dictionary = json.data
 	_map_nodes = Array(data.get("nodes", []))
 	_map_edges = Array(data.get("edges", []))
+	_map_node_index.clear()
+	_map_adjacency_by_node.clear()
+	for node_info in _map_nodes:
+		var node_id: String = String(node_info.get("id", ""))
+		_map_node_index[node_id] = node_info
+		_map_adjacency_by_node[node_id] = []
+	for edge in _map_edges:
+		var from_id: String = String(edge.get("from", ""))
+		var to_id: String = String(edge.get("to", ""))
+		if not _map_adjacency_by_node.has(from_id):
+			_map_adjacency_by_node[from_id] = []
+		if not _map_adjacency_by_node.has(to_id):
+			_map_adjacency_by_node[to_id] = []
+		_map_adjacency_by_node[from_id].append(to_id)
+		_map_adjacency_by_node[to_id].append(from_id)
 
 	# 计算坐标边界用于归一化（留 5% 内边距）
 	if _map_nodes.size() > 0:
@@ -271,11 +372,16 @@ func _load_map_data() -> void:
 func _configure_static_ui() -> void:
 	# 文字层级先定住，避免占位版看起来像默认 Godot 控件。
 	_style_heading(_day_label, 24, CentJoursTheme.COLOR["text_heading"])
-	_style_heading(_phase_label, 12, CentJoursTheme.COLOR["gold_dim"])
+	_style_heading(_phase_label, 11, CentJoursTheme.COLOR["gold_dim"])
+	_style_heading(_map_inspector_title, 12, CentJoursTheme.COLOR["text_heading"])
 	_legitimacy_bar.show_percentage = false
 	_legitimacy_bar.max_value = 100.0
 	_situation_body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_narrative_body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_map_inspector_meta.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_map_inspector_stats.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_map_inspector_history.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_refresh_map_inspector()
 
 func _apply_panel_styles() -> void:
 	# 顶层面板统一采用深色帝国风；地图区单独加强层次感。
@@ -285,6 +391,8 @@ func _apply_panel_styles() -> void:
 		_make_panel_style(CentJoursTheme.COLOR["bg_panel"], CentJoursTheme.COLOR["border_panel"], 0.24))
 	_map_area.add_theme_stylebox_override("panel",
 		_make_panel_style(Color("#111821"), CentJoursTheme.COLOR["gold_dim"], 0.34))
+	_map_inspector_panel.add_theme_stylebox_override("panel",
+		_make_panel_style(Color(0.09, 0.11, 0.18, 0.94), CentJoursTheme.COLOR["border_panel"], 0.20))
 	_decision_tray.add_theme_stylebox_override("panel",
 		_make_panel_style(Color(0.08, 0.09, 0.14, 0.96), CentJoursTheme.COLOR["border_panel"], 0.30))
 	_situation_panel.add_theme_stylebox_override("panel",
@@ -296,9 +404,108 @@ func _apply_panel_styles() -> void:
 
 func _build_rouge_noir_slider() -> void:
 	_rn_slider = RougeNoirSlider.new()
+	_rn_slider.show_labels = false
 	_rn_slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_rn_slider.custom_minimum_size = Vector2(280, 36)
+	_rn_slider.custom_minimum_size = Vector2(280, 24)
 	_rn_slot.add_child(_rn_slider)
+
+func _on_main_menu_resized() -> void:
+	call_deferred("_apply_responsive_layout")
+
+func _apply_responsive_layout() -> void:
+	var viewport := get_viewport_rect().size
+	if viewport.x <= 0.0 or viewport.y <= 0.0:
+		return
+
+	var vertical_safe := int(clampf(roundf(viewport.y * 0.032), 22.0, 32.0))
+	var horizontal_safe := int(clampf(roundf(viewport.x * 0.014), 16.0, 24.0))
+	_root_layout.offset_left = horizontal_safe
+	_root_layout.offset_top = vertical_safe
+	_root_layout.offset_right = -horizontal_safe
+	_root_layout.offset_bottom = -vertical_safe
+
+	var root_sep := int(clampf(roundf(viewport.y * 0.013), 10.0, 14.0))
+	_root_layout.add_theme_constant_override("separation", root_sep)
+	_main_area.add_theme_constant_override("separation", root_sep)
+	_left_column.add_theme_constant_override("separation", root_sep)
+
+	var topbar_margin_top := int(clampf(roundf(viewport.y * 0.014), 10.0, 12.0))
+	var topbar_margin_bottom := int(clampf(roundf(viewport.y * 0.010), 6.0, 8.0))
+	_top_bar_margin.add_theme_constant_override("margin_top", topbar_margin_top)
+	_top_bar_margin.add_theme_constant_override("margin_bottom", topbar_margin_bottom)
+	_top_bar_margin.add_theme_constant_override("margin_left", int(clampf(roundf(viewport.x * 0.010), 14.0, 18.0)))
+	_top_bar_margin.add_theme_constant_override("margin_right", int(clampf(roundf(viewport.x * 0.010), 14.0, 18.0)))
+	_top_bar_row.add_theme_constant_override("separation", int(clampf(roundf(viewport.x * 0.010), 12.0, 18.0)))
+	_rn_block.add_theme_constant_override("separation", 1)
+
+	var day_font := int(clampf(roundf(viewport.y * 0.027), 19.0, 22.0))
+	var phase_font := int(clampf(roundf(viewport.y * 0.015), 10.0, 11.0))
+	_style_heading(_day_label, day_font, CentJoursTheme.COLOR["text_heading"])
+	_style_heading(_phase_label, phase_font, CentJoursTheme.COLOR["gold_dim"])
+
+	if _rn_slider != null:
+		_rn_slider.custom_minimum_size = Vector2(
+			clampf(viewport.x * 0.19, 210.0, 290.0),
+			clampf(viewport.y * 0.024, 18.0, 20.0)
+		)
+
+	var tray_margin := int(clampf(roundf(viewport.y * 0.011), 8.0, 10.0))
+	_tray_margin.add_theme_constant_override("margin_top", tray_margin)
+	_tray_margin.add_theme_constant_override("margin_bottom", tray_margin)
+	_tray_content.add_theme_constant_override("separation", int(clampf(roundf(viewport.y * 0.008), 6.0, 8.0)))
+	_decision_row.add_theme_constant_override("separation", int(clampf(roundf(viewport.x * 0.006), 8.0, 12.0)))
+
+	var sidebar_width := clampf(viewport.x * 0.27, 332.0, 372.0)
+	_sidebar.custom_minimum_size.x = sidebar_width
+
+	var card_size := Vector2(
+		clampf(viewport.x * 0.102, 124.0, 140.0),
+		clampf(viewport.y * 0.135, 96.0, 108.0)
+	)
+	_apply_decision_card_metrics(card_size)
+
+	var scroll_height := card_size.y + float(tray_margin) + 6.0
+	_decision_scroll.custom_minimum_size = Vector2(0.0, scroll_height)
+	_decision_tray.size_flags_vertical = 0
+	_decision_tray.custom_minimum_size.y = _compute_tray_min_height(scroll_height, tray_margin)
+
+	_situation_panel.custom_minimum_size.y = _panel_min_height(_situation_box, 20.0, 100.0)
+	_narrative_panel.custom_minimum_size.y = _panel_min_height(_narrative_box, 24.0, 148.0)
+	_loyalty_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_loyalty_scroll.custom_minimum_size = Vector2.ZERO
+	_loyalty_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_loyalty_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_loyalty_list.custom_minimum_size.x = _compute_loyalty_content_width(sidebar_width)
+
+	_top_bar.custom_minimum_size.y = _compute_topbar_min_height(topbar_margin_top, topbar_margin_bottom)
+	_top_bar.update_minimum_size()
+	_decision_tray.update_minimum_size()
+	_sidebar.update_minimum_size()
+
+func _apply_decision_card_metrics(card_size: Vector2) -> void:
+	for child in _decision_row.get_children():
+		if child is DecisionCard:
+			child.apply_layout_metrics(card_size)
+
+func _compute_topbar_min_height(margin_top: int, margin_bottom: int) -> float:
+	var row_min := _top_bar_row.get_combined_minimum_size().y
+	return maxf(72.0, row_min + margin_top + margin_bottom + 4.0)
+
+func _compute_tray_min_height(scroll_height: float, margin_vertical: int) -> float:
+	var header_height := maxf(_tray_header.get_combined_minimum_size().y, _confirm_button.get_combined_minimum_size().y if _confirm_button != null else 28.0)
+	var gap := float(_tray_content.get_theme_constant("separation"))
+	return maxf(156.0, scroll_height + header_height + gap + margin_vertical * 2.0 + 4.0)
+
+func _panel_min_height(content: Control, breathing_room: float, floor_value: float) -> float:
+	return maxf(floor_value, content.get_combined_minimum_size().y + breathing_room)
+
+func _compute_loyalty_content_width(sidebar_width: float) -> float:
+	# LoyaltyScroll 的内容宽度必须显式绑定到侧栏可用宽度，否则 VBox 会按最小宽度收缩，
+	# 导致名字列被压成 0，只剩右侧忠诚度文本可见。
+	var scroll_width := _loyalty_scroll.size.x
+	if scroll_width <= 0.0:
+		scroll_width = sidebar_width - 52.0
+	return maxf(scroll_width - 6.0, 240.0)
 
 func _build_decision_cards() -> void:
 	# 托盘卡片：先放固定"休整"卡，再放政策卡（ADR-004）
@@ -409,6 +616,7 @@ func _connect_signals() -> void:
 	EventBus.turn_ended.connect(_on_turn_ended)
 	EventBus.game_over.connect(_on_game_over)
 	_map_canvas.resized.connect(_rebuild_map_nodes)
+	_map_canvas.gui_input.connect(_on_map_canvas_gui_input)
 
 func _refresh_ui() -> void:
 	_day_label.text = "Jour %d" % GameState.current_day
@@ -485,8 +693,8 @@ func _refresh_loyalty_panel() -> void:
 	for child in _loyalty_list.get_children():
 		child.queue_free()
 
-	# 按忠诚度降序，最多显示 8 位（ADR-004 补丁：侧栏无 ScrollContainer，15人会溢出）
-	const MAX_VISIBLE: int = 8
+	# 按忠诚度降序，最多显示 6 位，给叙事面板留出稳定空间（ADR-006）
+	const MAX_VISIBLE: int = 6
 	var all_ids: Array = GameState.characters.keys()
 	all_ids.sort_custom(func(a, b): return GameState.get_loyalty(a) > GameState.get_loyalty(b))
 
@@ -496,16 +704,22 @@ func _refresh_loyalty_panel() -> void:
 	for hero_id in visible_ids:
 		var row := HBoxContainer.new()
 		row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.custom_minimum_size.x = _loyalty_list.custom_minimum_size.x
 
 		var name_label := Label.new()
 		name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		name_label.custom_minimum_size.x = maxf(row.custom_minimum_size.x - 132.0, 96.0)
 		name_label.text = _character_display_name(hero_id)
+		name_label.clip_text = true
+		name_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 		name_label.add_theme_color_override("font_color", CentJoursTheme.COLOR["text_heading"])
 		row.add_child(name_label)
 
 		var loyalty := GameState.get_loyalty(hero_id)
 		var value_label := Label.new()
+		value_label.custom_minimum_size = Vector2(126, 0)
 		value_label.text = "%.0f · %s" % [loyalty, CentJoursTheme.get_loyalty_label(loyalty)]
+		value_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 		value_label.add_theme_color_override("font_color", CentJoursTheme.get_loyalty_color(loyalty))
 		row.add_child(value_label)
 
@@ -533,24 +747,32 @@ func _update_card_selection() -> void:
 func _rebuild_map_nodes() -> void:
 	if _map_canvas.size.x <= 0.0 or _map_canvas.size.y <= 0.0:
 		return
+	_map_rebuild_in_progress = true
 
 	for child in _map_canvas.get_children():
-		child.queue_free()
+		child.free()
 
-	# 从 JSON 数据构建节点坐标映射（归一化到画布尺寸）
-	var points := {}
+	_map_points_by_id.clear()
+	_map_node_controls_by_id.clear()
+	_map_edge_lines_by_node.clear()
+
 	for node_info in _map_nodes:
 		var node_id: String = String(node_info.get("id", ""))
-		points[node_id] = _map_to_canvas(float(node_info.get("x", 0)), float(node_info.get("y", 0)))
+		_map_points_by_id[node_id] = _map_to_canvas(float(node_info.get("x", 0)), float(node_info.get("y", 0)))
+		_map_edge_lines_by_node[node_id] = []
 
-	# 绘制边（连接线）
 	for edge in _map_edges:
 		var from_id: String = String(edge.get("from", ""))
 		var to_id: String = String(edge.get("to", ""))
-		if from_id in points and to_id in points:
-			_add_map_route(points[from_id], points[to_id])
+		if _map_points_by_id.has(from_id) and _map_points_by_id.has(to_id):
+			var line := _add_map_route(
+				_map_points_by_id[from_id],
+				_map_points_by_id[to_id],
+				_route_highlight_state(from_id, to_id)
+			)
+			_map_edge_lines_by_node[from_id].append(line)
+			_map_edge_lines_by_node[to_id].append(line)
 
-	# 绘制节点（先画小节点，再画大节点，确保重要节点在上层）
 	var sorted_nodes := _map_nodes.duplicate()
 	sorted_nodes.sort_custom(func(a, b):
 		var sa: int = _get_node_dot_size(String(a.get("type", "")))
@@ -558,8 +780,35 @@ func _rebuild_map_nodes() -> void:
 		return sa < sb)
 	for node_info in sorted_nodes:
 		var node_id: String = String(node_info.get("id", ""))
-		if node_id in points:
-			_add_map_node(node_info, points[node_id])
+		if _map_points_by_id.has(node_id):
+			_add_map_node_hotspot(node_info, _map_points_by_id[node_id])
+
+	var occupied_rects: Array = _build_reserved_label_rects()
+	var label_candidates: Array = []
+	for node_info in _map_nodes:
+		var candidate := _build_label_candidate(node_info)
+		if not candidate.is_empty():
+			label_candidates.append(candidate)
+
+	label_candidates.sort_custom(func(a, b): return int(a.get("priority", 0)) > int(b.get("priority", 0)))
+	for candidate in label_candidates:
+		var anchors: Array = candidate.get("anchors", [])
+		var placed := false
+		for anchor in anchors:
+			var rect := _build_label_rect(candidate, String(anchor))
+			if _can_use_label_rect(rect, occupied_rects):
+				_add_map_label(candidate, rect)
+				occupied_rects.append(rect)
+				placed = true
+				break
+		if not placed and bool(candidate.get("force_show", false)) and anchors.size() > 0:
+			var forced_rect := _clamp_label_rect_to_canvas(_build_label_rect(candidate, String(anchors[0])))
+			_add_map_label(candidate, forced_rect)
+			occupied_rects.append(forced_rect)
+	call_deferred("_finish_map_rebuild")
+
+func _finish_map_rebuild() -> void:
+	_map_rebuild_in_progress = false
 
 ## 将 JSON 中的原始坐标归一化到画布像素坐标
 func _map_to_canvas(raw_x: float, raw_y: float) -> Vector2:
@@ -574,83 +823,359 @@ func _map_to_canvas(raw_x: float, raw_y: float) -> Vector2:
 
 ## 根据节点类型返回圆点像素尺寸
 func _get_node_dot_size(node_type: String) -> int:
-	var style: Dictionary = NODE_SIZE_MAP.get(node_type, {"dot": 5})
+	var style: Dictionary = NODE_LABEL_POLICY.get(node_type, {"dot": 5})
 	return int(style.get("dot", 5))
 
-func _add_map_route(start: Vector2, target: Vector2) -> void:
-	# 用 Line2D 替代旋转 ColorRect，消除锯齿（ADR-004）
+func _add_map_route(start: Vector2, target: Vector2, highlight_state: int) -> Line2D:
+	# 用 Line2D 替代旋转 ColorRect，消除锯齿；hover/click 时提亮相邻路线。
 	var line := Line2D.new()
 	line.add_point(start)
 	line.add_point(target)
-	line.width = 1.5
-	line.default_color = Color(
-		CentJoursTheme.COLOR["gold_dim"].r,
-		CentJoursTheme.COLOR["gold_dim"].g,
-		CentJoursTheme.COLOR["gold_dim"].b, 0.35)
+	var base := CentJoursTheme.COLOR["gold_dim"]
+	match highlight_state:
+		2:
+			line.width = 2.8
+			line.default_color = Color(base.r, base.g, base.b, 0.90)
+		1:
+			line.width = 2.2
+			line.default_color = Color(base.r, base.g, base.b, 0.68)
+		_:
+			line.width = 1.5
+			line.default_color = Color(base.r, base.g, base.b, 0.35)
 	_map_canvas.add_child(line)
+	return line
 
-func _add_map_node(node_info: Dictionary, point: Vector2) -> void:
+func _add_map_node_hotspot(node_info: Dictionary, point: Vector2) -> void:
 	var node_id: String = String(node_info.get("id", ""))
 	var node_type: String = String(node_info.get("type", "small_town"))
-	var style: Dictionary = NODE_SIZE_MAP.get(node_type, {"dot": 5, "font": 9, "show_label": false})
+	var style: Dictionary = _node_label_policy(node_info)
 	var dot_size: int = int(style.get("dot", 5))
-	var font_size: int = int(style.get("font", 9))
-	var show_label: bool = bool(style.get("show_label", false))
-
-	var is_focus := node_id == String(GameState.napoleon_location)
-	# 拿破仑所在节点和关键战场始终显示标签
-	if is_focus:
-		show_label = true
-
+	var visual_state := _node_visual_state(node_id)
+	var hotspot_size := maxf(dot_size + 12.0, MAP_HOTSPOT_MIN_SIZE)
 	var container := Control.new()
-	var half_dot := dot_size / 2.0
-	container.position = point - Vector2(half_dot, half_dot)
-	container.size = Vector2(140.0, 44.0)
-	container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	container.position = point - Vector2(hotspot_size * 0.5, hotspot_size * 0.5)
+	container.size = Vector2.ONE * hotspot_size
+	container.mouse_filter = Control.MOUSE_FILTER_STOP
+	container.mouse_entered.connect(_on_map_node_mouse_entered.bind(node_id))
+	container.mouse_exited.connect(_on_map_node_mouse_exited.bind(node_id))
+	container.gui_input.connect(_on_map_node_gui_input.bind(node_id, container))
 
-	# 节点圆点
+	var ring_size := dot_size + (10 if visual_state > 0 else 6)
+	var ring := ColorRect.new()
+	ring.position = (container.size - Vector2.ONE * ring_size) * 0.5
+	ring.size = Vector2.ONE * ring_size
+	ring.color = _node_ring_color(node_id, visual_state)
+	ring.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	container.add_child(ring)
+
 	var dot := ColorRect.new()
-	dot.position = Vector2.ZERO
-	dot.size = Vector2(dot_size, dot_size)
-	if is_focus:
-		dot.color = CentJoursTheme.COLOR["gold"]
-	elif node_type == "capital":
-		dot.color = Color(0.85, 0.75, 0.50, 0.95)
-	elif node_type in ["major_city", "fortress_city"]:
-		dot.color = Color(0.55, 0.65, 0.80, 0.90)
-	else:
-		dot.color = Color(0.42, 0.54, 0.70, 0.65)
+	dot.position = (container.size - Vector2.ONE * dot_size) * 0.5
+	dot.size = Vector2.ONE * dot_size
+	dot.color = _node_dot_color(node_type, node_id, visual_state)
+	dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	container.add_child(dot)
+	_map_canvas.add_child(container)
+	_map_node_controls_by_id[node_id] = container
 
-	# 拿破仑位置光环
+func _node_label_policy(node_info: Dictionary) -> Dictionary:
+	var node_id: String = String(node_info.get("id", ""))
+	var node_type: String = String(node_info.get("type", "small_town"))
+	var policy: Dictionary = NODE_LABEL_POLICY.get(node_type, NODE_LABEL_POLICY["small_town"]).duplicate(true)
+	var ui: Dictionary = node_info.get("ui", {})
+	if not ui.is_empty():
+		var always_show := bool(ui.get("always_show_label", false))
+		if always_show:
+			policy["always_show"] = true
+			policy["default_visible"] = true
+			policy["hover_only"] = false
+		elif ui.has("label_priority"):
+			policy["default_visible"] = true
+			policy["hover_only"] = false
+		else:
+			policy["default_visible"] = false
+			policy["hover_only"] = true
+		if ui.has("label_priority"):
+			policy["label_priority"] = int(ui.get("label_priority", policy.get("label_priority", 40)))
+		if ui.has("preferred_anchor"):
+			policy["preferred_anchor"] = String(ui.get("preferred_anchor", ""))
+
+	if node_id == "paris" or node_id == String(GameState.napoleon_location):
+		policy["always_show"] = true
+		policy["default_visible"] = true
+		policy["hover_only"] = false
+		policy["label_priority"] = max(int(policy.get("label_priority", 80)), 120)
+
+	return policy
+
+func _build_reserved_label_rects() -> Array:
+	var reserved: Array = []
+	reserved.append(Rect2(Vector2.ZERO, MAP_RESERVED_TOP_LEFT))
+	var inspector_origin := _map_inspector_panel.position - _map_canvas.position
+	var inspector_size := _map_inspector_panel.size
+	if inspector_size.x > 0.0 and inspector_size.y > 0.0:
+		reserved.append(Rect2(inspector_origin - Vector2(8, 8), inspector_size + Vector2(16, 16)))
+	return reserved
+
+func _build_label_candidate(node_info: Dictionary) -> Dictionary:
+	var node_id: String = String(node_info.get("id", ""))
+	if not _map_points_by_id.has(node_id):
+		return {}
+
+	var policy := _node_label_policy(node_info)
+	var is_selected := node_id == _selected_map_node_id
+	var is_hovered := node_id == _effective_hovered_node_id()
+	var is_focus := node_id == String(GameState.napoleon_location)
+	var should_show := (
+		bool(policy.get("always_show", false))
+		or bool(policy.get("default_visible", false))
+		or is_hovered
+		or is_selected
+	)
+	if not should_show:
+		return {}
+
+	var font_size := int(policy.get("font", 9)) + (1 if is_focus else 0)
+	var label_size := _measure_label_size(_node_label_text(node_info), font_size, is_focus)
+	return {
+		"id": node_id,
+		"node_info": node_info,
+		"point": _map_points_by_id[node_id],
+		"dot_size": int(policy.get("dot", 5)),
+		"font_size": font_size,
+		"label_size": label_size,
+		"anchors": _label_anchor_order(policy),
+		"priority": _node_label_priority(policy, is_focus, is_selected, is_hovered),
+		"force_show": bool(policy.get("always_show", false)) or is_selected or is_hovered,
+		"is_focus": is_focus,
+		"is_selected": is_selected,
+		"is_hovered": is_hovered
+	}
+
+func _label_anchor_order(policy: Dictionary) -> Array:
+	var anchors: Array = []
+	var preferred := String(policy.get("preferred_anchor", ""))
+	if preferred != "" and MAP_LABEL_ANCHORS.has(preferred):
+		anchors.append(preferred)
+	for anchor in MAP_LABEL_ANCHORS:
+		if not anchors.has(anchor):
+			anchors.append(anchor)
+	return anchors
+
+func _node_label_priority(policy: Dictionary, is_focus: bool, is_selected: bool, is_hovered: bool) -> int:
+	var priority := int(policy.get("label_priority", 40))
 	if is_focus:
-		var ring := ColorRect.new()
-		ring.position = Vector2(-4.0, -4.0)
-		ring.size = Vector2(dot_size + 8, dot_size + 8)
-		ring.color = Color(1, 0.85, 0.3, 0.12)
-		container.add_child(ring)
+		priority += 20
+	if is_selected:
+		priority += 12
+	elif is_hovered:
+		priority += 8
+	return priority
 
-	# 节点名称标签（用法语名 name_fr，回退到 name）
-	if show_label:
-		var display_name: String = String(node_info.get("name_fr", node_info.get("name", node_id)))
-		var label := Label.new()
-		label.position = Vector2(dot_size + 4.0, -2.0)
-		label.text = display_name
-		label.add_theme_color_override("font_color",
-			CentJoursTheme.COLOR["gold_bright"] if is_focus else CentJoursTheme.COLOR["text_heading"])
-		label.add_theme_font_size_override("font_size", font_size + 1 if is_focus else font_size)
-		container.add_child(label)
+func _measure_label_size(display_name: String, font_size: int, is_focus: bool) -> Vector2:
+	var width := maxf(54.0, display_name.length() * float(font_size) * 0.60 + MAP_LABEL_PADDING_X * 2.0)
+	var height := float(font_size) + MAP_LABEL_PADDING_Y * 2.0
+	if is_focus:
+		width = maxf(width, 86.0)
+		height += 12.0
+	return Vector2(width, height)
 
-	# 拿破仑位置标注
+func _build_label_rect(candidate: Dictionary, anchor: String) -> Rect2:
+	var point: Vector2 = candidate.get("point", Vector2.ZERO)
+	var label_size: Vector2 = candidate.get("label_size", Vector2(60, 16))
+	var dot_size: float = float(candidate.get("dot_size", 5))
+	var dot_half := dot_size * 0.5
+	var x := point.x + dot_half + MAP_LABEL_GAP
+	var y := point.y - label_size.y + 2.0
+	match anchor:
+		"right_down":
+			y = point.y + 2.0
+		"left_up":
+			x = point.x - dot_half - MAP_LABEL_GAP - label_size.x
+		"left_down":
+			x = point.x - dot_half - MAP_LABEL_GAP - label_size.x
+			y = point.y + 2.0
+	return Rect2(Vector2(x, y), label_size)
+
+func _can_use_label_rect(rect: Rect2, occupied_rects: Array) -> bool:
+	if rect.position.x < 2.0 or rect.position.y < 2.0:
+		return false
+	if rect.end.x > _map_canvas.size.x - 2.0:
+		return false
+	if rect.end.y > _map_canvas.size.y - 2.0:
+		return false
+	for other in occupied_rects:
+		if rect.intersects(other.grow(2.0)):
+			return false
+	return true
+
+func _clamp_label_rect_to_canvas(rect: Rect2) -> Rect2:
+	rect.position.x = clampf(rect.position.x, 2.0, maxf(2.0, _map_canvas.size.x - rect.size.x - 2.0))
+	rect.position.y = clampf(rect.position.y, 2.0, maxf(2.0, _map_canvas.size.y - rect.size.y - 2.0))
+	return rect
+
+func _add_map_label(candidate: Dictionary, rect: Rect2) -> void:
+	var node_info: Dictionary = candidate.get("node_info", {})
+	var is_focus: bool = bool(candidate.get("is_focus", false))
+	var is_selected: bool = bool(candidate.get("is_selected", false))
+	var is_hovered: bool = bool(candidate.get("is_hovered", false))
+
+	var label_box := Control.new()
+	label_box.position = rect.position
+	label_box.size = rect.size
+	label_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	var name_label := Label.new()
+	name_label.position = Vector2(MAP_LABEL_PADDING_X, MAP_LABEL_PADDING_Y - 1.0)
+	name_label.text = _node_label_text(node_info)
+	name_label.add_theme_font_size_override("font_size", int(candidate.get("font_size", 9)))
+	name_label.add_theme_color_override("font_color", _node_label_color(is_focus, is_selected, is_hovered))
+	label_box.add_child(name_label)
+
 	if is_focus:
 		var status := Label.new()
-		status.position = Vector2(dot_size + 4.0, font_size + 2.0)
+		status.position = Vector2(MAP_LABEL_PADDING_X, float(candidate.get("font_size", 9)) + 2.0)
 		status.text = "Napoléon"
-		status.add_theme_color_override("font_color", CentJoursTheme.COLOR["gold_dim"])
 		status.add_theme_font_size_override("font_size", 8)
-		container.add_child(status)
+		status.add_theme_color_override("font_color", CentJoursTheme.COLOR["gold_dim"])
+		label_box.add_child(status)
 
-	_map_canvas.add_child(container)
+	_map_canvas.add_child(label_box)
+
+func _route_highlight_state(from_id: String, to_id: String) -> int:
+	if _selected_map_node_id != "":
+		return 2 if from_id == _selected_map_node_id or to_id == _selected_map_node_id else 0
+	if _hovered_map_node_id != "":
+		return 1 if from_id == _hovered_map_node_id or to_id == _hovered_map_node_id else 0
+	return 0
+
+func _node_visual_state(node_id: String) -> int:
+	if node_id == _selected_map_node_id:
+		return 2
+	if _selected_map_node_id == "" and node_id == _hovered_map_node_id:
+		return 1
+	return 0
+
+func _effective_hovered_node_id() -> String:
+	if _selected_map_node_id != "":
+		return _hovered_map_node_id if _hovered_map_node_id == _selected_map_node_id else ""
+	return _hovered_map_node_id
+
+func _node_dot_color(node_type: String, node_id: String, visual_state: int) -> Color:
+	if node_id == String(GameState.napoleon_location):
+		return CentJoursTheme.COLOR["gold_bright"] if visual_state > 0 else CentJoursTheme.COLOR["gold"]
+
+	var base := Color(0.42, 0.54, 0.70, 0.65)
+	if node_type == "capital":
+		base = Color(0.85, 0.75, 0.50, 0.95)
+	elif node_type in ["major_city", "fortress_city"]:
+		base = Color(0.55, 0.65, 0.80, 0.90)
+	elif node_type in ["regional_capital", "royal_palace"]:
+		base = Color(0.49, 0.60, 0.78, 0.82)
+	if visual_state == 2:
+		return Color(base.r + 0.12, base.g + 0.10, base.b, 1.0)
+	if visual_state == 1:
+		return Color(base.r + 0.08, base.g + 0.08, base.b, 0.95)
+	return base
+
+func _node_ring_color(node_id: String, visual_state: int) -> Color:
+	if node_id == String(GameState.napoleon_location):
+		return Color(1.0, 0.85, 0.30, 0.20 if visual_state == 0 else 0.32)
+	if visual_state == 2:
+		return Color(CentJoursTheme.COLOR["gold"].r, CentJoursTheme.COLOR["gold"].g, CentJoursTheme.COLOR["gold"].b, 0.18)
+	if visual_state == 1:
+		return Color(CentJoursTheme.COLOR["gold_dim"].r, CentJoursTheme.COLOR["gold_dim"].g, CentJoursTheme.COLOR["gold_dim"].b, 0.14)
+	return Color(0, 0, 0, 0)
+
+func _node_label_color(is_focus: bool, is_selected: bool, is_hovered: bool) -> Color:
+	if is_focus or is_selected:
+		return CentJoursTheme.COLOR["gold_bright"]
+	if is_hovered:
+		return CentJoursTheme.COLOR["text_primary"]
+	return CentJoursTheme.COLOR["text_heading"]
+
+func _node_label_text(node_info: Dictionary) -> String:
+	return String(node_info.get("name_fr", node_info.get("name", node_info.get("id", ""))))
+
+func _refresh_map_inspector() -> void:
+	var inspector_node_id := _selected_map_node_id if _selected_map_node_id != "" else _hovered_map_node_id
+	var is_hover_preview := _selected_map_node_id == "" and inspector_node_id != ""
+	if inspector_node_id == "" or not _map_node_index.has(inspector_node_id):
+		_map_inspector_title.text = "Map Inspector"
+		_map_inspector_title.add_theme_color_override("font_color", CentJoursTheme.COLOR["text_heading"])
+		_map_inspector_meta.text = "悬停查看节点，点击后锁定详情。"
+		_map_inspector_stats.text = ""
+		_map_inspector_history.text = ""
+		_map_inspector_meta.add_theme_color_override("font_color", CentJoursTheme.COLOR["text_secondary"])
+		_map_inspector_stats.add_theme_color_override("font_color", CentJoursTheme.COLOR["text_secondary"])
+		_map_inspector_history.add_theme_color_override("font_color", CentJoursTheme.COLOR["text_secondary"])
+		return
+
+	var node_info: Dictionary = _map_node_index.get(inspector_node_id, {})
+	var fr_name := _node_label_text(node_info)
+	var cn_name := String(node_info.get("name", fr_name))
+	_map_inspector_title.text = fr_name
+	_map_inspector_title.add_theme_color_override(
+		"font_color",
+		CentJoursTheme.COLOR["gold_bright"] if inspector_node_id == String(GameState.napoleon_location) else CentJoursTheme.COLOR["text_heading"]
+	)
+	_map_inspector_meta.text = "%s%s\n类型：%s\n区域：%s · 地形：%s" % [
+		"悬停预览\n" if is_hover_preview else "",
+		cn_name,
+		_humanize_token(String(node_info.get("type", "unknown"))),
+		_humanize_token(String(node_info.get("region", "unknown"))),
+		_humanize_token(String(node_info.get("terrain", "unknown")))
+	]
+	var marker := "Napoléon 当前所在\n" if inspector_node_id == String(GameState.napoleon_location) else ""
+	_map_inspector_stats.text = "%s补给容量：%d\n防御加成：%.1f\n驻军：%d" % [
+		marker,
+		int(node_info.get("supply_capacity", 0)),
+		float(node_info.get("defense_bonus", 0.0)),
+		int(node_info.get("garrison", 0))
+	]
+	_map_inspector_history.text = String(node_info.get("historical_significance", "暂无补充史实。"))
+	_map_inspector_meta.add_theme_color_override("font_color", CentJoursTheme.COLOR["text_primary"])
+	_map_inspector_stats.add_theme_color_override("font_color", CentJoursTheme.COLOR["text_secondary"])
+	_map_inspector_history.add_theme_color_override("font_color", CentJoursTheme.COLOR["gold_dim"])
+
+func _on_map_node_mouse_entered(node_id: String) -> void:
+	if _selected_map_node_id != "" and _selected_map_node_id != node_id:
+		return
+	if _hovered_map_node_id == node_id:
+		return
+	_hovered_map_node_id = node_id
+	_refresh_map_inspector()
+	call_deferred("_rebuild_map_nodes")
+
+func _on_map_node_mouse_exited(node_id: String) -> void:
+	if _map_rebuild_in_progress:
+		return
+	if _hovered_map_node_id != node_id:
+		return
+	_hovered_map_node_id = ""
+	_refresh_map_inspector()
+	call_deferred("_rebuild_map_nodes")
+
+func _on_map_node_gui_input(event: InputEvent, node_id: String, hotspot: Control) -> void:
+	if not (event is InputEventMouseButton):
+		return
+	if event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		hotspot.accept_event()
+		if _selected_map_node_id == node_id:
+			_selected_map_node_id = ""
+		else:
+			_selected_map_node_id = node_id
+			_hovered_map_node_id = node_id
+		_refresh_map_inspector()
+		call_deferred("_rebuild_map_nodes")
+
+func _on_map_canvas_gui_input(event: InputEvent) -> void:
+	if not (event is InputEventMouseButton):
+		return
+	if event.pressed and event.button_index == MOUSE_BUTTON_LEFT and (_selected_map_node_id != "" or _hovered_map_node_id != ""):
+		_selected_map_node_id = ""
+		_hovered_map_node_id = ""
+		_refresh_map_inspector()
+		call_deferred("_rebuild_map_nodes")
 
 func _on_policy_selected(policy_id: String) -> void:
 	# 仅在 Action Phase 允许切换选中政策
@@ -977,6 +1502,9 @@ func _napoleon_location_label() -> String:
 		if String(node_info.get("id", "")) == String(GameState.napoleon_location):
 			return String(node_info.get("name_fr", node_info.get("name", "Unknown")))
 	return String(GameState.napoleon_location)
+
+func _humanize_token(token: String) -> String:
+	return token.replace("_", " ").capitalize()
 
 func _format_number(value: int) -> String:
 	var digits := str(value)

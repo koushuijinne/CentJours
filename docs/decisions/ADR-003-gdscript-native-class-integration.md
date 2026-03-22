@@ -45,7 +45,10 @@
 1. Godot 4.6.1 编辑器成功打开项目
 2. `godot-rust` 初始化日志出现，说明 `.gdextension` 与 `.so` 成功加载
 3. 用户执行最小 smoke test，验证 `CentJoursEngine` 关键只读接口与单次状态推进闭环成功
-4. 2026-03-21 追加执行
+4. 2026-03-21 追加执行一轮历史性的 Linux / WSL 无头验证：
    `HOME=/tmp XDG_DATA_HOME=/tmp XDG_CONFIG_HOME=/tmp godot --headless --path /home/user/CentJours --quit`
    成功输出 `day=1` / `state=...` / `after_rest_state=...` / `last_report=...`
    且未再出现 `CharacterManager` 或 `TurnManager` 的 GDScript parse error
+5. 后续项目默认约定已调整为：
+   无头测试优先在 Windows 环境执行，用于直接验证 `cent_jours_core.dll`、Windows Godot 启动链路与脚本解析；
+   Linux / WSL 无头验证仅作为存在对应 `.so` 时的可选补充检查

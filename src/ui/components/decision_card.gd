@@ -27,11 +27,12 @@ var _style_cooldown: StyleBoxFlat
 
 func _ready() -> void:
 	_build_styles()
+	if custom_minimum_size == Vector2.ZERO:
+		custom_minimum_size = Vector2(132, 118)
 	_build_ui()
 	mouse_entered.connect(_on_mouse_entered)
 	mouse_exited.connect(_on_mouse_exited)
 	gui_input.connect(_on_gui_input)
-	custom_minimum_size = Vector2(130, 110)
 	# 以卡片中心为缩放原点，避免 hover scale 偏移（ADR-004）
 	pivot_offset = custom_minimum_size / 2.0
 
@@ -48,6 +49,14 @@ func populate(data: Dictionary) -> void:
 	on_cooldown  = data.get("cooldown_remaining", 0) > 0
 	cooldown_days = data.get("cooldown_remaining", 0)
 	# effects 需要单独从 PoliticalSystem 获取
+	_rebuild_ui()
+
+func apply_layout_metrics(card_size: Vector2) -> void:
+	if custom_minimum_size.is_equal_approx(card_size):
+		pivot_offset = card_size / 2.0
+		return
+	custom_minimum_size = card_size
+	pivot_offset = card_size / 2.0
 	_rebuild_ui()
 
 # ── UI 构建 ──────────────────────────────────────────
@@ -79,6 +88,11 @@ func _build_styles() -> void:
 	add_theme_stylebox_override("panel", _style_normal)
 
 func _build_ui() -> void:
+	var card_height := maxf(custom_minimum_size.y, 108.0)
+	var thumb_height := clampf(card_height * 0.28, 30.0, 34.0)
+	var body_gap := int(clampf(roundf(card_height * 0.018), 1.0, 2.0))
+	var body_margin := int(clampf(roundf(card_height * 0.034), 4.0, 5.0))
+
 	var vbox := VBoxContainer.new()
 	vbox.add_theme_constant_override("separation", 0)
 	add_child(vbox)
@@ -88,7 +102,7 @@ func _build_ui() -> void:
 	thumb.text = thumbnail_emoji
 	thumb.add_theme_font_size_override("font_size", 24)
 	thumb.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	thumb.custom_minimum_size = Vector2(0, 40)
+	thumb.custom_minimum_size = Vector2(0, thumb_height)
 	thumb.add_theme_color_override("font_color", Color(1, 1, 1, 0.8))
 	vbox.add_child(thumb)
 
@@ -99,12 +113,12 @@ func _build_ui() -> void:
 
 	# 正文区域
 	var body := VBoxContainer.new()
-	body.add_theme_constant_override("separation", 3)
+	body.add_theme_constant_override("separation", body_gap)
 	var margin := MarginContainer.new()
 	margin.add_theme_constant_override("margin_left",  8)
 	margin.add_theme_constant_override("margin_right", 8)
-	margin.add_theme_constant_override("margin_top",   6)
-	margin.add_theme_constant_override("margin_bottom",6)
+	margin.add_theme_constant_override("margin_top",   body_margin)
+	margin.add_theme_constant_override("margin_bottom",body_margin)
 	margin.add_child(body)
 	vbox.add_child(margin)
 
@@ -113,7 +127,9 @@ func _build_ui() -> void:
 	title_label.text = policy_name
 	title_label.add_theme_color_override("font_color", CentJoursTheme.COLOR["text_heading"])
 	title_label.add_theme_font_size_override("font_size", 11)
-	title_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	title_label.autowrap_mode = TextServer.AUTOWRAP_OFF
+	title_label.clip_text = true
+	title_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	body.add_child(title_label)
 
 	# 行动点消耗
@@ -153,7 +169,9 @@ func _build_ui() -> void:
 func _rebuild_ui() -> void:
 	for child in get_children():
 		child.queue_free()
+	modulate = Color.WHITE
 	_build_ui()
+	_apply_current_style()
 
 # ── 事件处理 ──────────────────────────────────────────
 

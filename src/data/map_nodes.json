@@ -15,7 +15,11 @@
       "population": 1000,
       "garrison": 0,
       "historical_significance": "百日王朝起点，1815年3月1日拿破仑在此登陆",
-      "connections": ["antibes", "cannes", "grasse"]
+      "connections": ["antibes", "cannes", "grasse"],
+      "ui": {
+        "always_show_label": true,
+        "preferred_anchor": "right_down"
+      }
     },
     {
       "id": "antibes",
@@ -302,7 +306,11 @@
       "population": 700000,
       "garrison": 15000,
       "historical_significance": "帝国首都。Day 20到达，路易十八出逃。百日王朝政治中心。",
-      "connections": ["fontainebleau", "versailles", "saint_denis", "meaux", "compiegne"]
+      "connections": ["fontainebleau", "versailles", "saint_denis", "meaux", "compiegne"],
+      "ui": {
+        "always_show_label": true,
+        "preferred_anchor": "right_down"
+      }
     },
     {
       "id": "versailles",
@@ -443,7 +451,12 @@
       "population": 20000,
       "garrison": 2500,
       "historical_significance": "第一军（德鲁埃）集结地",
-      "connections": ["maubeuge", "avesnes", "lille", "mons"]
+      "connections": ["maubeuge", "avesnes", "lille", "mons"],
+      "ui": {
+        "label_priority": 70,
+        "always_show_label": false,
+        "preferred_anchor": "left_down"
+      }
     },
     {
       "id": "lille",
@@ -458,7 +471,12 @@
       "population": 65000,
       "garrison": 5000,
       "historical_significance": "法国北方最重要的要塞城市，第二军（雷耶）驻地",
-      "connections": ["valenciennes", "mons", "tournai", "bethune"]
+      "connections": ["valenciennes", "mons", "tournai", "bethune"],
+      "ui": {
+        "label_priority": 75,
+        "always_show_label": false,
+        "preferred_anchor": "left_up"
+      }
     },
     {
       "id": "philippeville",
@@ -502,7 +520,11 @@
       "population": 2000,
       "garrison": 0,
       "historical_significance": "1815年6月16日，拿破仑最后一次击败布吕歇尔的村庄。Day 86。",
-      "connections": ["charleroi", "namur", "quatre_bras", "waterloo"]
+      "connections": ["charleroi", "namur", "quatre_bras", "waterloo"],
+      "ui": {
+        "always_show_label": false,
+        "preferred_anchor": "right_down"
+      }
     },
     {
       "id": "quatre_bras",
@@ -532,7 +554,11 @@
       "population": 3000,
       "garrison": 0,
       "historical_significance": "命运之战。Day 100（历史上1815年6月18日）。威灵顿守山脊，普鲁士军侧翼增援。",
-      "connections": ["ligny", "quatre_bras", "brussels", "plancenoit"]
+      "connections": ["ligny", "quatre_bras", "brussels", "plancenoit"],
+      "ui": {
+        "always_show_label": false,
+        "preferred_anchor": "right_up"
+      }
     },
     {
       "id": "plancenoit",
@@ -562,7 +588,12 @@
       "population": 80000,
       "garrison": 5000,
       "historical_significance": "威灵顿的后方基地。占领布鲁塞尔是北征的核心目标之一。",
-      "connections": ["waterloo", "mons", "namur", "ghent"]
+      "connections": ["waterloo", "mons", "namur", "ghent"],
+      "ui": {
+        "label_priority": 90,
+        "always_show_label": false,
+        "preferred_anchor": "right_up"
+      }
     },
     {
       "id": "namur",
@@ -577,7 +608,11 @@
       "population": 15000,
       "garrison": 3000,
       "historical_significance": "默兹河和桑布尔河交汇要塞。普鲁士军补给基地。",
-      "connections": ["charleroi", "ligny", "philippeville", "liege", "brussels"]
+      "connections": ["charleroi", "ligny", "philippeville", "liege", "brussels"],
+      "ui": {
+        "always_show_label": false,
+        "preferred_anchor": "right_down"
+      }
     },
     {
       "id": "wavre",

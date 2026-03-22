@@ -27,7 +27,7 @@ anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = 16.0
-offset_top = 16.0
+offset_top = 24.0
 offset_right = -16.0
 offset_bottom = -16.0
 grow_horizontal = 2
@@ -36,14 +36,14 @@ theme_override_constants/separation = 14
 
 [node name="TopBar" type="PanelContainer" parent="RootLayout"]
 layout_mode = 2
-custom_minimum_size = Vector2(0, 74)
+custom_minimum_size = Vector2(0, 72)
 
 [node name="TopBarMargin" type="MarginContainer" parent="RootLayout/TopBar"]
 layout_mode = 2
 theme_override_constants/margin_left = 18
-theme_override_constants/margin_top = 12
+theme_override_constants/margin_top = 8
 theme_override_constants/margin_right = 18
-theme_override_constants/margin_bottom = 12
+theme_override_constants/margin_bottom = 8
 
 [node name="TopBarRow" type="HBoxContainer" parent="RootLayout/TopBar/TopBarMargin"]
 layout_mode = 2
@@ -64,7 +64,7 @@ text = "Aube · 情报阶段"
 [node name="RNBlock" type="VBoxContainer" parent="RootLayout/TopBar/TopBarMargin/TopBarRow"]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_constants/separation = 4
+theme_override_constants/separation = 1
 
 [node name="RNLabel" type="Label" parent="RootLayout/TopBar/TopBarMargin/TopBarRow/RNBlock"]
 layout_mode = 2
@@ -73,7 +73,7 @@ text = "Rouge / Noir"
 [node name="RougeNoirSlot" type="Control" parent="RootLayout/TopBar/TopBarMargin/TopBarRow/RNBlock"]
 layout_mode = 2
 size_flags_horizontal = 3
-custom_minimum_size = Vector2(280, 36)
+custom_minimum_size = Vector2(280, 24)
 
 [node name="LegitimacyBlock" type="VBoxContainer" parent="RootLayout/TopBar/TopBarMargin/TopBarRow"]
 layout_mode = 2
@@ -150,6 +150,7 @@ theme_override_constants/separation = 14
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
+size_flags_stretch_ratio = 2.2
 
 [node name="MapMargin" type="MarginContainer" parent="RootLayout/MainArea/LeftColumn/MapArea"]
 layout_mode = 2
@@ -184,22 +185,64 @@ anchor_bottom = 1.0
 offset_top = 52.0
 grow_horizontal = 2
 grow_vertical = 2
+mouse_filter = 1
+
+[node name="MapInspectorPanel" type="PanelContainer" parent="RootLayout/MainArea/LeftColumn/MapArea/MapMargin/MapContent"]
+layout_mode = 1
+anchors_preset = 10
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -276.0
+offset_top = 54.0
+offset_right = -4.0
+offset_bottom = 234.0
+grow_horizontal = 0
+
+[node name="MapInspectorMargin" type="MarginContainer" parent="RootLayout/MainArea/LeftColumn/MapArea/MapMargin/MapContent/MapInspectorPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 10
+
+[node name="MapInspectorBox" type="VBoxContainer" parent="RootLayout/MainArea/LeftColumn/MapArea/MapMargin/MapContent/MapInspectorPanel/MapInspectorMargin"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="MapInspectorTitle" type="Label" parent="RootLayout/MainArea/LeftColumn/MapArea/MapMargin/MapContent/MapInspectorPanel/MapInspectorMargin/MapInspectorBox"]
+layout_mode = 2
+text = "Map Inspector"
+
+[node name="MapInspectorMeta" type="Label" parent="RootLayout/MainArea/LeftColumn/MapArea/MapMargin/MapContent/MapInspectorPanel/MapInspectorMargin/MapInspectorBox"]
+layout_mode = 2
+autowrap_mode = 3
+text = "悬停查看节点，点击后锁定详情。"
+
+[node name="MapInspectorStats" type="Label" parent="RootLayout/MainArea/LeftColumn/MapArea/MapMargin/MapContent/MapInspectorPanel/MapInspectorMargin/MapInspectorBox"]
+layout_mode = 2
+autowrap_mode = 3
+text = ""
+
+[node name="MapInspectorHistory" type="Label" parent="RootLayout/MainArea/LeftColumn/MapArea/MapMargin/MapContent/MapInspectorPanel/MapInspectorMargin/MapInspectorBox"]
+layout_mode = 2
+autowrap_mode = 3
+text = ""
 
 [node name="DecisionTray" type="PanelContainer" parent="RootLayout/MainArea/LeftColumn"]
 layout_mode = 2
 size_flags_horizontal = 3
-custom_minimum_size = Vector2(0, 188)
+custom_minimum_size = Vector2(0, 156)
 
 [node name="TrayMargin" type="MarginContainer" parent="RootLayout/MainArea/LeftColumn/DecisionTray"]
 layout_mode = 2
 theme_override_constants/margin_left = 16
-theme_override_constants/margin_top = 14
+theme_override_constants/margin_top = 12
 theme_override_constants/margin_right = 16
-theme_override_constants/margin_bottom = 14
+theme_override_constants/margin_bottom = 12
 
 [node name="TrayContent" type="VBoxContainer" parent="RootLayout/MainArea/LeftColumn/DecisionTray/TrayMargin"]
 layout_mode = 2
-theme_override_constants/separation = 10
+theme_override_constants/separation = 8
 
 [node name="TrayHeader" type="HBoxContainer" parent="RootLayout/MainArea/LeftColumn/DecisionTray/TrayMargin/TrayContent"]
 layout_mode = 2
@@ -245,6 +288,7 @@ text = "Empire Briefing"
 
 [node name="SituationPanel" type="PanelContainer" parent="RootLayout/MainArea/Sidebar/SidebarMargin/SidebarContent"]
 layout_mode = 2
+custom_minimum_size = Vector2(0, 104)
 
 [node name="SituationMargin" type="MarginContainer" parent="RootLayout/MainArea/Sidebar/SidebarMargin/SidebarContent/SituationPanel"]
 layout_mode = 2
@@ -267,6 +311,7 @@ text = "Loading..."
 
 [node name="LoyaltyPanel" type="PanelContainer" parent="RootLayout/MainArea/Sidebar/SidebarMargin/SidebarContent"]
 layout_mode = 2
+size_flags_vertical = 3
 
 [node name="LoyaltyMargin" type="MarginContainer" parent="RootLayout/MainArea/Sidebar/SidebarMargin/SidebarContent/LoyaltyPanel"]
 layout_mode = 2
@@ -283,13 +328,17 @@ theme_override_constants/separation = 6
 layout_mode = 2
 text = "Marshal Loyalty"
 
-[node name="LoyaltyList" type="VBoxContainer" parent="RootLayout/MainArea/Sidebar/SidebarMargin/SidebarContent/LoyaltyPanel/LoyaltyMargin/LoyaltyBox"]
+[node name="LoyaltyScroll" type="ScrollContainer" parent="RootLayout/MainArea/Sidebar/SidebarMargin/SidebarContent/LoyaltyPanel/LoyaltyMargin/LoyaltyBox"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="LoyaltyList" type="VBoxContainer" parent="RootLayout/MainArea/Sidebar/SidebarMargin/SidebarContent/LoyaltyPanel/LoyaltyMargin/LoyaltyBox/LoyaltyScroll"]
 layout_mode = 2
 theme_override_constants/separation = 4
 
 [node name="NarrativePanel" type="PanelContainer" parent="RootLayout/MainArea/Sidebar/SidebarMargin/SidebarContent"]
 layout_mode = 2
-size_flags_vertical = 3
+custom_minimum_size = Vector2(0, 148)
 
 [node name="NarrativeMargin" type="MarginContainer" parent="RootLayout/MainArea/Sidebar/SidebarMargin/SidebarContent/NarrativePanel"]
 layout_mode = 2

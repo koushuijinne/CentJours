@@ -1,6 +1,6 @@
 # Cent Jours — 前端开发优先级计划
 
-> **更新**: 2026-03-22 v9
+> **更新**: 2026-03-22 v17
 > **当前分支**: `claude/review-project-plan-vgQTN`
 > **目标**: 用最少轮次把 Godot 入口从“占位页 + 联调脚本”推进到“可展示、可讲解、可继续绑定数据”的主场景
 > **通用原则**: 项目长期稳定原则详见 `docs/development_principles.md`
@@ -77,12 +77,12 @@ F5  视觉统一与动效      ████████░░░░  55% 🔶 RN
 4. ~~叙事文本被 `_refresh_ui()` 覆盖，玩家看不到司汤达日记。~~ **✅ 已解决**
 5. ~~地图区仍是静态战略感占位，尚未读取 `map_nodes.json` 做数据驱动布局。~~ **✅ 已解决**：38 节点 + 完整边数据驱动
 6. ~~派系支持度无趋势方向箭头。~~ **✅ 已解决**：趋势箭头 ↑/↓/→ 已接入
-7. 地图节点尚无 hover 交互（点击节点查看详情），P3 非阻塞。
+7. `src/ui/main_menu.gd` 已膨胀到 `1532` 行，主场景控制、布局计算、地图交互、Sidebar、托盘、弹窗和文案格式化全部耦合在一个脚本里。
 8. ~~卡片冷却态目前仅为本回合视觉标记，引擎未暴露政策冷却 API~~ ✅ ADR-005 已实现：`get_state()` 返回 `cooldowns`，前端从 `GameState.policy_cooldowns` 读取真实剩余天数。
-9. 顶栏在 `1280x720` 下存在垂直裁切，`Rouge/Noir` 区块高度超过 `TopBar` 当前可用空间。
-10. 决策托盘高度不足，`DecisionCard` 底部内容和效果列表被截断。
-11. Sidebar 固定宽度下，忠诚度长名字与状态标签互相挤压，并压缩了叙事面板可用高度。
-12. 地图北部标签重叠明显，但按 ADR-006 先列入第二轮处理，不在本轮布局稳定性范围内。
+9. ✅ `ADR-006` 第一轮已通过 Windows `1280x720` 手动验收：顶栏无垂直裁切。
+10. ✅ `ADR-006` 第一轮已通过 Windows `1280x720` 手动验收：托盘与卡片主体完整可见。
+11. ✅ `ADR-006` 第一轮已通过 Windows `1280x720` 手动验收：Sidebar 三块面板可读，忠诚度名字列回归已修复。
+12. ✅ `ADR-007` 已实现：地图节点不再弹出 Godot 默认黑底 tooltip，空白点击统一收口到 `idle`。
 
 ---
 
@@ -108,216 +108,21 @@ F5  视觉统一与动效      ████████░░░░  55% 🔶 RN
 
 ---
 
-## Priority A — 现在就做
-
-### A1. 清理运行入口，停止把主菜单当测试场
-
-**目标**: 让 `main_menu.tscn` 成为正式前端基座，而不是联调脚本入口。
-
-**任务**:
-
-- [x] 从 `src/ui/main_menu.tscn` 移除 `engine_smoke_test.gd` 挂载
-- [x] 若仍需 smoke test，新建独立开发测试场景或测试入口
-- [x] 保证运行后进入的是“主场景骨架”，不是打印日志脚本
-
-**验收**:
-
-- 点击运行后，不再自动执行 smoke test 输出
-- 主入口场景只承载 UI，不承载一次性测试逻辑
-
-### A2. 搭出主场景四区骨架
-
-**目标**: 复现 `docs/ui_prototype.html` 的主布局。
-
-**任务**:
-
-- [x] 在 `main_menu.tscn` 中搭出：
-  - Top Bar
-  - Map Area
-  - Sidebar
-  - Decision Tray
-- [x] 使用 `PanelContainer` / `MarginContainer` / `HBoxContainer` / `VBoxContainer` 组织布局
-- [x] 先用纯色面板、分隔线、标题文本构建层级
-
-**验收**:
-
-- 运行后能一眼看出四大区域
-- 无论窗口大小如何，都不再只有“中间一行字”
-
-### A3. 接入已有组件，做出第一版“像游戏”
-
-**目标**: 用现有组件快速提升界面完成度。
-
-**任务**:
-
-- [x] 顶栏挂入 `RougeNoirSlider`
-- [x] 底部托盘放入 3-5 张 `DecisionCard`
-- [x] 应用 `CentJoursTheme.create()` 或等效主题初始化
-- [x] 用占位数据填充日期、Legitimacy、Troops、Morale 等文字
-
-**验收**:
-
-- 主场景至少出现一个动态滑条和多个卡片
-- 整体不再像空白占位页，而是接近策略 HUD
-
----
-
-## Priority B — 结构完整 ✅ 已完成
-
-### B1. 顶栏数据绑定 ✅
-
-- [x] 真实引擎数据同步到顶栏
-- [x] 数值变化时闪烁动效（增=绿/减=红，0.3 秒恢复）
-
-### B2. 右侧边栏占位升级 ✅
-
-- [x] 局势面板含派系趋势箭头 ↑/↓/→
-- [x] 忠诚度面板显示全量将领（前 8 + 溢出提示）
-- [x] 叙事日志接入信号驱动
-
-### B3. 地图区占位升级 ✅
-
-- [x] 从 `map_nodes.json` 加载 38 节点 + 完整边数据
-- [x] 坐标归一化到画布尺寸，节点按 type 分级样式
-- [x] 拿破仑当前位置金色高亮 + 标注
-
----
-
-## Priority C — 从展示迈向可操作 (部分完成)
-
-### C1. 决策托盘与 `TurnManager` 联动 ✅
-
-- [x] 卡片点击选中态 + 确认按钮提交行动
-- [x] 执行后卡片进入冷却态（已改为 Rust 引擎真实冷却天数驱动，ADR-005）
-- [x] 每次 UI 刷新自动从 `GameState.policy_cooldowns` 同步冷却状态
-
-### C2. 动效与视觉强化 🔶 进行中
-
-**已完成**:
-- [x] Rouge/Noir 全屏氛围叠加
-- [x] 卡片 hover scale 动效
-- [x] 顶栏数值变化闪烁
-- [x] 地图节点分级视觉样式
-
-**待完成**:
-- [ ] 顶栏与托盘进场动画
-- [ ] 面板 hover 统一反馈
-
----
-
-## Priority D — 主场景展示稳定性（第一轮，当前最高）
-
-> 详见 `docs/decisions/ADR-006-main-scene-presentation-stabilization.md`
-
-### 本轮适用原则
-
-- `信息层级优先`
-- `先骨架，后润色`
-- `每轮必须可见`
-- `Godot 薄展示层`
-
-### 本轮目标
-
-让主场景在 Windows Godot、`1280x720` 分辨率下达到：
-
-- 顶栏无垂直裁切
-- 决策托盘卡片内容完整可见
-- Sidebar 忠诚度与叙事面板同时保持可读
-
-### 本轮范围
-
-- 处理顶栏高度与内部排布
-- 处理决策托盘高度与卡片可视面积
-- 处理 Sidebar 宽度 / 高度分配与忠诚度面板挤压
-
-### 本轮非目标
-
-- 暂不处理地图标签碰撞
-- 暂不统一中 / 英 / 法文案
-- 暂不做新的动画 polish
-- 暂不加入节点 hover / 点击详情
-
-### D1. 顶栏稳定性修复 [M]
-
-**目标**: 让 `TopBar` 在 `1280x720` 下完整容纳 Day / Phase / RougeNoir / Legitimacy / Resources。
-
-**涉及文件**:
-
-- `src/ui/main_menu.tscn`
-- `src/ui/main_menu.gd`
-- `src/ui/components/rn_slider.gd`
-
-**任务**:
-
-- 重新评估 `TopBar` 固定高度是否足以容纳当前竖排 RN 区块
-- 明确采用“增高顶栏”还是“压缩 RN 区块高度/布局”的方案
-- 检查 `TopBarMargin`、`TopBarRow`、`RNBlock` 的垂直节奏是否需要同步调整
-- 复核数值闪烁、确认按钮、阶段文案在新高度下是否仍可读
-
-**验收**:
-
-- 运行主场景时，顶栏任何元素都不被裁切
-- `Rouge / Noir` 区块完整显示，滑条不再顶到面板边缘
-- `Jour`、`Phase`、`Legitimacy`、`Troops`、`Morale`、`Fatigue` 同时清晰可见
-
-### D2. 决策托盘完整显示 [M]
-
-**目标**: 让 `DecisionTray` 至少展示一行完整卡片，而不是“只看到上半截”。
-
-**涉及文件**:
-
-- `src/ui/main_menu.tscn`
-- `src/ui/main_menu.gd`
-- `src/ui/components/decision_card.gd`
-
-**任务**:
-
-- 重新评估 `DecisionTray` 高度与 `DecisionScroll` 可用面积
-- 明确采用“加高托盘”还是“压缩卡片信息密度”的主方案
-- 检查 `DecisionCard` 的最小高度、图标区、正文间距、效果列表密度
-- 保证确认按钮与提示文案不因为托盘调整而错位
-
-**验收**:
-
-- 默认分辨率下，至少 1 行卡片完整显示
-- 卡片标题、行动点、效果列表不再被底部裁切
-- 横向滚动仍可正常使用
-
-### D3. Sidebar 空间重分配 [M]
-
-**目标**: 让忠诚度面板和叙事面板在当前分辨率下都保持有效阅读面积。
-
-**涉及文件**:
-
-- `src/ui/main_menu.tscn`
-- `src/ui/main_menu.gd`
-
-**任务**:
-
-- 重新评估 `Sidebar` 固定宽度是否足够容纳长将领名 + 忠诚度状态
-- 明确采用“增宽 Sidebar”“限制忠诚度面板高度”“压缩显示条目”还是组合方案
-- 确保 `History & Narrative` 面板始终保留最小可读空间
-- 检查忠诚度列表与 `…另 N 位将领` 溢出提示的视觉节奏
-
-**验收**:
-
-- 忠诚度长名字不再明显挤压数值/状态文字
-- `History & Narrative` 标题与至少 2-3 行正文始终可见
-- Sidebar 三块面板上下层级清晰，不出现“某一块几乎消失”
-
-### 交付物
-
-- 1 张 `1280x720` 运行截图，展示顶栏 / 地图 / Sidebar / 托盘全部可读
-- 1 次主场景运行验证，无新的 GDScript parse error
-- 对应的 `docs/frontend_dev_plan.md` 和必要时 `docs/dev_plan.md` 更新
+## 已完成阶段归档（摘要）
+
+- `Priority A`：正式入口与 smoke test 已分离，主场景四区骨架建立完成。
+- `Priority B`：顶栏、Sidebar、地图占位已接入真实数据与数据驱动节点。
+- `Priority C`：决策托盘与 `TurnManager` 已打通，真实冷却由 Rust 引擎驱动。
+- `Priority D`：Windows `1280x720` 下顶栏、托盘、Sidebar 布局稳定性问题已收口。
+- `Priority E`：地图标签去碰撞、hover 高亮、click 锁定详情、`Map Inspector` 已落地，并已通过 Windows 真机验收。
+
+> 已完成任务的详细执行清单不再保留在本文中，历史细节以相关 ADR、提交记录和代码为准，避免前端计划文档持续膨胀。
 
 ---
 
 ## 里程碑判断
 
-### F-GATE 1: 看起来像游戏了吗？
-
-满足以下条件即可通过：
+### F-GATE 1: 看起来像游戏了吗？ ✅ 通过
 
 - [x] 一进入运行就能看到四区结构
 - [x] 顶栏不是静态空壳
@@ -325,37 +130,192 @@ F5  视觉统一与动效      ████████░░░░  55% 🔶 RN
 - [x] 右侧边栏开始承载信息
 - [x] 主入口不再依赖 `engine_smoke_test.gd`
 
-### F-GATE 2: 能完成一次可见交互了吗？ ✅ 通过（2026-03-22）
-
-满足以下条件即可通过：
+### F-GATE 2: 能完成一次可见交互了吗？ ✅ 通过
 
 - [x] 点击一个行动卡片有反馈
 - [x] 至少一个状态数值会更新
-- [x] 玩家能看懂”这不是菜单，而是主游戏界面”
+- [x] 地图节点支持 hover 预览与 click 锁定详情
+- [x] 玩家能看懂“这不是菜单，而是主游戏界面”
+
+---
+
+## Priority F — 主菜单解耦重构（当前最高优先级）
+
+### 本轮适用原则
+
+- `Godot 薄展示层`
+- `常量集中管理，避免硬编码`
+- `结构问题优先于像素补丁`
+- `DRY`
+- `每轮必须可见`
+- `视觉问题以目标平台真机收口`
+
+### 为什么进入这一轮
+
+- `src/ui/main_menu.gd` 已增长到 `1532` 行，明显超出“主场景编排器”的合理体量。
+- 当前一个脚本同时负责布局、地图、Sidebar、托盘、弹窗、格式化和交互状态，继续叠加功能会显著提高回归风险。
+- 第二轮功能已经完成并通过真机验收，现在最值得做的是把主菜单拆回“可持续维护”的结构，再继续扩展存档、引导、动画和更多地图交互。
+
+### 本轮目标
+
+把 `main_menu.gd` 从“大一统脚本”收缩成**主场景编排器**，目标是：
+
+- `main_menu.gd` 只保留节点装配、信号绑定、顶层调度
+- 地图、托盘、Sidebar、弹窗、格式化和配置从主文件中拆出
+- 后续功能开发优先落在独立模块，而不是继续堆回主菜单脚本
+
+### 目标架构
+
+#### 1. `main_menu.gd`：只保留主场景编排
+
+保留职责：
+
+- `_ready()` 及初始化顺序
+- 场景节点引用
+- `TurnManager` / `GameState` / `EventBus` 顶层信号绑定
+- 将状态变化分发给子模块
+- 统一的顶层刷新入口
+
+移出职责：
+
+- 地图绘制与交互
+- 决策托盘构建与选中逻辑
+- Sidebar 三块面板刷新
+- 响应式布局计算
+- 文案格式化和常量表
+- 各类弹窗逻辑
+
+#### 2. `src/ui/main_menu/map_controller.gd`
+
+职责：
+
+- 地图节点绘制
+- 标签去碰撞与锚点计算
+- hover / click 状态
+- 相邻路线高亮
+- `Map Inspector` 内容刷新
+
+这是收益最高、耦合最重的第一优先拆分对象。
+
+#### 3. `src/ui/main_menu/tray_controller.gd`
+
+职责：
+
+- 决策卡片构建与复用
+- 选中态 / 冷却态刷新
+- 确认按钮联动
+- 与 `TurnManager.submit_action()` 的展示层对接
+
+#### 4. `src/ui/main_menu/sidebar_controller.gd`
+
+职责：
+
+- `Current Situation`
+- `Marshal Loyalty`
+- `History & Narrative`
+
+只负责右侧面板内容更新，不负责地图或托盘状态。
+
+#### 5. `src/ui/main_menu/layout_controller.gd`
+
+职责：
+
+- 主场景响应式布局
+- 最小高度 + 弹性分配
+- 顶栏 / 地图区 / 托盘 / Sidebar 的尺寸推导
+
+这部分属于纯布局逻辑，适合从主流程中完全抽离。
+
+#### 6. `src/ui/main_menu/dialogs/`
+
+建议拆分：
+
+- `battle_setup_dialog.gd`
+- `boost_loyalty_dialog.gd`
+- `game_over_modal.gd`
+
+目标是把弹窗状态和节点查找从主场景脚本中移走。
+
+#### 7. `src/ui/main_menu/ui_formatters.gd`
+
+职责：
+
+- 数字格式化
+- phase / terrain / outcome 等文案映射
+- 节点与派系显示文本
+
+把纯格式化函数从主脚本剥离，降低阅读负担。
+
+#### 8. `src/ui/main_menu/main_menu_config.gd`
+
+职责：
+
+- `PRIORITY_POLICY_IDS`
+- `POLICY_EMOJIS`
+- `POLICY_EFFECTS`
+- `OUTCOME_TEXT`
+- `TERRAIN_OPTIONS`
+- 其他主菜单展示常量
+
+目标是把散落在主脚本顶部的前端配置集中收敛。
+
+### 推荐拆分顺序
+
+1. `ui_formatters.gd` + `main_menu_config.gd`
+2. `layout_controller.gd`
+3. `dialogs/`
+4. `sidebar_controller.gd`
+5. `tray_controller.gd`
+6. `map_controller.gd`
+7. 最后把 `main_menu.gd` 压成纯编排入口
+
+### 本轮验收标准
+
+- `src/ui/main_menu.gd` 明显收缩，不再继续增长
+- 新模块职责边界清晰，不出现地图 / Sidebar / 托盘相互直接调用
+- Windows 无头测试继续通过：
+  `E:\software\godot\Godot_v4.6.1-stable_win64_console.exe --headless --path E:\projects\CentJours --quit`
+- Windows Godot 真机运行不出现第一轮和第二轮的回归
+
+### 本轮非目标
+
+- 暂不新增 Rust 接口
+- 暂不做地图行军、战斗位置联动
+- 暂不扩展新的前端页面
+- 暂不做存档系统和新手引导
+
+---
+
+## 地图交互状态机收尾
+
+- `ADR-007` 已落地：
+  - 地图热点不再使用 Godot 默认黑底 tooltip
+  - `Map Inspector` 成为唯一详情反馈源
+  - 点击地图空白时，无论当前是 `hover` 还是 `selected`，都统一收口到 `idle`
+
+> 详见 `docs/decisions/ADR-007-map-hover-selection-state-machine.md`。
+
+## 第二轮完成判断
+
+- [x] 北部默认标签已从“大面积互压”改善到可读状态
+- [x] `hover` 预览与 `click` 锁定详情均已跑通
+- [x] `Map Inspector` 已成为唯一详情反馈源
+- [x] 空白点击统一收口到 `idle`
+- [x] 第二轮不引入第一轮顶栏、托盘、Sidebar 的回归
+
+结论：第二轮可以正式标记为**完成**。
 
 ---
 
 ## 建议执行顺序（下一轮）
 
-1. Priority D：顶栏稳定性 / 托盘完整显示 / Sidebar 空间重分配
-2. 地图标签去碰撞与 hover 交互（点击查看节点详情面板）
-3. C2 剩余：顶栏/托盘进场动画、面板 hover 统一
-4. 存档/读档 UI 入口
-5. 新手引导（前 10 天隐式教程提示）
-
----
-
-## 本轮完成摘要（v5，2026-03-22）
-
-| # | 文件 | 处理结果 |
-|---|------|---------|
-| ① | `src/ui/main_menu.gd` | ✅ 地图数据驱动化：从 `map_nodes.json` 加载 38 节点 + 边数据，归一化坐标，按 type 分级样式，删除硬编码常量 |
-| ② | `src/ui/main_menu.gd` | ✅ 派系趋势箭头：`_refresh_situation_panel()` 对比上回合数值显示 ↑/↓/→ |
-| ③ | `src/ui/main_menu.gd` | ✅ 决策卡片冷却态改为引擎驱动：`_refresh_card_cooldowns()` 从 `GameState.policy_cooldowns` 读取真实数据（ADR-005） |
-| ④ | `src/ui/main_menu.gd` | ✅ 数值变化闪烁动效：`_flash_value_change()` 对 Legitimacy/Troops/Morale 做 0.3s 颜色闪烁 |
+1. Priority F：主菜单解耦重构
+2. C2 剩余：顶栏/托盘进场动画、面板 hover 统一
+3. 存档/读档 UI 入口
+4. 新手引导（前 10 天隐式教程提示）
 
 ---
 
 ## 一句话判断
 
-Priority B 已全部完成，C1 已完成，C2 过半。前端已从”能展示”推进到”能交互 + 有反馈”。当前第一优先级已切到 `ADR-006` 定义的主场景展示稳定性首轮，而不是继续追加新交互。
+主场景前两轮功能目标已经基本达成，当前最大的风险不再是“少一个功能”，而是 `main_menu.gd` 过大导致后续任何新功能都在放大维护成本。下一轮应先做主菜单解耦，而不是继续往这个单文件里加逻辑。

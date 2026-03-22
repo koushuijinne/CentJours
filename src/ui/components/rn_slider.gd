@@ -46,7 +46,8 @@ func get_value() -> float:
 # ── 内部构建 ──────────────────────────────────────────
 
 func _build_ui() -> void:
-	custom_minimum_size = Vector2(220, 32)
+	if custom_minimum_size == Vector2.ZERO:
+		custom_minimum_size = Vector2(220, 32)
 
 	var track := ColorRect.new()
 	track.color = CentJoursTheme.COLOR["border_panel"]

@@ -1,6 +1,6 @@
 # Cent Jours — 开发优先级计划
 
-> **更新**: 2026-03-22 v31
+> **更新**: 2026-03-22 v38
 > **当前分支**: `claude/review-project-plan-vgQTN`
 > **通用原则**: 项目长期稳定原则详见 `docs/development_principles.md`
 
@@ -58,16 +58,27 @@ M6  打磨发布   ░░░░░░░░░░░░   0%
 
 **平衡结果**: Military 24.2% ✅ | Political 21.2% ✅ | Balanced 22.4% ✅
 
-**约束**: Godot 编辑器已可运行；WSL 音频仍回落 dummy driver，但不阻塞脚本解析和 GDExtension 联调。
+**约束**: Godot 编辑器已可运行；无头测试默认优先在 Windows 环境执行，WSL/Linux 仅作可选补充验证。
 
 ## 当前前端最高优先级（2026-03-22）
 
-- `ADR-006` 已记录主场景展示问题的分阶段修复策略。
-- 第一轮只处理三项布局稳定性问题：
+- `ADR-006` 第一轮布局稳定性问题已完成并通过 Windows `1280x720` 手动验收：
   - 顶栏垂直裁切
   - 决策托盘内容截断
   - Sidebar 忠诚度 / 叙事面板空间挤压
-- 详细任务拆解见 `docs/frontend_dev_plan.md`。
+- `ADR-007` 地图 hover / 空白点击状态机已完成落地：
+  - 移除 Godot 默认黑底 tooltip
+  - `Map Inspector` 成为唯一详情反馈源
+  - 空白点击统一收口到 `idle`
+- Priority E（地图标签去碰撞 + hover / click + Map Inspector）现已完成，并通过 Windows 真机验收。
+- 当前前端最高优先级已切换到 Priority F：主菜单解耦重构。
+- Priority F 的目标是把 `src/ui/main_menu.gd` 从 `1532` 行的大一统脚本收缩成主场景编排器，并拆出地图、托盘、Sidebar、布局和弹窗模块。
+- 地图交互仍属于 Godot 薄展示层实现：只读取 `map_nodes.json`，不引入 Rust 规则或 `TurnManager` 新接口。
+- Windows 无头测试已通过，说明 Windows Godot 启动链路与 `cent_jours_core.dll` 装载正常。
+- 默认 Windows 无头测试命令：
+  `E:\software\godot\Godot_v4.6.1-stable_win64_console.exe --headless --path E:\projects\CentJours --quit`
+- WSL/Linux 无头测试降级为可选补充验证，不再作为默认检查路径；若缺 Linux 版 `cent_jours_core.so`，不视为当前 Windows 开发路径阻塞。
+- 详细任务拆解与验收项见 `docs/frontend_dev_plan.md`。
 
 ---
 
@@ -103,6 +114,7 @@ M6  打磨发布   ░░░░░░░░░░░░   0%
 | 阈值常量 DRY 修复 | `order_deviation.rs` + `game_state.gd` | — | ✅ DEFECTION_THRESHOLD → re-export LOYALTY_CRISIS_THRESHOLD |
 | 将领技能数据驱动化 | `network.rs` + `state.rs` | 4 | ✅ TDD，修复 davout/soult 数值错误，107 tests |
 | 政策冷却接口暴露 | `system.rs` + `lib.rs` + `turn_manager.gd` + `game_state.gd` + `political_system.gd` + `main_menu.gd` | — | ✅ ADR-005，`get_state()` 返回 `cooldowns`，前端从 GameState 缓存读取真实冷却天数，删除硬编码与前端自行标记逻辑 |
+| 主场景布局稳定性（第一轮） | `main_menu.tscn` + `main_menu.gd` + `decision_card.gd` + `rn_slider.gd` | — | ✅ ADR-006 首轮代码落地，并已升级为“最小高度 + 弹性布局 + 局部滚动”重构；Windows `1280x720` 手验通过 |
 
 **合计**: 127 tests 全部通过
 
@@ -116,6 +128,25 @@ M6  打磨发布   ░░░░░░░░░░░░   0%
 | 蒙特卡洛平衡验证 | Military 24.2% / Political 21.2% / Balanced 22.4%，均在 15%-35% |
 | 30条历史事件集成 | 触发率验证通过 |
 | Godot 4.6 升级 | gdext 0.4.5, api-4-5, VarDictionary |
+
+---
+
+## 上轮完成摘要（本轮 v36，2026-03-22）
+
+| # | 文件 | 处理结果 |
+|---|------|---------|
+| ① | `src/ui/main_menu.tscn` | ✅ 左侧布局改成“地图吸收剩余高度、托盘只保底不扩张”，Sidebar 忠诚度区加入内部滚动 |
+| ② | `src/ui/main_menu.gd` | ✅ 顶栏高度改为按真实内容最小值推导；托盘与 Sidebar 保底高度改为内容驱动，而不是继续堆固定像素 |
+| ③ | `src/ui/main_menu.gd` | ✅ 保留窗口响应式安全区与尺寸重算，但开始从“参数化硬编码”转向“最小高度 + 弹性分配” |
+| ④ | `src/ui/components/decision_card.gd` | ✅ 卡片新增运行时尺寸重建，标题改为单行省略，内部间距随目标高度重算 |
+| ⑤ | `src/ui/components/rn_slider.gd` | ✅ 组件继续尊重外部尺寸，作为顶栏紧凑滑条使用 |
+
+**验证结果：**
+- Windows 无头测试已执行：
+  `E:\software\godot\Godot_v4.6.1-stable_win64_console.exe --headless --path E:\projects\CentJours --quit`
+- 结果：Godot 成功启动，`godot-rust` 初始化日志正常，退出码 `0`
+- Windows Godot `1280x720` 手动验收已通过：顶栏、托盘与 Sidebar 第一轮目标全部达成
+- WSL/Linux 无头测试不再作为默认要求；Windows 真机截图继续作为前端视觉问题的最终确认步骤
 
 ---
 
