@@ -3,8 +3,8 @@
 > **工作标题**: *Cent Jours*（法语”百日”）
 > **一句话**: 你是拿破仑，从厄尔巴岛出逃到滑铁卢，100天内重建帝国或永远流放。每一天都是决策点。
 > **Author**: Julien
-> **Version**: v0.13 — 2026-03-21
-> **Status**: Draft — M0/M0.5/M2/M3 完成，GATE 2 通过；M4 测试覆盖全面提升（127 tests，历史事件33条）；Godot 编辑器已打开项目，`CentJoursEngine` smoke test 通过；仓库已完成跨平台协作清理（忽略并去索引 `.godot` 缓存），主场景四区骨架已可见，smoke test 已迁出正式入口
+> **Version**: v0.14 — 2026-03-22
+> **Status**: Draft — M0/M0.5/M1/M2/M3 完成，GATE 2 通过；M4 测试覆盖全面提升（127 tests，历史事件33条）；Godot 主场景回合闭环已打通（TurnManager autoload + 确认按钮 + 叙事信号），F-GATE 2 达成：玩家可完成"选卡片→执行→数值变化"完整前端交互闭环
 
 -----
 

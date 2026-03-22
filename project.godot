@@ -21,6 +21,7 @@ config/icon="res://assets/icon.svg"
 
 GameState="*res://src/core/game_state.gd"
 EventBus="*res://src/core/event_bus.gd"
+TurnManager="*res://src/core/turn_manager.gd"
 
 [display]
 

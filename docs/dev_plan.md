@@ -1,6 +1,6 @@
 # Cent Jours — 开发优先级计划
 
-> **更新**: 2026-03-21 v24
+> **更新**: 2026-03-22 v25
 > **当前分支**: `claude/review-project-plan-LKKTR`
 
 ---
@@ -110,12 +110,12 @@
 
 ---
 
-## 当前进度快照（2026-03-21）
+## 当前进度快照（2026-03-22）
 
 ```
 M0  预研      ████████████ 100% ✅
 M0.5 视觉定调  ████████████ 100% ✅
-M1  核心循环   ████████████  95% 🔶 Rust层✅，Godot主场景骨架✅，CentJoursEngine smoke test✅
+M1  核心循环   ████████████ 100% ✅ Rust层✅，Godot回合闭环✅，TurnManager autoload✅
 M2  政治系统   ███████████░  90% 🔶 Rust层✅，平衡达标，Godot联调起点✅
 M3  将领网络   ████████████ 100% ✅ GATE 2 通过
 M4  内容填充   ████████████ 100% ✅ 历史事件33条，TDD契约全覆盖，测试127个
@@ -263,13 +263,13 @@ M6  打磨发布   ░░░░░░░░░░░░   0%
 
 ### 全库扫描（2026-03-21，v24 重新扫描）
 
-**当前无 P0/P1 架构违规。发现以下前端结构缺口：**
+**当前无 P0/P1 架构违规。v25 本轮修复了 ①③，②④ 进入下一优先级：**
 
 | # | 文件 / 模块 | 问题 | 严重程度 |
 |---|------------|------|---------|
-| ① | `src/ui/main_menu.gd` | 顶栏仍只读取 `GameState` 当前值，尚未接入 `TurnManager` 驱动的一天流程刷新 | 🟡 P2 前端 |
-| ② | `src/ui/main_menu.gd` Sidebar | 右侧边栏仍是摘要占位，历史事件 / 司汤达文本尚未展示真实内容 | 🟡 P2 前端 |
-| ③ | `src/ui/main_menu.gd` Decision Tray | 卡片已可见，但仍未触发 `submit_action()` 或 `policy_enacted` 闭环 | 🟡 P2 前端 |
+| ① | `src/ui/main_menu.gd` | ~~顶栏仍只读取 `GameState` 当前值，尚未接入 `TurnManager` 驱动的一天流程刷新~~ **✅ 已修复**：`TurnManager` 注册为 autoload，`_start_game()` 引导真实回合 | ✅ 已修复 |
+| ② | `src/ui/main_menu.gd` Sidebar | 右侧边栏叙事信号已接入（`stendhal_diary_entry` / `micro_narrative_shown`），但忠诚度仍显示固定3名将领，派系无趋势箭头 | 🟡 P2 前端 |
+| ③ | `src/ui/main_menu.gd` Decision Tray | ~~卡片已可见，但仍未触发 `submit_action()` 或 `policy_enacted` 闭环~~ **✅ 已修复**：确认按钮接入 `submit_action()`，回合闭环打通 | ✅ 已修复 |
 | ④ | `src/ui/main_menu.gd` Map Area | 地图仍为静态战略感占位，尚未读取 `map_nodes.json` 做数据驱动布局 | 🟢 P3 前端 |
 
 ---
@@ -332,7 +332,22 @@ M6  打磨发布   ░░░░░░░░░░░░   0%
 | GameState loyalty 与引擎闭环同步 | ✅ 完成 |
 | 主场景四区骨架可见 | ✅ 完成 |
 | `RougeNoirSlider` / `DecisionCard` 已接入正式入口 | ✅ 完成 |
-| 完整回合流程端到端测试 | ⏳ 下一轮 |
+| 完整回合流程端到端测试 | ✅ 完成（TurnManager autoload + confirm button 闭环） |
+
+---
+
+## 本轮完成摘要（本轮 v25，2026-03-22）
+
+| # | 文件 | 处理结果 |
+|---|------|---------|
+| ① | `project.godot` | ✅ 将 `TurnManager` 注册为 autoload，与 `GameState`/`EventBus` 对齐 |
+| ② | `src/ui/main_menu.gd` | ✅ 新增 `_start_game()` / `_begin_next_turn()` 驱动真实回合 Dawn+Action；新增确认按钮 `_build_confirm_button()`；`_on_confirm_pressed()` 提交政策或休整；接入 `stendhal_diary_entry` / `micro_narrative_shown` / `turn_ended` / `game_over` 信号 |
+
+**验证目标：**
+- 运行后顶栏显示引擎真实数值（非初始占位）
+- 点选政策卡片 → 点"执行行动" → 回合推进 → Day 数字 +1，数值变化可见
+- 边栏叙事面板显示司汤达日记文本或行动后果
+- 游戏结束时托盘禁用并显示结局
 
 ---
 

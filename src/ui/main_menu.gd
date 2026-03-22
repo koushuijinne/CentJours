@@ -86,10 +86,14 @@ const LOYALTY_HEROES := ["davout", "ney", "fouche"]
 @onready var _narrative_panel: PanelContainer = $RootLayout/MainArea/Sidebar/SidebarMargin/SidebarContent/NarrativePanel
 @onready var _narrative_body: Label = $RootLayout/MainArea/Sidebar/SidebarMargin/SidebarContent/NarrativePanel/NarrativeMargin/NarrativeBox/NarrativeBody
 @onready var _decision_tray: PanelContainer = $RootLayout/MainArea/LeftColumn/DecisionTray
+@onready var _tray_header: HBoxContainer = $RootLayout/MainArea/LeftColumn/DecisionTray/TrayMargin/TrayContent/TrayHeader
+@onready var _tray_hint: Label = $RootLayout/MainArea/LeftColumn/DecisionTray/TrayMargin/TrayContent/TrayHeader/TrayHint
 @onready var _decision_row: HBoxContainer = $RootLayout/MainArea/LeftColumn/DecisionTray/TrayMargin/TrayContent/DecisionScroll/DecisionRow
 
 var _rn_slider: RougeNoirSlider
+var _confirm_button: Button       # 执行行动确认按钮（动态创建）
 var _selected_policy_id: String = ""
+var _awaiting_action: bool = false  # 是否处于等待玩家操作的 Action Phase
 
 func _ready() -> void:
 	# 统一入口主题，保证占位骨架先具备正式视觉语言。
@@ -98,9 +102,12 @@ func _ready() -> void:
 	_apply_panel_styles()
 	_build_rouge_noir_slider()
 	_build_decision_cards()
+	_build_confirm_button()
 	_connect_signals()
 	call_deferred("_refresh_ui")
 	call_deferred("_rebuild_map_nodes")
+	# 引导 TurnManager 进入第一回合，必须在所有节点就绪后执行。
+	call_deferred("_start_game")
 
 func _configure_static_ui() -> void:
 	# 文字层级先定住，避免占位版看起来像默认 Godot 控件。
@@ -150,12 +157,43 @@ func _build_decision_cards() -> void:
 		card.card_selected.connect(_on_policy_selected)
 		_decision_row.add_child(card)
 
+## 在 TrayHeader 右侧动态创建"执行行动"确认按钮
+func _build_confirm_button() -> void:
+	_confirm_button = Button.new()
+	_confirm_button.text = "执行行动 →"
+	_confirm_button.size_flags_horizontal = Control.SIZE_SHRINK_END
+	_confirm_button.custom_minimum_size = Vector2(120, 28)
+	_confirm_button.disabled = true  # 初始禁用，等待 Action Phase
+	_confirm_button.pressed.connect(_on_confirm_pressed)
+	_tray_header.add_child(_confirm_button)
+
+## 引导第一回合：Dawn Phase 同步引擎真实状态，然后进入 Action Phase 等待玩家
+func _start_game() -> void:
+	TurnManager.start_new_turn()
+	TurnManager.begin_action_phase()
+	_awaiting_action = true
+	_set_tray_interactive(true)
+
+## 控制托盘卡片与确认按钮的可交互状态
+func _set_tray_interactive(enabled: bool) -> void:
+	_awaiting_action = enabled
+	if _confirm_button != null:
+		_confirm_button.disabled = not enabled
+	if _tray_hint != null:
+		_tray_hint.text = "选择一项政策或直接休整" if enabled else "结算中…"
+
 func _connect_signals() -> void:
-	# 先接现有 UI 层信号，保持场景只读刷新，不驱动核心系统。
+	# 接 UI 层信号：状态变化 → 刷新显示
 	EventBus.phase_changed.connect(_on_phase_changed)
 	EventBus.legitimacy_changed.connect(_on_legitimacy_changed)
 	EventBus.loyalty_changed.connect(_on_loyalty_changed)
 	EventBus.historical_event_triggered.connect(_on_history_changed)
+	# 接叙事信号：司汤达日记与行动后果文本
+	EventBus.stendhal_diary_entry.connect(_on_stendhal_entry)
+	EventBus.micro_narrative_shown.connect(_on_micro_narrative)
+	# 接回合结束信号：驱动下一回合
+	EventBus.turn_ended.connect(_on_turn_ended)
+	EventBus.game_over.connect(_on_game_over)
 	_map_canvas.resized.connect(_rebuild_map_nodes)
 
 func _refresh_ui() -> void:
@@ -303,9 +341,49 @@ func _add_map_node(node_info: Dictionary, point: Vector2) -> void:
 	_map_canvas.add_child(container)
 
 func _on_policy_selected(policy_id: String) -> void:
+	# 仅在 Action Phase 允许切换选中政策
+	if not _awaiting_action:
+		return
 	_selected_policy_id = policy_id
 	_refresh_narrative_panel()
 	_update_card_selection()
+
+## 玩家点击"执行行动"：提交政策或休整，进入 Dusk 结算
+func _on_confirm_pressed() -> void:
+	if not _awaiting_action:
+		return
+	_set_tray_interactive(false)
+	if _selected_policy_id != "":
+		TurnManager.submit_action("policy", {"policy_id": _selected_policy_id})
+	else:
+		TurnManager.submit_action("rest", {})
+	_selected_policy_id = ""
+	_update_card_selection()
+
+## 回合结束：刷新 UI，清空叙事暂存，启动下一回合的 Dawn + Action
+func _on_turn_ended(_new_day: int) -> void:
+	_refresh_ui()
+	call_deferred("_begin_next_turn")
+
+func _begin_next_turn() -> void:
+	TurnManager.start_new_turn()
+	TurnManager.begin_action_phase()
+	_set_tray_interactive(true)
+
+## 司汤达日记文本写入叙事面板
+func _on_stendhal_entry(day: int, text: String) -> void:
+	_narrative_body.text = "Jour %d — Stendhal\n\n%s" % [day, text]
+	_narrative_body.add_theme_color_override("font_color", CentJoursTheme.COLOR["gold_dim"])
+
+## 行动后果微叙事追加到叙事面板
+func _on_micro_narrative(action_type: String, consequence: String) -> void:
+	_narrative_body.text += "\n\n▸ [%s]\n%s" % [action_type, consequence]
+
+## 游戏结束：禁用所有交互并显示结局
+func _on_game_over(outcome: String) -> void:
+	_set_tray_interactive(false)
+	_narrative_body.text = "— Fin —\n\n结局: %s" % outcome
+	_narrative_body.add_theme_color_override("font_color", CentJoursTheme.COLOR["gold_bright"])
 
 func _on_phase_changed(_phase: String) -> void:
 	_refresh_ui()
