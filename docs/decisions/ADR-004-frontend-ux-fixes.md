@@ -23,7 +23,7 @@
 
 ### 第二类：体验缺口
 
-4. **忠诚度面板固定 3 人**：`LOYALTY_HEROES = ["davout", "ney", "fouche"]` 硬编码，`characters.json` 中的全部将领未展示，忽视了游戏核心内容。
+4. **忠诚度面板固定 3 人**：`LOYALTY_HEROES = ["davout", "ney", "fouche"]` 硬编码，`characters.json` 中的全部将领未展示，忽视了游戏核心内容。`characters.json` 实际包含 15 名将领。
 
 5. **RN Slider 每帧轮询**：`rn_slider.gd` 用 `_process()` 每帧读取 `GameState.rouge_noir_index`。`TurnManager` 已通过 `phase_changed` 信号驱动刷新，轮询多余且低效。
 
@@ -63,7 +63,11 @@
 
 ### 体验缺口决策
 
-**忠诚度面板**：改为遍历 `GameState.characters.keys()`，按忠诚度降序排列，显示全部将领。
+**忠诚度面板**：改为遍历 `GameState.characters.keys()`，按忠诚度降序排列，**最多显示 8 位**。
+
+- 侧栏 `LoyaltyList` 是无 `ScrollContainer` 包裹的 `VBoxContainer`，15 人 × ~24px ≈ 360px，加上 SituationPanel 和 NarrativePanel 必然溢出
+- 取前 8 位（忠诚度最高，也是玩家最关心的）；若总人数 > 8，底部附加一行"另 N 位将领"提示
+- 上限 8 为常量 `MAX_VISIBLE`，便于日后调整或在场景添加 `ScrollContainer` 后移除限制
 
 **RN Slider**：移除 `_process()` 和 `set_process(true)`，在 `_on_phase_changed()` 中调用 `set_value(GameState.rouge_noir_index)`。Phase 变化在每次引擎同步后必然触发，保证时序正确。
 
@@ -85,6 +89,8 @@
 | Hover：将卡片从 HBoxContainer 中移出用绝对定位 | 破坏响应式布局 |
 | RN 氛围：给各面板逐一修改 StyleBox 颜色 | 改动散乱，无法动态过渡 |
 | 地图路线：用 `DrawLine` 自定义控件 | 过度工程，Line2D 已足够 |
+| 忠诚度：显示全部 15 人 | 侧栏无 ScrollContainer，布局溢出 |
+| 忠诚度：在场景文件加 ScrollContainer | 当前迭代不必要，代码限制更轻量 |
 
 ---
 
@@ -93,10 +99,12 @@
 - ✅ 司汤达日记和行动后果文本对玩家可见，叙事系统实际生效
 - ✅ 卡片 hover 动效可见，托盘有交互反馈
 - ✅ Rest 路径有明确视觉入口，不再依赖玩家猜测
-- ✅ 全部将领忠诚度在边栏可见，政治核心信息完整
+- ✅ 忠诚度最高的 8 位将领在边栏可见，"另 N 位将领"提示保留完整人数感知
 - ✅ RN Slider 不再每帧轮询，帧时间消耗减少
 - ✅ 地图路线渲染干净，无锯齿
 - ✅ Rouge/Noir 状态微妙影响界面氛围，沉浸感提升
 - ⚠️ `_narrative_log` 为纯 GDScript 数组，重启后丢失（可接受，叙事是本局运行时内容）
 - ⚠️ Rest 卡效果数值（-10 Fatigue / +3 Morale）为 UI 近似值，不代表引擎精确结果
   → 缓解：卡片标注"参考"字样，后续接入 `engine.get_rest_preview()` 时替换
+- ⚠️ 忠诚度列表只展示前 8 位，低忠诚度将领（潜在叛变风险）默认不可见
+  → 缓解：若日后在场景文件中为 `LoyaltyList` 包裹 `ScrollContainer`，删除 `MAX_VISIBLE` 常量即可展示全员；或改为"前 6 位 + 后 2 位"双端显示策略
