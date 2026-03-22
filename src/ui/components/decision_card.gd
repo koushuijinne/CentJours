@@ -59,6 +59,18 @@ func apply_layout_metrics(card_size: Vector2) -> void:
 	pivot_offset = card_size / 2.0
 	_rebuild_ui()
 
+
+func apply_cooldown_state(cooldown_remaining: int) -> void:
+	var next_on_cooldown: bool = cooldown_remaining > 0
+	var next_days: int = maxi(0, cooldown_remaining)
+	var state_changed: bool = next_on_cooldown != on_cooldown or next_days != cooldown_days
+	on_cooldown = next_on_cooldown
+	cooldown_days = next_days
+	if state_changed:
+		_rebuild_ui()
+	else:
+		_apply_current_style()
+
 # ── UI 构建 ──────────────────────────────────────────
 
 func _build_styles() -> void:

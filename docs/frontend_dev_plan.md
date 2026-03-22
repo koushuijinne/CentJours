@@ -1,9 +1,10 @@
 # Cent Jours — 前端开发优先级计划
 
-> **更新**: 2026-03-22 v17
+> **更新**: 2026-03-23 v19
 > **当前分支**: `claude/review-project-plan-vgQTN`
 > **目标**: 用最少轮次把 Godot 入口从“占位页 + 联调脚本”推进到“可展示、可讲解、可继续绑定数据”的主场景
 > **通用原则**: 项目长期稳定原则详见 `docs/development_principles.md`
+> **快速接手**: 当前状态见 `docs/codex_handoff.md`，新会话首条 prompt 模板见 `docs/codex_session_prompts.md`
 
 ---
 
@@ -19,6 +20,7 @@
 - `组件复用优先`：优先复用 `rn_slider.gd`、`decision_card.gd`、主题系统。
 - `信息层级优先`：顶栏、地图区、侧栏、托盘要先讲清“现在看到什么、接下来能点什么”。
 - `反馈至上`：每次点击、选中、确认、结算都应有可见反馈，而不是静默变化。
+- `交接连续性`：每完成一轮开发后同步更新 `docs/codex_handoff.md`；若接手模板变化，再同步更新 `docs/codex_session_prompts.md`。
 
 ### 二、当前轮前端验收要求
 
@@ -32,7 +34,8 @@
 - 本轮是否定义了可见验收结果，例如新增一块 HUD、一个容器分区或一条可点交互。
 - 本轮是否优先复用现有组件、主题和 `docs/ui_prototype.html`，而不是重新发明界面结构。
 - 本轮是否保持 Godot 作为薄展示层，避免把核心规则、数值结算或状态源写进场景脚本。
-- 本轮结束后，是否需要同步更新 `docs/dev_plan.md` 和 `plan.md` 里的进度说明。
+- 本轮结束后，是否需要同步更新 `docs/dev_plan.md`、`docs/codex_handoff.md` 和 `plan.md` 里的进度说明。
+- 若接手方式或默认验证命令变化，是否需要同步更新 `docs/codex_session_prompts.md`。
 
 ---
 
@@ -77,7 +80,7 @@ F5  视觉统一与动效      ████████░░░░  55% 🔶 RN
 4. ~~叙事文本被 `_refresh_ui()` 覆盖，玩家看不到司汤达日记。~~ **✅ 已解决**
 5. ~~地图区仍是静态战略感占位，尚未读取 `map_nodes.json` 做数据驱动布局。~~ **✅ 已解决**：38 节点 + 完整边数据驱动
 6. ~~派系支持度无趋势方向箭头。~~ **✅ 已解决**：趋势箭头 ↑/↓/→ 已接入
-7. `src/ui/main_menu.gd` 已膨胀到 `1532` 行，主场景控制、布局计算、地图交互、Sidebar、托盘、弹窗和文案格式化全部耦合在一个脚本里。
+7. `src/ui/main_menu.gd` 已压到 `436` 行，但仍残留回合流、UI 刷新和状态组装职责，主菜单第三波收尾尚未完成。
 8. ~~卡片冷却态目前仅为本回合视觉标记，引擎未暴露政策冷却 API~~ ✅ ADR-005 已实现：`get_state()` 返回 `cooldowns`，前端从 `GameState.policy_cooldowns` 读取真实剩余天数。
 9. ✅ `ADR-006` 第一轮已通过 Windows `1280x720` 手动验收：顶栏无垂直裁切。
 10. ✅ `ADR-006` 第一轮已通过 Windows `1280x720` 手动验收：托盘与卡片主体完整可见。
@@ -152,9 +155,32 @@ F5  视觉统一与动效      ████████░░░░  55% 🔶 RN
 
 ### 为什么进入这一轮
 
-- `src/ui/main_menu.gd` 已增长到 `1532` 行，明显超出“主场景编排器”的合理体量。
+- `src/ui/main_menu.gd` 原始规模达到 `1531` 行，明显超出“主场景编排器”的合理体量。
 - 当前一个脚本同时负责布局、地图、Sidebar、托盘、弹窗、格式化和交互状态，继续叠加功能会显著提高回归风险。
 - 第二轮功能已经完成并通过真机验收，现在最值得做的是把主菜单拆回“可持续维护”的结构，再继续扩展存档、引导、动画和更多地图交互。
+
+### 第一波已落地（2026-03-22）
+
+- 已新增 `src/ui/main_menu/ui_formatters.gd`
+- 已新增 `src/ui/main_menu/main_menu_config.gd`
+- 已新增 `src/ui/main_menu/sidebar_controller.gd`
+- 已新增 `src/ui/main_menu/tray_controller.gd`
+- `src/ui/main_menu.gd` 已从 `1531` 行收缩到 `1221` 行
+- Sidebar 刷新、托盘构建/选中/冷却、文案格式化与展示常量已从主菜单主脚本抽离
+- 地图控制、响应式布局和弹窗逻辑仍在 `main_menu.gd`，属于下一波解耦范围
+
+### 第二波已落地（2026-03-22）
+
+- 已新增 `src/ui/main_menu/map_controller.gd`
+- 已新增 `src/ui/main_menu/layout_controller.gd`
+- 已新增 `src/ui/main_menu/dialogs_controller.gd`
+- `src/ui/main_menu.gd` 已从 `1221` 行继续收缩到 `436` 行
+- 地图加载、标签去碰撞、hover / click 状态机与 `Map Inspector` 已迁入 `map_controller.gd`
+- 静态 UI、主题样式、RN 滑条和响应式布局已迁入 `layout_controller.gd`
+- 游戏结束、战斗参数与忠诚度强化弹窗已迁入 `dialogs_controller.gd`
+- 主菜单主脚本已基本收缩成编排器：保留节点装配、回合流、信号绑定与顶层刷新
+- Windows 无头测试已通过，说明第二波总装没有引入新的主菜单脚本加载错误
+- 当前验证原则已收紧：无头测试只执行 Windows 环境，不再要求 Linux / WSL 补充无头验证
 
 ### 本轮目标
 
@@ -195,7 +221,7 @@ F5  视觉统一与动效      ████████░░░░  55% 🔶 RN
 - 相邻路线高亮
 - `Map Inspector` 内容刷新
 
-这是收益最高、耦合最重的第一优先拆分对象。
+已落地。
 
 #### 3. `src/ui/main_menu/tray_controller.gd`
 
@@ -224,17 +250,18 @@ F5  视觉统一与动效      ████████░░░░  55% 🔶 RN
 - 最小高度 + 弹性分配
 - 顶栏 / 地图区 / 托盘 / Sidebar 的尺寸推导
 
-这部分属于纯布局逻辑，适合从主流程中完全抽离。
+已落地。
 
-#### 6. `src/ui/main_menu/dialogs/`
+#### 6. `src/ui/main_menu/dialogs_controller.gd`
 
-建议拆分：
+职责：
 
-- `battle_setup_dialog.gd`
-- `boost_loyalty_dialog.gd`
-- `game_over_modal.gd`
+- 游戏结束遮罩与结局面板
+- 战斗参数弹窗
+- 忠诚度强化弹窗
+- 通过回调与主菜单编排器协作，而不是直接绑死 `TurnManager`
 
-目标是把弹窗状态和节点查找从主场景脚本中移走。
+已落地。
 
 #### 7. `src/ui/main_menu/ui_formatters.gd`
 
@@ -259,19 +286,29 @@ F5  视觉统一与动效      ████████░░░░  55% 🔶 RN
 
 目标是把散落在主脚本顶部的前端配置集中收敛。
 
+### 当前状态
+
+- `ui_formatters.gd`：已落地
+- `main_menu_config.gd`：已落地
+- `sidebar_controller.gd`：已落地
+- `tray_controller.gd`：已落地
+- `map_controller.gd`：已落地
+- `layout_controller.gd`：已落地
+- `dialogs_controller.gd`：已落地
+- `main_menu.gd`：已从 `1531` 行降到 `436` 行，已基本降为编排器
+
 ### 推荐拆分顺序
 
 1. `ui_formatters.gd` + `main_menu_config.gd`
-2. `layout_controller.gd`
-3. `dialogs/`
-4. `sidebar_controller.gd`
-5. `tray_controller.gd`
-6. `map_controller.gd`
-7. 最后把 `main_menu.gd` 压成纯编排入口
+2. `sidebar_controller.gd` + `tray_controller.gd`
+3. `map_controller.gd`
+4. `layout_controller.gd`
+5. `dialogs_controller.gd`
+6. 把 `main_menu.gd` 压成纯编排入口
 
 ### 本轮验收标准
 
-- `src/ui/main_menu.gd` 明显收缩，不再继续增长
+- `src/ui/main_menu.gd` 已明显收缩，且主菜单总装后不引入功能回归
 - 新模块职责边界清晰，不出现地图 / Sidebar / 托盘相互直接调用
 - Windows 无头测试继续通过：
   `E:\software\godot\Godot_v4.6.1-stable_win64_console.exe --headless --path E:\projects\CentJours --quit`

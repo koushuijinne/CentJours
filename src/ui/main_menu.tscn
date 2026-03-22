@@ -262,7 +262,11 @@ size_flags_horizontal = 3
 size_flags_vertical = 3
 horizontal_scroll_mode = 2
 
-[node name="DecisionRow" type="HBoxContainer" parent="RootLayout/MainArea/LeftColumn/DecisionTray/TrayMargin/TrayContent/DecisionScroll"]
+[node name="DecisionScrollContent" type="MarginContainer" parent="RootLayout/MainArea/LeftColumn/DecisionTray/TrayMargin/TrayContent/DecisionScroll"]
+layout_mode = 2
+theme_override_constants/margin_bottom = 16
+
+[node name="DecisionRow" type="HBoxContainer" parent="RootLayout/MainArea/LeftColumn/DecisionTray/TrayMargin/TrayContent/DecisionScroll/DecisionScrollContent"]
 layout_mode = 2
 theme_override_constants/separation = 10
 

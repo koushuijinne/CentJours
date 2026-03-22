@@ -1,8 +1,9 @@
 # Cent Jours — 开发优先级计划
 
-> **更新**: 2026-03-22 v38
+> **更新**: 2026-03-23 v40
 > **当前分支**: `claude/review-project-plan-vgQTN`
 > **通用原则**: 项目长期稳定原则详见 `docs/development_principles.md`
+> **快速接手**: 当前状态见 `docs/codex_handoff.md`，新会话首条 prompt 模板见 `docs/codex_session_prompts.md`
 
 ---
 
@@ -21,6 +22,7 @@
 ### 二、文档与提交流程要求
 
 - `活文档`：完成任务后立即更新本文档状态（✅/🔶）和进度快照。
+- `交接同步`：完成一轮开发后默认同步更新 `docs/codex_handoff.md`；若接手模板变化，同步更新 `docs/codex_session_prompts.md`。
 - `同提交同步`：`docs/dev_plan.md` 的更新应和对应代码变更放在同一次 commit。
 - `ADR`：跨层接口、状态流、重要架构选型继续沉淀到 `docs/decisions/ADR-XXX.md`。
 - `边界契约`：Rust ↔ GDScript 的 `Dictionary` / `Array` 返回结构要在调用侧或桥接层写清键名和语义。
@@ -28,10 +30,11 @@
 ### 三、提交前强制检查
 
 1. 将已完成项标记 ✅ 并移入模块清单。
-2. 更新进度快照和完成描述。
+2. 更新进度快照、完成描述和 `docs/codex_handoff.md` 当前状态。
 3. 重新扫描代码库，记录新出现的技术债或残留风险。
 4. 重排下一轮优先级，确保 Priority A 仍是现在就能做的最高价值任务。
-5. 将文档更新与实现改动放入同一次 commit。
+5. 若接手方式或默认验证命令有变化，同步更新 `docs/codex_session_prompts.md`。
+6. 将文档更新与实现改动放入同一次 commit。
 
 ### 四、小步提交
 
@@ -58,7 +61,7 @@ M6  打磨发布   ░░░░░░░░░░░░   0%
 
 **平衡结果**: Military 24.2% ✅ | Political 21.2% ✅ | Balanced 22.4% ✅
 
-**约束**: Godot 编辑器已可运行；无头测试默认优先在 Windows 环境执行，WSL/Linux 仅作可选补充验证。
+**约束**: Godot 编辑器已可运行；当前无头测试只在 Windows 环境执行，WSL/Linux 不作为本轮验证路径。
 
 ## 当前前端最高优先级（2026-03-22）
 
@@ -72,12 +75,15 @@ M6  打磨发布   ░░░░░░░░░░░░   0%
   - 空白点击统一收口到 `idle`
 - Priority E（地图标签去碰撞 + hover / click + Map Inspector）现已完成，并通过 Windows 真机验收。
 - 当前前端最高优先级已切换到 Priority F：主菜单解耦重构。
-- Priority F 的目标是把 `src/ui/main_menu.gd` 从 `1532` 行的大一统脚本收缩成主场景编排器，并拆出地图、托盘、Sidebar、布局和弹窗模块。
+- Priority F 第二波已落地：新增 `map_controller.gd`、`layout_controller.gd`、`dialogs_controller.gd`，`src/ui/main_menu.gd` 已从 `1531` 行一路收缩到 `436` 行。
+- 主菜单主脚本当前已基本降为编排器；下一步重点从“继续拆分”转向“收尾接口、命名与测试覆盖”。
 - 地图交互仍属于 Godot 薄展示层实现：只读取 `map_nodes.json`，不引入 Rust 规则或 `TurnManager` 新接口。
 - Windows 无头测试已通过，说明 Windows Godot 启动链路与 `cent_jours_core.dll` 装载正常。
 - 默认 Windows 无头测试命令：
   `E:\software\godot\Godot_v4.6.1-stable_win64_console.exe --headless --path E:\projects\CentJours --quit`
-- WSL/Linux 无头测试降级为可选补充验证，不再作为默认检查路径；若缺 Linux 版 `cent_jours_core.so`，不视为当前 Windows 开发路径阻塞。
+- WSL/Linux 无头测试不在当前轮次执行范围内；若缺 Linux 版 `cent_jours_core.so`，不视为当前 Windows 开发路径阻塞。
+- 快速接手入口：
+  `docs/codex_handoff.md` / `docs/codex_session_prompts.md`
 - 详细任务拆解与验收项见 `docs/frontend_dev_plan.md`。
 
 ---
