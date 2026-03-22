@@ -41,22 +41,30 @@ const POLICY_EFFECTS := {
 	]
 }
 
-const MAP_NODE_LAYOUT := [
-	{"id": "golfe_juan", "label": "Golfe-Juan", "x": 0.16, "y": 0.80},
-	{"id": "lyon", "label": "Lyon", "x": 0.34, "y": 0.58},
-	{"id": "paris", "label": "Paris", "x": 0.55, "y": 0.24},
-	{"id": "ligny", "label": "Ligny", "x": 0.72, "y": 0.17},
-	{"id": "waterloo", "label": "Waterloo", "x": 0.80, "y": 0.12},
-	{"id": "brussels", "label": "Brussels", "x": 0.86, "y": 0.08}
-]
+# 地图数据从 map_nodes.json 动态加载（替代硬编码占位）
+var _map_nodes: Array = []    # JSON nodes[] 数组
+var _map_edges: Array = []    # JSON edges[] 数组
+# 坐标归一化范围（从 JSON 中动态计算）
+var _map_x_min: float = 0.0
+var _map_x_max: float = 1.0
+var _map_y_min: float = 0.0
+var _map_y_max: float = 1.0
 
-const MAP_ROUTE_IDS := [
-	["golfe_juan", "lyon"],
-	["lyon", "paris"],
-	["paris", "ligny"],
-	["ligny", "waterloo"],
-	["waterloo", "brussels"]
-]
+# 节点类型对应的圆点尺寸和标签字号
+const NODE_SIZE_MAP := {
+	"capital": {"dot": 16, "font": 13, "show_label": true},
+	"major_city": {"dot": 12, "font": 11, "show_label": true},
+	"fortress_city": {"dot": 10, "font": 10, "show_label": true},
+	"regional_capital": {"dot": 8, "font": 9, "show_label": true},
+	"fortress_town": {"dot": 7, "font": 9, "show_label": false},
+	"fortress": {"dot": 7, "font": 9, "show_label": false},
+	"small_town": {"dot": 5, "font": 8, "show_label": false},
+	"village": {"dot": 5, "font": 9, "show_label": true},
+	"crossroads": {"dot": 4, "font": 8, "show_label": true},
+	"palace_town": {"dot": 6, "font": 9, "show_label": false},
+	"royal_palace": {"dot": 8, "font": 10, "show_label": true},
+	"coastal_landing": {"dot": 6, "font": 9, "show_label": true},
+}
 
 const FACTION_LABELS := {
 	"military": "军方",
@@ -108,10 +116,16 @@ var _rn_overlay: ColorRect        # 全屏 Rouge/Noir 氛围叠加层（极低 a
 var _selected_policy_id: String = ""
 var _awaiting_action: bool = false  # 是否处于等待玩家操作的 Action Phase
 var _narrative_log: Array = []    # 叙事日志，最新条目在前，最多 NARRATIVE_MAX_ENTRIES 条
+# 上回合数值快照，用于派系趋势箭头和数值变化动效
+var _prev_faction_support: Dictionary = {}
+var _prev_legitimacy: float = 50.0
+var _prev_troops: int = 0
+var _prev_morale: float = 70.0
 
 func _ready() -> void:
 	# 统一入口主题，保证占位骨架先具备正式视觉语言。
 	theme = CentJoursTheme.create()
+	_load_map_data()
 	_configure_static_ui()
 	_apply_panel_styles()
 	_build_rouge_noir_slider()
@@ -123,6 +137,43 @@ func _ready() -> void:
 	call_deferred("_rebuild_map_nodes")
 	# 引导 TurnManager 进入第一回合，必须在所有节点就绪后执行。
 	call_deferred("_start_game")
+
+## 从 map_nodes.json 加载地图节点和边数据，计算坐标归一化范围
+func _load_map_data() -> void:
+	var file := FileAccess.open("res://src/data/map_nodes.json", FileAccess.READ)
+	if file == null:
+		push_warning("[MainMenu] 无法加载 map_nodes.json，地图将为空")
+		return
+	var json := JSON.new()
+	var err := json.parse(file.get_as_text())
+	file.close()
+	if err != OK:
+		push_warning("[MainMenu] map_nodes.json 解析失败")
+		return
+	var data: Dictionary = json.data
+	_map_nodes = Array(data.get("nodes", []))
+	_map_edges = Array(data.get("edges", []))
+
+	# 计算坐标边界用于归一化（留 5% 内边距）
+	if _map_nodes.size() > 0:
+		_map_x_min = INF
+		_map_x_max = -INF
+		_map_y_min = INF
+		_map_y_max = -INF
+		for node in _map_nodes:
+			var nx: float = float(node.get("x", 0))
+			var ny: float = float(node.get("y", 0))
+			_map_x_min = minf(_map_x_min, nx)
+			_map_x_max = maxf(_map_x_max, nx)
+			_map_y_min = minf(_map_y_min, ny)
+			_map_y_max = maxf(_map_y_max, ny)
+		# 加 5% 内边距防止节点贴边
+		var pad_x := (_map_x_max - _map_x_min) * 0.05
+		var pad_y := (_map_y_max - _map_y_min) * 0.05
+		_map_x_min -= pad_x
+		_map_x_max += pad_x
+		_map_y_min -= pad_y
+		_map_y_max += pad_y
 
 func _configure_static_ui() -> void:
 	# 文字层级先定住，避免占位版看起来像默认 Godot 控件。
@@ -261,20 +312,60 @@ func _refresh_ui() -> void:
 	# 叙事面板有独立更新路径（_append_narrative / _on_policy_selected），不在此处刷新（ADR-004）
 	_apply_rn_atmosphere()
 	_update_card_selection()
+	# 数值变化闪烁动效（对比上回合快照）
+	_flash_value_change(_legitimacy_value, GameState.legitimacy, _prev_legitimacy)
+	_flash_value_change(_troops_value, float(GameState.total_troops), float(_prev_troops))
+	_flash_value_change(_morale_value, GameState.avg_morale, _prev_morale)
+
+## 数值变化时短暂闪烁颜色提示（增=绿 减=红），0.6秒后恢复原色
+func _flash_value_change(label: Label, current: float, previous: float) -> void:
+	var delta := current - previous
+	if absf(delta) < 0.5:
+		return
+	var flash_color: Color
+	if delta > 0:
+		flash_color = Color(0.4, 0.9, 0.4)  # 绿色：数值增加
+	else:
+		flash_color = Color(0.9, 0.3, 0.2)  # 红色：数值减少
+	var original_color: Color = CentJoursTheme.COLOR["text_heading"]
+	label.add_theme_color_override("font_color", flash_color)
+	var tween := create_tween()
+	tween.tween_interval(0.3)
+	tween.tween_callback(func(): label.add_theme_color_override("font_color", original_color))
 
 func _refresh_situation_panel() -> void:
-	var faction_summary := []
+	var faction_lines := []
 	for faction_id in ["military", "populace", "liberals", "nobility"]:
 		var support := float(GameState.faction_support.get(faction_id, 0.0))
-		faction_summary.append("%s %.0f" % [FACTION_LABELS.get(faction_id, faction_id), support])
+		var prev := float(_prev_faction_support.get(faction_id, support))
+		var arrow := _trend_arrow(support - prev)
+		faction_lines.append("  %s %s %.0f %s" % [
+			_faction_emoji(faction_id),
+			FACTION_LABELS.get(faction_id, faction_id),
+			support, arrow])
 
-	_situation_body.text = "Phase: %s\nLocation: %s\nLegitimacy: %.1f\n%s" % [
+	_situation_body.text = "%s\n%s · Legitimacy %.1f\n\n%s" % [
 		_phase_display_name(GameState.current_phase),
 		_napoleon_location_label(),
 		GameState.legitimacy,
-		" / ".join(faction_summary)
+		"\n".join(faction_lines)
 	]
 	_situation_body.add_theme_color_override("font_color", CentJoursTheme.COLOR["text_primary"])
+
+## 根据数值变化返回趋势箭头
+func _trend_arrow(delta: float) -> String:
+	if delta > 1.0: return "↑"
+	elif delta < -1.0: return "↓"
+	else: return "→"
+
+## 派系对应的简短标识符号
+func _faction_emoji(faction_id: String) -> String:
+	match faction_id:
+		"military": return "⚔"
+		"populace": return "👥"
+		"liberals": return "⚖"
+		"nobility": return "👑"
+		_: return "·"
 
 func _refresh_loyalty_panel() -> void:
 	for child in _loyalty_list.get_children():
@@ -332,18 +423,45 @@ func _rebuild_map_nodes() -> void:
 	for child in _map_canvas.get_children():
 		child.queue_free()
 
+	# 从 JSON 数据构建节点坐标映射（归一化到画布尺寸）
 	var points := {}
-	for node_info in MAP_NODE_LAYOUT:
-		points[node_info["id"]] = Vector2(
-			_map_canvas.size.x * float(node_info["x"]),
-			_map_canvas.size.y * float(node_info["y"])
-		)
+	for node_info in _map_nodes:
+		var node_id: String = String(node_info.get("id", ""))
+		points[node_id] = _map_to_canvas(float(node_info.get("x", 0)), float(node_info.get("y", 0)))
 
-	for route in MAP_ROUTE_IDS:
-		_add_map_route(points.get(route[0], Vector2.ZERO), points.get(route[1], Vector2.ZERO))
+	# 绘制边（连接线）
+	for edge in _map_edges:
+		var from_id: String = String(edge.get("from", ""))
+		var to_id: String = String(edge.get("to", ""))
+		if from_id in points and to_id in points:
+			_add_map_route(points[from_id], points[to_id])
 
-	for node_info in MAP_NODE_LAYOUT:
-		_add_map_node(node_info, points[node_info["id"]])
+	# 绘制节点（先画小节点，再画大节点，确保重要节点在上层）
+	var sorted_nodes := _map_nodes.duplicate()
+	sorted_nodes.sort_custom(func(a, b):
+		var sa: int = _get_node_dot_size(String(a.get("type", "")))
+		var sb: int = _get_node_dot_size(String(b.get("type", "")))
+		return sa < sb)
+	for node_info in sorted_nodes:
+		var node_id: String = String(node_info.get("id", ""))
+		if node_id in points:
+			_add_map_node(node_info, points[node_id])
+
+## 将 JSON 中的原始坐标归一化到画布像素坐标
+func _map_to_canvas(raw_x: float, raw_y: float) -> Vector2:
+	var range_x := _map_x_max - _map_x_min
+	var range_y := _map_y_max - _map_y_min
+	if range_x <= 0.0: range_x = 1.0
+	if range_y <= 0.0: range_y = 1.0
+	return Vector2(
+		(raw_x - _map_x_min) / range_x * _map_canvas.size.x,
+		(raw_y - _map_y_min) / range_y * _map_canvas.size.y
+	)
+
+## 根据节点类型返回圆点像素尺寸
+func _get_node_dot_size(node_type: String) -> int:
+	var style: Dictionary = NODE_SIZE_MAP.get(node_type, {"dot": 5})
+	return int(style.get("dot", 5))
 
 func _add_map_route(start: Vector2, target: Vector2) -> void:
 	# 用 Line2D 替代旋转 ColorRect，消除锯齿（ADR-004）
@@ -358,40 +476,64 @@ func _add_map_route(start: Vector2, target: Vector2) -> void:
 	_map_canvas.add_child(line)
 
 func _add_map_node(node_info: Dictionary, point: Vector2) -> void:
+	var node_id: String = String(node_info.get("id", ""))
+	var node_type: String = String(node_info.get("type", "small_town"))
+	var style: Dictionary = NODE_SIZE_MAP.get(node_type, {"dot": 5, "font": 9, "show_label": false})
+	var dot_size: int = int(style.get("dot", 5))
+	var font_size: int = int(style.get("font", 9))
+	var show_label: bool = bool(style.get("show_label", false))
+
+	var is_focus := node_id == String(GameState.napoleon_location)
+	# 拿破仑所在节点和关键战场始终显示标签
+	if is_focus:
+		show_label = true
+
 	var container := Control.new()
-	container.position = point - Vector2(20.0, 20.0)
-	container.size = Vector2(120.0, 44.0)
+	var half_dot := dot_size / 2.0
+	container.position = point - Vector2(half_dot, half_dot)
+	container.size = Vector2(140.0, 44.0)
 	container.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
-	var is_focus := String(node_info.get("id", "")) == String(GameState.napoleon_location)
-
+	# 节点圆点
 	var dot := ColorRect.new()
-	dot.position = Vector2(0.0, 6.0)
-	dot.size = Vector2(12.0, 12.0)
-	dot.color = CentJoursTheme.COLOR["gold"] if is_focus else Color(0.42, 0.54, 0.70, 0.85)
+	dot.position = Vector2.ZERO
+	dot.size = Vector2(dot_size, dot_size)
+	if is_focus:
+		dot.color = CentJoursTheme.COLOR["gold"]
+	elif node_type == "capital":
+		dot.color = Color(0.85, 0.75, 0.50, 0.95)
+	elif node_type in ["major_city", "fortress_city"]:
+		dot.color = Color(0.55, 0.65, 0.80, 0.90)
+	else:
+		dot.color = Color(0.42, 0.54, 0.70, 0.65)
 	container.add_child(dot)
 
-	var ring := ColorRect.new()
-	ring.position = Vector2(-4.0, 2.0)
-	ring.size = Vector2(20.0, 20.0)
-	ring.color = Color(1, 1, 1, 0.05)
-	ring.visible = is_focus
-	container.add_child(ring)
+	# 拿破仑位置光环
+	if is_focus:
+		var ring := ColorRect.new()
+		ring.position = Vector2(-4.0, -4.0)
+		ring.size = Vector2(dot_size + 8, dot_size + 8)
+		ring.color = Color(1, 0.85, 0.3, 0.12)
+		container.add_child(ring)
 
-	var label := Label.new()
-	label.position = Vector2(18.0, 0.0)
-	label.text = String(node_info.get("label", "Node"))
-	label.add_theme_color_override("font_color",
-		CentJoursTheme.COLOR["gold_bright"] if is_focus else CentJoursTheme.COLOR["text_heading"])
-	label.add_theme_font_size_override("font_size", 11 if is_focus else 10)
-	container.add_child(label)
+	# 节点名称标签（用法语名 name_fr，回退到 name）
+	if show_label:
+		var display_name: String = String(node_info.get("name_fr", node_info.get("name", node_id)))
+		var label := Label.new()
+		label.position = Vector2(dot_size + 4.0, -2.0)
+		label.text = display_name
+		label.add_theme_color_override("font_color",
+			CentJoursTheme.COLOR["gold_bright"] if is_focus else CentJoursTheme.COLOR["text_heading"])
+		label.add_theme_font_size_override("font_size", font_size + 1 if is_focus else font_size)
+		container.add_child(label)
 
+	# 拿破仑位置标注
 	if is_focus:
 		var status := Label.new()
-		status.position = Vector2(18.0, 16.0)
-		status.text = "Napoleon"
+		status.position = Vector2(dot_size + 4.0, font_size + 2.0)
+		status.text = "Napoléon"
 		status.add_theme_color_override("font_color", CentJoursTheme.COLOR["gold_dim"])
-		status.add_theme_font_size_override("font_size", 9)
+		status.add_theme_font_size_override("font_size", 8)
 		container.add_child(status)
 
 	_map_canvas.add_child(container)
@@ -421,20 +563,49 @@ func _on_confirm_pressed() -> void:
 	# "rest" policy_id 和空选均映射到 rest 行动（ADR-004）
 	if _selected_policy_id != "" and _selected_policy_id != "rest":
 		TurnManager.submit_action("policy", {"policy_id": _selected_policy_id})
+		# 标记已执行的政策卡片为冷却态（本回合视觉反馈）
+		_mark_card_cooldown(_selected_policy_id)
 	else:
 		TurnManager.submit_action("rest", {})
 	_selected_policy_id = ""
 	_update_card_selection()
 
-## 回合结束：刷新 UI，清空叙事暂存，启动下一回合的 Dawn + Action
+## 将指定政策卡片标记为冷却态（已执行标识）
+func _mark_card_cooldown(policy_id: String) -> void:
+	for child in _decision_row.get_children():
+		if child is DecisionCard and child.policy_id == policy_id:
+			child.on_cooldown = true
+			child.cooldown_days = 1
+			child.modulate = Color(1, 1, 1, 0.45)
+			child._apply_current_style()
+
+## 回合结束：保存旧数值快照 → 刷新 UI → 启动下一回合
 func _on_turn_ended(_new_day: int) -> void:
+	_snapshot_prev_values()
 	_refresh_ui()
 	call_deferred("_begin_next_turn")
 
+## 保存当前数值作为下回合趋势对比基准
+func _snapshot_prev_values() -> void:
+	_prev_faction_support = GameState.faction_support.duplicate()
+	_prev_legitimacy = GameState.legitimacy
+	_prev_troops = GameState.total_troops
+	_prev_morale = GameState.avg_morale
+
 func _begin_next_turn() -> void:
+	_reset_card_cooldowns()
 	TurnManager.start_new_turn()
 	TurnManager.begin_action_phase()
 	_set_tray_interactive(true)
+
+## 新回合开始时重置所有卡片冷却态
+func _reset_card_cooldowns() -> void:
+	for child in _decision_row.get_children():
+		if child is DecisionCard:
+			child.on_cooldown = false
+			child.cooldown_days = 0
+			child.modulate = Color(1, 1, 1, 1.0)
+			child._apply_current_style()
 
 ## 司汤达日记：进入滚动日志，金色调以区分于普通后果文本（ADR-004）
 func _on_stendhal_entry(day: int, text: String) -> void:
@@ -478,9 +649,9 @@ func _character_display_name(hero_id: String) -> String:
 	return String(char_data.get("name", hero_id.capitalize()))
 
 func _napoleon_location_label() -> String:
-	for node_info in MAP_NODE_LAYOUT:
+	for node_info in _map_nodes:
 		if String(node_info.get("id", "")) == String(GameState.napoleon_location):
-			return String(node_info.get("label", "Unknown"))
+			return String(node_info.get("name_fr", node_info.get("name", "Unknown")))
 	return String(GameState.napoleon_location)
 
 func _format_number(value: int) -> String:
