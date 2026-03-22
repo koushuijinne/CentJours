@@ -1,6 +1,6 @@
 # Cent Jours — 开发优先级计划
 
-> **更新**: 2026-03-22 v25
+> **更新**: 2026-03-22 v26
 > **当前分支**: `claude/review-project-plan-LKKTR`
 
 ---
@@ -159,9 +159,10 @@ M6  打磨发布   ░░░░░░░░░░░░   0%
 | GameState 合规清理 | `game_state.gd` | — | ✅ v2 stub 违规方法，Bug修复（信号双发） |
 | 忠诚度引擎暴露 | `lib.rs` | — | ✅ 新增 `get_all_loyalties()` |
 | 忠诚度同步 | `turn_manager.gd` | — | ✅ v3 `_sync_state_from_engine()` loyalty 闭环 + 全契约注释 |
-| 架构决策记录 | `docs/decisions/` | — | ✅ ADR-001/002/003（Rust+GDExtension、只读缓存、原生类集成边界） |
+| 架构决策记录 | `docs/decisions/` | — | ✅ ADR-001/002/003/005（Rust+GDExtension、只读缓存、原生类集成边界、冷却接口暴露） |
 | 阈值常量 DRY 修复 | `order_deviation.rs` + `game_state.gd` | — | ✅ DEFECTION_THRESHOLD → re-export LOYALTY_CRISIS_THRESHOLD |
 | 将领技能数据驱动化 | `network.rs` + `state.rs` | 4 | ✅ TDD，修复 davout/soult 数值错误，107 tests |
+| 政策冷却接口暴露 | `system.rs` + `lib.rs` + `turn_manager.gd` + `game_state.gd` + `political_system.gd` + `main_menu.gd` | — | ✅ ADR-005，`get_state()` 返回 `cooldowns`，前端从 GameState 缓存读取真实冷却天数，删除硬编码与前端自行标记逻辑 |
 
 **合计**: 127 tests 全部通过
 

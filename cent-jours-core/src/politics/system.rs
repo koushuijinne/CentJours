@@ -216,6 +216,11 @@ impl PoliticsState {
         self.actions_remaining = if self.legitimacy >= 70.0 { 3 } else { 2 };
     }
 
+    /// 获取政策冷却表（policy_id → 剩余天数），供 GDExtension 接口读取
+    pub fn cooldowns(&self) -> &HashMap<String, u8> {
+        &self.cooldowns
+    }
+
     /// 检测危机：返回跌破 CRISIS_THRESHOLD 的势力列表
     pub fn critical_factions(&self) -> Vec<&str> {
         FACTION_IDS.iter()

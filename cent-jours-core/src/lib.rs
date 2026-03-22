@@ -357,6 +357,14 @@ mod gdext_bindings {
                 factions.insert(k.as_str(), *v);
             }
             d.insert("factions", factions);
+
+            // 政策冷却：{ policy_id(String): 剩余天数(int) }
+            let mut cooldowns = Dictionary::new();
+            for (id, remaining) in e.politics.cooldowns() {
+                cooldowns.insert(id.as_str(), *remaining as i64);
+            }
+            d.insert("cooldowns", cooldowns);
+
             d
         }
 

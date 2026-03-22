@@ -25,49 +25,49 @@ const NOIR_EFFECTS: Dictionary = {
 const POLICY_META: Dictionary = {
 	"conscription": {
 		"name": "颁布征兵令",
-		"cost": 1, "cooldown": 5,
+		"cost": 1,
 		"rouge_noir_hint": "+5 Rouge",
 		"summary": "增加军事支持，削弱民众和自由派"
 	},
 	"constitutional_promise": {
 		"name": "承诺宪政改革",
-		"cost": 1, "cooldown": 10,
+		"cost": 1,
 		"rouge_noir_hint": "-8 Noir",
 		"summary": "大幅提升自由派支持，削弱贵族"
 	},
 	"public_speech": {
 		"name": "发表公开演说",
-		"cost": 1, "cooldown": 3,
+		"cost": 1,
 		"rouge_noir_hint": "+3 Rouge",
 		"summary": "提升民众支持，小幅削弱贵族"
 	},
 	"grant_titles": {
 		"name": "授予贵族头衔",
-		"cost": 1, "cooldown": 7,
+		"cost": 1,
 		"rouge_noir_hint": "-5 Noir",
 		"summary": "提升贵族支持，削弱自由派和民众"
 	},
 	"reduce_taxes": {
 		"name": "减税措施",
-		"cost": 1, "cooldown": 8,
+		"cost": 1,
 		"rouge_noir_hint": "±0",
 		"summary": "提升民众和自由派支持，经济损耗"
 	},
 	"increase_military_budget": {
 		"name": "增加军费",
-		"cost": 1, "cooldown": 5,
+		"cost": 1,
 		"rouge_noir_hint": "+4 Rouge",
 		"summary": "大幅提升军队支持，削弱自由派，经济重度损耗"
 	},
 	"secret_diplomacy": {
 		"name": "秘密外交（分化反法同盟）",
-		"cost": 2, "cooldown": 15,
+		"cost": 2,
 		"rouge_noir_hint": "-3 Noir",
 		"summary": "花费2行动点，有概率延缓反法同盟集结"
 	},
 	"print_money": {
 		"name": "印钞应急",
-		"cost": 1, "cooldown": 20,
+		"cost": 1,
 		"rouge_noir_hint": "+8 Rouge",
 		"summary": "短期经济救急，长期通胀削弱所有派系"
 	}
@@ -75,20 +75,21 @@ const POLICY_META: Dictionary = {
 
 # ── 查询接口（供 UI 调用）────────────────────────────────
 
-## 获取政策显示列表，从 GameState 读取可用性（行动点与冷却由 Rust 管理）
-## engine_state: engine.get_state() 的返回值，用于判断行动点
+## 获取政策显示列表，冷却剩余天数从 GameState.policy_cooldowns 读取（Rust 权威数据）
 func get_policy_list(actions_remaining: int) -> Array:
 	var result: Array = []
 	for policy_id in POLICY_META:
 		var meta: Dictionary = POLICY_META[policy_id]
+		# 从 GameState 缓存读取真实冷却剩余天数（由 TurnManager 从 Rust 引擎同步）
+		var cd_remaining: int = int(GameState.policy_cooldowns.get(policy_id, 0))
 		result.append({
-			"id":             policy_id,
-			"name":           meta["name"],
-			"cost":           meta["cost"],
-			"cooldown":       meta["cooldown"],
-			"rouge_noir_hint": meta["rouge_noir_hint"],
-			"summary":        meta["summary"],
-			"affordable":     actions_remaining >= meta["cost"]
+			"id":               policy_id,
+			"name":             meta["name"],
+			"cost":             meta["cost"],
+			"cooldown_remaining": cd_remaining,
+			"rouge_noir_hint":  meta["rouge_noir_hint"],
+			"summary":          meta["summary"],
+			"affordable":       actions_remaining >= meta["cost"] and cd_remaining == 0
 		})
 	return result
 

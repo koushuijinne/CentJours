@@ -48,6 +48,7 @@ var faction_support: Dictionary = {
 var legitimacy: float = 50.0        # 整体合法性，来自四势力的加权平均
 var economic_index: float = 50.0    # 经济状况，影响民心和军费
 var actions_remaining: int = 2      # 每回合可执行的政策行动数
+var policy_cooldowns: Dictionary = {}  # 政策冷却缓存（policy_id → 剩余天数），由 TurnManager 从引擎同步
 
 # ── 将领状态 ──────────────────────────────────────────
 var characters: Dictionary = {}     # character_id -> CharacterData（运行时状态）

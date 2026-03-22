@@ -134,6 +134,8 @@ func _run_dusk_phase(action_type: String, params: Dictionary) -> void:
 ##   outcome(String)  — 结局标识（游戏进行中为 "in_progress"）
 ##   factions(Dictionary) — { faction_id(String): support(float) }
 ##     faction_id 取值: "liberals"|"nobility"|"populace"|"military"
+##   cooldowns(Dictionary) — { policy_id(String): remaining_days(int) }
+##     仅包含冷却中的政策，归零后自动移除
 func _sync_state_from_engine() -> void:
 	_ensure_engine()
 	var state := engine.get_state()
@@ -148,6 +150,9 @@ func _sync_state_from_engine() -> void:
 	GameState.avg_morale       = float(state.get("morale",  70.0))
 	GameState.avg_fatigue      = float(state.get("fatigue", 20.0))
 	GameState.victories        = int(state.get("victories", 0))
+
+	# 同步政策冷却（来自 Rust PoliticsState.cooldowns）
+	GameState.policy_cooldowns = state.get("cooldowns", {})
 
 	var factions: Dictionary = state.get("factions", {})
 	for faction_id in factions:

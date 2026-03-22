@@ -312,6 +312,7 @@ func _refresh_ui() -> void:
 	# 叙事面板有独立更新路径（_append_narrative / _on_policy_selected），不在此处刷新（ADR-004）
 	_apply_rn_atmosphere()
 	_update_card_selection()
+	_refresh_card_cooldowns()
 	# 数值变化闪烁动效（对比上回合快照）
 	_flash_value_change(_legitimacy_value, GameState.legitimacy, _prev_legitimacy)
 	_flash_value_change(_troops_value, float(GameState.total_troops), float(_prev_troops))
@@ -563,20 +564,19 @@ func _on_confirm_pressed() -> void:
 	# "rest" policy_id 和空选均映射到 rest 行动（ADR-004）
 	if _selected_policy_id != "" and _selected_policy_id != "rest":
 		TurnManager.submit_action("policy", {"policy_id": _selected_policy_id})
-		# 标记已执行的政策卡片为冷却态（本回合视觉反馈）
-		_mark_card_cooldown(_selected_policy_id)
 	else:
 		TurnManager.submit_action("rest", {})
 	_selected_policy_id = ""
 	_update_card_selection()
 
-## 将指定政策卡片标记为冷却态（已执行标识）
-func _mark_card_cooldown(policy_id: String) -> void:
+## 从 GameState.policy_cooldowns 刷新所有卡片的冷却状态（Rust 引擎权威数据）
+func _refresh_card_cooldowns() -> void:
 	for child in _decision_row.get_children():
-		if child is DecisionCard and child.policy_id == policy_id:
-			child.on_cooldown = true
-			child.cooldown_days = 1
-			child.modulate = Color(1, 1, 1, 0.45)
+		if child is DecisionCard and child.policy_id != "rest":
+			var cd: int = int(GameState.policy_cooldowns.get(child.policy_id, 0))
+			child.on_cooldown = cd > 0
+			child.cooldown_days = cd
+			child.modulate = Color(1, 1, 1, 0.45) if cd > 0 else Color(1, 1, 1, 1.0)
 			child._apply_current_style()
 
 ## 回合结束：保存旧数值快照 → 刷新 UI → 启动下一回合
@@ -593,19 +593,9 @@ func _snapshot_prev_values() -> void:
 	_prev_morale = GameState.avg_morale
 
 func _begin_next_turn() -> void:
-	_reset_card_cooldowns()
 	TurnManager.start_new_turn()
 	TurnManager.begin_action_phase()
 	_set_tray_interactive(true)
-
-## 新回合开始时重置所有卡片冷却态
-func _reset_card_cooldowns() -> void:
-	for child in _decision_row.get_children():
-		if child is DecisionCard:
-			child.on_cooldown = false
-			child.cooldown_days = 0
-			child.modulate = Color(1, 1, 1, 1.0)
-			child._apply_current_style()
 
 ## 司汤达日记：进入滚动日志，金色调以区分于普通后果文本（ADR-004）
 func _on_stendhal_entry(day: int, text: String) -> void:
