@@ -1,7 +1,7 @@
 # Cent Jours — 开发优先级计划
 
-> **更新**: 2026-03-22 v26
-> **当前分支**: `claude/review-project-plan-LKKTR`
+> **更新**: 2026-03-22 v27
+> **当前分支**: `claude/review-project-plan-vgQTN`
 
 ---
 
@@ -260,68 +260,195 @@ M6  打磨发布   ░░░░░░░░░░░░   0%
 
 ---
 
-## 优先级 A — 当前轮（主场景已可展示，进入真实绑定期）
+## 离”真正可玩”还有多远？— 优先级路线图（v27 全库扫描）
 
-### 全库扫描（2026-03-21，v24 重新扫描）
+### 现状总览
 
-**当前无 P0/P1 架构违规。v25 本轮修复了 ①③，②④ 进入下一优先级：**
+| 维度 | 已完成 | 缺失 |
+|------|--------|------|
+| **回合流程** | Dawn→Action→Dusk 闭环 ✅ | — |
+| **政策系统** | Rust 8 条 ✅ / GDExt 仅暴露 5 条 / UI 仅显示 4 条 | 3 条 GDExt match 缺失 + 4 条 UI 卡片缺失 |
+| **战斗系统** | Rust resolve_battle ✅ / GDExt process_day_battle ✅ | **无 UI**：选将领/兵力/地形 全无 |
+| **行军系统** | Rust march.rs 移动/补给/Dijkstra ✅ | **完全断线**：无 PlayerAction::March、无 GDExt API、无 UI |
+| **忠诚度强化** | Rust process_boost_loyalty ✅ / GDExt ✅ | **无 UI**：无法选择将领 |
+| **将领偏差** | Rust order_deviation ✅ / GDExt calculate_deviation ✅ | 未接入战斗流程 |
+| **叛逃系统** | Ney/Grouchy 概率模型已写 | 未在主循环调用 |
+| **联军** | 线性增长 40k→200k | 无事件波动/无击败机制 |
+| **游戏结束** | 引擎检测 3 种结局 ✅ | UI 仅一行文字，无重启 |
+| **存档** | SaveManager to_json/load_from_json ✅ | 无 UI 入口 |
+| **冷却显示** | ADR-005 已完成 ✅ | — |
 
-| # | 文件 / 模块 | 问题 | 严重程度 |
-|---|------------|------|---------|
-| ① | `src/ui/main_menu.gd` | ~~顶栏仍只读取 `GameState` 当前值，尚未接入 `TurnManager` 驱动的一天流程刷新~~ **✅ 已修复**：`TurnManager` 注册为 autoload，`_start_game()` 引导真实回合 | ✅ 已修复 |
-| ② | `src/ui/main_menu.gd` Sidebar | 右侧边栏叙事信号已接入（`stendhal_diary_entry` / `micro_narrative_shown`），但忠诚度仍显示固定3名将领，派系无趋势箭头 | 🟡 P2 前端 |
-| ③ | `src/ui/main_menu.gd` Decision Tray | ~~卡片已可见，但仍未触发 `submit_action()` 或 `policy_enacted` 闭环~~ **✅ 已修复**：确认按钮接入 `submit_action()`，回合闭环打通 | ✅ 已修复 |
-| ④ | `src/ui/main_menu.gd` Map Area | 地图仍为静态战略感占位，尚未读取 `map_nodes.json` 做数据驱动布局 | 🟢 P3 前端 |
-
----
-
-### ① 顶栏数据绑定升级 🟡 P2
-
-**目标**：让 Top Bar 从“读取初始缓存”升级到“跟随真实回合刷新”。
-
-**文件**：`src/ui/main_menu.gd` + `src/core/turn_manager.gd`
-
-**要求**：
-- 由 `TurnManager.start_new_turn()` 驱动 Dawn 初始同步
-- 顶栏跟随 `EventBus.phase_changed` / `legitimacy_changed` / `loyalty_changed` 刷新
-- 至少验证一次 `Rest` 后数值可见变化
+> **强化将领机制说明**：`process_boost_loyalty(general_id)` 消耗 5 点合法性，目标将领忠诚度 +8。前置条件：合法性 ≥ 10。本质是拿破仑用政治资本换将领忠心。
 
 ---
 
-### ② Sidebar 占位升级 🟡 P2
+### Tier 0 — 快速修复（1 轮，解锁现有系统）
 
-**目标**：把边栏从占位摘要变成真实信息承载区。
+> 不需要新架构，只是接通已有管线。
 
-**文件**：`src/ui/main_menu.gd`
+#### 0.1 GDExt 补全 3 条缺失政策 [S]
+**文件**: `cent-jours-core/src/lib.rs` (约 L314-321)
+- `process_day_policy()` 的 match 添加 `grant_titles`、`secret_diplomacy`、`print_money` 三个分支
+- 同步更新蒙特卡洛 AI 策略覆盖（`simulation/monte_carlo.rs`）
+- `cargo test` 验证
 
-**要求**：
-- 展示最近历史事件 ID 与司汤达文本
-- 扩展将领摘要，不止 3 名固定角色
-- 让局势摘要包含派系趋势而不是纯静态拼接
+#### 0.2 UI 显示全部 8 张政策卡片 [S]
+**文件**: `src/ui/main_menu.gd` (L7-12 `PRIORITY_POLICY_IDS`)
+- 扩展为 8 条 policy ID（新增 `grant_titles`, `reduce_taxes`, `secret_diplomacy`, `print_money`）
+- 为新增卡片添加 emoji 和效果描述
+- 若空间不足可改为 ScrollContainer 横向滚动
 
----
+#### 0.3 文档同步 [S]
 
-### ③ Decision Tray 接入行动闭环 🟡 P2
-
-**目标**：让卡片从“会亮”变成“能推进一天”。
-
-**文件**：`src/ui/main_menu.gd` + `src/core/turn_manager.gd`
-
-**要求**：
-- 选择卡片后能提交对应 policy id
-- 处理选中态、不可用态和结果刷新
-- 与 `engine.process_day_policy()` 的真实可用政策保持一致
+**Tier 0 完成标志**: 玩家能使用全部 8 种政策，包括 2 行动点的秘密外交。
 
 ---
 
-## 优先级 B — 视觉与地图深化
+### Tier 1 — 最小可玩（2-3 轮，核心玩法闭环）
 
-| 任务 | 说明 |
-|------|------|
-| 地图区读取 `map_nodes.json` | 用真实节点替换手写坐标 |
-| `rn_slider.gd` 轮询优化 | 从 `_process` 过渡到更明确的状态刷新机制 |
-| Sidebar 叙事样式 | 把事件/日记做成真正的阅读面板而非单段文本 |
-| 主场景视觉打磨 | 分隔线、字号层级、地图光效、托盘 hover 反馈 |
+> 玩家能战斗、能强化忠诚、游戏能正常结束和重来。
+> **这是第一个”真正可玩”的里程碑。**
+
+#### 1.1 战斗选择 UI [M]
+**新文件**: `src/ui/dialogs/battle_setup_dialog.gd`
+**修改**: `src/ui/main_menu.gd`
+
+- 决策托盘新增”发动战役”卡片
+- 点击后弹出 PopupPanel：
+  - 将领下拉（从 `GameState.characters` 筛选 role=marshal）
+  - 兵力滑块（min 1000, max GameState.total_troops）
+  - 地形选择（plains/hills/forest/urban）
+  - 确认/取消
+- 确认后调 `TurnManager.submit_action(“battle”, {general_id, troops, terrain})`
+
+#### 1.2 战斗结果展示 [S]
+**修改**: `src/ui/main_menu.gd` / `src/core/turn_manager.gd`
+
+- 从 `engine.get_last_report()` 读取叙事文本展示
+- 对比战前战后 troops/morale 差值，在顶栏闪烁
+
+#### 1.3 忠诚度强化 UI [S]
+**修改**: `src/ui/main_menu.gd`
+
+- 决策托盘新增”强化将领”卡片（消耗 5 合法性 → 忠诚度 +8）
+- 点击后弹出将领列表，选中 → 确认 → `TurnManager.submit_action(“boost_loyalty”, {general_id})`
+
+#### 1.4 游戏结束画面 [S]
+**修改**: `src/ui/main_menu.gd` `_on_game_over()`
+
+- 全屏半透明遮罩 + 居中 PanelContainer
+- 结局标题（NapoleonVictory / WaterlooHistorical / WaterlooDefeat / PoliticalCollapse / MilitaryAnnihilation）
+- 最终统计（天数、合法性、胜场、兵力）
+- “重新开始”按钮
+
+**Tier 1 完成标志**: 玩家每回合能选择”休整 / 政策 / 战斗 / 强化忠诚”四种行动，游戏结束时看到结局画面并可重来。
+
+---
+
+### Tier 2 — 战略纵深（3-4 轮，空间维度）
+
+> 行军系统接入，玩家决策从”选什么政策”扩展到”去哪里、何时打”。
+
+#### 2.1 Rust: PlayerAction::March + 引擎集成 [L]
+**文件**: `cent-jours-core/src/engine/state.rs`
+
+- 新增 `PlayerAction::March { target_node: String }`
+- 新增 `process_march()` → 调用 `battle/march.rs` 的 `move_army()`
+- `GameEngine` 新增 `pub napoleon_location: String` 字段
+- `SaveState` 增加位置字段
+- TDD：行军测试（移动到相邻节点、非相邻失败、疲劳变化）
+
+#### 2.2 GDExt: 暴露行军 API [M]
+**文件**: `cent-jours-core/src/lib.rs`
+
+- 新增 `process_day_march(target_node: GString)`
+- `get_state()` 增加 `napoleon_location` 字段
+- 新增 `get_adjacent_nodes() -> Array<GString>`
+
+#### 2.3 前端: 地图点击行军 [M]
+**文件**: `src/ui/main_menu.gd`
+
+- 地图节点添加点击事件 → 高亮可达节点 → 确认行军
+- 决策托盘新增”行军”卡片，点击后切换到地图交互模式
+- `TurnManager.submit_action(“march”, {target_node})`
+
+#### 2.4 行军与战斗关联 [S]
+- 战斗地形从当前位置的 `map_nodes.json` 节点 `type` 推断
+- 行军疲劳影响下一次战斗结果
+
+**Tier 2 完成标志**: 玩家在地图上移动拿破仑，行军消耗疲劳，到达目标后发起战斗。
+
+---
+
+### Tier 3 — 深度与沉浸（4-5 轮，可分批做）
+
+> 让已实现但未接入的系统发挥作用。
+
+#### 3.1 命令偏差接入战斗 [M]
+**文件**: `engine/state.rs` `process_battle()`
+- 战斗前调 `calculate_deviation()` 影响将领表现
+- 前端战报展示偏差叙事
+
+#### 3.2 叛逃/倒戈触发 [M]
+**文件**: `engine/state.rs` `dusk_settlement()`
+- 每日检查 `NeyDefectionCondition` / `GrouchyArrivalCondition`
+- 忠诚度低于阈值时触发叛逃
+
+#### 3.3 联军动态化 [M]
+**文件**: `engine/state.rs` `coalition_force()`
+- 战败后联军士气/兵力下降
+- `apply_event_effects()` 处理 `coalition_troops_delta`
+
+#### 3.4 存档/读档 UI [S]
+**文件**: `src/ui/main_menu.gd`
+- 顶栏增加存档/读档按钮 + 确认对话框
+
+#### 3.5 事件效果补完 [S]
+**文件**: `engine/state.rs` `apply_event_effects()`
+- 处理 `coalition_troops_delta`、`paris_security_bonus`、`political_stability_bonus`
+
+**Tier 3 完成标志**: 将领会叛逃、命令会偏差、联军会因败仗动摇、玩家可存档。
+
+---
+
+### 总量估算
+
+| Tier | 改动范围 | 复杂度 | 预计轮次 |
+|------|---------|--------|---------|
+| **Tier 0** | GDExt match 补 3 行 + GDScript 常量扩展 | S | 1 轮 |
+| **Tier 1** | 战斗对话框 + 忠诚度弹窗 + 结束画面 | M | 2-3 轮 |
+| **Tier 2** | Rust 新 Action + GDExt + 地图交互 | L | 3-4 轮 |
+| **Tier 3** | 5 个独立子任务 | M×5 | 4-5 轮 |
+
+**到 Tier 1 = 真正可玩（~4 轮）** / **到 Tier 2 = 有战略深度（~8 轮）** / **到 Tier 3 = 完整体验（~13 轮）**
+
+### 依赖关系
+
+```
+Tier 0 ──→ Tier 1 ──→ Tier 2 ──→ Tier 3
+                                    ↑
+            Tier 1.1 ───────→ Tier 2.4 (战斗需要位置)
+            Tier 2.1 ───────→ Tier 3.1 (偏差需要行军距离)
+            Tier 2.1 ───────→ Tier 3.2 (叛逃需要位置上下文)
+```
+
+### 不在本路线图范围
+
+- M5 美术资源替换（emoji → 真实纹理）
+- M6 BGM/音效
+- 多语言 / 多存档槽 / Steam 集成 / 教程
+
+### 关键文件清单
+
+| 文件 | Tier | 改动类型 |
+|------|------|---------|
+| `cent-jours-core/src/lib.rs` | 0, 2 | 补政策 match + 行军 API |
+| `cent-jours-core/src/engine/state.rs` | 2, 3 | March Action + 偏差/叛逃 |
+| `cent-jours-core/src/simulation/monte_carlo.rs` | 0 | AI 策略补全 |
+| `src/ui/main_menu.gd` | 0, 1, 2 | 卡片 + 对话框 + 地图交互 |
+| `src/ui/dialogs/battle_setup_dialog.gd` | 1 | 新建 |
+| `src/core/turn_manager.gd` | 2 | march 分支 |
+| `src/core/game_state.gd` | 2 | napoleon_location |
 
 ---
 
@@ -334,6 +461,22 @@ M6  打磨发布   ░░░░░░░░░░░░   0%
 | 主场景四区骨架可见 | ✅ 完成 |
 | `RougeNoirSlider` / `DecisionCard` 已接入正式入口 | ✅ 完成 |
 | 完整回合流程端到端测试 | ✅ 完成（TurnManager autoload + confirm button 闭环） |
+
+---
+
+## 本轮完成摘要（本轮 v27，2026-03-22）
+
+| # | 文件 | 处理结果 |
+|---|------|---------|
+| ① | `docs/dev_plan.md` | ✅ 全库前后端扫描，替换过期 Priority A/B 为 Tier 0-3 可玩性路线图 |
+| ② | `plan.md` | ✅ 同步更新里程碑状态 |
+
+**分析发现：**
+- GDExt `process_day_policy()` 仅暴露 5/8 政策（grant_titles/secret_diplomacy/print_money 缺失）
+- 战斗/行军/忠诚度强化 3 大核心行动均无 UI 入口
+- 行军系统 Rust→GDExt→UI 全链路断线（无 PlayerAction::March）
+- 游戏结束仅一行文字，无重启
+- 定义 Tier 0-3 路线图：~4 轮到可玩，~8 轮到有深度，~13 轮到完整体验
 
 ---
 
