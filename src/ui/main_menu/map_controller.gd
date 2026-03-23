@@ -42,6 +42,8 @@ var _map_node_controls_by_id: Dictionary = {}
 var _map_edge_lines_by_node: Dictionary = {}
 var _map_rebuild_in_progress: bool = false
 var _map_rebuild_pending: bool = false
+var _march_origin_node_id: String = ""
+var _march_target_node_ids: Array[String] = []
 
 
 func configure(
@@ -224,6 +226,31 @@ func get_map_nodes() -> Array:
 
 func get_map_edges() -> Array:
 	return _map_edges.duplicate(true)
+
+
+## 获取某节点的直接相邻节点（供行军目标校验使用）
+func get_adjacent_node_ids(node_id: String) -> Array:
+	if not _map_adjacency_by_node.has(node_id):
+		return []
+	return Array(_map_adjacency_by_node[node_id]).duplicate()
+
+
+## 设置行军预览：突出当前出发点通向的可达节点。
+func set_march_preview(origin_node_id: String, target_node_ids: Array = []) -> void:
+	var normalized_targets := _normalize_node_id_array(target_node_ids)
+	if _march_origin_node_id == origin_node_id and _march_target_node_ids == normalized_targets:
+		return
+	_march_origin_node_id = origin_node_id
+	_march_target_node_ids = normalized_targets
+	request_map_rebuild()
+
+
+func clear_march_preview() -> void:
+	if _march_origin_node_id == "" and _march_target_node_ids.is_empty():
+		return
+	_march_origin_node_id = ""
+	_march_target_node_ids.clear()
+	request_map_rebuild()
 
 
 func get_map_node(node_id: String) -> Dictionary:
@@ -513,6 +540,9 @@ func _add_map_route(start: Vector2, target: Vector2, highlight_state: int) -> Li
 	line.add_point(target)
 	var base := CentJoursTheme.COLOR["gold_dim"]
 	match highlight_state:
+		3:
+			line.width = 2.5
+			line.default_color = Color(base.r, base.g, base.b, 0.78)
 		2:
 			line.width = 2.8
 			line.default_color = Color(base.r, base.g, base.b, 0.90)
@@ -613,11 +643,13 @@ func _build_label_candidate(node_info: Dictionary) -> Dictionary:
 	var is_selected := node_id == _selected_map_node_id
 	var is_hovered := node_id == _effective_hovered_node_id()
 	var is_focus := node_id == _napoleon_location_id
+	var is_march_target := _is_march_target(node_id)
 	var should_show := (
 		bool(policy.get("always_show", false))
 		or bool(policy.get("default_visible", false))
 		or is_hovered
 		or is_selected
+		or is_march_target
 	)
 	if not should_show:
 		return {}
@@ -632,11 +664,12 @@ func _build_label_candidate(node_info: Dictionary) -> Dictionary:
 		"font_size": font_size,
 		"label_size": label_size,
 		"anchors": _label_anchor_order(policy),
-		"priority": _node_label_priority(policy, is_focus, is_selected, is_hovered),
-		"force_show": bool(policy.get("always_show", false)) or is_selected or is_hovered,
+		"priority": _node_label_priority(policy, is_focus, is_selected, is_hovered, is_march_target),
+		"force_show": bool(policy.get("always_show", false)) or is_selected or is_hovered or is_march_target,
 		"is_focus": is_focus,
 		"is_selected": is_selected,
-		"is_hovered": is_hovered
+		"is_hovered": is_hovered,
+		"is_march_target": is_march_target
 	}
 
 
@@ -651,7 +684,13 @@ func _label_anchor_order(policy: Dictionary) -> Array:
 	return anchors
 
 
-func _node_label_priority(policy: Dictionary, is_focus: bool, is_selected: bool, is_hovered: bool) -> int:
+func _node_label_priority(
+	policy: Dictionary,
+	is_focus: bool,
+	is_selected: bool,
+	is_hovered: bool,
+	is_march_target: bool
+) -> int:
 	var priority := int(policy.get("label_priority", 40))
 	if is_focus:
 		priority += 20
@@ -659,6 +698,8 @@ func _node_label_priority(policy: Dictionary, is_focus: bool, is_selected: bool,
 		priority += 12
 	elif is_hovered:
 		priority += 8
+	elif is_march_target:
+		priority += 4
 	return priority
 
 
@@ -717,6 +758,7 @@ func _add_map_label(candidate: Dictionary, rect: Rect2) -> void:
 	var is_focus: bool = bool(candidate.get("is_focus", false))
 	var is_selected: bool = bool(candidate.get("is_selected", false))
 	var is_hovered: bool = bool(candidate.get("is_hovered", false))
+	var is_march_target: bool = bool(candidate.get("is_march_target", false))
 
 	var label_box := Control.new()
 	label_box.position = rect.position
@@ -727,7 +769,7 @@ func _add_map_label(candidate: Dictionary, rect: Rect2) -> void:
 	name_label.position = Vector2(MainMenuConfigData.MAP_LABEL_PADDING_X, MainMenuConfigData.MAP_LABEL_PADDING_Y - 1.0)
 	name_label.text = _node_label_text(node_info)
 	name_label.add_theme_font_size_override("font_size", int(candidate.get("font_size", 9)))
-	name_label.add_theme_color_override("font_color", _node_label_color(is_focus, is_selected, is_hovered))
+	name_label.add_theme_color_override("font_color", _node_label_color(is_focus, is_selected, is_hovered, is_march_target))
 	label_box.add_child(name_label)
 
 	if is_focus:
@@ -746,6 +788,8 @@ func _route_highlight_state(from_id: String, to_id: String) -> int:
 		return 2 if from_id == _selected_map_node_id or to_id == _selected_map_node_id else 0
 	if _hovered_map_node_id != "":
 		return 1 if from_id == _hovered_map_node_id or to_id == _hovered_map_node_id else 0
+	if _is_march_route(from_id, to_id):
+		return 3
 	return 0
 
 
@@ -754,6 +798,8 @@ func _node_visual_state(node_id: String) -> int:
 		return 2
 	if _selected_map_node_id == "" and node_id == _hovered_map_node_id:
 		return 1
+	if _is_march_target(node_id):
+		return 3
 	return 0
 
 
@@ -778,6 +824,8 @@ func _node_dot_color(node_type: String, node_id: String, visual_state: int) -> C
 		return Color(base.r + 0.12, base.g + 0.10, base.b, 1.0)
 	if visual_state == 1:
 		return Color(base.r + 0.08, base.g + 0.08, base.b, 0.95)
+	if visual_state == 3:
+		return Color(base.r + 0.18, base.g + 0.15, base.b + 0.02, 0.98)
 	return base
 
 
@@ -788,16 +836,43 @@ func _node_ring_color(node_id: String, visual_state: int) -> Color:
 		return Color(CentJoursTheme.COLOR["gold"].r, CentJoursTheme.COLOR["gold"].g, CentJoursTheme.COLOR["gold"].b, 0.18)
 	if visual_state == 1:
 		return Color(CentJoursTheme.COLOR["gold_dim"].r, CentJoursTheme.COLOR["gold_dim"].g, CentJoursTheme.COLOR["gold_dim"].b, 0.14)
+	if visual_state == 3:
+		return Color(CentJoursTheme.COLOR["gold"].r, CentJoursTheme.COLOR["gold"].g, CentJoursTheme.COLOR["gold"].b, 0.16)
 	return Color(0, 0, 0, 0)
 
 
-func _node_label_color(is_focus: bool, is_selected: bool, is_hovered: bool) -> Color:
+func _node_label_color(is_focus: bool, is_selected: bool, is_hovered: bool, is_march_target: bool) -> Color:
 	if is_focus or is_selected:
 		return CentJoursTheme.COLOR["gold_bright"]
 	if is_hovered:
 		return CentJoursTheme.COLOR["text_primary"]
+	if is_march_target:
+		return CentJoursTheme.COLOR["gold_dim"]
 	return CentJoursTheme.COLOR["text_heading"]
 
 
 func _node_label_text(node_info: Dictionary) -> String:
 	return String(node_info.get("name_fr", node_info.get("name", node_info.get("id", ""))))
+
+
+func _is_march_target(node_id: String) -> bool:
+	return _march_target_node_ids.has(node_id)
+
+
+func _is_march_route(from_id: String, to_id: String) -> bool:
+	if _march_origin_node_id == "" or _march_target_node_ids.is_empty():
+		return false
+	return (
+		(from_id == _march_origin_node_id and _march_target_node_ids.has(to_id))
+		or (to_id == _march_origin_node_id and _march_target_node_ids.has(from_id))
+	)
+
+
+func _normalize_node_id_array(target_node_ids: Array) -> Array[String]:
+	var normalized: Array[String] = []
+	for node_id_variant in target_node_ids:
+		var node_id := String(node_id_variant)
+		if node_id == "" or normalized.has(node_id):
+			continue
+		normalized.append(node_id)
+	return normalized

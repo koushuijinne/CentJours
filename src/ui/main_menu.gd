@@ -60,6 +60,7 @@ const MainMenuTrayControllerScript = preload("res://src/ui/main_menu/tray_contro
 
 var _confirm_button: Button       # 执行行动确认按钮（动态创建）
 var _awaiting_action: bool = false  # 是否处于等待玩家操作的 Action Phase
+var _pending_march_target: String = ""  # 行军模式下待确认的目标节点
 # 上回合数值快照，用于派系趋势箭头和数值变化动效
 var _prev_faction_support: Dictionary = {}
 var _prev_legitimacy: float = 50.0
@@ -198,6 +199,7 @@ func _build_decision_cards() -> void:
 		PoliticalSystem.POLICY_META,
 		MainMenuConfigData.POLICY_EMOJIS,
 		MainMenuConfigData.POLICY_EFFECTS,
+		MainMenuConfigData.MARCH_CARD_META,
 		MainMenuConfigData.BATTLE_CARD_META,
 		MainMenuConfigData.BOOST_CARD_META
 	))
@@ -249,6 +251,7 @@ func _connect_signals() -> void:
 	EventBus.game_over.connect(_on_game_over)
 	_map_canvas.resized.connect(_map_controller.rebuild_map_nodes)
 	_map_canvas.gui_input.connect(_map_controller.on_map_canvas_gui_input)
+	_map_controller.selected_node_changed.connect(_on_map_selected_node_changed)
 
 func _refresh_ui() -> void:
 	_day_label.text = "Jour %d" % GameState.current_day
@@ -311,10 +314,13 @@ func _apply_rn_atmosphere() -> void:
 
 func _sync_tray_state() -> void:
 	_tray_controller.set_tray_state(_tray_controller.get_selected_policy_id(), _awaiting_action)
+	_sync_march_preview()
 
 
 func _clear_tray_selection() -> void:
-	_tray_controller.set_tray_state("", _awaiting_action)
+	_pending_march_target = ""
+	_tray_controller.clear_selection()
+	_sync_tray_state()
 
 func _on_confirm_requested(_policy_id: String) -> void:
 	_on_confirm_pressed()
@@ -323,14 +329,33 @@ func _on_policy_selected(policy_id: String) -> void:
 	# 仅在 Action Phase 允许切换选中政策
 	if not _awaiting_action:
 		return
+	_pending_march_target = ""
 	var meta: Dictionary = PoliticalSystem.POLICY_META.get(policy_id, {})
 	_sidebar_controller.set_policy_preview(policy_id, meta)
+	_sync_tray_state()
+
+## 地图节点选中后，若当前处于行军模式，则把它当作候选行军目标。
+func _on_map_selected_node_changed(node_id: String) -> void:
+	if not _awaiting_action or not _is_march_selected():
+		return
+	_update_march_target(node_id)
 
 ## 玩家点击"执行行动"：分派到对应行动类型
 func _on_confirm_pressed() -> void:
 	if not _awaiting_action:
 		return
 	var selected_policy_id := _tray_controller.get_selected_policy_id()
+	if selected_policy_id == "march":
+		if _pending_march_target == "":
+			_sidebar_controller.set_narrative_text(
+				"行军部署\n\n请先在地图上选择一个与当前位置相邻的节点。",
+				CentJoursTheme.COLOR["text_secondary"]
+			)
+			return
+		_set_tray_interactive(false)
+		TurnManager.submit_action("march", {"target_node": _pending_march_target})
+		_clear_tray_selection()
+		return
 	# 战斗和忠诚度强化需要弹窗选择参数，不直接提交
 	if selected_policy_id == "battle":
 		_show_battle_popup()
@@ -351,7 +376,7 @@ func _on_confirm_pressed() -> void:
 func _refresh_card_cooldowns() -> void:
 	_tray_controller.refresh_card_cooldowns(
 		GameState.policy_cooldowns,
-		["rest", "battle", "boost_loyalty"]
+		["rest", "march", "battle", "boost_loyalty"]
 	)
 
 ## 回合结束：保存旧数值快照 → 刷新 UI → 启动下一回合
@@ -424,9 +449,12 @@ func _dialog_stats_snapshot() -> Dictionary:
 	})
 
 func _battle_popup_state() -> Dictionary:
+	var location_node: Dictionary = _map_controller.get_map_node(GameState.napoleon_location)
 	return {
 		MainMenuDialogsControllerScript.STATE_KEY_CHARACTERS: GameState.characters,
 		MainMenuDialogsControllerScript.STATE_KEY_TOTAL_TROOPS: GameState.total_troops,
+		MainMenuDialogsControllerScript.STATE_KEY_LOCATION_LABEL: _napoleon_location_label(),
+		MainMenuDialogsControllerScript.STATE_KEY_LOCATION_TERRAIN: _normalize_battle_terrain(String(location_node.get("terrain", "plains"))),
 	}
 
 func _boost_popup_state() -> Dictionary:
@@ -434,3 +462,62 @@ func _boost_popup_state() -> Dictionary:
 		MainMenuDialogsControllerScript.STATE_KEY_CHARACTERS: GameState.characters,
 		MainMenuDialogsControllerScript.STATE_KEY_LEGITIMACY: GameState.legitimacy,
 	}
+
+## 当前托盘是否正处于行军选点模式。
+func _is_march_selected() -> bool:
+	return _tray_controller.get_selected_policy_id() == "march"
+
+## 根据地图选中的节点更新待确认行军目标与右侧预览文本。
+func _update_march_target(node_id: String) -> void:
+	if node_id == "":
+		_pending_march_target = ""
+		_sidebar_controller.set_policy_preview("march")
+		return
+	if node_id == GameState.napoleon_location:
+		_pending_march_target = ""
+		_sidebar_controller.set_narrative_text(
+			"行军部署\n\n当前已驻扎在 %s，请选择一个相邻节点。" % _napoleon_location_label(),
+			CentJoursTheme.COLOR["text_secondary"]
+		)
+		return
+	if not _can_march_to(node_id):
+		_pending_march_target = ""
+		var node_info: Dictionary = _map_controller.get_map_node(node_id)
+		_sidebar_controller.set_narrative_text(
+			"行军部署\n\n%s 目前不与 %s 直接相邻，无法在一天内抵达。" % [
+				String(node_info.get("name_fr", node_id)),
+				_napoleon_location_label()
+			],
+			CentJoursTheme.COLOR["text_secondary"]
+		)
+		return
+	_pending_march_target = node_id
+	var target_info: Dictionary = _map_controller.get_map_node(node_id)
+	_sidebar_controller.set_narrative_text(
+		"行军部署\n\n从 %s 行军至 %s。\n确认后将推进一天，并同步疲劳与士气。" % [
+			_napoleon_location_label(),
+			String(target_info.get("name_fr", node_id))
+		],
+		CentJoursTheme.COLOR["text_secondary"]
+	)
+
+## 只允许行军到与当前位置直接相邻的节点。
+func _can_march_to(node_id: String) -> bool:
+	return GameState.available_march_targets.has(node_id)
+
+
+func _sync_march_preview() -> void:
+	if _awaiting_action and _is_march_selected():
+		_map_controller.set_march_preview(GameState.napoleon_location, GameState.available_march_targets)
+		return
+	_map_controller.clear_march_preview()
+
+
+func _normalize_battle_terrain(terrain_id: String) -> String:
+	match terrain_id:
+		"river_junction":
+			return "river_crossing"
+		"plains", "hills", "mountains", "forest", "urban", "coastal", "fortress", "ridgeline":
+			return terrain_id
+		_:
+			return "plains"

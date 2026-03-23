@@ -189,11 +189,13 @@ func build_default_card_specs(
 	policy_meta: Dictionary,
 	policy_emojis: Dictionary,
 	policy_effects: Dictionary,
+	march_meta: Dictionary,
 	battle_meta: Dictionary,
 	boost_meta: Dictionary
 ) -> Array[Dictionary]:
 	var specs: Array[Dictionary] = []
 	specs.append(_make_card_spec(rest_meta))
+	specs.append(_make_card_spec(march_meta))
 
 	for policy_id in policy_ids:
 		var meta: Dictionary = policy_meta.get(policy_id, {})

@@ -26,6 +26,8 @@ const STATE_KEY_VICTORIES := "victories"
 const STATE_KEY_TOTAL_TROOPS := "total_troops"
 const STATE_KEY_AVG_MORALE := "avg_morale"
 const STATE_KEY_CHARACTERS := "characters"
+const STATE_KEY_LOCATION_LABEL := "location_label"
+const STATE_KEY_LOCATION_TERRAIN := "location_terrain"
 
 const DEFAULT_GAME_OVER_STATE := {
 	STATE_KEY_CURRENT_DAY: 1,
@@ -161,6 +163,14 @@ func show_battle_popup(state: Dictionary = {}) -> void:
 	title.add_theme_font_size_override("font_size", 18)
 	vbox.add_child(title)
 
+	var location_label := String(state.get(STATE_KEY_LOCATION_LABEL, ""))
+	var default_terrain_id := String(state.get(STATE_KEY_LOCATION_TERRAIN, "plains"))
+	if location_label != "":
+		var location_hint := Label.new()
+		location_hint.text = "当前战场：%s" % location_label
+		location_hint.add_theme_color_override("font_color", CentJoursTheme.COLOR["text_secondary"])
+		vbox.add_child(location_hint)
+
 	var characters: Dictionary = state.get(STATE_KEY_CHARACTERS, {})
 
 	var gen_label := Label.new()
@@ -202,6 +212,8 @@ func show_battle_popup(state: Dictionary = {}) -> void:
 	for tid in MainMenuConfigData.TERRAIN_OPTIONS:
 		terrain_option.add_item(String(MainMenuConfigData.TERRAIN_OPTIONS[tid]))
 		terrain_option.set_item_metadata(terrain_option.item_count - 1, tid)
+		if String(tid) == default_terrain_id:
+			terrain_option.select(terrain_option.item_count - 1)
 	vbox.add_child(terrain_option)
 
 	var btn_row := HBoxContainer.new()

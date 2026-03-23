@@ -36,6 +36,13 @@ pub struct MapGraph {
 }
 
 impl MapGraph {
+    /// 获取某节点的直接相邻节点列表（供 UI 与行军校验复用）
+    pub fn neighbors_of(&self, node_id: &str) -> Vec<String> {
+        self.edges.get(node_id)
+            .map(|neighbors| neighbors.iter().map(|(id, _)| id.clone()).collect())
+            .unwrap_or_default()
+    }
+
     pub fn new(nodes: Vec<MapNode>, edges: Vec<MapEdge>) -> Self {
         let node_map: HashMap<String, MapNode> = nodes
             .into_iter()

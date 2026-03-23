@@ -77,6 +77,16 @@ const BATTLE_CARD_META := {
 	]
 }
 
+const MARCH_CARD_META := {
+	"policy_id": "march",
+	"name": "行军",
+	"emoji": "🧭",
+	"effects": [
+		{"label": "Move", "value": 1, "type": "positive"},
+		{"label": "Fatigue", "value": -10, "type": "positive"}
+	]
+}
+
 const BOOST_CARD_META := {
 	"policy_id": "boost_loyalty",
 	"name": "亲自接见将领",
@@ -113,9 +123,12 @@ const OUTCOME_TEXT := {
 const TERRAIN_OPTIONS := {
 	"plains": "平原",
 	"hills": "丘陵",
+	"mountains": "山地",
 	"forest": "森林",
 	"urban": "城镇",
+	"coastal": "海岸",
 	"river_crossing": "河口",
+	"fortress": "要塞",
 	"ridgeline": "山脊"
 }
 

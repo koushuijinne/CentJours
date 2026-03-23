@@ -53,9 +53,10 @@ func begin_action_phase() -> void:
 	EventBus.phase_changed.emit("action")
 
 ## 玩家提交行动
-## action_type: "battle" | "policy" | "boost_loyalty" | "rest"
+## action_type: "battle" | "march" | "policy" | "boost_loyalty" | "rest"
 ## params 契约（来自 lib.rs CentJoursEngine 各 process_day_* 方法）:
 ##   battle        → { general_id(String), troops(int), terrain(String) }
+##   march         → { target_node(String) }
 ##   policy        → { policy_id(String) }
 ##   boost_loyalty → { general_id(String) }
 ##   rest          → {}
@@ -71,6 +72,7 @@ func _run_dusk_phase(action_type: String, params: Dictionary) -> void:
 	current_phase = Phase.DUSK
 	GameState.current_phase = PHASE_NAMES[Phase.DUSK]
 	EventBus.phase_changed.emit("dusk")
+	var previous_location: String = GameState.napoleon_location
 
 	# ── 调用 Rust 引擎处理完整一天 ──────────────────────
 	match action_type:
@@ -80,6 +82,9 @@ func _run_dusk_phase(action_type: String, params: Dictionary) -> void:
 				int(params.get("troops", 0)),
 				params.get("terrain", "plains")
 			)
+		"march":
+			var target_node: String = params.get("target_node", "")
+			engine.process_day_march(target_node)
 		"policy":
 			var policy_id: String = params.get("policy_id", "")
 			engine.process_day_policy(policy_id)
@@ -91,6 +96,8 @@ func _run_dusk_phase(action_type: String, params: Dictionary) -> void:
 
 	# ── 同步状态 ─────────────────────────────────────
 	_sync_state_from_engine()
+	if action_type == "march" and previous_location != GameState.napoleon_location:
+		EventBus.unit_moved.emit("napoleon_main_force", previous_location, GameState.napoleon_location)
 
 	# ── 叙事报告 ─────────────────────────────────────
 	# engine.get_last_report() 返回键（来自 lib.rs CentJoursEngine::get_last_report）:
@@ -130,6 +137,7 @@ func _run_dusk_phase(action_type: String, params: Dictionary) -> void:
 ##   morale(float)    — 平均士气 0-100
 ##   fatigue(float)   — 平均疲劳 0-100
 ##   victories(int)   — 已赢得战役场次
+##   napoleon_location(String) — 拿破仑当前所在地图节点
 ##   is_over(bool)    — 游戏是否结束
 ##   outcome(String)  — 结局标识（游戏进行中为 "in_progress"）
 ##   factions(Dictionary) — { faction_id(String): support(float) }
@@ -150,6 +158,10 @@ func _sync_state_from_engine() -> void:
 	GameState.avg_morale       = float(state.get("morale",  70.0))
 	GameState.avg_fatigue      = float(state.get("fatigue", 20.0))
 	GameState.victories        = int(state.get("victories", 0))
+	GameState.napoleon_location = String(state.get("napoleon_location", GameState.napoleon_location))
+	GameState.available_march_targets.clear()
+	for node_id in Array(engine.get_adjacent_nodes()):
+		GameState.available_march_targets.append(String(node_id))
 
 	# 同步政策冷却（来自 Rust PoliticsState.cooldowns）
 	GameState.policy_cooldowns = state.get("cooldowns", {})
