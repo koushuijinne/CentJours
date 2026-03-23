@@ -49,11 +49,31 @@ pub struct EventEffects {
     pub napoleon_morale_bonus:          Option<f64>,
 }
 
+/// 事件级别（ADR-008 三级体系）
+#[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum EventTier {
+    /// 重大事件：3–5 段叙事，全屏演出
+    Major,
+    /// 普通事件：2–3 段叙事，侧边通知
+    Normal,
+    /// 微小事件：1–2 段叙事，日志滚动
+    Minor,
+}
+
+impl Default for EventTier {
+    /// 未标注级别的事件默认为 normal
+    fn default() -> Self { Self::Normal }
+}
+
 /// 单个历史事件定义
 #[derive(Debug, Clone, Deserialize)]
 pub struct HistoricalEvent {
     pub id:              String,
     pub label:           String,
+    /// 事件级别（ADR-008），决定叙事段数和前端展示方式
+    #[serde(default)]
+    pub tier:            EventTier,
     pub day_range:       [u32; 2],
     pub trigger:         EventTrigger,
     pub effects:         EventEffects,

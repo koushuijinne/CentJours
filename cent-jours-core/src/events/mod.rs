@@ -1,5 +1,5 @@
 pub mod pool;
 pub use pool::{
-    EventPool, HistoricalEvent, TriggeredEvent,
+    EventPool, EventTier, HistoricalEvent, TriggeredEvent,
     TriggerContext, EventTrigger, EventEffects,
 };
