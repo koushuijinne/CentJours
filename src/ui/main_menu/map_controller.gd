@@ -13,6 +13,12 @@ signal map_data_loaded(success: bool)
 signal map_rebuilt
 signal hovered_node_changed(node_id: String)
 signal selected_node_changed(node_id: String)
+## 行军模式确认信号：玩家在地图上选定了合法目标并请求执行
+signal march_confirmed(target_node: String)
+## 行军模式反馈信号，用于更新侧边栏预览文本
+## text(String)  — 要显示在侧边栏的反馈文本，空串表示恢复默认预览
+## color(Color)  — 文本颜色
+signal march_feedback(text: String, color: Color)
 
 var _map_nodes_path: String = DEFAULT_MAP_NODES_PATH
 var _map_region: String = ""
@@ -44,6 +50,10 @@ var _map_rebuild_in_progress: bool = false
 var _map_rebuild_pending: bool = false
 var _march_origin_node_id: String = ""
 var _march_target_node_ids: Array[String] = []
+# 行军交互状态：是否处于行军选点模式
+var _march_mode_active: bool = false
+# 行军交互状态：玩家当前选中的待确认目标节点 ID
+var _pending_march_target: String = ""
 
 
 func configure(
@@ -876,3 +886,98 @@ func _normalize_node_id_array(target_node_ids: Array) -> Array[String]:
 			continue
 		normalized.append(node_id)
 	return normalized
+
+
+# ── 行军交互状态机 ──────────────────────────────────────────
+# 以下方法管理行军选点模式的 UI 交互。
+# 行军合法性预检只读 GameState.available_march_targets（Rust 权威数据的缓存），
+# 不自行计算邻接关系——Rust move_army() 做最终校验。
+
+## 开启/关闭行军选点模式，并同步地图高亮预览
+func set_march_mode(enabled: bool) -> void:
+	_march_mode_active = enabled
+	if enabled:
+		set_march_preview(GameState.napoleon_location, GameState.available_march_targets)
+	else:
+		_pending_march_target = ""
+		clear_march_preview()
+
+
+## 地图节点被选中时调用：在行军模式下将其作为候选行军目标
+func on_node_selected_for_march(node_id: String) -> void:
+	if not _march_mode_active:
+		return
+	_update_march_target(node_id)
+
+
+## 玩家点击确认时调用：若有合法目标则发射 march_confirmed 信号
+## 返回 true 表示行军命令已发出，false 表示需要先选目标
+func try_confirm_march() -> bool:
+	if _pending_march_target == "":
+		march_feedback.emit(
+			"行军部署\n\n请先在地图上选择一个与当前位置相邻的节点。",
+			CentJoursTheme.COLOR["text_secondary"]
+		)
+		return false
+	march_confirmed.emit(_pending_march_target)
+	return true
+
+
+## 清除行军交互状态（切换政策或回合结束时调用）
+func clear_march_state() -> void:
+	_pending_march_target = ""
+	_march_mode_active = false
+	clear_march_preview()
+
+
+## 获取当前待确认的行军目标节点 ID（空串表示未选定）
+func get_pending_march_target() -> String:
+	return _pending_march_target
+
+
+## 根据地图选中节点更新待确认行军目标，并通过 march_feedback 信号通知侧边栏
+func _update_march_target(node_id: String) -> void:
+	if node_id == "":
+		_pending_march_target = ""
+		# 空串通知编排器恢复默认行军预览
+		march_feedback.emit("", Color.WHITE)
+		return
+	# 当前位置不可作为目标
+	if node_id == GameState.napoleon_location:
+		_pending_march_target = ""
+		var location_label := MainMenuFormattersLib.napoleon_location_label(
+			_map_nodes, GameState.napoleon_location
+		)
+		march_feedback.emit(
+			"行军部署\n\n当前已驻扎在 %s，请选择一个相邻节点。" % location_label,
+			CentJoursTheme.COLOR["text_secondary"]
+		)
+		return
+	# UI 预检：只允许行军到 Rust 引擎提供的相邻节点列表
+	if not GameState.available_march_targets.has(node_id):
+		_pending_march_target = ""
+		var node_info: Dictionary = get_map_node(node_id)
+		var location_label := MainMenuFormattersLib.napoleon_location_label(
+			_map_nodes, GameState.napoleon_location
+		)
+		march_feedback.emit(
+			"行军部署\n\n%s 目前不与 %s 直接相邻，无法在一天内抵达。" % [
+				String(node_info.get("name_fr", node_id)),
+				location_label
+			],
+			CentJoursTheme.COLOR["text_secondary"]
+		)
+		return
+	# 合法目标
+	_pending_march_target = node_id
+	var target_info: Dictionary = get_map_node(node_id)
+	var location_label := MainMenuFormattersLib.napoleon_location_label(
+		_map_nodes, GameState.napoleon_location
+	)
+	march_feedback.emit(
+		"行军部署\n\n从 %s 行军至 %s。\n确认后将推进一天，并同步疲劳与士气。" % [
+			location_label,
+			String(target_info.get("name_fr", node_id))
+		],
+		CentJoursTheme.COLOR["text_secondary"]
+	)

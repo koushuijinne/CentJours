@@ -256,3 +256,15 @@ const REST_CARD_META := {
 }
 
 const NARRATIVE_MAX_ENTRIES: int = 5
+
+## 规范化地形 ID：将 map_nodes.json 中的地形别名映射到 Rust 引擎认可的战斗地形类型
+## 已知别名: river_junction → river_crossing
+## 已知合法值: plains, hills, mountains, forest, urban, coastal, fortress, ridgeline, river_crossing
+static func normalize_battle_terrain(terrain_id: String) -> String:
+	match terrain_id:
+		"river_junction":
+			return "river_crossing"
+		"plains", "hills", "mountains", "forest", "urban", "coastal", "fortress", "ridgeline":
+			return terrain_id
+		_:
+			return "plains"
