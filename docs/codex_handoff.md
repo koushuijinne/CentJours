@@ -10,7 +10,7 @@
 ## 1. 当前项目状态
 
 - Rust 规则层与 Godot 前端已完成基础联调，主循环可跑通，正式入口是 `src/ui/main_menu.tscn`
-- 2026-03-24 复核 `cargo test` 为 **165/165 全通过**
+- 2026-03-24 复核 `cargo test` 为 **166/166 全通过**
 - 当前核心数据基线：`15` 名角色、`41` 个地图节点、`58` 条历史事件（major 16 / normal 35 / minor 7）
 - 行军、战斗、政治、命令偏差、联军动态化、叙事池、单槽存档/读档均已接入
 - 玩家行动结算日志已可见：政策 / 战役 / 行军 / 强化忠诚会显示结构化影响摘要，日志通过 `last_action_events -> GDExt -> TurnManager/EventBus -> MainMenu` 进入侧栏；角色短名已统一来自 `characters.json.display_name`
@@ -41,6 +41,8 @@
 - 本轮已清理 Rust 测试噪音：`characters/network.rs` 补回遗漏测试，`events/pool.rs` 与 `narratives/mod.rs` 的本地化测试名改为模块级允许；`cargo test` 当前只剩硬链接缓存环境提示
 - 本轮已对 `DecisionTray` 做结构性滚动修复：锁定为仅横向滚动，并把卡片行高度 / hover 余量显式纳入布局计算，减少竖向滚动条被误触发的机会；Godot Windows 无头加载已通过
 - 本轮已对 `Map Inspector` 做结构性松绑：加入内部纵向滚动层，并改为响应式宽高，长文本不再只能硬塞进固定 `272x180` 面板
+- 本轮已按 `ADR-008` 对旧事件文案做第一批直写化修订：清掉 `historical.json` 里 `19` 段 reframing / 填充句式，并补强 `grouchy_assignment`、`fouche_conspiracy`、`british_subsidies_coalition` 等条目的表达
+- `events::pool` 新增文案护栏测试，禁止历史事件再次出现“不是……而是……”等 reframing 句式；Rust 测试总数已升到 `166`
 - 结局弹窗已开始消费 `OUTCOME_TEXT` 里的 `epilogue / review_hint`，并按终局统计生成复盘说明；行动后果微叙事也已改为中文类别标签
 - `GameEngine` 已缓存最近一次玩家行动的 `DayEvent`，`CentJoursEngine.get_last_action_events()` 已暴露到 Godot；政策 / 战役 / 行军 / 强化忠诚结算都会输出可读描述和结构化 effects
 - `characters.json` 已补 `display_name` 字段，GDScript 角色列表与 Rust 行动结算日志都改为优先使用中文短称
@@ -56,7 +58,7 @@
 - 主菜单仍有中英混排，文本语言策略未统一
 - `Map Inspector` 已补内部滚动和响应式扩容，但仍需 Windows 真机截图确认“偏紧”问题是否完全收口
 - `main_menu.gd` 仍有 `566` 行，`map_controller.gd` 已到 `658` 行，控制器拆分还没完全收口
-- `docs/advice/claude_event_history.md` 指出的史实与文风问题已累计修订 24 条旧事件；但全量 58 条仍未统一审校，尤其政治 / 外交 / 联军视角条目还需继续补细节
+- `docs/advice/claude_event_history.md` 指出的史实与文风问题仍未全量收口；虽然本轮已清掉一批 reframing 句式，但全量 58 条事件仍需继续统一史实锚点、信息密度和句式风格
 - 行动结算与角色短名已统一，但主菜单其余 UI 仍有中英法混排，离最终文本统一还有距离
 - 仓库内仍缺 `export_presets.cfg`、Windows 发布脚本、Steam 提审与商店素材清单
 - 资产层仍处于占位阶段：地图底图、肖像、卡片插图、BGM、SFX、结局画面均未完成
@@ -141,7 +143,7 @@ E:\software\godot\Godot_v4.6.1-stable_win64_console.exe --headless --path E:\pro
 - 不要默认回退工作区里的现有改动
 - 不要把 Linux / WSL 无头测试当成默认步骤
 - 若继续做内容线，先按 `ADR-008` 的 Checklist 和 `claude_event_history` 的修订意见落地
-- Codex 不负责文案；若任务涉及 `narratives`、`historical_note`、结局文本或营销文本写作，只让 Codex 做结构、接线、验证和工程集成
+- Codex 现在允许直接修改文案，但必须遵守 `ADR-008` 的写作原则：直接、清楚、可考据；禁止使用“不是……而是……”“真正的问题是……”“与其说……不如说……”等 reframing 句式
 - 本轮已修掉 `napoleon_leaves_paris_north` 中不会生效的负 `paris_security_bonus / political_stability_bonus`；后续新增事件不要再用这类负 bonus 表达减益
 - 若继续做 UI 线，优先解决玩家可感知问题，再做大文件工程收口
 - 若被 Windows 验证卡住，先记录到 handoff，再切到不依赖该验证的下一条高价值任务继续推进
@@ -156,8 +158,9 @@ E:\software\godot\Godot_v4.6.1-stable_win64_console.exe --headless --path E:\pro
 
 ## 11. 最近一轮压缩摘要
 
-- 当前可信基线：`15` 角色 / `41` 节点 / `58` 历史事件 / `165` Rust tests
+- 当前可信基线：`15` 角色 / `41` 节点 / `58` 历史事件 / `166` Rust tests
 - 已删除外部监督器方案，零阻塞自动循环重新收口到 `docs/codex_autonomous_workflow.md` 的会话内执行规则
-- 已把“Codex 不负责文案”写入最高优先级规则；后续内容线若继续扩事件，Codex 仅负责结构、触发、数据接入与测试护栏
-- 本轮继续收口非文案 UI 结构：`DecisionTray` 锁为仅横向滚动，`Map Inspector` 改为内部滚动 + 响应式扩容；两处变更都已通过 Windows Godot 无头加载
-- 下一轮默认动作：优先补一次 Windows 真机验收，确认托盘双滚动与 `Map Inspector` 紧凑度是否真正收口；若视觉验证仍受阻，再切到发布链路或主菜单继续解耦
+- 已把“允许改文案，但必须遵守 `ADR-008` 且禁止 reframing 句式”写入最高优先级规则，并同步到 `dev_plan / session prompt`
+- 本轮已把“`final` / 回顾 / 解释停机原因都不是停机点”补进最高优先级规则，并同步到 `dev_plan / session prompt`
+- 本轮已按 `ADR-008` 清掉 `historical.json` 中 `19` 段 reframing / 填充句式，并给 `events::pool` 加上文案护栏测试；`cargo test` 现为 `166/166`
+- 下一轮默认动作：继续按 `claude_event_history` 清剩余政治 / 外交 / 联军视角条目，再补一轮 Windows 真机验收确认 `DecisionTray` 和 `Map Inspector` 的结构修复是否真正收口

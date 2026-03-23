@@ -305,6 +305,31 @@ mod tests {
         serde_json::from_str(HISTORICAL_JSON).expect("JSON解析失败")
     }
 
+    fn contains_phrase_within(text: &str, start: &str, end: &str, max_gap_chars: usize) -> bool {
+        let mut search_from = 0;
+        while let Some(start_rel) = text[search_from..].find(start) {
+            let start_idx = search_from + start_rel + start.len();
+            let after_start = &text[start_idx..];
+            if let Some(end_rel) = after_start.find(end) {
+                let gap_chars = after_start[..end_rel].chars().count();
+                if gap_chars <= max_gap_chars {
+                    return true;
+                }
+            }
+            search_from = start_idx;
+        }
+        false
+    }
+
+    fn contains_banned_reframing(text: &str) -> bool {
+        contains_phrase_within(text, "不是", "而是", 40)
+            || contains_phrase_within(text, "不再是", "而是", 40)
+            || contains_phrase_within(text, "与其说", "不如说", 40)
+            || text.contains("真正的问题是")
+            || text.contains("据说")
+            || text.contains("众所周知")
+    }
+
     fn ney_defection_context(day: u32) -> TriggerContext {
         TriggerContext {
             day,
@@ -423,6 +448,35 @@ mod tests {
                 ),
             }
         }
+    }
+
+    #[test]
+    fn 历史事件文案不使用reframing句式() {
+        let events = load_events();
+        let mut violations = Vec::new();
+
+        for event in &events {
+            for (idx, narrative) in event.narratives.iter().enumerate() {
+                if contains_banned_reframing(narrative) {
+                    violations.push(format!(
+                        "{} narratives[{}]: {}",
+                        event.id, idx, narrative
+                    ));
+                }
+            }
+            if contains_banned_reframing(&event.historical_note) {
+                violations.push(format!(
+                    "{} historical_note: {}",
+                    event.id, event.historical_note
+                ));
+            }
+        }
+
+        assert!(
+            violations.is_empty(),
+            "历史事件文案不应使用 ADR-008 禁止的 reframing / 填充句式: {:?}",
+            violations
+        );
     }
 
     // ── 触发条件 ──────────────────────────────────────
