@@ -28,6 +28,7 @@
 - 按 `docs/codex_autonomous_workflow.md` 的零阻塞规则自动推进。
 - 禁止把“总结当前状态 / 写 handoff / 给出下一步建议”当成停机点；写完后必须立刻继续下一轮。
 - 把“压缩上下文并写入 docs/codex_handoff.md”也当成最高优先级规则执行，不能跳过。
+- Codex 不负责文案；若任务涉及 narrative / historical_note / 营销文本写作，只负责结构、接线、验证和工程集成。
 - 只要还有无阻塞的 `P0 / P1` 任务，就不要停在 final 总结里。
 ```
 

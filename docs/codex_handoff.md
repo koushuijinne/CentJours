@@ -10,7 +10,7 @@
 ## 1. 当前项目状态
 
 - Rust 规则层与 Godot 前端已完成基础联调，主循环可跑通，正式入口是 `src/ui/main_menu.tscn`
-- 2026-03-24 复核 `cargo test` 为 **164/164 全通过**
+- 2026-03-24 复核 `cargo test` 为 **165/165 全通过**
 - 当前核心数据基线：`15` 名角色、`41` 个地图节点、`58` 条历史事件（major 16 / normal 35 / minor 7）
 - 行军、战斗、政治、命令偏差、联军动态化、叙事池、单槽存档/读档均已接入
 - 玩家行动结算日志已可见：政策 / 战役 / 行军 / 强化忠诚会显示结构化影响摘要，日志通过 `last_action_events -> GDExt -> TurnManager/EventBus -> MainMenu` 进入侧栏；角色短名已统一来自 `characters.json.display_name`
@@ -38,6 +38,7 @@
 - 本轮再补 `blucher_promises_support`、`wounded_wagons_from_ligny`、`grouchy_hears_cannon`、`la_haye_sainte_taken_too_late`、`plancenoit_under_attack`、`zieten_left_flank_arrival` 六条终盘事件，事件池扩至 55 条，并补上终盘 `minor` 覆盖
 - 本轮继续补入 `ghent_bourbon_court`、`royalist_pamphlets_from_ghent`、`brussels_allied_staff_conference` 三条政治 / 联军协同事件，把根特流亡宫廷、保皇派舆论战与布鲁塞尔联军参谋会正式接进事件池，事件总量推到 58 条
 - `events::pool` 已有事件数量、ID 唯一性、`historical_note` 非空、tier 对应叙事段数、禁止无效负 bonus、Day 85+ 至少 1 条 `minor` 等回归测试，防止后续扩容时静默退化
+- 本轮已清理 Rust 测试噪音：`characters/network.rs` 补回遗漏测试，`events/pool.rs` 与 `narratives/mod.rs` 的本地化测试名改为模块级允许；`cargo test` 当前只剩硬链接缓存环境提示
 - 结局弹窗已开始消费 `OUTCOME_TEXT` 里的 `epilogue / review_hint`，并按终局统计生成复盘说明；行动后果微叙事也已改为中文类别标签
 - `GameEngine` 已缓存最近一次玩家行动的 `DayEvent`，`CentJoursEngine.get_last_action_events()` 已暴露到 Godot；政策 / 战役 / 行军 / 强化忠诚结算都会输出可读描述和结构化 effects
 - `characters.json` 已补 `display_name` 字段，GDScript 角色列表与 Rust 行动结算日志都改为优先使用中文短称
@@ -138,6 +139,7 @@ E:\software\godot\Godot_v4.6.1-stable_win64_console.exe --headless --path E:\pro
 - 不要默认回退工作区里的现有改动
 - 不要把 Linux / WSL 无头测试当成默认步骤
 - 若继续做内容线，先按 `ADR-008` 的 Checklist 和 `claude_event_history` 的修订意见落地
+- Codex 不负责文案；若任务涉及 `narratives`、`historical_note`、结局文本或营销文本写作，只让 Codex 做结构、接线、验证和工程集成
 - 本轮已修掉 `napoleon_leaves_paris_north` 中不会生效的负 `paris_security_bonus / political_stability_bonus`；后续新增事件不要再用这类负 bonus 表达减益
 - 若继续做 UI 线，优先解决玩家可感知问题，再做大文件工程收口
 - 若被 Windows 验证卡住，先记录到 handoff，再切到不依赖该验证的下一条高价值任务继续推进
@@ -152,7 +154,8 @@ E:\software\godot\Godot_v4.6.1-stable_win64_console.exe --headless --path E:\pro
 
 ## 11. 最近一轮压缩摘要
 
-- 当前可信基线：`15` 角色 / `41` 节点 / `58` 历史事件 / `164` Rust tests
+- 当前可信基线：`15` 角色 / `41` 节点 / `58` 历史事件 / `165` Rust tests
 - 已删除外部监督器方案，零阻塞自动循环重新收口到 `docs/codex_autonomous_workflow.md` 的会话内执行规则
-- 当前剩余高优先级仍是政治 / 外交 / 联军视角条目的全量文本统一；下一轮直接继续内容主线，不再分叉到工具链实验
-- 下一轮默认动作：补下一小包政治 / 外交 / 联军事件，并同步做旧事件文本 QA
+- 已把“Codex 不负责文案”写入最高优先级规则；后续内容线若继续扩事件，Codex 仅负责结构、触发、数据接入与测试护栏
+- 本轮新增 1 条 Rust 回归测试并收敛主要源码级测试警告；当前剩余提示仅为文件系统 hard-link 环境噪音
+- 下一轮默认动作：继续非文案工程任务，优先看 UI 结构问题或其余构建噪音，不再接 narrative / historical_note 写作

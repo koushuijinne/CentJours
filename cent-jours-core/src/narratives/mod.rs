@@ -93,6 +93,7 @@ pub fn policy_narrative_key(policy_id: &str) -> Option<&'static str> {
 // ── 单元测试 ──────────────────────────────────────────────────────────────
 
 #[cfg(test)]
+#[allow(non_snake_case)]
 mod tests {
     use super::*;
     use rand::rngs::StdRng;

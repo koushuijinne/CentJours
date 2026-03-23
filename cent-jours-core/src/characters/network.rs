@@ -656,6 +656,7 @@ mod tests {
         assert_abs_diff_eq!(net.skill("unknown_general"), 60.0, epsilon = 0.001);
     }
 
+    #[test]
     fn 危机将领列表正确识别() {
         let mut net = CharacterNetwork::new();
         net.add_general("fouche", 25.0); // 危机

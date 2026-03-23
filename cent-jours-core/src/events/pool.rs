@@ -289,6 +289,7 @@ pub struct TriggeredEvent {
 // ── 单元测试 ──────────────────────────────────────────
 
 #[cfg(test)]
+#[allow(non_snake_case)]
 mod tests {
     use super::*;
     use rand::rngs::StdRng;
