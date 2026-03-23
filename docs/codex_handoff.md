@@ -146,7 +146,7 @@ E:\software\godot\Godot_v4.6.1-stable_win64_console.exe --headless --path E:\pro
 - 每完成一轮开发后，默认同步更新本文件
 - 若默认验证方式、自动推进规则或接手入口变化，同步更新 `docs/codex_autonomous_workflow.md`
 - 若当前优先级发生变化，同步更新 `docs/dev_plan.md`
-- 每完成一轮独立任务后，默认执行 `git add -A`、commit、push，并在 handoff 或本轮总结里写压缩摘要，供下一轮直接续跑
+- 每完成一轮独立任务后，默认执行 `git add -A`、commit、push，并把压缩摘要直接写进本文件，供下一轮直接续跑
 
 ## 11. 最近一轮压缩摘要
 

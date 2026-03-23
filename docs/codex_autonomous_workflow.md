@@ -3,7 +3,7 @@
 > **更新**: 2026-03-24
 > **目的**: 把 `CLAUDE.md` 里的开发循环规则展开为可执行 SOP，支持“尽量零阻塞、不暂停、自动决策”的连续开发。
 > **适用范围**: 本仓库的日常开发、接手、夜间推进、交接整理与发布前收口。
-> **重要：1.用户已指定在必要时开启Subagent 2.每完成一轮任务后自动 `add / commit / push` 3.每完成一轮任务后自动总结压缩上下文**
+> **重要：1.用户已指定在必要时开启Subagent 2.每完成一轮任务后自动 `add / commit / push` 3.每完成一轮任务后自动总结压缩上下文并写入 `docs/codex_handoff.md`**
 
 ---
 
@@ -41,7 +41,7 @@
    - push 到当前工作分支
 8. 压缩上下文并自动重排下一轮
    - 用 5-10 行写清本轮产出、验证结果、剩余最高优先级
-   - 将压缩摘要同步到 handoff 或本轮总结
+   - 将压缩摘要写入 `docs/codex_handoff.md`
    - 扫描剩余缺口
    - 若当前主线已闭环，立刻切到下一条最高价值任务继续推进
 
@@ -179,6 +179,7 @@ E:\software\godot\Godot_v4.6.1-stable_win64_console.exe --headless --path E:\pro
   - 更新当前状态、优先级、技术债、验证方式
 - `docs/codex_handoff.md`
   - 更新真实状态、已知问题、下一步建议、当前阻塞
+  - 追加或覆盖“最近一轮压缩摘要”，确保下一轮可直接续跑
 - `plan.md`
   - 仅在本轮确实改变产品里程碑状态时更新
 - 本文件
@@ -201,7 +202,7 @@ E:\software\godot\Godot_v4.6.1-stable_win64_console.exe --headless --path E:\pro
 - 已完成对应验证，或已明确记录无法验证的原因
 - `docs/dev_plan.md` 与 `docs/codex_handoff.md` 已同步
 - 已完成 `git add -A`、commit、push，或已明确记录无法 push 的原因
-- 已产出压缩摘要，足够让下一轮不重读全部上下文
+- 已产出压缩摘要，并已写入 `docs/codex_handoff.md`
 - 已经选出下一轮最高价值任务
 
 如果提前做完，默认继续：
