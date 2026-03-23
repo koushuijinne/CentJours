@@ -43,16 +43,6 @@ var _decision_row: HBoxContainer = null
 
 var _rn_slider: RougeNoirSlider = null
 var _rn_overlay: ColorRect = null
-# 上回合数值快照，用于数值变化闪烁动效
-var _prev_legitimacy: float = 50.0
-var _prev_troops: int = 0
-var _prev_morale: float = 70.0
-
-## 顶栏值标签引用（由 bind_nodes 注入）
-var _legitimacy_value: Label = null
-var _troops_value: Label = null
-var _morale_value: Label = null
-var _fatigue_value: Label = null
 
 
 func bind_nodes(nodes: Dictionary, tray_controller: MainMenuTrayController = null) -> void:
@@ -92,10 +82,6 @@ func bind_nodes(nodes: Dictionary, tray_controller: MainMenuTrayController = nul
 	_decision_scroll = nodes.get("decision_scroll", _decision_scroll)
 	_decision_scroll_content = nodes.get("decision_scroll_content", _decision_scroll_content)
 	_decision_row = nodes.get("decision_row", _decision_row)
-	_legitimacy_value = nodes.get("legitimacy_value", _legitimacy_value)
-	_troops_value = nodes.get("troops_value", _troops_value)
-	_morale_value = nodes.get("morale_value", _morale_value)
-	_fatigue_value = nodes.get("fatigue_value", _fatigue_value)
 
 
 func set_tray_controller(tray_controller: MainMenuTrayController) -> void:
@@ -356,64 +342,3 @@ func _set_container_separation(container: Container, separation: int) -> void:
 func _set_margin(margin_container: MarginContainer, key: StringName, value: int) -> void:
 	if margin_container != null:
 		margin_container.add_theme_constant_override(key, value)
-
-
-# ── 顶栏数值刷新与闪烁动效（从 main_menu.gd 迁入） ─────────────
-
-## 刷新顶栏所有数值标签，并对有变化的值播放闪烁动效
-func refresh_topbar(state: Dictionary) -> void:
-	if _day_label != null:
-		_day_label.text = "Jour %d" % int(state.get("day", 1))
-	if _phase_label != null:
-		_phase_label.text = String(state.get("phase_display", ""))
-	var legitimacy: float = float(state.get("legitimacy", 0.0))
-	if _legitimacy_value != null:
-		_legitimacy_value.text = "%.1f" % legitimacy
-	if _legitimacy_bar != null:
-		_legitimacy_bar.value = legitimacy
-	var troops: int = int(state.get("troops", 0))
-	if _troops_value != null:
-		_troops_value.text = String(state.get("troops_text", str(troops)))
-	var morale: float = float(state.get("morale", 0.0))
-	if _morale_value != null:
-		_morale_value.text = "%.0f" % morale
-	if _fatigue_value != null:
-		_fatigue_value.text = "%.0f" % float(state.get("fatigue", 0.0))
-	# 数值变化闪烁动效（对比上回合快照）
-	_flash_value_change(_legitimacy_value, legitimacy, _prev_legitimacy)
-	_flash_value_change(_troops_value, float(troops), float(_prev_troops))
-	_flash_value_change(_morale_value, morale, _prev_morale)
-
-
-## 保存当前数值作为下回合趋势对比基准
-func snapshot_prev_values(legitimacy: float, troops: int, morale: float) -> void:
-	_prev_legitimacy = legitimacy
-	_prev_troops = troops
-	_prev_morale = morale
-
-
-## Rouge/Noir 氛围叠加：把 bg_tint 写入全屏覆盖层（ADR-004）
-func apply_rn_atmosphere(rn_index: float, host: Node = null) -> void:
-	var tint := CentJoursTheme.get_rn_tint(rn_index)
-	var overlay := build_rn_overlay(host)
-	if overlay != null:
-		overlay.color = tint["bg_tint"]
-
-
-## 数值变化时短暂闪烁颜色提示（增=绿 减=红），0.3秒后恢复原色
-func _flash_value_change(label: Label, current: float, previous: float) -> void:
-	if label == null:
-		return
-	var delta := current - previous
-	if absf(delta) < 0.5:
-		return
-	var flash_color: Color
-	if delta > 0:
-		flash_color = Color(0.4, 0.9, 0.4)  # 绿色：数值增加
-	else:
-		flash_color = Color(0.9, 0.3, 0.2)  # 红色：数值减少
-	var original_color: Color = CentJoursTheme.COLOR["text_heading"]
-	label.add_theme_color_override("font_color", flash_color)
-	var tween := create_tween()
-	tween.tween_interval(0.3)
-	tween.tween_callback(func(): label.add_theme_color_override("font_color", original_color))
