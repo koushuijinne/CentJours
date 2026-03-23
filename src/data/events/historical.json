@@ -2,10 +2,7 @@
   {
     "id": "ney_defection",
     "label": "内伊倒戈",
-    "day_range": [
-      5,
-      7
-    ],
+    "day_range": [5, 7],
     "trigger": {
       "napoleon_reputation_min": 48,
       "ney_loyalty_min": 52,
@@ -31,10 +28,7 @@
   {
     "id": "elba_veterans_rally",
     "label": "厄尔巴岛老兵归队",
-    "day_range": [
-      2,
-      12
-    ],
+    "day_range": [2, 12],
     "trigger": {
       "napoleon_reputation_min": 40
     },
@@ -54,10 +48,7 @@
   {
     "id": "grenoble_garrison_joins",
     "label": "格勒诺布尔驻军倒戈",
-    "day_range": [
-      7,
-      10
-    ],
+    "day_range": [7, 10],
     "trigger": {
       "napoleon_reputation_min": 50
     },
@@ -78,10 +69,7 @@
   {
     "id": "lyon_artois_flees",
     "label": "阿图瓦伯爵出逃里昂",
-    "day_range": [
-      10,
-      14
-    ],
+    "day_range": [10, 14],
     "trigger": {
       "napoleon_reputation_min": 50
     },
@@ -104,10 +92,7 @@
   {
     "id": "burgundy_popular_surge",
     "label": "勃艮第民众浪潮",
-    "day_range": [
-      14,
-      17
-    ],
+    "day_range": [14, 17],
     "trigger": {
       "napoleon_reputation_min": 52
     },
@@ -128,10 +113,7 @@
   {
     "id": "fontainebleau_eve",
     "label": "杜伊勒里宫前夜",
-    "day_range": [
-      17,
-      19
-    ],
+    "day_range": [17, 19],
     "trigger": {
       "napoleon_reputation_min": 58
     },
@@ -152,10 +134,7 @@
   {
     "id": "congress_vienna_ultimatum",
     "label": "维也纳会议宣布拿破仑为公敌",
-    "day_range": [
-      12,
-      16
-    ],
+    "day_range": [12, 16],
     "trigger": {
       "day_min": 12
     },
@@ -175,10 +154,7 @@
   {
     "id": "allies_mobilization",
     "label": "反法同盟正式宣战",
-    "day_range": [
-      15,
-      20
-    ],
+    "day_range": [15, 20],
     "trigger": {
       "day_min": 15
     },
@@ -197,10 +173,7 @@
   {
     "id": "return_to_paris",
     "label": "回到巴黎",
-    "day_range": [
-      19,
-      23
-    ],
+    "day_range": [19, 23],
     "trigger": {
       "napoleon_reputation_min": 60
     },
@@ -222,10 +195,7 @@
   {
     "id": "louis_xviii_flees",
     "label": "路易十八出逃",
-    "day_range": [
-      19,
-      22
-    ],
+    "day_range": [19, 22],
     "trigger": {
       "napoleon_reputation_min": 60
     },
@@ -245,10 +215,7 @@
   {
     "id": "davout_paris_assignment",
     "label": "达武留守巴黎",
-    "day_range": [
-      20,
-      30
-    ],
+    "day_range": [20, 30],
     "trigger": {
       "loyalty_min": {
         "davout": 75
@@ -268,12 +235,76 @@
     "tier": "normal"
   },
   {
+    "id": "soult_chief_of_staff",
+    "label": "苏尔特接任参谋长",
+    "day_range": [20, 30],
+    "trigger": {
+      "day_min": 20,
+      "loyalty_min": {
+        "soult": 55
+      }
+    },
+    "effects": {
+      "military_support_delta": 4,
+      "political_stability_bonus": 2
+    },
+    "narratives": [
+      "苏尔特进入总司令部，开始接管贝尔蒂埃留下的参谋工作。",
+      "他能管行政，也能整队伍，但他不是贝尔蒂埃。北方军接下来每一道命令，都要在磨合中发出去。",
+      "军官们很快看懂了问题：法军不缺将领名声，缺的是一套能把命令准时送到正确路口的参谋体系。"
+    ],
+    "historical_note": "1815年5月中旬，苏尔特在比利时战役前承担参谋长职责。相较贝尔蒂埃，他的参谋体系临战磨合不足，后来成为战役执行中的隐患。",
+    "tier": "normal"
+  },
+  {
+    "id": "carnot_returns_government",
+    "label": "卡尔诺重新入阁",
+    "day_range": [20, 32],
+    "trigger": {
+      "day_min": 20,
+      "loyalty_min": {
+        "carnot": 55
+      }
+    },
+    "effects": {
+      "liberals_support_delta": 5,
+      "legitimacy_delta": 2,
+      "political_stability_bonus": 3
+    },
+    "narratives": [
+      "卡尔诺重新进入政府，不是为了赞美帝制，而是为了先把波旁挡在门外。",
+      "共和派老人的名字一出现，很多观望者就知道：百日政权至少还愿意借革命时代的信誉来稳住局面。",
+      "他带来的不是热情，而是组织力。此时的巴黎正缺这个。"
+    ],
+    "historical_note": "1815年3月下旬，拉扎尔·卡尔诺在百日期间重新进入政府，主持内政与组织工作。共和派名望人物的回归，短暂增强了政权的动员能力与合法性。",
+    "tier": "normal"
+  },
+  {
+    "id": "lavalette_postal_network",
+    "label": "拉瓦莱特重整邮政网络",
+    "day_range": [20, 30],
+    "trigger": {
+      "day_min": 20,
+      "loyalty_min": {
+        "lavalette": 60
+      }
+    },
+    "effects": {
+      "paris_security_bonus": 6,
+      "political_stability_bonus": 2
+    },
+    "narratives": [
+      "拉瓦莱特先抓的不是演说，而是邮路、驿站和电报线。",
+      "谁控制信件和命令的流向，谁就先控制巴黎的神经。",
+      "百日政权很多事情看起来像突然恢复，其实是通讯网络先被重新接上了。"
+    ],
+    "historical_note": "1815年3月下旬，拉瓦莱特重新掌握邮政与通讯网络。对百日政权而言，稳定首都消息流和命令传递，是比公开口号更基础的控制手段。",
+    "tier": "normal"
+  },
+  {
     "id": "additional_act_constitution",
     "label": "颁布帝国补充法案",
-    "day_range": [
-      25,
-      40
-    ],
+    "day_range": [25, 40],
     "trigger": {
       "rouge_noir_index_max": 20
     },
@@ -295,10 +326,7 @@
   {
     "id": "fouche_conspiracy",
     "label": "富歇的暗中联络",
-    "day_range": [
-      30,
-      60
-    ],
+    "day_range": [30, 60],
     "trigger": {
       "fouche_loyalty_max": 50,
       "rouge_noir_index_max": -20
@@ -320,10 +348,7 @@
   {
     "id": "royalist_uprising_vendee",
     "label": "旺代保皇派起义",
-    "day_range": [
-      30,
-      55
-    ],
+    "day_range": [30, 55],
     "trigger": {
       "rouge_noir_index_max": -25
     },
@@ -345,10 +370,7 @@
   {
     "id": "british_subsidies_coalition",
     "label": "英国向盟国提供战争补贴",
-    "day_range": [
-      15,
-      30
-    ],
+    "day_range": [15, 30],
     "trigger": {
       "day_min": 15
     },
@@ -367,10 +389,7 @@
   {
     "id": "imperial_guard_rebuilt",
     "label": "老近卫军重建完成",
-    "day_range": [
-      40,
-      55
-    ],
+    "day_range": [40, 55],
     "trigger": {
       "napoleon_reputation_min": 55
     },
@@ -391,10 +410,7 @@
   {
     "id": "diplomatic_offer_rejected",
     "label": "秘密外交尝试失败",
-    "day_range": [
-      20,
-      50
-    ],
+    "day_range": [20, 50],
     "trigger": {
       "rouge_noir_index_max": 30
     },
@@ -413,10 +429,7 @@
   {
     "id": "chamber_opposition_grows",
     "label": "代表院批评声浪上升",
-    "day_range": [
-      35,
-      65
-    ],
+    "day_range": [35, 65],
     "trigger": {
       "rouge_noir_index_max": 15
     },
@@ -436,10 +449,7 @@
   {
     "id": "ligny_victory",
     "label": "利尼大捷",
-    "day_range": [
-      82,
-      84
-    ],
+    "day_range": [82, 84],
     "trigger": {
       "day_min": 82,
       "napoleon_reputation_min": 50
@@ -461,10 +471,7 @@
   {
     "id": "quatre_bras_stalemate",
     "label": "四臂村战斗",
-    "day_range": [
-      82,
-      84
-    ],
+    "day_range": [82, 84],
     "trigger": {
       "day_min": 82
     },
@@ -483,10 +490,7 @@
   {
     "id": "grouchy_assignment",
     "label": "格鲁希的任命",
-    "day_range": [
-      85,
-      90
-    ],
+    "day_range": [85, 90],
     "trigger": {
       "grouchy_loyalty_min": 60,
       "day_min": 85
@@ -505,10 +509,7 @@
   {
     "id": "prussian_regroup_wavre",
     "label": "普军在瓦夫尔重整旗鼓",
-    "day_range": [
-      84,
-      87
-    ],
+    "day_range": [84, 87],
     "trigger": {
       "day_min": 84
     },
@@ -527,10 +528,7 @@
   {
     "id": "wellington_ridge_position",
     "label": "威灵顿占据圣让山脊",
-    "day_range": [
-      88,
-      93
-    ],
+    "day_range": [88, 93],
     "trigger": {
       "day_min": 88,
       "coalition_not_defeated": true
@@ -550,10 +548,7 @@
   {
     "id": "waterloo_eve",
     "label": "滑铁卢前夜",
-    "day_range": [
-      94,
-      95
-    ],
+    "day_range": [94, 95],
     "trigger": {
       "day_min": 94,
       "coalition_not_defeated": true
@@ -573,10 +568,7 @@
   {
     "id": "old_guard_last_charge",
     "label": "老近卫军最后的冲锋",
-    "day_range": [
-      96,
-      100
-    ],
+    "day_range": [96, 100],
     "trigger": {
       "day_min": 96,
       "napoleon_reputation_min": 40
@@ -598,10 +590,7 @@
   {
     "id": "abdication_pressure",
     "label": "议院施压要求退位",
-    "day_range": [
-      97,
-      100
-    ],
+    "day_range": [97, 100],
     "trigger": {
       "day_min": 97,
       "rouge_noir_index_max": 0
@@ -623,10 +612,7 @@
   {
     "id": "paris_falls_to_allies",
     "label": "盟军逼近巴黎",
-    "day_range": [
-      98,
-      100
-    ],
+    "day_range": [98, 100],
     "trigger": {
       "day_min": 98,
       "coalition_not_defeated": true
@@ -648,10 +634,7 @@
   {
     "id": "laffrey_confrontation",
     "label": "拉弗雷峡谷对峙",
-    "day_range": [
-      3,
-      5
-    ],
+    "day_range": [3, 5],
     "trigger": {
       "napoleon_reputation_min": 60,
       "day_min": 3
@@ -673,10 +656,7 @@
   {
     "id": "la_bedoyere_defection",
     "label": "拉贝多耶尔上校倒戈",
-    "day_range": [
-      5,
-      8
-    ],
+    "day_range": [5, 8],
     "trigger": {
       "napoleon_reputation_min": 55,
       "day_min": 5
@@ -697,10 +677,7 @@
   {
     "id": "napoleon_last_letter_tsar",
     "label": "致亚历山大一世最后一封信",
-    "day_range": [
-      40,
-      60
-    ],
+    "day_range": [40, 60],
     "trigger": {
       "napoleon_reputation_min": 50,
       "day_min": 40
@@ -719,10 +696,7 @@
   {
     "id": "murat_naples_betrayal",
     "label": "缪拉那不勒斯背叛",
-    "day_range": [
-      30,
-      50
-    ],
+    "day_range": [30, 50],
     "trigger": {
       "napoleon_reputation_min": 45,
       "day_min": 30
@@ -735,10 +709,305 @@
     "narratives": [
       "那不勒斯传来消息时，他正在批阅军务文件。",
       "缪拉是他的妹夫，也是他的元帅。现在这层关系已经保不住任何东西了。",
-      "缪拉先看形势，再看忠诚。结果是，他谁都没保住。",
       "托伦蒂诺之后，那不勒斯王国倒了。背叛没换来安全，只换来更快的崩溃。"
     ],
     "historical_note": "1815年春，缪拉在那不勒斯试图在维也纳和拿破仑之间自保，随后在托伦蒂诺被奥军击败。南意大利的倒向最终没有救回他的王国。",
+    "tier": "normal"
+  },
+  {
+    "id": "vienna_alliance_treaty",
+    "label": "维也纳同盟条约签署",
+    "day_range": [18, 24],
+    "trigger": {
+      "day_min": 18
+    },
+    "effects": {
+      "coalition_troops_bonus": 30000,
+      "legitimacy_delta": -3,
+      "nobility_support_delta": -4
+    },
+    "narratives": [
+      "3月25日的条约把口头敌意变成了书面承诺。英国、俄国、普鲁士和奥地利各自答应继续把军队送上战场。",
+      "维也纳不再等法国内部自己解决问题。对拿破仑来说，这意味着下一场战争已经写进了外交文件。",
+      "法国方面收到的不是劝告，而是数字：每个大国十五万人。"
+    ],
+    "historical_note": "1815年3月25日，英国、俄国、普鲁士和奥地利在维也纳续订同盟条约，约定各自维持15万兵力对法作战，把反拿破仑战争固定为共同义务。",
+    "tier": "normal"
+  },
+  {
+    "id": "paris_bourse_silence",
+    "label": "巴黎交易所的沉默",
+    "day_range": [26, 42],
+    "trigger": {
+      "day_min": 26
+    },
+    "effects": {
+      "nobility_support_delta": -2,
+      "legitimacy_delta": -1
+    },
+    "narratives": [
+      "交易所里没有人高声谈论皇帝。大家只盯着汇票、粮价和谁先把钱转去北方。",
+      "市场不表态，它只把不安写进价格。"
+    ],
+    "historical_note": "1815年4月前后，巴黎金融界对百日政权保持观望。资本和信贷的不安，往往比街头口号更早反映政治风险。",
+    "tier": "minor"
+  },
+  {
+    "id": "tolentino_defeat_report",
+    "label": "托伦蒂诺败报传来",
+    "day_range": [38, 48],
+    "trigger": {
+      "day_min": 38
+    },
+    "effects": {
+      "nobility_support_delta": -4,
+      "legitimacy_delta": -3,
+      "coalition_troops_bonus": 8000
+    },
+    "narratives": [
+      "南意大利的败报终于传到巴黎：缪拉在托伦蒂诺没能守住局面。",
+      "这不是边缘战区的小失利，而是波拿巴家族在意大利的最后一张牌被翻掉了。",
+      "战争部马上重算南线还能牵制多少奥军。答案很少，坏消息很多。"
+    ],
+    "historical_note": "1815年5月2日至3日，缪拉在托伦蒂诺被奥军击败；5月20日那不勒斯签订卡萨兰察条约，波旁王室复辟。意大利方向不再能为拿破仑分压。",
+    "tier": "normal"
+  },
+  {
+    "id": "war_ministry_night_shift",
+    "label": "战争部彻夜点灯",
+    "day_range": [42, 60],
+    "trigger": {
+      "day_min": 42
+    },
+    "effects": {
+      "political_stability_bonus": 2,
+      "military_available_troops_delta": 1200
+    },
+    "narratives": [
+      "战争部的文书和军械官连夜核对名册、马匹和火药。没人谈理想，大家只谈缺口。",
+      "巴黎凌晨还亮着的灯，不只在宫殿里，也在那些算补给的人桌上。"
+    ],
+    "historical_note": "1815年5月，法国战争部为北方军和国内守备同时筹措补给、枪械与编制。百日政权的动员能力，很大程度取决于这些行政夜班。",
+    "tier": "minor"
+  },
+  {
+    "id": "wellington_blucher_tirlemont",
+    "label": "普英在蒂尔勒蒙会晤",
+    "day_range": [44, 60],
+    "trigger": {
+      "day_min": 44,
+      "coalition_not_defeated": true
+    },
+    "effects": {
+      "coalition_troops_bonus": 12000,
+      "legitimacy_delta": -2
+    },
+    "narratives": [
+      "威灵顿和布吕歇尔在蒂尔勒蒙会面，先谈的是联络线，后谈的才是荣耀。",
+      "两支军队语言不同、编制不同、补给也不同，但他们至少把一件事说清了：谁先挨打，另一方就去支援。",
+      "这类会议不响亮，却决定了以后哪条路会在关键时刻有人出现。"
+    ],
+    "historical_note": "1815年5月3日，威灵顿与布吕歇尔在蒂尔勒蒙会晤，约定若法军进攻其一，另一方应尽力支援。这一协同为比利时战役奠定了联军互援基础。",
+    "tier": "normal"
+  },
+  {
+    "id": "national_guard_callup",
+    "label": "国民自卫军重新点名",
+    "day_range": [48, 66],
+    "trigger": {
+      "day_min": 48
+    },
+    "effects": {
+      "paris_security_bonus": 10,
+      "populace_support_delta": -3,
+      "political_stability_bonus": 3
+    },
+    "narratives": [
+      "巴黎和各省重新清点国民自卫军。名单一张张送上来，缺席的人也被一笔笔记下。",
+      "这不是漂亮的阅兵，而是守城、巡逻和看仓库的人手。",
+      "每多一支能守后方的队伍，拿破仑就能把更多老兵推向北线。"
+    ],
+    "historical_note": "1815年5月至6月，百日政府在巴黎和各省重新整编国民自卫军，用于城防、治安和后方守备，以腾出正规军投入北线。",
+    "tier": "normal"
+  },
+  {
+    "id": "horse_requisition_resentment",
+    "label": "征马令下的躲闪",
+    "day_range": [50, 72],
+    "trigger": {
+      "day_min": 50
+    },
+    "effects": {
+      "populace_support_delta": -4,
+      "military_available_troops_delta": -1000
+    },
+    "narratives": [
+      "征马官一到村口，最先消失的总是最好的马。农民知道军队要什么，也知道失去它们会失去什么。",
+      "帝国需要机动，乡村先看到的是空下来的马厩。"
+    ],
+    "historical_note": "1815年春末至初夏，法国为重建骑兵和辎重持续征发马匹。对乡村来说，这类征用比政治演说更直接，也更容易引发怨气。",
+    "tier": "minor"
+  },
+  {
+    "id": "champ_de_mai_ceremony",
+    "label": "五月原野大典",
+    "day_range": [58, 66],
+    "trigger": {
+      "day_min": 58,
+      "rouge_noir_index_max": 25
+    },
+    "effects": {
+      "legitimacy_delta": 8,
+      "populace_support_delta": 6,
+      "liberals_support_delta": 5,
+      "rouge_noir_delta": 6
+    },
+    "narratives": [
+      "6月1日，拿破仑在战神广场举行五月原野大典，向选举团和军队公开宣示新的宪政包装。",
+      "仪式很大，鹰旗很多，誓词也很整齐。所有人都明白，这既是宣誓，也是动员。",
+      "他把自由、帝国和战争需要放在同一座台子上，希望法国暂时不要追问它们之间的矛盾。",
+      "巴黎看见的是礼仪，参谋部看见的则是时间又少了一天。"
+    ],
+    "historical_note": "1815年6月1日，拿破仑在战神广场举行五月原野大典，公布《帝国宪章补充法案》并向军队授鹰旗，试图以公开仪式稳住政治合法性与军心。",
+    "tier": "major"
+  },
+  {
+    "id": "federes_paris_drills",
+    "label": "巴黎联邦志愿队操练",
+    "day_range": [60, 74],
+    "trigger": {
+      "day_min": 60
+    },
+    "effects": {
+      "paris_security_bonus": 6,
+      "populace_support_delta": 3
+    },
+    "narratives": [
+      "巴黎的联邦志愿队在广场上操练，动作生疏，但人数一天比一天多。",
+      "这些人未必能打野战，却能让首都看起来还在准备，而不是等消息。"
+    ],
+    "historical_note": "1815年6月，巴黎的 federes 和各类志愿队重新活跃，承担操练、巡逻和示威式动员功能，既是军事准备，也是政治表态。",
+    "tier": "minor"
+  },
+  {
+    "id": "coalition_scouts_on_sambre",
+    "label": "桑布尔河线的联军侦报",
+    "day_range": [68, 82],
+    "trigger": {
+      "day_min": 68,
+      "coalition_not_defeated": true
+    },
+    "effects": {
+      "coalition_troops_bonus": 10000,
+      "legitimacy_delta": -2
+    },
+    "narratives": [
+      "联军前哨不断回报法军在桑布尔河线附近的调动，但没人能完全判断主攻方向。",
+      "威灵顿和普鲁士参谋部开始把更多注意力放到沙勒罗瓦轴线。",
+      "战争迷雾没有散开，只是越收越紧。"
+    ],
+    "historical_note": "1815年6月上旬，联军侦骑持续监视法国北境集结。虽然对法军主攻方向仍有争议，但桑布尔河与沙勒罗瓦一线已被视为高风险突破口。",
+    "tier": "normal"
+  },
+  {
+    "id": "northern_army_muster",
+    "label": "北方军集结完成",
+    "day_range": [70, 80],
+    "trigger": {
+      "day_min": 70,
+      "napoleon_reputation_min": 48
+    },
+    "effects": {
+      "military_support_delta": 8,
+      "military_available_troops_delta": 6000,
+      "napoleon_morale_bonus": 6
+    },
+    "narratives": [
+      "北方军的编制终于像一支真正能出动的军队了。营册、炮队、辎重和骑兵序列开始对得上。",
+      "它并不完美：参谋磨合不足，补给线偏紧，新兵占比也不低。",
+      "但对拿破仑来说，等到一切完美才出兵，就等于把先手交给敌人。"
+    ],
+    "historical_note": "1815年6月上旬，拿破仑完成北方军主要集结，准备在联军彻底会合前先发制人。其思路仍是抢中央位置，先击一翼，再转向另一翼。",
+    "tier": "normal"
+  },
+  {
+    "id": "napoleon_leaves_paris_north",
+    "label": "皇帝离开巴黎北上",
+    "day_range": [78, 82],
+    "trigger": {
+      "day_min": 78
+    },
+    "effects": {
+      "napoleon_morale_bonus": 8,
+      "military_support_delta": 3,
+      "populace_support_delta": -2
+    },
+    "narratives": [
+      "6月12日凌晨，拿破仑离开巴黎，亲自去接管北方军。",
+      "这一步能提振前线，也意味着首都接下来要靠别人维持秩序。",
+      "他把政治争吵留在身后，把胜负押在几天之内的机动上。"
+    ],
+    "historical_note": "1815年6月12日，拿破仑离开巴黎前往北方军，准备抢在联军会合前主动出击。百日期间的决战阶段由此开始。",
+    "tier": "normal"
+  },
+  {
+    "id": "charleroi_crossing",
+    "label": "沙勒罗瓦突破",
+    "day_range": [80, 83],
+    "trigger": {
+      "day_min": 80,
+      "napoleon_reputation_min": 48
+    },
+    "effects": {
+      "military_support_delta": 10,
+      "napoleon_morale_bonus": 12,
+      "legitimacy_delta": 4
+    },
+    "narratives": [
+      "6月15日清晨，法军越过边境，向沙勒罗瓦推进。行动的价值不在占一座城，而在把自己插进威灵顿和布吕歇尔之间。",
+      "法军先头部队夺桥、过河、清理哨所，全天都在和时间赛跑。",
+      "拿破仑在地图上要的中央位置，终于第一次出现在现实里。",
+      "参谋部知道这只是开局。真正的问题不是能不能进比利时，而是能不能在两支联军重新握手前打完第一仗。"
+    ],
+    "historical_note": "1815年6月15日，法军越境并夺取沙勒罗瓦，成功切入英荷联军与普军之间的中央位置。比利时战役由此正式展开。",
+    "tier": "major"
+  },
+  {
+    "id": "richmond_ball_dispatch",
+    "label": "布鲁塞尔舞会上的急报",
+    "day_range": [81, 84],
+    "trigger": {
+      "day_min": 81,
+      "coalition_not_defeated": true
+    },
+    "effects": {
+      "coalition_troops_bonus": 6000
+    },
+    "narratives": [
+      "6月15日夜，布鲁塞尔的里士满公爵夫人舞会还没散场，急报已经送到威灵顿手里。",
+      "军官们从舞厅直接回团。有人还穿着礼服外套，就去找自己的马。",
+      "这不是浪漫插曲，而是联军从和平姿态切回战时姿态的那一刻。"
+    ],
+    "historical_note": "1815年6月15日夜，威灵顿在布鲁塞尔参加里士满公爵夫人舞会时收到法军北进的消息，联军高级军官随后连夜返回各部，赶往四臂村方向。",
+    "tier": "normal"
+  },
+  {
+    "id": "drouet_march_confusion",
+    "label": "德尔隆第一军在两场战斗之间迷失",
+    "day_range": [82, 84],
+    "trigger": {
+      "day_min": 82,
+      "coalition_not_defeated": true
+    },
+    "effects": {
+      "military_support_delta": -2
+    },
+    "narratives": [
+      "德尔隆第一军在利尼和四臂村之间来回转向，整整一天都没有打到决定性位置上。",
+      "命令不是没有发出去，而是几套命令互相打架。北方军最担心的事在第一天就发生了：兵团在路上，战机却在前面溜走。",
+      "如果一个军团既没有出现在内伊需要它的地方，也没有及时压到拿破仑需要它的地方，那么问题就不再是勇敢与否，而是指挥链本身出了错。"
+    ],
+    "historical_note": "1815年6月16日，德尔隆第一军因命令往复在利尼与四臂村之间机动，最终两场战斗都未形成决定性介入。这是比利时战役中最著名的指挥失灵之一。",
     "tier": "normal"
   }
 ]

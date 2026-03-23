@@ -2,22 +2,22 @@
 //! `cargo run --bin balance-test -- --runs 1000` 即可执行
 //! Rust版本相比Python版快100倍以上，支持在M2/M3阶段快速迭代平衡参数
 
-use std::collections::HashMap;
-use rand::{Rng, SeedableRng};
 use rand::rngs::StdRng;
+use rand::{Rng, SeedableRng};
+use std::collections::HashMap;
 
-use crate::battle::resolver::{ForceData, Terrain, resolve_battle, BattleResult, ratio_to_result};
-use crate::engine::{GameOutcome, GameEngine, PlayerAction};
-use crate::politics::system::{PoliticsState, default_policies};
+use crate::battle::resolver::{ratio_to_result, resolve_battle, BattleResult, ForceData, Terrain};
+use crate::engine::{GameEngine, GameOutcome, PlayerAction};
+use crate::politics::system::{default_policies, PoliticsState};
 
 // ── 模拟参数 ──────────────────────────────────────────
 
 /// 各日期段军队兵力下限（历史北上进程）
 const ARMY_PHASES: [(u32, u32); 4] = [
-    (1,  6_000),    // 厄尔巴岛起步
-    (7,  10_000),   // 格勒诺布尔驻军加入
-    (20, 60_000),   // 进入巴黎
-    (30, 120_000),  // 全军集结完成
+    (1, 6_000),    // 厄尔巴岛起步
+    (7, 10_000),   // 格勒诺布尔驻军加入
+    (20, 60_000),  // 进入巴黎
+    (30, 120_000), // 全军集结完成
 ];
 
 /// 有战斗的日子（简化）
@@ -31,25 +31,30 @@ pub const TARGET_VICTORY_RATE_MAX: f64 = 0.35;
 
 #[derive(Debug, Clone, Copy)]
 pub enum PlayerStrategy {
-    Military,   // 优先军事：征兵+军费
-    Political,  // 优先政治：宪政+演说+减税
-    Balanced,   // 均衡策略
+    Military,  // 优先军事：征兵+军费
+    Political, // 优先政治：宪政+演说+减税
+    Balanced,  // 均衡策略
 }
 
 impl PlayerStrategy {
     pub fn select_policy<'a>(&self, policies: &'a [&'a str], rng: &mut impl Rng) -> &'a str {
         match self {
-            Self::Military  => {
+            Self::Military => {
                 // 军事向：征兵 + 军费 + 印钞应急
                 let mil = ["conscription", "increase_military_budget", "print_money"];
                 mil[rng.gen_range(0..mil.len())]
             }
             Self::Political => {
                 // 政治向：宪政 + 演说 + 减税 + 授衔
-                let pol = ["constitutional_promise", "public_speech", "reduce_taxes", "grant_titles"];
+                let pol = [
+                    "constitutional_promise",
+                    "public_speech",
+                    "reduce_taxes",
+                    "grant_titles",
+                ];
                 pol[rng.gen_range(0..pol.len())]
             }
-            Self::Balanced  => policies[rng.gen_range(0..policies.len())],
+            Self::Balanced => policies[rng.gen_range(0..policies.len())],
         }
     }
 }
@@ -57,24 +62,26 @@ impl PlayerStrategy {
 // ── 单局模拟 ──────────────────────────────────────────
 
 pub struct GameRecord {
-    pub days_survived:  u32,
-    pub outcome:        GameOutcome,
-    pub final_legit:    f64,
-    pub final_troops:   u32,
+    pub days_survived: u32,
+    pub outcome: GameOutcome,
+    pub final_legit: f64,
+    pub final_troops: u32,
     pub battles_fought: u32,
-    pub victories:      u32,
+    pub victories: u32,
 }
 
 fn army_size_for_day(day: u32) -> u32 {
-    ARMY_PHASES.iter().rev()
+    ARMY_PHASES
+        .iter()
+        .rev()
         .find(|(d, _)| day >= *d)
         .map(|(_, s)| *s)
         .unwrap_or(6_000)
 }
 
 pub fn simulate_one_game(strategy: PlayerStrategy, rng: &mut StdRng) -> GameRecord {
-    let mut politics  = PoliticsState::default();
-    let all_policies  = default_policies();
+    let mut politics = PoliticsState::default();
+    let all_policies = default_policies();
     let policy_ids: Vec<&str> = all_policies.iter().map(|p| p.id).collect();
 
     let mut troops: u32 = 6_000;
@@ -82,8 +89,8 @@ pub fn simulate_one_game(strategy: PlayerStrategy, rng: &mut StdRng) -> GameReco
     let fatigue: f64 = 10.0;
     let mut coalition_strength: f64 = 0.0;
     let mut battles_fought = 0u32;
-    let mut victories      = 0u32;
-    let mut outcome        = None;
+    let mut victories = 0u32;
+    let mut outcome = None;
 
     for day in 1u32..=100 {
         // 军队扩张
@@ -123,13 +130,26 @@ pub fn simulate_one_game(strategy: PlayerStrategy, rng: &mut StdRng) -> GameReco
                 70_000 + (coalition_strength * 1_400.0) as u32
             };
 
-            let napoleon_force = ForceData { troops, morale, fatigue, general_skill: 90.0, supply_ok: true };
-            let enemy_force    = ForceData {
-                troops: enemy_troops, morale: 72.0, fatigue: 15.0,
-                general_skill: 72.0, supply_ok: true
+            let napoleon_force = ForceData {
+                troops,
+                morale,
+                fatigue,
+                general_skill: 90.0,
+                supply_ok: true,
             };
-            let terrain = [Terrain::Plains, Terrain::Plains, Terrain::Hills, Terrain::Ridgeline]
-                [rng.gen_range(0..4)];
+            let enemy_force = ForceData {
+                troops: enemy_troops,
+                morale: 72.0,
+                fatigue: 15.0,
+                general_skill: 72.0,
+                supply_ok: true,
+            };
+            let terrain = [
+                Terrain::Plains,
+                Terrain::Plains,
+                Terrain::Hills,
+                Terrain::Ridgeline,
+            ][rng.gen_range(0..4)];
 
             let battle = resolve_battle(&napoleon_force, &enemy_force, terrain, rng);
 
@@ -149,7 +169,10 @@ pub fn simulate_one_game(strategy: PlayerStrategy, rng: &mut StdRng) -> GameReco
             let (morale_delta, _) = final_result.morale_deltas();
             morale = (morale + morale_delta).clamp(0.0, 100.0);
 
-            if matches!(final_result, BattleResult::DecisiveVictory | BattleResult::MarginalVictory) {
+            if matches!(
+                final_result,
+                BattleResult::DecisiveVictory | BattleResult::MarginalVictory
+            ) {
                 victories += 1;
                 // 胜利"帝国万岁"效应：全派系士气提升
                 politics.modify_faction("military", 10.0);
@@ -162,11 +185,15 @@ pub fn simulate_one_game(strategy: PlayerStrategy, rng: &mut StdRng) -> GameReco
                     outcome = Some(GameOutcome::NapoleonVictory);
                     break;
                 }
-            } else if matches!(final_result, BattleResult::MarginalDefeat | BattleResult::DecisiveDefeat)
-                      && is_decisive_battle {
+            } else if matches!(
+                final_result,
+                BattleResult::MarginalDefeat | BattleResult::DecisiveDefeat
+            ) && is_decisive_battle
+            {
                 // 决战失败：可能终结游戏（取决于政治合法性）
                 if matches!(final_result, BattleResult::DecisiveDefeat)
-                   || politics.legitimacy < 35.0 {
+                    || politics.legitimacy < 35.0
+                {
                     outcome = Some(GameOutcome::WaterlooDefeat);
                     break;
                 }
@@ -190,11 +217,11 @@ pub fn simulate_one_game(strategy: PlayerStrategy, rng: &mut StdRng) -> GameReco
         let legit = politics.legitimacy;
         // 胜利需要"军政双赢"：足够的胜场（含至少1场决战胜利）+ 维持政治合法性
         if victories >= 5 && legit >= 45.0 {
-            GameOutcome::NapoleonVictory      // 均衡发展：扭转历史
+            GameOutcome::NapoleonVictory // 均衡发展：扭转历史
         } else if victories >= 3 && legit >= 35.0 {
-            GameOutcome::WaterlooHistorical   // 一方面成功：接近但未扭转历史
+            GameOutcome::WaterlooHistorical // 一方面成功：接近但未扭转历史
         } else {
-            GameOutcome::WaterlooDefeat       // 双失：流放圣赫勒拿
+            GameOutcome::WaterlooDefeat // 双失：流放圣赫勒拿
         }
     });
 
@@ -211,14 +238,14 @@ pub fn simulate_one_game(strategy: PlayerStrategy, rng: &mut StdRng) -> GameReco
 // ── 蒙特卡洛汇总 ──────────────────────────────────────
 
 pub struct SimulationReport {
-    pub strategy:              PlayerStrategy,
-    pub n_runs:                u32,
-    pub outcomes:              HashMap<&'static str, u32>,
-    pub victory_rate:          f64,
+    pub strategy: PlayerStrategy,
+    pub n_runs: u32,
+    pub outcomes: HashMap<&'static str, u32>,
+    pub victory_rate: f64,
     pub political_collapse_rate: f64,
-    pub avg_legitimacy:        f64,
-    pub avg_troops:            f64,
-    pub balance_ok:            bool,
+    pub avg_legitimacy: f64,
+    pub avg_troops: f64,
+    pub balance_ok: bool,
 }
 
 pub fn run_simulation(n_runs: u32, strategy: PlayerStrategy, seed: u64) -> SimulationReport {
@@ -230,19 +257,19 @@ pub fn run_simulation(n_runs: u32, strategy: PlayerStrategy, seed: u64) -> Simul
     for _ in 0..n_runs {
         let record = simulate_one_game(strategy, &mut rng);
         *outcomes.entry(record.outcome.as_str()).or_insert(0) += 1;
-        total_legit  += record.final_legit;
+        total_legit += record.final_legit;
         total_troops += record.final_troops as f64;
     }
 
-    let victory_count  = outcomes.get("napoleon_victory").copied().unwrap_or(0);
+    let victory_count = outcomes.get("napoleon_victory").copied().unwrap_or(0);
     let collapse_count = outcomes.get("political_collapse").copied().unwrap_or(0);
 
-    let victory_rate = victory_count  as f64 / n_runs as f64;
+    let victory_rate = victory_count as f64 / n_runs as f64;
     let collapse_rate = collapse_count as f64 / n_runs as f64;
 
-    let balance_ok = victory_rate  >= TARGET_VICTORY_RATE_MIN
-                  && victory_rate  <= TARGET_VICTORY_RATE_MAX
-                  && collapse_rate <= 0.30;
+    let balance_ok = victory_rate >= TARGET_VICTORY_RATE_MIN
+        && victory_rate <= TARGET_VICTORY_RATE_MAX
+        && collapse_rate <= 0.30;
 
     SimulationReport {
         strategy,
@@ -250,17 +277,17 @@ pub fn run_simulation(n_runs: u32, strategy: PlayerStrategy, seed: u64) -> Simul
         outcomes,
         victory_rate,
         political_collapse_rate: collapse_rate,
-        avg_legitimacy:  total_legit  / n_runs as f64,
-        avg_troops:      total_troops / n_runs as f64,
+        avg_legitimacy: total_legit / n_runs as f64,
+        avg_troops: total_troops / n_runs as f64,
         balance_ok,
     }
 }
 
 pub fn print_report(report: &SimulationReport) {
     let strategy_name = match report.strategy {
-        PlayerStrategy::Military  => "military",
+        PlayerStrategy::Military => "military",
         PlayerStrategy::Political => "political",
-        PlayerStrategy::Balanced  => "balanced",
+        PlayerStrategy::Balanced => "balanced",
     };
     println!("\n{}", "=".repeat(60));
     println!("  Cent Jours 蒙特卡洛平衡测试");
@@ -280,15 +307,22 @@ pub fn print_report(report: &SimulationReport) {
     println!("    平均合法性:  {:.1}", report.avg_legitimacy);
     println!("    平均兵力:    {:.0}", report.avg_troops);
     println!("    胜率:        {:.1}%", report.victory_rate * 100.0);
-    println!("    政治崩溃率:  {:.1}%", report.political_collapse_rate * 100.0);
+    println!(
+        "    政治崩溃率:  {:.1}%",
+        report.political_collapse_rate * 100.0
+    );
 
     println!("\n  平衡评估:");
     let vr = report.victory_rate * 100.0;
     let cr = report.political_collapse_rate * 100.0;
 
     if vr >= TARGET_VICTORY_RATE_MIN * 100.0 && vr <= TARGET_VICTORY_RATE_MAX * 100.0 {
-        println!("  ✅ 胜率 {:.1}% 在目标范围({:.0}%-{:.0}%)内",
-            vr, TARGET_VICTORY_RATE_MIN*100.0, TARGET_VICTORY_RATE_MAX*100.0);
+        println!(
+            "  ✅ 胜率 {:.1}% 在目标范围({:.0}%-{:.0}%)内",
+            vr,
+            TARGET_VICTORY_RATE_MIN * 100.0,
+            TARGET_VICTORY_RATE_MAX * 100.0
+        );
     } else if vr < TARGET_VICTORY_RATE_MIN * 100.0 {
         println!("  ⚠️  胜率 {:.1}% 过低 — 考虑降低反法同盟集结速度", vr);
     } else {
@@ -307,11 +341,11 @@ pub fn print_report(report: &SimulationReport) {
 
 /// 引擎模拟报告（含事件触发率）
 pub struct EngineSimReport {
-    pub n_runs:               u32,
-    pub outcomes:             HashMap<&'static str, u32>,
-    pub victory_rate:         f64,
+    pub n_runs: u32,
+    pub outcomes: HashMap<&'static str, u32>,
+    pub victory_rate: f64,
     /// 每个历史事件在多少比例的局中被触发（0.0-1.0）
-    pub event_trigger_rates:  HashMap<String, f64>,
+    pub event_trigger_rates: HashMap<String, f64>,
 }
 
 /// 根据引擎当天状态选择行动（Balanced策略）
@@ -319,15 +353,25 @@ fn engine_action<R: Rng>(engine: &GameEngine, rng: &mut R) -> PlayerAction {
     const BATTLE_DAYS: &[u32] = &[7, 20, 45, 60, 80, 86, 90, 100];
     // 全部 8 条政策供 Balanced 策略随机选择
     const POLICIES: &[&str] = &[
-        "conscription", "constitutional_promise", "public_speech",
-        "reduce_taxes", "increase_military_budget",
-        "grant_titles", "secret_diplomacy", "print_money",
+        "conscription",
+        "constitutional_promise",
+        "public_speech",
+        "reduce_taxes",
+        "increase_military_budget",
+        "grant_titles",
+        "secret_diplomacy",
+        "print_money",
     ];
 
     let day = engine.current_day();
 
     if BATTLE_DAYS.contains(&day) {
-        let terrains = [Terrain::Plains, Terrain::Plains, Terrain::Hills, Terrain::Ridgeline];
+        let terrains = [
+            Terrain::Plains,
+            Terrain::Plains,
+            Terrain::Hills,
+            Terrain::Ridgeline,
+        ];
         let terrain = terrains[rng.gen_range(0..4)];
         return PlayerAction::LaunchBattle {
             general_id: "ney".to_string(),
@@ -368,7 +412,7 @@ pub fn run_engine_simulation(n_runs: u32, seed: u64) -> EngineSimReport {
     }
 
     let victory_count = outcomes.get("napoleon_victory").copied().unwrap_or(0);
-    let victory_rate  = victory_count as f64 / n_runs as f64;
+    let victory_rate = victory_count as f64 / n_runs as f64;
 
     let event_trigger_rates = event_counts
         .into_iter()
@@ -407,18 +451,25 @@ mod tests {
 
     #[test]
     fn 纯军事策略合法性低于纯政治策略() {
-        let mil_report = run_simulation(200, PlayerStrategy::Military,  1);
+        let mil_report = run_simulation(200, PlayerStrategy::Military, 1);
         let pol_report = run_simulation(200, PlayerStrategy::Political, 1);
         // 政治策略应维持更高的合法性
-        assert!(pol_report.avg_legitimacy > mil_report.avg_legitimacy,
+        assert!(
+            pol_report.avg_legitimacy > mil_report.avg_legitimacy,
             "政治策略合法性({:.1}) 应高于军事策略({:.1})",
-            pol_report.avg_legitimacy, mil_report.avg_legitimacy);
+            pol_report.avg_legitimacy,
+            mil_report.avg_legitimacy
+        );
     }
 
     #[test]
     fn 胜率结构合理() {
         // 各策略都不应该是0%胜率（无法胜利）
-        for strategy in [PlayerStrategy::Military, PlayerStrategy::Political, PlayerStrategy::Balanced] {
+        for strategy in [
+            PlayerStrategy::Military,
+            PlayerStrategy::Political,
+            PlayerStrategy::Balanced,
+        ] {
             let report = run_simulation(500, strategy, 2026);
             assert!(report.victory_rate >= 0.0 && report.victory_rate <= 1.0);
         }
@@ -437,10 +488,16 @@ mod tests {
     fn 引擎模拟胜率在合理范围内() {
         // 引擎包含事件系统，平衡可能与简化版略有不同，但不应极端
         let report = run_engine_simulation(500, 2026);
-        assert!(report.victory_rate <= 0.80,
-            "胜率不应过高: {:.1}%", report.victory_rate * 100.0);
-        assert!(report.victory_rate >= 0.0,
-            "胜率不应为负: {:.1}%", report.victory_rate * 100.0);
+        assert!(
+            report.victory_rate <= 0.80,
+            "胜率不应过高: {:.1}%",
+            report.victory_rate * 100.0
+        );
+        assert!(
+            report.victory_rate >= 0.0,
+            "胜率不应为负: {:.1}%",
+            report.victory_rate * 100.0
+        );
     }
 
     #[test]
@@ -449,12 +506,16 @@ mod tests {
         // 历史上内伊几乎必然倒戈（百日真实事件）
         // 只在极少数Napoleon声望极低的局中不触发
         // 预期触发率 > 50%（历史高概率事件）
-        let rate = report.event_trigger_rates
+        let rate = report
+            .event_trigger_rates
             .get("ney_defection")
             .copied()
             .unwrap_or(0.0);
-        assert!(rate >= 0.50,
-            "内伊倒戈触发率 {:.1}% 过低，历史上此事件高概率发生", rate * 100.0);
+        assert!(
+            rate >= 0.50,
+            "内伊倒戈触发率 {:.1}% 过低，历史上此事件高概率发生",
+            rate * 100.0
+        );
     }
 
     #[test]

@@ -70,6 +70,9 @@ func _run_dusk_phase(action_type: String, params: Dictionary) -> void:
 	GameState.current_phase = PHASE_NAMES[Phase.DUSK]
 	EventBus.phase_changed.emit("dusk")
 	var previous_location: String = GameState.napoleon_location
+	var previous_victories: int = GameState.victories
+	# GameState 当前只缓存胜场，不缓存败场；败场归因需通过引擎状态回读。
+	var previous_defeats: int = int(engine.get_state().get("defeats", 0))
 
 	# ── 调用 Rust 引擎处理完整一天 ──────────────────────
 	match action_type:
@@ -85,7 +88,6 @@ func _run_dusk_phase(action_type: String, params: Dictionary) -> void:
 		"policy":
 			var policy_id: String = params.get("policy_id", "")
 			engine.process_day_policy(policy_id)
-			EventBus.policy_enacted.emit(policy_id)
 		"boost_loyalty":
 			engine.process_day_boost_loyalty(params.get("general_id", ""))
 		_:  # "rest" 及未知类型
@@ -96,6 +98,7 @@ func _run_dusk_phase(action_type: String, params: Dictionary) -> void:
 	# 历史事件已在 process_day() 的 Dawn 阶段生效；这里立刻转发给 UI，
 	# 避免玩家要等到下一回合才看到事件正文和史注。
 	_emit_new_triggered_events()
+	_emit_last_action_events()
 	if action_type == "march" and previous_location != GameState.napoleon_location:
 		EventBus.unit_moved.emit("napoleon_main_force", previous_location, GameState.napoleon_location)
 
@@ -113,7 +116,13 @@ func _run_dusk_phase(action_type: String, params: Dictionary) -> void:
 			EventBus.stendhal_diary_entry.emit(day, stendhal)
 		var consequence: String = report.get("consequence", "")
 		if consequence != "":
-			EventBus.micro_narrative_shown.emit(action_type, consequence)
+			var narrative_category := _resolve_report_category(
+				action_type,
+				params,
+				previous_victories,
+				previous_defeats
+			)
+			EventBus.micro_narrative_shown.emit(narrative_category, consequence)
 
 	# ── 检查游戏结束 ─────────────────────────────────
 	if engine.is_over():
@@ -207,6 +216,47 @@ func _emit_new_triggered_events() -> void:
 		if not GameState.triggered_events.has(event_id):
 			GameState.triggered_events.append(event_id)
 			EventBus.historical_event_triggered.emit(event_id, event_data)
+
+## 发射最近一次玩家行动的结算记录
+## engine.get_last_action_events() 返回 Array[Dictionary]，每项键：
+##   day(int)                — 事件发生日
+##   event_type(String)      — policy | battle | march | rest | *_failed
+##   description(String)     — 主描述文本
+##   effects(Array[String])  — 影响摘要
+func _emit_last_action_events() -> void:
+	_ensure_engine()
+	var action_details: Array = Array(engine.get_last_action_events())
+	for event_variant in action_details:
+		var event_data: Dictionary = Dictionary(event_variant)
+		var event_type: String = String(event_data.get("event_type", ""))
+		var description: String = String(event_data.get("description", "")).strip_edges()
+		var effects: Array = Array(event_data.get("effects", []))
+		if event_type == "" and description == "":
+			continue
+		EventBus.action_resolution_logged.emit(event_type, description, effects)
+
+## 根据本回合实际结算结果为微叙事选择可读类别。
+## policy 需要展开到具体 policy_id，battle 需要区分胜负结果。
+func _resolve_report_category(
+	action_type: String,
+	params: Dictionary,
+	previous_victories: int,
+	previous_defeats: int
+) -> String:
+	match action_type:
+		"policy":
+			return String(params.get("policy_id", "policy"))
+		"battle":
+			if GameState.victories > previous_victories:
+				return "battle_victory"
+			var current_defeats := int(engine.get_state().get("defeats", previous_defeats))
+			if current_defeats > previous_defeats:
+				return "battle_defeat"
+			return "battle"
+		"boost_loyalty":
+			return "boost_loyalty"
+		_:
+			return action_type
 
 ## 从存档加载引擎状态（供 Save/Load UI 调用）
 ## 成功返回 true，失败返回 false

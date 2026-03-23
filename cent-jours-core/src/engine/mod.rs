@@ -1,5 +1,4 @@
 pub mod state;
 pub use state::{
-    GameEngine, TurnPhase, PlayerAction, ArmyState,
-    DayEvent, DayReport, SaveState, GameOutcome,
+    ArmyState, DayEvent, DayReport, GameEngine, GameOutcome, PlayerAction, SaveState, TurnPhase,
 };

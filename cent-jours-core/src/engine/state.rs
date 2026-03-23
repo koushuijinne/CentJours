@@ -5,17 +5,16 @@
 
 use rand::Rng;
 
-use crate::battle::resolver::{ForceData, Terrain, BattleResult, resolve_battle};
-use crate::battle::{ArmyState as MarchArmyState, MapEdge, MapGraph, MapNode, move_army};
-use crate::politics::system::{PoliticsState, default_policies};
+use crate::battle::resolver::{resolve_battle, BattleResult, ForceData, Terrain};
+use crate::battle::{move_army, ArmyState as MarchArmyState, MapEdge, MapGraph, MapNode};
 use crate::characters::network::{
-    CharacterNetwork, historical_network_day1,
-    LOYALTY_CRISIS_THRESHOLD,
+    historical_network_day1, CharacterNetwork, LOYALTY_CRISIS_THRESHOLD,
 };
+use crate::events::pool::{EventEffects, EventPool, TriggerContext, TriggeredEvent};
+use crate::narratives::{policy_narrative_key, NarrativePool};
+use crate::politics::system::{default_policies, PolicyEffect, PoliticsState};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use serde::{Serialize, Deserialize};
-use crate::events::pool::{EventPool, TriggerContext, EventEffects, TriggeredEvent};
-use crate::narratives::{NarrativePool, policy_narrative_key};
 
 // ── 游戏结局 ──────────────────────────────────────────
 
@@ -31,10 +30,10 @@ pub enum GameOutcome {
 impl GameOutcome {
     pub fn as_str(&self) -> &'static str {
         match self {
-            Self::NapoleonVictory      => "napoleon_victory",
-            Self::WaterlooHistorical   => "waterloo_historical",
-            Self::WaterlooDefeat       => "waterloo_defeat",
-            Self::PoliticalCollapse    => "political_collapse",
+            Self::NapoleonVictory => "napoleon_victory",
+            Self::WaterlooHistorical => "waterloo_historical",
+            Self::WaterlooDefeat => "waterloo_defeat",
+            Self::PoliticalCollapse => "political_collapse",
             Self::MilitaryAnnihilation => "military_annihilation",
         }
     }
@@ -44,9 +43,9 @@ impl GameOutcome {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TurnPhase {
-    Dawn,    // 情报/事件展示
-    Action,  // 玩家决策
-    Dusk,    // 结算
+    Dawn,   // 情报/事件展示
+    Action, // 玩家决策
+    Dusk,   // 结算
 }
 
 // ── 玩家行动 ──────────────────────────────────────────
@@ -54,7 +53,11 @@ pub enum TurnPhase {
 #[derive(Debug, Clone)]
 pub enum PlayerAction {
     /// 发动战役（将领ID，攻方兵力，目标地形）
-    LaunchBattle { general_id: String, troops: u32, terrain: Terrain },
+    LaunchBattle {
+        general_id: String,
+        troops: u32,
+        terrain: Terrain,
+    },
     /// 行军到相邻节点（目标节点 ID）
     March { target_node: String },
     /// 执行政策（政策ID）
@@ -69,11 +72,11 @@ pub enum PlayerAction {
 
 #[derive(Debug, Clone)]
 pub struct DayEvent {
-    pub day:         u32,
-    pub event_type:  &'static str,
+    pub day: u32,
+    pub event_type: &'static str,
     pub description: String,
     /// 事件对三系统的影响摘要
-    pub effects:     Vec<String>,
+    pub effects: Vec<String>,
 }
 
 // ── 每日叙事报告 ──────────────────────────────────────
@@ -81,9 +84,9 @@ pub struct DayEvent {
 /// `process_day()` 完成后可从 `engine.last_report()` 获取的叙事文本
 #[derive(Debug, Clone)]
 pub struct DayReport {
-    pub day:         u32,
+    pub day: u32,
     /// 司汤达当天的日记评论（基于玩家行动类型）
-    pub stendhal:    Option<String>,
+    pub stendhal: Option<String>,
     /// 普通人视角的后果片段（基于玩家行动类型）
     pub consequence: Option<String>,
 }
@@ -94,21 +97,21 @@ pub struct DayReport {
 #[derive(Debug, Clone)]
 pub struct ArmyState {
     pub total_troops: u32,
-    pub avg_morale:   f64,
-    pub avg_fatigue:  f64,
+    pub avg_morale: f64,
+    pub avg_fatigue: f64,
     /// 战役胜场计数（影响军方支持度）
-    pub victories:    u32,
-    pub defeats:      u32,
+    pub victories: u32,
+    pub defeats: u32,
 }
 
 impl Default for ArmyState {
     fn default() -> Self {
         Self {
-            total_troops: 72_000,  // 历史：百日初期约72000人
-            avg_morale:   75.0,
-            avg_fatigue:  10.0,
-            victories:    0,
-            defeats:      0,
+            total_troops: 72_000, // 历史：百日初期约72000人
+            avg_morale: 75.0,
+            avg_fatigue: 10.0,
+            victories: 0,
+            defeats: 0,
         }
     }
 }
@@ -117,11 +120,11 @@ impl ArmyState {
     /// 构建用于战斗解算的 ForceData
     pub fn to_force_data(&self, general_skill: f64, troops_committed: u32) -> ForceData {
         ForceData {
-            troops:        troops_committed.min(self.total_troops),
-            morale:        self.avg_morale,
-            fatigue:       self.avg_fatigue,
+            troops: troops_committed.min(self.total_troops),
+            morale: self.avg_morale,
+            fatigue: self.avg_fatigue,
             general_skill,
-            supply_ok:     true,  // 简化：补给状态可扩展
+            supply_ok: true, // 简化：补给状态可扩展
         }
     }
 
@@ -139,15 +142,15 @@ impl ArmyState {
 
         match result {
             BattleResult::DecisiveVictory | BattleResult::MarginalVictory => self.victories += 1,
-            BattleResult::MarginalDefeat  | BattleResult::DecisiveDefeat  => self.defeats   += 1,
+            BattleResult::MarginalDefeat | BattleResult::DecisiveDefeat => self.defeats += 1,
             BattleResult::Stalemate => {}
         }
     }
 
     /// 休整恢复（每日）
     pub fn rest_recovery(&mut self) {
-        self.avg_fatigue  = (self.avg_fatigue  - 8.0).max(0.0);
-        self.avg_morale   = (self.avg_morale   + 2.0).min(100.0);
+        self.avg_fatigue = (self.avg_fatigue - 8.0).max(0.0);
+        self.avg_morale = (self.avg_morale + 2.0).min(100.0);
     }
 }
 
@@ -157,30 +160,30 @@ impl ArmyState {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SaveState {
     /// 存档格式版本（用于兼容性检查）
-    pub version:              u32,
-    pub day:                  u32,
+    pub version: u32,
+    pub day: u32,
     // 政治系统
-    pub legitimacy:           f64,
-    pub rouge_noir:           f64,
-    pub factions:             HashMap<String, f64>,
-    pub actions_remaining:    u32,
+    pub legitimacy: f64,
+    pub rouge_noir: f64,
+    pub factions: HashMap<String, f64>,
+    pub actions_remaining: u32,
     // 军事系统
-    pub troops:               u32,
-    pub morale:               f64,
-    pub fatigue:              f64,
-    pub victories:            u32,
-    pub defeats:              u32,
-    pub napoleon_location:    String,
+    pub troops: u32,
+    pub morale: f64,
+    pub fatigue: f64,
+    pub victories: u32,
+    pub defeats: u32,
+    pub napoleon_location: String,
     pub coalition_troops_bonus: i32,
     pub paris_security_bonus: f64,
     pub political_stability_bonus: f64,
     // 将领网络（当前忠诚度 + 关系强度）
-    pub loyalty:              HashMap<String, f64>,
-    pub relationships:        Vec<(String, String, f64)>,
+    pub loyalty: HashMap<String, f64>,
+    pub relationships: Vec<(String, String, f64)>,
     // 事件系统
-    pub triggered_event_ids:  Vec<String>,
+    pub triggered_event_ids: Vec<String>,
     // 结局（in_progress 表示游戏进行中）
-    pub outcome:              Option<String>,
+    pub outcome: Option<String>,
 }
 
 /// 地图 JSON 解析用的轻量包装结构。
@@ -193,8 +196,7 @@ struct CampaignMapData {
 /// 从前端共享地图数据构建默认战役地图。
 fn default_campaign_map() -> MapGraph {
     const MAP_JSON: &str = include_str!("../../../src/data/map_nodes.json");
-    let data: CampaignMapData = serde_json::from_str(MAP_JSON)
-        .expect("map_nodes.json parse error");
+    let data: CampaignMapData = serde_json::from_str(MAP_JSON).expect("map_nodes.json parse error");
     MapGraph::new(data.nodes, data.edges)
 }
 
@@ -204,12 +206,41 @@ fn default_campaign_map() -> MapGraph {
 /// 战斗结果（胜/败）要在 execute_action 之后才能确定，所以返回 is_battle=true。
 fn narrative_key_for_action(action: &PlayerAction) -> (&'static str, bool) {
     match action {
-        PlayerAction::LaunchBattle { .. }       => ("", true),
-        PlayerAction::March { .. }              => ("", false),
-        PlayerAction::EnactPolicy { policy_id } =>
-            (policy_narrative_key(policy_id).unwrap_or(""), false),
-        PlayerAction::BoostLoyalty { .. }       => ("boost_loyalty", false),
-        PlayerAction::Rest                      => ("", false),
+        PlayerAction::LaunchBattle { .. } => ("", true),
+        PlayerAction::March { .. } => ("", false),
+        PlayerAction::EnactPolicy { policy_id } => {
+            (policy_narrative_key(policy_id).unwrap_or(""), false)
+        }
+        PlayerAction::BoostLoyalty { .. } => ("boost_loyalty", false),
+        PlayerAction::Rest => ("", false),
+    }
+}
+
+fn faction_display_name(faction_id: &str) -> &'static str {
+    match faction_id {
+        "military" => "军方",
+        "populace" => "民众",
+        "liberals" => "自由派",
+        "nobility" => "贵族",
+        _ => "未知派系",
+    }
+}
+
+fn format_signed_effect(label: &str, delta: f64) -> Option<String> {
+    if delta.abs() <= 0.05 {
+        return None;
+    }
+    Some(format!("{} {:+.1}", label, delta))
+}
+
+fn format_rouge_noir_effect(delta: f64) -> Option<String> {
+    if delta.abs() <= 0.05 {
+        return None;
+    }
+    if delta > 0.0 {
+        Some(format!("Rouge +{:.0}", delta.abs()))
+    } else {
+        Some(format!("Noir +{:.0}", delta.abs()))
     }
 }
 
@@ -217,11 +248,11 @@ fn narrative_key_for_action(action: &PlayerAction) -> (&'static str, bool) {
 
 /// 三系统耦合游戏引擎
 pub struct GameEngine {
-    pub day:        u32,
-    pub phase:      TurnPhase,
-    pub politics:   PoliticsState,
+    pub day: u32,
+    pub phase: TurnPhase,
+    pub politics: PoliticsState,
     pub characters: CharacterNetwork,
-    pub army:       ArmyState,
+    pub army: ArmyState,
     /// 拿破仑当前所在地图节点（Tier 2 行军系统的权威位置）
     pub napoleon_location: String,
     /// 历史事件对联军兵力的累计修正（正数=增援，负数=削弱）
@@ -230,45 +261,46 @@ pub struct GameEngine {
     paris_security_bonus: f64,
     /// 政治稳定收益：会在每日结算中持续托举合法性
     political_stability_bonus: f64,
-    pub history:    Vec<DayEvent>,
+    pub history: Vec<DayEvent>,
     /// 游戏结局（Some = 游戏已结束）
-    outcome:        Option<GameOutcome>,
+    outcome: Option<GameOutcome>,
     /// 战役地图图结构（用于相邻移动与距离查询）
-    map_graph:      MapGraph,
+    map_graph: MapGraph,
     /// 内嵌事件池（Dawn 阶段自动触发）
-    event_pool:     EventPool,
+    event_pool: EventPool,
     /// 已触发事件 ID 列表（按触发顺序）
     triggered_event_ids: Vec<String>,
     /// 叙事文本池（司汤达日记 + 后果片段）
-    narratives:     NarrativePool,
+    narratives: NarrativePool,
     /// 最近一天的叙事报告（可供 UI 层读取）
-    last_report:    Option<DayReport>,
+    last_report: Option<DayReport>,
+    /// 最近一次玩家行动的结算记录（不含 Dawn 历史事件）
+    last_action_events: Vec<DayEvent>,
     /// 最近一次 Dawn 触发的历史事件详情（供 UI 在本回合立即展示）
     last_triggered_events: Vec<TriggeredEvent>,
 }
 
 impl Default for GameEngine {
     fn default() -> Self {
-        const HISTORICAL_JSON: &str =
-            include_str!("../../../src/data/events/historical.json");
+        const HISTORICAL_JSON: &str = include_str!("../../../src/data/events/historical.json");
         Self {
-            day:        1,
-            phase:      TurnPhase::Dawn,
-            politics:   PoliticsState::default(),
+            day: 1,
+            phase: TurnPhase::Dawn,
+            politics: PoliticsState::default(),
             characters: historical_network_day1(),
-            army:       ArmyState::default(),
+            army: ArmyState::default(),
             napoleon_location: "golfe_juan".to_string(),
             coalition_troops_bonus: 0,
             paris_security_bonus: 0.0,
             political_stability_bonus: 0.0,
-            history:    Vec::new(),
-            outcome:    None,
-            map_graph:  default_campaign_map(),
-            event_pool: EventPool::from_json(HISTORICAL_JSON)
-                .expect("historical.json parse error"),
+            history: Vec::new(),
+            outcome: None,
+            map_graph: default_campaign_map(),
+            event_pool: EventPool::from_json(HISTORICAL_JSON).expect("historical.json parse error"),
             triggered_event_ids: Vec::new(),
-            narratives:  NarrativePool::new(),
+            narratives: NarrativePool::new(),
             last_report: None,
+            last_action_events: Vec::new(),
             last_triggered_events: Vec::new(),
         }
     }
@@ -311,6 +343,11 @@ impl GameEngine {
         self.last_report.as_ref()
     }
 
+    /// 最近一次玩家行动的结算记录（不含 Dawn 历史事件）。
+    pub fn last_action_events(&self) -> &[DayEvent] {
+        &self.last_action_events
+    }
+
     /// 最近一次 Dawn 阶段触发的历史事件详情。
     pub fn last_triggered_events(&self) -> &[TriggeredEvent] {
         &self.last_triggered_events
@@ -320,30 +357,33 @@ impl GameEngine {
 
     /// 将当前引擎状态序列化为存档快照
     pub fn save(&self) -> SaveState {
-        let relationships = self.characters.relationships.iter()
+        let relationships = self
+            .characters
+            .relationships
+            .iter()
             .map(|((a, b), v)| (a.clone(), b.clone(), *v))
             .collect();
 
         SaveState {
-            version:             1,
-            day:                 self.day,
-            legitimacy:          self.politics.legitimacy,
-            rouge_noir:          self.politics.rouge_noir_index,
-            factions:            self.politics.faction_support.clone(),
-            actions_remaining:   self.politics.actions_remaining as u32,
-            troops:              self.army.total_troops,
-            morale:              self.army.avg_morale,
-            fatigue:             self.army.avg_fatigue,
-            victories:           self.army.victories,
-            defeats:             self.army.defeats,
-            napoleon_location:   self.napoleon_location.clone(),
+            version: 1,
+            day: self.day,
+            legitimacy: self.politics.legitimacy,
+            rouge_noir: self.politics.rouge_noir_index,
+            factions: self.politics.faction_support.clone(),
+            actions_remaining: self.politics.actions_remaining as u32,
+            troops: self.army.total_troops,
+            morale: self.army.avg_morale,
+            fatigue: self.army.avg_fatigue,
+            victories: self.army.victories,
+            defeats: self.army.defeats,
+            napoleon_location: self.napoleon_location.clone(),
             coalition_troops_bonus: self.coalition_troops_bonus,
             paris_security_bonus: self.paris_security_bonus,
             political_stability_bonus: self.political_stability_bonus,
-            loyalty:             self.characters.loyalty.clone(),
+            loyalty: self.characters.loyalty.clone(),
             relationships,
             triggered_event_ids: self.triggered_event_ids.clone(),
-            outcome:             self.outcome.map(|o| o.as_str().to_string()),
+            outcome: self.outcome.map(|o| o.as_str().to_string()),
         }
     }
 
@@ -356,32 +396,37 @@ impl GameEngine {
     pub fn load(state: SaveState) -> Self {
         let mut engine = Self::new();
 
-        engine.day                         = state.day;
-        engine.politics.legitimacy         = state.legitimacy;
-        engine.politics.rouge_noir_index   = state.rouge_noir;
-        engine.politics.faction_support    = state.factions;
-        engine.politics.actions_remaining  = state.actions_remaining as u8;
-        engine.army.total_troops           = state.troops;
-        engine.army.avg_morale             = state.morale;
-        engine.army.avg_fatigue            = state.fatigue;
-        engine.army.victories              = state.victories;
-        engine.army.defeats                = state.defeats;
-        engine.napoleon_location           = state.napoleon_location;
-        engine.coalition_troops_bonus      = state.coalition_troops_bonus;
-        engine.paris_security_bonus        = state.paris_security_bonus;
-        engine.political_stability_bonus   = state.political_stability_bonus;
-        engine.characters.loyalty          = state.loyalty;
-        engine.characters.relationships    = state.relationships
-            .into_iter().map(|(a, b, v)| ((a, b), v)).collect();
-        engine.triggered_event_ids         = state.triggered_event_ids.clone();
-        engine.event_pool.restore_triggered(state.triggered_event_ids);
+        engine.day = state.day;
+        engine.politics.legitimacy = state.legitimacy;
+        engine.politics.rouge_noir_index = state.rouge_noir;
+        engine.politics.faction_support = state.factions;
+        engine.politics.actions_remaining = state.actions_remaining as u8;
+        engine.army.total_troops = state.troops;
+        engine.army.avg_morale = state.morale;
+        engine.army.avg_fatigue = state.fatigue;
+        engine.army.victories = state.victories;
+        engine.army.defeats = state.defeats;
+        engine.napoleon_location = state.napoleon_location;
+        engine.coalition_troops_bonus = state.coalition_troops_bonus;
+        engine.paris_security_bonus = state.paris_security_bonus;
+        engine.political_stability_bonus = state.political_stability_bonus;
+        engine.characters.loyalty = state.loyalty;
+        engine.characters.relationships = state
+            .relationships
+            .into_iter()
+            .map(|(a, b, v)| ((a, b), v))
+            .collect();
+        engine.triggered_event_ids = state.triggered_event_ids.clone();
+        engine
+            .event_pool
+            .restore_triggered(state.triggered_event_ids);
         engine.outcome = state.outcome.as_deref().and_then(|s| match s {
-            "napoleon_victory"      => Some(GameOutcome::NapoleonVictory),
-            "waterloo_historical"   => Some(GameOutcome::WaterlooHistorical),
-            "waterloo_defeat"       => Some(GameOutcome::WaterlooDefeat),
-            "political_collapse"    => Some(GameOutcome::PoliticalCollapse),
+            "napoleon_victory" => Some(GameOutcome::NapoleonVictory),
+            "waterloo_historical" => Some(GameOutcome::WaterlooHistorical),
+            "waterloo_defeat" => Some(GameOutcome::WaterlooDefeat),
+            "political_collapse" => Some(GameOutcome::PoliticalCollapse),
             "military_annihilation" => Some(GameOutcome::MilitaryAnnihilation),
-            _                       => None,
+            _ => None,
         });
 
         engine
@@ -398,7 +443,9 @@ impl GameEngine {
     /// 处理一整天（Dawn → Action → Dusk）
     /// 玩家行动由调用方提供
     pub fn process_day<R: Rng>(&mut self, action: PlayerAction, rng: &mut R) {
-        if self.is_over() { return; }
+        if self.is_over() {
+            return;
+        }
 
         // Dawn：触发历史事件，效果直接作用于三系统
         self.phase = TurnPhase::Dawn;
@@ -410,10 +457,10 @@ impl GameEngine {
             self.triggered_event_ids.push(t.id.clone());
             self.apply_event_effects(&t.effects);
             self.history.push(DayEvent {
-                day:         self.day,
-                event_type:  "historical_event",
+                day: self.day,
+                event_type: "historical_event",
                 description: format!("[{}] {}", t.label, t.narrative),
-                effects:     vec![],
+                effects: vec![],
             });
         }
 
@@ -421,8 +468,9 @@ impl GameEngine {
         self.phase = TurnPhase::Action;
         let (base_key, is_battle) = narrative_key_for_action(&action);
         let victories_before = self.army.victories;
-        let defeats_before   = self.army.defeats;
+        let defeats_before = self.army.defeats;
         let events = self.execute_action(action, rng);
+        self.last_action_events = events.clone();
 
         // Dusk：系统结算
         self.phase = TurnPhase::Dusk;
@@ -435,9 +483,13 @@ impl GameEngine {
 
         // 填充叙事报告（战斗结果在 execute_action 后才知道）
         let narrative_key = if is_battle {
-            if self.army.victories > victories_before      { "battle_victory" }
-            else if self.army.defeats > defeats_before     { "battle_defeat"  }
-            else                                           { ""               } // 平局无叙事
+            if self.army.victories > victories_before {
+                "battle_victory"
+            } else if self.army.defeats > defeats_before {
+                "battle_defeat"
+            } else {
+                ""
+            } // 平局无叙事
         } else {
             base_key
         };
@@ -453,18 +505,14 @@ impl GameEngine {
     /// 执行玩家行动，返回产生的事件列表
     fn execute_action<R: Rng>(&mut self, action: PlayerAction, rng: &mut R) -> Vec<DayEvent> {
         match action {
-            PlayerAction::LaunchBattle { general_id, troops, terrain } => {
-                self.process_battle(&general_id, troops, terrain, rng)
-            }
-            PlayerAction::March { target_node } => {
-                self.process_march(&target_node)
-            }
-            PlayerAction::EnactPolicy { policy_id } => {
-                self.process_policy(policy_id)
-            }
-            PlayerAction::BoostLoyalty { general_id } => {
-                self.process_boost_loyalty(&general_id)
-            }
+            PlayerAction::LaunchBattle {
+                general_id,
+                troops,
+                terrain,
+            } => self.process_battle(&general_id, troops, terrain, rng),
+            PlayerAction::March { target_node } => self.process_march(&target_node),
+            PlayerAction::EnactPolicy { policy_id } => self.process_policy(policy_id),
+            PlayerAction::BoostLoyalty { general_id } => self.process_boost_loyalty(&general_id),
             PlayerAction::Rest => {
                 self.army.rest_recovery();
                 vec![DayEvent {
@@ -480,13 +528,13 @@ impl GameEngine {
     /// 行军处理：只允许移动到相邻节点，并同步位置 / 疲劳 / 士气。
     fn process_march(&mut self, target_node: &str) -> Vec<DayEvent> {
         let march_state = MarchArmyState {
-            id:       "napoleon_main_force".to_string(),
+            id: "napoleon_main_force".to_string(),
             location: self.napoleon_location.clone(),
-            troops:   self.army.total_troops,
-            morale:   self.army.avg_morale,
-            fatigue:  self.army.avg_fatigue,
+            troops: self.army.total_troops,
+            morale: self.army.avg_morale,
+            fatigue: self.army.avg_fatigue,
             // 当前版本先用稳定供给占位，后续再接补给线与库存。
-            supply:   60.0,
+            supply: 60.0,
         };
         let result = move_army(&march_state, target_node, false, &self.map_graph);
         if !result.success {
@@ -541,7 +589,8 @@ impl GameEngine {
         self.army.apply_battle(result, troops);
 
         // 更新将领忠诚度
-        self.characters.apply_battle_outcome(general_id, result, self.day);
+        self.characters
+            .apply_battle_outcome(general_id, result, self.day);
 
         // 更新政治：战胜提升军方，战败降低军方 + 民众
         self.apply_battle_politics(result);
@@ -556,12 +605,16 @@ impl GameEngine {
         let deviation_text = if deviation > 1.05 {
             format!(
                 "\n{} 过于激进，实际投入 {} 人（超出命令 {} 人）",
-                general_id, actual_troops, actual_troops.saturating_sub(troops)
+                general_id,
+                actual_troops,
+                actual_troops.saturating_sub(troops)
             )
         } else if deviation < 0.95 {
             format!(
                 "\n{} 执行迟疑，仅投入 {} 人（少于命令 {} 人）",
-                general_id, actual_troops, troops.saturating_sub(actual_troops)
+                general_id,
+                actual_troops,
+                troops.saturating_sub(actual_troops)
             )
         } else {
             String::new()
@@ -569,8 +622,13 @@ impl GameEngine {
 
         let description = format!(
             "Day {}: {} 率军 {} 人于 {:?} 地形（守方加成 {:.0}%）作战，结果：{}{}",
-            self.day, general_id, actual_troops, terrain, terrain_pct,
-            result.as_str(), deviation_text
+            self.day,
+            general_id,
+            actual_troops,
+            terrain,
+            terrain_pct,
+            result.as_str(),
+            deviation_text
         );
 
         vec![DayEvent {
@@ -589,23 +647,89 @@ impl GameEngine {
     fn process_policy(&mut self, policy_id: &'static str) -> Vec<DayEvent> {
         let policies = default_policies();
         if let Some(policy) = policies.iter().find(|p| p.id == policy_id) {
+            let before_actions = self.politics.actions_remaining;
+            let before_rn = self.politics.rouge_noir_index;
+            let before_legitimacy = self.politics.legitimacy;
+            let before_economic = self.politics.economic_index;
+            let before_factions = self.politics.faction_support.clone();
             match self.politics.enact_policy(policy) {
                 Ok(()) => vec![DayEvent {
                     day: self.day,
                     event_type: "policy",
-                    description: format!("颁布政策: {}", policy_id),
-                    effects: vec![],
+                    description: format!("颁布政策：{}", policy.name),
+                    effects: self.build_policy_effects(
+                        policy,
+                        &before_factions,
+                        before_legitimacy,
+                        before_rn,
+                        before_economic,
+                        before_actions,
+                    ),
                 }],
                 Err(e) => vec![DayEvent {
                     day: self.day,
                     event_type: "policy_failed",
-                    description: format!("政策失败: {}", e),
-                    effects: vec![],
+                    description: format!("政策未能执行：{}", policy.name),
+                    effects: vec![e],
                 }],
             }
         } else {
-            vec![]
+            vec![DayEvent {
+                day: self.day,
+                event_type: "policy_failed",
+                description: format!("政策未能执行：{}", policy_id),
+                effects: vec!["该政策未在内置政策表中注册".to_string()],
+            }]
         }
+    }
+
+    fn build_policy_effects(
+        &self,
+        policy: &PolicyEffect,
+        before_factions: &HashMap<String, f64>,
+        before_legitimacy: f64,
+        before_rn: f64,
+        before_economic: f64,
+        before_actions: u8,
+    ) -> Vec<String> {
+        let mut effects = Vec::new();
+        let actions_spent = before_actions.saturating_sub(self.politics.actions_remaining);
+        if actions_spent > 0 {
+            effects.push(format!("行动点 -{}", actions_spent));
+        }
+        if let Some(effect) = format_rouge_noir_effect(self.politics.rouge_noir_index - before_rn) {
+            effects.push(effect);
+        }
+
+        for faction_id in ["military", "populace", "liberals", "nobility"] {
+            let before = before_factions.get(faction_id).copied().unwrap_or(0.0);
+            let after = self
+                .politics
+                .faction_support
+                .get(faction_id)
+                .copied()
+                .unwrap_or(before);
+            if let Some(effect) =
+                format_signed_effect(faction_display_name(faction_id), after - before)
+            {
+                effects.push(effect);
+            }
+        }
+
+        if let Some(effect) =
+            format_signed_effect("合法性", self.politics.legitimacy - before_legitimacy)
+        {
+            effects.push(effect);
+        }
+        if let Some(effect) =
+            format_signed_effect("经济", self.politics.economic_index - before_economic)
+        {
+            effects.push(effect);
+        }
+        if policy.cooldown_days > 0 {
+            effects.push(format!("进入冷却 {} 天", policy.cooldown_days));
+        }
+        effects
     }
 
     /// 强化忠诚度处理（消耗合法性）
@@ -619,7 +743,8 @@ impl GameEngine {
             }];
         }
         self.politics.legitimacy -= 5.0;
-        self.characters.modify_loyalty(general_id, 8.0, self.day, "personal_attention");
+        self.characters
+            .modify_loyalty(general_id, 8.0, self.day, "personal_attention");
 
         vec![DayEvent {
             day: self.day,
@@ -636,13 +761,19 @@ impl GameEngine {
 
         // 历史事件提供的长期稳定收益：达武留守巴黎等安排会在后续数日持续发挥作用。
         if self.paris_security_bonus.abs() > f64::EPSILON {
-            self.politics.modify_faction("populace", (self.paris_security_bonus / 40.0).clamp(-3.0, 3.0));
-            self.politics.modify_faction("nobility", (self.paris_security_bonus / 80.0).clamp(-2.0, 2.0));
+            self.politics.modify_faction(
+                "populace",
+                (self.paris_security_bonus / 40.0).clamp(-3.0, 3.0),
+            );
+            self.politics.modify_faction(
+                "nobility",
+                (self.paris_security_bonus / 80.0).clamp(-2.0, 2.0),
+            );
         }
         if self.political_stability_bonus.abs() > f64::EPSILON {
-            self.politics.legitimacy = (
-                self.politics.legitimacy + (self.political_stability_bonus / 20.0).clamp(-2.5, 2.5)
-            ).clamp(0.0, 100.0);
+            self.politics.legitimacy = (self.politics.legitimacy
+                + (self.political_stability_bonus / 20.0).clamp(-2.5, 2.5))
+            .clamp(0.0, 100.0);
         }
 
         // ── 将领叛逃每日检查 ──────────────────────────────
@@ -670,7 +801,11 @@ impl GameEngine {
             return;
         }
         // 已触发过（事件系统或dusk检查），不重复
-        if self.triggered_event_ids.iter().any(|id| id == NEY_DEFECTION_ID || id == "ney_defection") {
+        if self
+            .triggered_event_ids
+            .iter()
+            .any(|id| id == NEY_DEFECTION_ID || id == "ney_defection")
+        {
             return;
         }
         // 忠诚度未跌破危机阈值，暂不触发
@@ -686,7 +821,8 @@ impl GameEngine {
         }
         // 触发叛逃：忠诚度归零、兵力损失、政治冲击
         let day = self.day;
-        self.characters.modify_loyalty("ney", -ney_loyalty, day, "叛逃");
+        self.characters
+            .modify_loyalty("ney", -ney_loyalty, day, "叛逃");
         // 内伊带走约5000兵力
         let troops_lost = 5000u32.min(self.army.total_troops.saturating_sub(1000));
         self.army.total_troops = self.army.total_troops.saturating_sub(troops_lost);
@@ -696,9 +832,9 @@ impl GameEngine {
         self.triggered_event_ids.push(NEY_DEFECTION_ID.to_string());
         self.history.push(DayEvent {
             day,
-            event_type:  "defection",
+            event_type: "defection",
             description: format!("内伊元帅叛逃！带走{}名士兵，军心动摇", troops_lost),
-            effects:     vec![
+            effects: vec![
                 format!("内伊忠诚度→0"),
                 format!("兵力-{}", troops_lost),
                 "军方支持-8, 合法性-5".to_string(),
@@ -715,7 +851,11 @@ impl GameEngine {
             return;
         }
         // 已触发过，不重复
-        if self.triggered_event_ids.iter().any(|id| id == GROUCHY_ABANDON_ID || id == "grouchy_assignment") {
+        if self
+            .triggered_event_ids
+            .iter()
+            .any(|id| id == GROUCHY_ABANDON_ID || id == "grouchy_assignment")
+        {
             return;
         }
         let grouchy_loyalty = self.characters.loyalty("grouchy");
@@ -731,14 +871,16 @@ impl GameEngine {
         // 触发脱离：联军增援加强（格鲁希不牵制普军 → 联军+15000）
         let day = self.day;
         self.coalition_troops_bonus = self.coalition_troops_bonus.saturating_add(15_000);
-        self.characters.modify_loyalty("grouchy", -grouchy_loyalty, day, "脱离战场");
+        self.characters
+            .modify_loyalty("grouchy", -grouchy_loyalty, day, "脱离战场");
         self.politics.modify_faction("military", -5.0);
-        self.triggered_event_ids.push(GROUCHY_ABANDON_ID.to_string());
+        self.triggered_event_ids
+            .push(GROUCHY_ABANDON_ID.to_string());
         self.history.push(DayEvent {
             day,
-            event_type:  "defection",
+            event_type: "defection",
             description: "格鲁希元帅脱离战场！普军增援不受牵制，联军兵力+15000".to_string(),
-            effects:     vec![
+            effects: vec![
                 "格鲁希忠诚度→0".to_string(),
                 "联军兵力+15000".to_string(),
                 "军方支持-5".to_string(),
@@ -761,7 +903,7 @@ impl GameEngine {
         // 100天结束
         if self.day > 100 {
             let legitimacy = self.politics.legitimacy;
-            let victories  = self.army.victories;
+            let victories = self.army.victories;
             self.outcome = Some(if legitimacy > 50.0 && victories >= 3 {
                 GameOutcome::NapoleonVictory
             } else if legitimacy > 30.0 {
@@ -777,11 +919,15 @@ impl GameEngine {
     /// 根据行动类型和战斗结果构建当日叙事报告
     fn build_day_report<R: Rng>(&self, narrative_key: &str, rng: &mut R) -> DayReport {
         if narrative_key.is_empty() {
-            return DayReport { day: self.day, stendhal: None, consequence: None };
+            return DayReport {
+                day: self.day,
+                stendhal: None,
+                consequence: None,
+            };
         }
         DayReport {
-            day:         self.day,
-            stendhal:    self.narratives.pick_stendhal(narrative_key, rng),
+            day: self.day,
+            stendhal: self.narratives.pick_stendhal(narrative_key, rng),
             consequence: self.narratives.pick_consequence(narrative_key, rng),
         }
     }
@@ -791,17 +937,17 @@ impl GameEngine {
     /// 根据当前引擎状态构建事件触发上下文快照
     fn build_trigger_ctx(&self) -> TriggerContext {
         TriggerContext {
-            day:                       self.day,
-            napoleon_reputation:       self.politics.legitimacy,
-            ney_loyalty:               self.characters.loyalty("ney"),
+            day: self.day,
+            napoleon_reputation: self.politics.legitimacy,
+            ney_loyalty: self.characters.loyalty("ney"),
             ney_napoleon_relationship: self.characters.relationship("ney", "napoleon"),
-            grouchy_loyalty:           self.characters.loyalty("grouchy"),
-            fouche_loyalty:            self.characters.loyalty("fouche"),
-            rouge_noir_index:          self.politics.rouge_noir_index,
+            grouchy_loyalty: self.characters.loyalty("grouchy"),
+            fouche_loyalty: self.characters.loyalty("fouche"),
+            rouge_noir_index: self.politics.rouge_noir_index,
             // 全量忠诚度快照（供 loyalty_min/loyalty_max 通用触发条件使用）
-            loyalty_map:               self.characters.loyalty.clone(),
+            loyalty_map: self.characters.loyalty.clone(),
             // 联军是否已被击败（仅 NapoleonVictory 结局表示联军被击败）
-            coalition_defeated:        matches!(self.outcome, Some(GameOutcome::NapoleonVictory)),
+            coalition_defeated: matches!(self.outcome, Some(GameOutcome::NapoleonVictory)),
         }
     }
 
@@ -838,8 +984,7 @@ impl GameEngine {
             if delta > 0 {
                 self.army.total_troops += delta as u32;
             } else {
-                self.army.total_troops =
-                    self.army.total_troops.saturating_sub((-delta) as u32);
+                self.army.total_troops = self.army.total_troops.saturating_sub((-delta) as u32);
             }
         }
         if let Some(delta) = effects.coalition_troops_bonus {
@@ -866,13 +1011,13 @@ impl GameEngine {
         // 联军在Day 1只有约40000人，到Day 100增至约200000人
         let base_troops = (40_000.0 + 160_000.0 * phase) as i32;
         let troops = (base_troops + self.coalition_troops_bonus).max(5_000) as u32;
-        let morale  = 70.0 + phase * 10.0; // 随集结提升士气
+        let morale = 70.0 + phase * 10.0; // 随集结提升士气
         ForceData {
             troops,
             morale,
-            fatigue:       15.0,
-            general_skill: 75.0,  // Wellington/Blücher平均
-            supply_ok:     true,
+            fatigue: 15.0,
+            general_skill: 75.0, // Wellington/Blücher平均
+            supply_ok: true,
         }
     }
 
@@ -881,17 +1026,11 @@ impl GameEngine {
     fn apply_battle_coalition_impact(&mut self, result: BattleResult, troops_committed: u32) {
         let delta = match result {
             // 大胜：联军损失约投入兵力的80%（反映敌方溃败）
-            BattleResult::DecisiveVictory => {
-                -(troops_committed as f64 * 0.8) as i32
-            }
+            BattleResult::DecisiveVictory => -(troops_committed as f64 * 0.8) as i32,
             // 小胜：联军损失约投入兵力的30%
-            BattleResult::MarginalVictory => {
-                -(troops_committed as f64 * 0.3) as i32
-            }
+            BattleResult::MarginalVictory => -(troops_committed as f64 * 0.3) as i32,
             // 平局：微小消耗
-            BattleResult::Stalemate => {
-                -(troops_committed as f64 * 0.05) as i32
-            }
+            BattleResult::Stalemate => -(troops_committed as f64 * 0.05) as i32,
             // 小败：联军士气提振，增援加速（+5000）
             BattleResult::MarginalDefeat => 5_000,
             // 大败：联军全面反攻（+12000）
@@ -904,8 +1043,8 @@ impl GameEngine {
     fn apply_battle_politics(&mut self, result: BattleResult) {
         match result {
             BattleResult::DecisiveVictory => {
-                self.politics.modify_faction("military",  15.0);
-                self.politics.modify_faction("populace",   8.0);
+                self.politics.modify_faction("military", 15.0);
+                self.politics.modify_faction("populace", 8.0);
                 self.politics.legitimacy = (self.politics.legitimacy + 5.0).min(100.0);
             }
             BattleResult::MarginalVictory => {
@@ -916,14 +1055,14 @@ impl GameEngine {
                 self.politics.modify_faction("military", -2.0);
             }
             BattleResult::MarginalDefeat => {
-                self.politics.modify_faction("military",  -8.0);
-                self.politics.modify_faction("populace",  -4.0);
+                self.politics.modify_faction("military", -8.0);
+                self.politics.modify_faction("populace", -4.0);
                 self.politics.legitimacy -= 3.0;
             }
             BattleResult::DecisiveDefeat => {
-                self.politics.modify_faction("military",  -18.0);
-                self.politics.modify_faction("populace",  -10.0);
-                self.politics.modify_faction("liberals",   -5.0);
+                self.politics.modify_faction("military", -18.0);
+                self.politics.modify_faction("populace", -10.0);
+                self.politics.modify_faction("liberals", -5.0);
                 self.politics.legitimacy -= 8.0;
             }
         }
@@ -935,8 +1074,8 @@ impl GameEngine {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rand::SeedableRng;
     use rand::rngs::StdRng;
+    use rand::SeedableRng;
 
     fn seeded_rng() -> StdRng {
         StdRng::seed_from_u64(42)
@@ -968,10 +1107,14 @@ mod tests {
 
         // 如果赢了
         if engine.army.victories > 0 {
-            assert!(engine.characters.loyalty("ney") > ney_initial - 1.0,
-                "战胜后内伊忠诚不应大幅下降");
-            assert!(engine.politics.faction_support["military"] >= mil_initial - 1.0,
-                "战胜后军方支持不应大幅下降");
+            assert!(
+                engine.characters.loyalty("ney") > ney_initial - 1.0,
+                "战胜后内伊忠诚不应大幅下降"
+            );
+            assert!(
+                engine.politics.faction_support["military"] >= mil_initial - 1.0,
+                "战胜后军方支持不应大幅下降"
+            );
         }
     }
 
@@ -982,17 +1125,20 @@ mod tests {
         // 以极少兵力攻打大量敌军 → 必败
         let tiny_force = PlayerAction::LaunchBattle {
             general_id: "ney".to_string(),
-            troops:     1_000,
-            terrain:    Terrain::Ridgeline,
+            troops: 1_000,
+            terrain: Terrain::Ridgeline,
         };
         let mil_before = engine.politics.faction_support["military"];
         let mut rng = seeded_rng();
         engine.process_day(tiny_force, &mut rng);
 
         // 1000人对40000人必败 → 军方支持下降
-        assert!(engine.politics.faction_support["military"] < mil_before,
+        assert!(
+            engine.politics.faction_support["military"] < mil_before,
             "必败战役应降低军方支持: before={}, after={}",
-            mil_before, engine.politics.faction_support["military"]);
+            mil_before,
+            engine.politics.faction_support["military"]
+        );
     }
 
     // ── 政策耦合 ──────────────────────────────────────
@@ -1002,12 +1148,84 @@ mod tests {
         let mut engine = GameEngine::new();
         let actions_before = engine.politics.actions_remaining;
         let mut rng = seeded_rng();
-        engine.process_day(PlayerAction::EnactPolicy { policy_id: "constitutional_promise" }, &mut rng);
+        engine.process_day(
+            PlayerAction::EnactPolicy {
+                policy_id: "constitutional_promise",
+            },
+            &mut rng,
+        );
         // 行动点在 daily_tick 时重置，但本回合应已消耗
         // (Day推进后已tick，所以检查历史)
-        assert!(engine.history.iter().any(|e| e.event_type == "policy"),
-            "应有policy事件记录");
+        assert!(
+            engine.history.iter().any(|e| e.event_type == "policy"),
+            "应有policy事件记录"
+        );
         let _ = actions_before; // 满足编译器
+    }
+
+    #[test]
+    fn 最近行动记录会缓存可读政策结算() {
+        let mut engine = GameEngine::new();
+        let mut rng = seeded_rng();
+
+        engine.process_day(
+            PlayerAction::EnactPolicy {
+                policy_id: "constitutional_promise",
+            },
+            &mut rng,
+        );
+
+        let action_events = engine.last_action_events();
+        assert_eq!(action_events.len(), 1, "本回合应缓存一条政策结算");
+
+        let event = &action_events[0];
+        assert_eq!(event.event_type, "policy");
+        assert!(
+            event.description.contains("承诺宪政改革"),
+            "政策描述应使用可读名称"
+        );
+        assert!(
+            event.effects.iter().any(|effect| effect.contains("自由派")),
+            "政策结算应展示派系支持变化"
+        );
+        assert!(
+            event
+                .effects
+                .iter()
+                .any(|effect| effect.contains("进入冷却 10 天")),
+            "政策结算应展示冷却信息"
+        );
+    }
+
+    #[test]
+    fn 政策失败也会缓存失败原因() {
+        let mut engine = GameEngine::new();
+        engine.politics.actions_remaining = 0;
+        let mut rng = seeded_rng();
+
+        engine.process_day(
+            PlayerAction::EnactPolicy {
+                policy_id: "conscription",
+            },
+            &mut rng,
+        );
+
+        let action_events = engine.last_action_events();
+        assert_eq!(action_events.len(), 1, "失败政策也应写入最近行动记录");
+
+        let event = &action_events[0];
+        assert_eq!(event.event_type, "policy_failed");
+        assert!(
+            event.description.contains("颁布征兵令"),
+            "失败描述也应包含可读政策名"
+        );
+        assert!(
+            event
+                .effects
+                .iter()
+                .any(|effect| effect.contains("行动点不足")),
+            "失败结算应保留原始失败原因"
+        );
     }
 
     // ── 忠诚度强化 ────────────────────────────────────
@@ -1017,8 +1235,10 @@ mod tests {
         let mut engine = GameEngine::new();
         let leg_before = engine.politics.legitimacy;
         let _ = engine.process_boost_loyalty("davout");
-        assert!(engine.politics.legitimacy < leg_before,
-            "强化忠诚应消耗合法性");
+        assert!(
+            engine.politics.legitimacy < leg_before,
+            "强化忠诚应消耗合法性"
+        );
     }
 
     #[test]
@@ -1035,12 +1255,21 @@ mod tests {
     fn 政治崩溃触发游戏结束() {
         let mut engine = GameEngine::new();
         // 强制两派系崩溃
-        engine.politics.faction_support.insert("liberals".to_string(), 5.0);
-        engine.politics.faction_support.insert("populace".to_string(), 5.0);
+        engine
+            .politics
+            .faction_support
+            .insert("liberals".to_string(), 5.0);
+        engine
+            .politics
+            .faction_support
+            .insert("populace".to_string(), 5.0);
         let mut rng = seeded_rng();
         engine.process_day(PlayerAction::Rest, &mut rng);
-        assert_eq!(engine.outcome(), Some(GameOutcome::PoliticalCollapse),
-            "双派系崩溃应终结游戏");
+        assert_eq!(
+            engine.outcome(),
+            Some(GameOutcome::PoliticalCollapse),
+            "双派系崩溃应终结游戏"
+        );
     }
 
     #[test]
@@ -1078,11 +1307,11 @@ mod tests {
     fn 休整恢复疲劳和士气() {
         let mut engine = GameEngine::new();
         engine.army.avg_fatigue = 80.0;
-        engine.army.avg_morale  = 60.0;
+        engine.army.avg_morale = 60.0;
         let mut rng = seeded_rng();
         engine.process_day(PlayerAction::Rest, &mut rng);
         assert!(engine.army.avg_fatigue < 80.0, "休整后疲劳应减少");
-        assert!(engine.army.avg_morale  > 60.0, "休整后士气应提升");
+        assert!(engine.army.avg_morale > 60.0, "休整后士气应提升");
     }
 
     #[test]
@@ -1092,8 +1321,10 @@ mod tests {
         let mil_before = engine.politics.faction_support["military"];
         let mut rng = seeded_rng();
         engine.process_day(PlayerAction::Rest, &mut rng);
-        assert!(engine.politics.faction_support["military"] < mil_before,
-            "兵力危机应降低军方支持");
+        assert!(
+            engine.politics.faction_support["military"] < mil_before,
+            "兵力危机应降低军方支持"
+        );
     }
 
     #[test]
@@ -1101,23 +1332,40 @@ mod tests {
         let mut engine = GameEngine::new();
         let mut rng = seeded_rng();
         let fatigue_before = engine.army.avg_fatigue;
-        engine.process_day(PlayerAction::March {
-            target_node: "grasse".to_string(),
-        }, &mut rng);
+        engine.process_day(
+            PlayerAction::March {
+                target_node: "grasse".to_string(),
+            },
+            &mut rng,
+        );
         assert_eq!(engine.napoleon_location, "grasse", "相邻行军后位置应更新");
-        assert!(engine.army.avg_fatigue != fatigue_before, "行军后疲劳应发生变化");
+        assert!(
+            engine.army.avg_fatigue != fatigue_before,
+            "行军后疲劳应发生变化"
+        );
     }
 
     #[test]
     fn 非相邻行军不会改变位置() {
         let mut engine = GameEngine::new();
         let mut rng = seeded_rng();
-        engine.process_day(PlayerAction::March {
-            target_node: "paris".to_string(),
-        }, &mut rng);
-        assert_eq!(engine.napoleon_location, "golfe_juan", "非相邻行军不应改变位置");
-        assert!(engine.history.iter().any(|event| event.event_type == "march_failed"),
-            "失败行军应写入事件记录");
+        engine.process_day(
+            PlayerAction::March {
+                target_node: "paris".to_string(),
+            },
+            &mut rng,
+        );
+        assert_eq!(
+            engine.napoleon_location, "golfe_juan",
+            "非相邻行军不应改变位置"
+        );
+        assert!(
+            engine
+                .history
+                .iter()
+                .any(|event| event.event_type == "march_failed"),
+            "失败行军应写入事件记录"
+        );
     }
 
     #[test]
@@ -1150,11 +1398,13 @@ mod tests {
         control.dusk_settlement(&mut rng);
 
         assert!(
-            engine.politics.faction_support["populace"] > control.politics.faction_support["populace"],
+            engine.politics.faction_support["populace"]
+                > control.politics.faction_support["populace"],
             "巴黎治安加成应提升民众支持"
         );
         assert!(
-            engine.politics.faction_support["nobility"] > control.politics.faction_support["nobility"],
+            engine.politics.faction_support["nobility"]
+                > control.politics.faction_support["nobility"],
             "巴黎治安加成应提升贵族支持"
         );
         assert!(
@@ -1170,12 +1420,17 @@ mod tests {
         let mut engine = GameEngine::new();
         let mut rng = seeded_rng();
         // 推进几天制造一些状态变化
-        engine.process_day(PlayerAction::EnactPolicy { policy_id: "conscription" }, &mut rng);
+        engine.process_day(
+            PlayerAction::EnactPolicy {
+                policy_id: "conscription",
+            },
+            &mut rng,
+        );
         engine.process_day(PlayerAction::Rest, &mut rng);
 
-        let saved_day      = engine.day;
-        let saved_legit    = engine.politics.legitimacy;
-        let saved_troops   = engine.army.total_troops;
+        let saved_day = engine.day;
+        let saved_legit = engine.politics.legitimacy;
+        let saved_troops = engine.army.total_troops;
         let saved_location = engine.napoleon_location.clone();
         engine.coalition_troops_bonus = 12_000;
         engine.paris_security_bonus = 15.0;
@@ -1185,17 +1440,35 @@ mod tests {
         let saved_stability = engine.political_stability_bonus;
         let saved_triggered = engine.triggered_event_ids.clone();
 
-        let json     = engine.to_json();
+        let json = engine.to_json();
         let restored = GameEngine::from_json(&json).expect("from_json 应成功");
 
-        assert_eq!(restored.day,                saved_day,   "day 应一致");
-        assert!((restored.politics.legitimacy - saved_legit).abs() < 0.001, "legitimacy 应一致");
-        assert_eq!(restored.army.total_troops,  saved_troops, "troops 应一致");
-        assert_eq!(restored.napoleon_location,  saved_location, "napoleon_location 应一致");
-        assert_eq!(restored.coalition_troops_bonus, saved_coalition, "联军兵力修正应一致");
-        assert!((restored.paris_security_bonus - saved_security).abs() < 0.001, "巴黎治安加成应一致");
-        assert!((restored.political_stability_bonus - saved_stability).abs() < 0.001, "政治稳定加成应一致");
-        assert_eq!(restored.triggered_event_ids, saved_triggered, "已触发事件应一致");
+        assert_eq!(restored.day, saved_day, "day 应一致");
+        assert!(
+            (restored.politics.legitimacy - saved_legit).abs() < 0.001,
+            "legitimacy 应一致"
+        );
+        assert_eq!(restored.army.total_troops, saved_troops, "troops 应一致");
+        assert_eq!(
+            restored.napoleon_location, saved_location,
+            "napoleon_location 应一致"
+        );
+        assert_eq!(
+            restored.coalition_troops_bonus, saved_coalition,
+            "联军兵力修正应一致"
+        );
+        assert!(
+            (restored.paris_security_bonus - saved_security).abs() < 0.001,
+            "巴黎治安加成应一致"
+        );
+        assert!(
+            (restored.political_stability_bonus - saved_stability).abs() < 0.001,
+            "政治稳定加成应一致"
+        );
+        assert_eq!(
+            restored.triggered_event_ids, saved_triggered,
+            "已触发事件应一致"
+        );
     }
 
     #[test]
@@ -1208,7 +1481,7 @@ mod tests {
         }
         let triggered_before = engine.triggered_event_ids.clone();
 
-        let json     = engine.to_json();
+        let json = engine.to_json();
         let restored = GameEngine::from_json(&json).expect("from_json 应成功");
 
         // 读档后再推进，之前触发过的事件不应再触发
@@ -1218,7 +1491,11 @@ mod tests {
             restored.process_day(PlayerAction::Rest, &mut rng2);
         }
         for id in &triggered_before {
-            let count = restored.triggered_event_ids.iter().filter(|x| *x == id).count();
+            let count = restored
+                .triggered_event_ids
+                .iter()
+                .filter(|x| *x == id)
+                .count();
             assert!(count <= 1, "事件 {} 读档后不应重复触发", id);
         }
     }
@@ -1237,7 +1514,12 @@ mod tests {
     fn 执行征兵政策后有叙事报告() {
         let mut engine = GameEngine::new();
         let mut rng = seeded_rng();
-        engine.process_day(PlayerAction::EnactPolicy { policy_id: "conscription" }, &mut rng);
+        engine.process_day(
+            PlayerAction::EnactPolicy {
+                policy_id: "conscription",
+            },
+            &mut rng,
+        );
         let report = engine.last_report().expect("执行政策后应有叙事报告");
         assert!(report.stendhal.is_some(), "征兵令应有司汤达评论");
         assert!(report.consequence.is_some(), "征兵令应有后果片段");
@@ -1257,7 +1539,12 @@ mod tests {
     fn 强化忠诚后有司汤达文本() {
         let mut engine = GameEngine::new();
         let mut rng = seeded_rng();
-        engine.process_day(PlayerAction::BoostLoyalty { general_id: "ney".to_string() }, &mut rng);
+        engine.process_day(
+            PlayerAction::BoostLoyalty {
+                general_id: "ney".to_string(),
+            },
+            &mut rng,
+        );
         let report = engine.last_report().expect("BoostLoyalty 后应有报告");
         assert!(report.stendhal.is_some(), "强化忠诚应有司汤达评论");
     }
@@ -1280,7 +1567,10 @@ mod tests {
         }
         // 引擎应已自动触发并记录事件（或效果已应用）
         assert!(
-            engine.triggered_events().iter().any(|id| id == "ney_defection")
+            engine
+                .triggered_events()
+                .iter()
+                .any(|id| id == "ney_defection")
                 || engine.characters.loyalty("ney") > 55.0,
             "Day 6 前后应自动触发或尝试内伊倒戈"
         );
@@ -1293,11 +1583,16 @@ mod tests {
         for _ in 0..20 {
             engine.process_day(PlayerAction::Rest, &mut rng);
         }
-        let ney_count = engine.triggered_events()
+        let ney_count = engine
+            .triggered_events()
             .iter()
             .filter(|id| *id == "ney_defection")
             .count();
-        assert!(ney_count <= 1, "内伊倒戈不应重复触发，实际触发 {} 次", ney_count);
+        assert!(
+            ney_count <= 1,
+            "内伊倒戈不应重复触发，实际触发 {} 次",
+            ney_count
+        );
     }
 
     #[test]
@@ -1311,7 +1606,10 @@ mod tests {
         let event_ids = engine.triggered_events();
         if !event_ids.is_empty() {
             assert!(
-                engine.history.iter().any(|e| e.event_type == "historical_event"),
+                engine
+                    .history
+                    .iter()
+                    .any(|e| e.event_type == "historical_event"),
                 "触发的历史事件应出现在 history 日志中"
             );
         }
@@ -1330,7 +1628,10 @@ mod tests {
 
         if !engine.last_triggered_events().is_empty() {
             assert!(
-                engine.last_triggered_events().iter().all(|event| !event.historical_note.is_empty()),
+                engine
+                    .last_triggered_events()
+                    .iter()
+                    .all(|event| !event.historical_note.is_empty()),
                 "最近触发事件应保留 historical_note，供 UI 展示"
             );
         }
@@ -1344,7 +1645,12 @@ mod tests {
         let early = engine.coalition_force().troops;
         engine.day = 90;
         let late = engine.coalition_force().troops;
-        assert!(late > early * 2, "Day 90联军应远多于Day 1: early={}, late={}", early, late);
+        assert!(
+            late > early * 2,
+            "Day 90联军应远多于Day 1: early={}, late={}",
+            early,
+            late
+        );
     }
 
     // ── 叛逃/倒戈每日检查（Tier 3.2）──────────────────
@@ -1359,7 +1665,10 @@ mod tests {
         engine.dusk_settlement(&mut rng);
         // 不应有叛逃事件
         assert!(
-            !engine.triggered_event_ids.iter().any(|id| id == "ney_defection_dusk"),
+            !engine
+                .triggered_event_ids
+                .iter()
+                .any(|id| id == "ney_defection_dusk"),
             "忠诚正常时不应触发内伊叛逃"
         );
     }
@@ -1371,7 +1680,9 @@ mod tests {
             let mut engine = GameEngine::new();
             engine.day = 6;
             let ney_loyalty = engine.characters.loyalty("ney");
-            engine.characters.modify_loyalty("ney", -(ney_loyalty - 10.0), engine.day, "测试");
+            engine
+                .characters
+                .modify_loyalty("ney", -(ney_loyalty - 10.0), engine.day, "测试");
             engine.characters.set_relationship("ney", "napoleon", 80.0);
             engine
         }
@@ -1382,12 +1693,22 @@ mod tests {
             let mut test_engine = make_low_ney_engine();
             let mut rng = rand::rngs::StdRng::seed_from_u64(seed);
             test_engine.dusk_settlement(&mut rng);
-            if test_engine.triggered_event_ids.iter().any(|id| id == "ney_defection_dusk") {
+            if test_engine
+                .triggered_event_ids
+                .iter()
+                .any(|id| id == "ney_defection_dusk")
+            {
                 triggered = true;
                 // 验证效果
-                assert!(test_engine.characters.loyalty("ney") < 1.0, "叛逃后忠诚应归零");
                 assert!(
-                    test_engine.history.iter().any(|e| e.event_type == "defection"),
+                    test_engine.characters.loyalty("ney") < 1.0,
+                    "叛逃后忠诚应归零"
+                );
+                assert!(
+                    test_engine
+                        .history
+                        .iter()
+                        .any(|e| e.event_type == "defection"),
                     "应有叛逃事件记录"
                 );
                 break;
@@ -1401,15 +1722,22 @@ mod tests {
         let mut engine = GameEngine::new();
         engine.day = 6;
         // 标记已叛逃
-        engine.triggered_event_ids.push("ney_defection_dusk".to_string());
+        engine
+            .triggered_event_ids
+            .push("ney_defection_dusk".to_string());
         let ney_loyalty = engine.characters.loyalty("ney");
-        engine.characters.modify_loyalty("ney", -(ney_loyalty - 10.0), engine.day, "测试");
+        engine
+            .characters
+            .modify_loyalty("ney", -(ney_loyalty - 10.0), engine.day, "测试");
         let troops_before = engine.army.total_troops;
 
         let mut rng = seeded_rng();
         engine.dusk_settlement(&mut rng);
         // 兵力不应再因叛逃减少
-        assert_eq!(engine.army.total_troops, troops_before, "已叛逃后不应再扣兵力");
+        assert_eq!(
+            engine.army.total_troops, troops_before,
+            "已叛逃后不应再扣兵力"
+        );
     }
 
     #[test]
@@ -1418,7 +1746,9 @@ mod tests {
         engine.day = 50;
         // 强制低忠诚
         let g_loyalty = engine.characters.loyalty("grouchy");
-        engine.characters.modify_loyalty("grouchy", -(g_loyalty - 10.0), engine.day, "测试");
+        engine
+            .characters
+            .modify_loyalty("grouchy", -(g_loyalty - 10.0), engine.day, "测试");
 
         let mut rng = seeded_rng();
         let bonus_before = engine.coalition_troops_bonus;
@@ -1435,7 +1765,9 @@ mod tests {
             let mut engine = GameEngine::new();
             engine.day = 92;
             let g_loyalty = engine.characters.loyalty("grouchy");
-            engine.characters.modify_loyalty("grouchy", -(g_loyalty - 10.0), engine.day, "测试");
+            engine
+                .characters
+                .modify_loyalty("grouchy", -(g_loyalty - 10.0), engine.day, "测试");
             engine
         }
 
@@ -1444,7 +1776,11 @@ mod tests {
             let mut test_engine = make_low_grouchy_engine();
             let mut rng = rand::rngs::StdRng::seed_from_u64(seed);
             test_engine.dusk_settlement(&mut rng);
-            if test_engine.triggered_event_ids.iter().any(|id| id == "grouchy_abandon_dusk") {
+            if test_engine
+                .triggered_event_ids
+                .iter()
+                .any(|id| id == "grouchy_abandon_dusk")
+            {
                 triggered = true;
                 assert_eq!(
                     test_engine.coalition_troops_bonus, 15_000,

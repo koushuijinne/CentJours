@@ -3,30 +3,30 @@
 //! 从 JSON 加载事件定义，根据游戏状态触发，返回叙事文本和效果。
 //! TDD：测试先于实现。
 
-use std::collections::HashMap;
 use rand::Rng;
 use serde::Deserialize;
+use std::collections::HashMap;
 
 // ── 事件数据结构（与 JSON 对应）────────────────────────
 
 /// 触发条件（所有字段均为可选，未填写的条件默认满足）
 #[derive(Debug, Clone, Deserialize, Default)]
 pub struct EventTrigger {
-    pub napoleon_reputation_min:         Option<f64>,
-    pub ney_loyalty_min:                 Option<f64>,
-    pub ney_napoleon_relationship_min:   Option<f64>,
-    pub grouchy_loyalty_min:             Option<f64>,
-    pub fouche_loyalty_max:              Option<f64>,
-    pub rouge_noir_index_max:            Option<f64>,
-    pub day_min:                         Option<u32>,
-    pub coalition_not_defeated:          Option<bool>,
+    pub napoleon_reputation_min: Option<f64>,
+    pub ney_loyalty_min: Option<f64>,
+    pub ney_napoleon_relationship_min: Option<f64>,
+    pub grouchy_loyalty_min: Option<f64>,
+    pub fouche_loyalty_max: Option<f64>,
+    pub rouge_noir_index_max: Option<f64>,
+    pub day_min: Option<u32>,
+    pub coalition_not_defeated: Option<bool>,
     /// 通用将领忠诚度下限：{ character_id: min_loyalty }
     /// 替代原硬编码的 davout_loyalty_min 等字段，支持任意将领
     #[serde(default)]
-    pub loyalty_min:                     HashMap<String, f64>,
+    pub loyalty_min: HashMap<String, f64>,
     /// 通用将领忠诚度上限：{ character_id: max_loyalty }
     #[serde(default)]
-    pub loyalty_max:                     HashMap<String, f64>,
+    pub loyalty_max: HashMap<String, f64>,
 }
 
 /// 事件效果（数值变化）
@@ -35,18 +35,18 @@ pub struct EventEffects {
     /// 通用将领忠诚度变化：{ character_id: delta }
     /// 替代原硬编码的 ney_loyalty_delta / fouche_loyalty_delta
     #[serde(default)]
-    pub loyalty_deltas:                  HashMap<String, f64>,
-    pub military_support_delta:         Option<f64>,
-    pub nobility_support_delta:         Option<f64>,
-    pub populace_support_delta:         Option<f64>,
-    pub liberals_support_delta:         Option<f64>,
-    pub rouge_noir_delta:               Option<f64>,
-    pub legitimacy_delta:               Option<f64>,
-    pub paris_security_bonus:           Option<f64>,
-    pub political_stability_bonus:      Option<f64>,
+    pub loyalty_deltas: HashMap<String, f64>,
+    pub military_support_delta: Option<f64>,
+    pub nobility_support_delta: Option<f64>,
+    pub populace_support_delta: Option<f64>,
+    pub liberals_support_delta: Option<f64>,
+    pub rouge_noir_delta: Option<f64>,
+    pub legitimacy_delta: Option<f64>,
+    pub paris_security_bonus: Option<f64>,
+    pub political_stability_bonus: Option<f64>,
     pub military_available_troops_delta: Option<i64>,
-    pub coalition_troops_bonus:         Option<i32>,
-    pub napoleon_morale_bonus:          Option<f64>,
+    pub coalition_troops_bonus: Option<i32>,
+    pub napoleon_morale_bonus: Option<f64>,
 }
 
 /// 事件级别（ADR-008 三级体系）
@@ -63,7 +63,9 @@ pub enum EventTier {
 
 impl Default for EventTier {
     /// 未标注级别的事件默认为 normal
-    fn default() -> Self { Self::Normal }
+    fn default() -> Self {
+        Self::Normal
+    }
 }
 
 impl EventTier {
@@ -80,15 +82,15 @@ impl EventTier {
 /// 单个历史事件定义
 #[derive(Debug, Clone, Deserialize)]
 pub struct HistoricalEvent {
-    pub id:              String,
-    pub label:           String,
+    pub id: String,
+    pub label: String,
     /// 事件级别（ADR-008），决定叙事段数和前端展示方式
     #[serde(default)]
-    pub tier:            EventTier,
-    pub day_range:       [u32; 2],
-    pub trigger:         EventTrigger,
-    pub effects:         EventEffects,
-    pub narratives:      Vec<String>,
+    pub tier: EventTier,
+    pub day_range: [u32; 2],
+    pub trigger: EventTrigger,
+    pub effects: EventEffects,
+    pub narratives: Vec<String>,
     #[serde(default)]
     pub historical_note: String,
 }
@@ -105,25 +107,39 @@ impl HistoricalEvent {
 
         // 数值条件检查（None = 无此条件，默认满足）
         if let Some(min) = t.napoleon_reputation_min {
-            if ctx.napoleon_reputation < min { return false; }
+            if ctx.napoleon_reputation < min {
+                return false;
+            }
         }
         if let Some(min) = t.ney_loyalty_min {
-            if ctx.ney_loyalty < min { return false; }
+            if ctx.ney_loyalty < min {
+                return false;
+            }
         }
         if let Some(min) = t.ney_napoleon_relationship_min {
-            if ctx.ney_napoleon_relationship < min { return false; }
+            if ctx.ney_napoleon_relationship < min {
+                return false;
+            }
         }
         if let Some(min) = t.grouchy_loyalty_min {
-            if ctx.grouchy_loyalty < min { return false; }
+            if ctx.grouchy_loyalty < min {
+                return false;
+            }
         }
         if let Some(max) = t.fouche_loyalty_max {
-            if ctx.fouche_loyalty > max { return false; }
+            if ctx.fouche_loyalty > max {
+                return false;
+            }
         }
         if let Some(max) = t.rouge_noir_index_max {
-            if ctx.rouge_noir_index > max { return false; }
+            if ctx.rouge_noir_index > max {
+                return false;
+            }
         }
         if let Some(min) = t.day_min {
-            if ctx.day < min { return false; }
+            if ctx.day < min {
+                return false;
+            }
         }
         // 反法同盟状态条件
         if let Some(not_defeated) = t.coalition_not_defeated {
@@ -161,27 +177,27 @@ impl HistoricalEvent {
 /// 事件触发时传入的游戏状态快照
 #[derive(Debug, Clone, Default)]
 pub struct TriggerContext {
-    pub day:                       u32,
-    pub napoleon_reputation:       f64,
-    pub ney_loyalty:               f64,
+    pub day: u32,
+    pub napoleon_reputation: f64,
+    pub ney_loyalty: f64,
     pub ney_napoleon_relationship: f64,
-    pub grouchy_loyalty:           f64,
-    pub fouche_loyalty:            f64,
-    pub rouge_noir_index:          f64,
+    pub grouchy_loyalty: f64,
+    pub fouche_loyalty: f64,
+    pub rouge_noir_index: f64,
     /// 所有将领忠诚度快照（供 loyalty_min / loyalty_max 通用条件检查）
     /// key = character_id，与 characters.json 一致
-    pub loyalty_map:               HashMap<String, f64>,
+    pub loyalty_map: HashMap<String, f64>,
     /// 反法同盟是否已被击败（对应 GameOutcome::NapoleonVictory）
     /// Default = false（游戏进行中，联军尚未被击败）
-    pub coalition_defeated:        bool,
+    pub coalition_defeated: bool,
 }
 
 // ── 事件池 ────────────────────────────────────────────
 
 /// 已触发事件的记录（防止同一事件重复触发）
 pub struct EventPool {
-    events:          Vec<HistoricalEvent>,
-    triggered_ids:   std::collections::HashSet<String>,
+    events: Vec<HistoricalEvent>,
+    triggered_ids: std::collections::HashSet<String>,
 }
 
 impl EventPool {
@@ -197,7 +213,7 @@ impl EventPool {
     /// 创建空事件池（用于测试）
     pub fn empty() -> Self {
         Self {
-            events:        Vec::new(),
+            events: Vec::new(),
             triggered_ids: Default::default(),
         }
     }
@@ -216,7 +232,8 @@ impl EventPool {
         ctx: &TriggerContext,
         rng: &mut R,
     ) -> Vec<TriggeredEvent> {
-        let to_trigger: Vec<String> = self.events
+        let to_trigger: Vec<String> = self
+            .events
             .iter()
             .filter(|e| !self.triggered_ids.contains(&e.id) && e.can_trigger(ctx))
             .map(|e| e.id.clone())
@@ -228,12 +245,12 @@ impl EventPool {
             if let Some(event) = self.events.iter().find(|e| e.id == id) {
                 let narrative = event.pick_narrative(rng).unwrap_or("").to_string();
                 results.push(TriggeredEvent {
-                    id:        event.id.clone(),
-                    label:     event.label.clone(),
-                    tier:      event.tier.clone(),
+                    id: event.id.clone(),
+                    label: event.label.clone(),
+                    tier: event.tier.clone(),
                     narrative,
                     historical_note: event.historical_note.clone(),
-                    effects:   event.effects.clone(),
+                    effects: event.effects.clone(),
                 });
             }
         }
@@ -261,12 +278,12 @@ impl EventPool {
 
 #[derive(Debug, Clone)]
 pub struct TriggeredEvent {
-    pub id:        String,
-    pub label:     String,
-    pub tier:      EventTier,
+    pub id: String,
+    pub label: String,
+    pub tier: EventTier,
     pub narrative: String,
     pub historical_note: String,
-    pub effects:   EventEffects,
+    pub effects: EventEffects,
 }
 
 // ── 单元测试 ──────────────────────────────────────────
@@ -274,8 +291,8 @@ pub struct TriggeredEvent {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rand::SeedableRng;
     use rand::rngs::StdRng;
+    use rand::SeedableRng;
 
     const HISTORICAL_JSON: &str = include_str!("../../../src/data/events/historical.json");
 
@@ -283,32 +300,119 @@ mod tests {
         StdRng::seed_from_u64(42)
     }
 
+    fn load_events() -> Vec<HistoricalEvent> {
+        serde_json::from_str(HISTORICAL_JSON).expect("JSON解析失败")
+    }
+
     fn ney_defection_context(day: u32) -> TriggerContext {
         TriggerContext {
             day,
-            napoleon_reputation:       70.0,
-            ney_loyalty:               65.0,
+            napoleon_reputation: 70.0,
+            ney_loyalty: 65.0,
             ney_napoleon_relationship: 70.0,
-            grouchy_loyalty:           72.0,
-            fouche_loyalty:            45.0,
-            rouge_noir_index:          10.0,
-            loyalty_map:               HashMap::new(),
-            coalition_defeated:        false,
+            grouchy_loyalty: 72.0,
+            fouche_loyalty: 45.0,
+            rouge_noir_index: 10.0,
+            loyalty_map: HashMap::new(),
+            coalition_defeated: false,
         }
     }
 
     // ── JSON 加载 ──────────────────────────────────────
 
     #[test]
-    fn json加载成功且事件数量正确() {
+    fn json加载成功且事件数量达到扩充基线() {
         let pool = EventPool::from_json(HISTORICAL_JSON).expect("JSON解析失败");
-        assert!(pool.len() >= 20, "应有至少20个历史事件，实际: {}", pool.len());
+        assert!(
+            pool.len() >= 49,
+            "应有至少49个历史事件，实际: {}",
+            pool.len()
+        );
     }
 
     #[test]
     fn json解析失败返回错误() {
         let result = EventPool::from_json("not valid json");
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn 所有事件id唯一且史注非空() {
+        let events = load_events();
+        let mut ids = std::collections::HashSet::new();
+
+        for event in &events {
+            assert!(ids.insert(event.id.clone()), "事件ID重复: {}", event.id);
+            assert!(
+                !event.historical_note.trim().is_empty(),
+                "historical_note 不应为空: {}",
+                event.id
+            );
+        }
+    }
+
+    #[test]
+    fn 不使用会被状态机下限吞掉的负bonus字段() {
+        let events = load_events();
+        let invalid_security: Vec<&str> = events
+            .iter()
+            .filter(|event| event.effects.paris_security_bonus.unwrap_or(0.0) < 0.0)
+            .map(|event| event.id.as_str())
+            .collect();
+        let invalid_stability: Vec<&str> = events
+            .iter()
+            .filter(|event| event.effects.political_stability_bonus.unwrap_or(0.0) < 0.0)
+            .map(|event| event.id.as_str())
+            .collect();
+
+        assert!(
+            invalid_security.is_empty(),
+            "paris_security_bonus 不应为负，否则会被状态机下限吞掉: {:?}",
+            invalid_security
+        );
+        assert!(
+            invalid_stability.is_empty(),
+            "political_stability_bonus 不应为负，否则会被状态机下限吞掉: {:?}",
+            invalid_stability
+        );
+    }
+
+    #[test]
+    fn 事件tier与叙事段数匹配adr要求() {
+        let events = load_events();
+        let minor_count = events
+            .iter()
+            .filter(|event| matches!(event.tier, EventTier::Minor))
+            .count();
+        assert!(
+            minor_count >= 5,
+            "minor 事件至少应有5条，实际: {}",
+            minor_count
+        );
+
+        for event in &events {
+            let len = event.narratives.len();
+            match event.tier {
+                EventTier::Major => assert!(
+                    (3..=5).contains(&len),
+                    "major 事件叙事段数应为3-5段: {} => {}",
+                    event.id,
+                    len
+                ),
+                EventTier::Normal => assert!(
+                    (2..=3).contains(&len),
+                    "normal 事件叙事段数应为2-3段: {} => {}",
+                    event.id,
+                    len
+                ),
+                EventTier::Minor => assert!(
+                    (1..=2).contains(&len),
+                    "minor 事件叙事段数应为1-2段: {} => {}",
+                    event.id,
+                    len
+                ),
+            }
+        }
     }
 
     // ── 触发条件 ──────────────────────────────────────
@@ -319,7 +423,11 @@ mod tests {
         let ctx = ney_defection_context(6);
         let available = pool.available_events(&ctx);
         let ids: Vec<&str> = available.iter().map(|e| e.id.as_str()).collect();
-        assert!(ids.contains(&"ney_defection"), "Day 6应能触发内伊倒戈: {:?}", ids);
+        assert!(
+            ids.contains(&"ney_defection"),
+            "Day 6应能触发内伊倒戈: {:?}",
+            ids
+        );
     }
 
     #[test]
@@ -357,7 +465,11 @@ mod tests {
         };
         let available = pool.available_events(&ctx);
         let ids: Vec<&str> = available.iter().map(|e| e.id.as_str()).collect();
-        assert!(ids.contains(&"grouchy_assignment"), "Day 87应能触发格鲁希任命: {:?}", ids);
+        assert!(
+            ids.contains(&"grouchy_assignment"),
+            "Day 87应能触发格鲁希任命: {:?}",
+            ids
+        );
     }
 
     #[test]
@@ -365,13 +477,17 @@ mod tests {
         let pool = EventPool::from_json(HISTORICAL_JSON).unwrap();
         let ctx = TriggerContext {
             day: 40,
-            fouche_loyalty: 45.0,   // ≤50
+            fouche_loyalty: 45.0,    // ≤50
             rouge_noir_index: -30.0, // ≤-20
             ..Default::default()
         };
         let available = pool.available_events(&ctx);
         let ids: Vec<&str> = available.iter().map(|e| e.id.as_str()).collect();
-        assert!(ids.contains(&"fouche_conspiracy"), "极端Noir+富歇低忠诚应触发阴谋: {:?}", ids);
+        assert!(
+            ids.contains(&"fouche_conspiracy"),
+            "极端Noir+富歇低忠诚应触发阴谋: {:?}",
+            ids
+        );
     }
 
     #[test]
@@ -379,13 +495,16 @@ mod tests {
         let pool = EventPool::from_json(HISTORICAL_JSON).unwrap();
         let ctx = TriggerContext {
             day: 40,
-            fouche_loyalty: 60.0,    // >50，超过最大值
+            fouche_loyalty: 60.0, // >50，超过最大值
             rouge_noir_index: -30.0,
             ..Default::default()
         };
         let available = pool.available_events(&ctx);
         let ids: Vec<&str> = available.iter().map(|e| e.id.as_str()).collect();
-        assert!(!ids.contains(&"fouche_conspiracy"), "富歇忠诚高于阈值不应触发阴谋");
+        assert!(
+            !ids.contains(&"fouche_conspiracy"),
+            "富歇忠诚高于阈值不应触发阴谋"
+        );
     }
 
     // ── 触发机制 ──────────────────────────────────────
@@ -399,8 +518,14 @@ mod tests {
         let first = pool.trigger_all(&ctx, &mut rng);
         let second = pool.trigger_all(&ctx, &mut rng);
 
-        assert!(first.iter().any(|e| e.id == "ney_defection"), "第一次应触发内伊倒戈");
-        assert!(!second.iter().any(|e| e.id == "ney_defection"), "第二次不应重复触发");
+        assert!(
+            first.iter().any(|e| e.id == "ney_defection"),
+            "第一次应触发内伊倒戈"
+        );
+        assert!(
+            !second.iter().any(|e| e.id == "ney_defection"),
+            "第二次不应重复触发"
+        );
     }
 
     #[test]
@@ -436,8 +561,14 @@ mod tests {
 
         assert!(ney_event.is_some(), "内伊倒戈应被触发");
         let ney_event = ney_event.unwrap();
-        assert!(matches!(ney_event.tier, EventTier::Major), "tier 应随事件一并保留");
-        assert!(!ney_event.historical_note.is_empty(), "historical_note 不应在触发结果中丢失");
+        assert!(
+            matches!(ney_event.tier, EventTier::Major),
+            "tier 应随事件一并保留"
+        );
+        assert!(
+            !ney_event.historical_note.is_empty(),
+            "historical_note 不应在触发结果中丢失"
+        );
     }
 
     // ── 效果数值 ──────────────────────────────────────
@@ -450,7 +581,12 @@ mod tests {
         let triggered = pool.trigger_all(&ctx, &mut rng);
         let ney_event = triggered.iter().find(|e| e.id == "ney_defection").unwrap();
         // 新格式：loyalty_deltas["ney"] 替代 ney_loyalty_delta
-        let delta = ney_event.effects.loyalty_deltas.get("ney").copied().unwrap_or(0.0);
+        let delta = ney_event
+            .effects
+            .loyalty_deltas
+            .get("ney")
+            .copied()
+            .unwrap_or(0.0);
         assert!(delta > 0.0, "内伊倒戈应提升忠诚度，实际delta={}", delta);
     }
 
@@ -465,11 +601,20 @@ mod tests {
             "narratives": ["test"]
         }]"#;
         let pool = EventPool::from_json(json).unwrap();
-        let ctx = TriggerContext { day: 50, ..Default::default() };
+        let ctx = TriggerContext {
+            day: 50,
+            ..Default::default()
+        };
         let available = pool.available_events(&ctx);
         assert_eq!(available.len(), 1);
-        assert_eq!(available[0].effects.loyalty_deltas.get("davout").copied(), Some(-20.0));
-        assert_eq!(available[0].effects.loyalty_deltas.get("ney").copied(), Some(10.0));
+        assert_eq!(
+            available[0].effects.loyalty_deltas.get("davout").copied(),
+            Some(-20.0)
+        );
+        assert_eq!(
+            available[0].effects.loyalty_deltas.get("ney").copied(),
+            Some(10.0)
+        );
     }
 
     #[test]
@@ -485,7 +630,10 @@ mod tests {
             loyalty_map: [("davout".to_string(), 60.0)].into_iter().collect(),
             ..Default::default()
         };
-        assert!(pool.available_events(&ctx).is_empty(), "达武忠诚不足不应触发");
+        assert!(
+            pool.available_events(&ctx).is_empty(),
+            "达武忠诚不足不应触发"
+        );
     }
 
     #[test]
@@ -513,16 +661,31 @@ mod tests {
             loyalty_map: [("davout".to_string(), 60.0)].into_iter().collect(),
             ..Default::default()
         };
-        let ids: Vec<&str> = pool.available_events(&ctx_low).iter().map(|e| e.id.as_str()).collect();
-        assert!(!ids.contains(&"davout_paris_assignment"), "达武忠诚不足不应触发任命");
+        let ids: Vec<&str> = pool
+            .available_events(&ctx_low)
+            .iter()
+            .map(|e| e.id.as_str())
+            .collect();
+        assert!(
+            !ids.contains(&"davout_paris_assignment"),
+            "达武忠诚不足不应触发任命"
+        );
         // 达武忠诚足够 → 触发
         let ctx_high = TriggerContext {
             day: 25,
             loyalty_map: [("davout".to_string(), 80.0)].into_iter().collect(),
             ..Default::default()
         };
-        let ids: Vec<&str> = pool.available_events(&ctx_high).iter().map(|e| e.id.as_str()).collect();
-        assert!(ids.contains(&"davout_paris_assignment"), "达武忠诚足够应触发任命: {:?}", ids);
+        let ids: Vec<&str> = pool
+            .available_events(&ctx_high)
+            .iter()
+            .map(|e| e.id.as_str())
+            .collect();
+        assert!(
+            ids.contains(&"davout_paris_assignment"),
+            "达武忠诚足够应触发任命: {:?}",
+            ids
+        );
     }
 
     #[test]
@@ -535,7 +698,11 @@ mod tests {
         };
         let available = pool.available_events(&ctx);
         let ids: Vec<&str> = available.iter().map(|e| e.id.as_str()).collect();
-        assert!(ids.contains(&"allies_mobilization"), "Day 17应能触发同盟宣战: {:?}", ids);
+        assert!(
+            ids.contains(&"allies_mobilization"),
+            "Day 17应能触发同盟宣战: {:?}",
+            ids
+        );
     }
 
     // ── coalition_not_defeated 触发条件 ───────────────
@@ -549,11 +716,26 @@ mod tests {
         }]"#;
         let pool = EventPool::from_json(json).unwrap();
         // 联军未被击败 → 应触发
-        let ctx_active = TriggerContext { day: 50, coalition_defeated: false, ..Default::default() };
-        assert_eq!(pool.available_events(&ctx_active).len(), 1, "联军未败应触发");
+        let ctx_active = TriggerContext {
+            day: 50,
+            coalition_defeated: false,
+            ..Default::default()
+        };
+        assert_eq!(
+            pool.available_events(&ctx_active).len(),
+            1,
+            "联军未败应触发"
+        );
         // 联军已被击败 → 不应触发
-        let ctx_defeated = TriggerContext { day: 50, coalition_defeated: true, ..Default::default() };
-        assert!(pool.available_events(&ctx_defeated).is_empty(), "联军已败不应触发");
+        let ctx_defeated = TriggerContext {
+            day: 50,
+            coalition_defeated: true,
+            ..Default::default()
+        };
+        assert!(
+            pool.available_events(&ctx_defeated).is_empty(),
+            "联军已败不应触发"
+        );
     }
 
     #[test]
@@ -565,8 +747,16 @@ mod tests {
         }]"#;
         let pool = EventPool::from_json(json).unwrap();
         // 无论联军状态均触发
-        let ctx = TriggerContext { day: 50, coalition_defeated: true, ..Default::default() };
-        assert_eq!(pool.available_events(&ctx).len(), 1, "无coalition_not_defeated条件应始终触发");
+        let ctx = TriggerContext {
+            day: 50,
+            coalition_defeated: true,
+            ..Default::default()
+        };
+        assert_eq!(
+            pool.available_events(&ctx).len(),
+            1,
+            "无coalition_not_defeated条件应始终触发"
+        );
     }
 
     #[test]
@@ -579,8 +769,16 @@ mod tests {
             napoleon_reputation: 65.0,
             ..Default::default()
         };
-        let ids: Vec<&str> = pool.available_events(&ctx_active).iter().map(|e| e.id.as_str()).collect();
-        assert!(ids.contains(&"wellington_ridge_position"), "联军未败时应触发威灵顿山脊: {:?}", ids);
+        let ids: Vec<&str> = pool
+            .available_events(&ctx_active)
+            .iter()
+            .map(|e| e.id.as_str())
+            .collect();
+        assert!(
+            ids.contains(&"wellington_ridge_position"),
+            "联军未败时应触发威灵顿山脊: {:?}",
+            ids
+        );
         // 联军已败则不触发
         let ctx_defeated = TriggerContext {
             day: 90,
@@ -588,8 +786,15 @@ mod tests {
             napoleon_reputation: 65.0,
             ..Default::default()
         };
-        let ids_d: Vec<&str> = pool.available_events(&ctx_defeated).iter().map(|e| e.id.as_str()).collect();
-        assert!(!ids_d.contains(&"wellington_ridge_position"), "联军已败不应触发威灵顿山脊");
+        let ids_d: Vec<&str> = pool
+            .available_events(&ctx_defeated)
+            .iter()
+            .map(|e| e.id.as_str())
+            .collect();
+        assert!(
+            !ids_d.contains(&"wellington_ridge_position"),
+            "联军已败不应触发威灵顿山脊"
+        );
     }
 
     // ── Day 13-19 新增事件覆盖测试 ───────────────────
@@ -602,8 +807,16 @@ mod tests {
             napoleon_reputation: 55.0,
             ..Default::default()
         };
-        let ids: Vec<&str> = pool.available_events(&ctx).iter().map(|e| e.id.as_str()).collect();
-        assert!(ids.contains(&"lyon_artois_flees"), "Day 12应触发里昂入城: {:?}", ids);
+        let ids: Vec<&str> = pool
+            .available_events(&ctx)
+            .iter()
+            .map(|e| e.id.as_str())
+            .collect();
+        assert!(
+            ids.contains(&"lyon_artois_flees"),
+            "Day 12应触发里昂入城: {:?}",
+            ids
+        );
     }
 
     #[test]
@@ -614,8 +827,16 @@ mod tests {
             napoleon_reputation: 55.0,
             ..Default::default()
         };
-        let ids: Vec<&str> = pool.available_events(&ctx).iter().map(|e| e.id.as_str()).collect();
-        assert!(ids.contains(&"burgundy_popular_surge"), "Day 15应触发勃艮第民众浪潮: {:?}", ids);
+        let ids: Vec<&str> = pool
+            .available_events(&ctx)
+            .iter()
+            .map(|e| e.id.as_str())
+            .collect();
+        assert!(
+            ids.contains(&"burgundy_popular_surge"),
+            "Day 15应触发勃艮第民众浪潮: {:?}",
+            ids
+        );
     }
 
     #[test]
@@ -626,7 +847,55 @@ mod tests {
             napoleon_reputation: 60.0,
             ..Default::default()
         };
-        let ids: Vec<&str> = pool.available_events(&ctx).iter().map(|e| e.id.as_str()).collect();
-        assert!(ids.contains(&"fontainebleau_eve"), "Day 18应触发枫丹白露前夜: {:?}", ids);
+        let ids: Vec<&str> = pool
+            .available_events(&ctx)
+            .iter()
+            .map(|e| e.id.as_str())
+            .collect();
+        assert!(
+            ids.contains(&"fontainebleau_eve"),
+            "Day 18应触发枫丹白露前夜: {:?}",
+            ids
+        );
+    }
+
+    #[test]
+    fn 苏尔特参谋长在Day22触发() {
+        let pool = EventPool::from_json(HISTORICAL_JSON).unwrap();
+        let ctx = TriggerContext {
+            day: 22,
+            loyalty_map: [("soult".to_string(), 60.0)].into_iter().collect(),
+            ..Default::default()
+        };
+        let ids: Vec<&str> = pool
+            .available_events(&ctx)
+            .iter()
+            .map(|e| e.id.as_str())
+            .collect();
+        assert!(
+            ids.contains(&"soult_chief_of_staff"),
+            "Day 22应触发苏尔特参谋长: {:?}",
+            ids
+        );
+    }
+
+    #[test]
+    fn 德尔隆军团迷失在Day83触发() {
+        let pool = EventPool::from_json(HISTORICAL_JSON).unwrap();
+        let ctx = TriggerContext {
+            day: 83,
+            coalition_defeated: false,
+            ..Default::default()
+        };
+        let ids: Vec<&str> = pool
+            .available_events(&ctx)
+            .iter()
+            .map(|e| e.id.as_str())
+            .collect();
+        assert!(
+            ids.contains(&"drouet_march_confusion"),
+            "Day 83应触发德尔隆军团迷失: {:?}",
+            ids
+        );
     }
 }

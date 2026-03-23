@@ -1,2 +1,2 @@
 pub mod system;
-pub use system::{PoliticsState, PolicyEffect, default_policies, FACTION_IDS, CRISIS_THRESHOLD};
+pub use system::{default_policies, PolicyEffect, PoliticsState, CRISIS_THRESHOLD, FACTION_IDS};

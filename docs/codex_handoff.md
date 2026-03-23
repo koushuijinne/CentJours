@@ -10,8 +10,8 @@
 ## 1. 当前项目状态
 
 - Rust 规则层与 Godot 前端已完成基础联调，主循环可跑通，正式入口是 `src/ui/main_menu.tscn`
-- 2026-03-23 复核 `cargo test` 为 **145/145 全通过**
-- 当前核心数据基线：`15` 名角色、`41` 个地图节点、`31` 条历史事件（major 13 / normal 17 / minor 1）
+- 2026-03-23 复核 `cargo test` 为 **150/150 全通过**
+- 当前核心数据基线：`15` 名角色、`41` 个地图节点、`49` 条历史事件（major 15 / normal 29 / minor 5）
 - 行军、战斗、政治、命令偏差、联军动态化、叙事池、单槽存档/读档均已接入
 - 前端已拆出 `map / layout / tray / sidebar / dialogs` 控制器，但发布级 polish 尚未完成
 - Windows Godot 运行与 Windows 无头测试仍是默认验证路径；**不要切到 Linux / WSL 无头测试作为默认方案**
@@ -19,7 +19,7 @@
 
 ## 2. 当前最高优先级
 
-1. 历史事件从 `31` 条扩充到 `100+`，并按 `docs/advice/claude_event_history.md` 修正文风与史实问题
+1. 历史事件从 `49` 条扩充到 `100+`，并按 `docs/advice/claude_event_history.md` 修正文风与史实问题
 2. 补齐政策后果文本、结局文本，让失败归因与信息解释完整成立
 3. 收口 F5：托盘双滚动、中英混排、`Map Inspector` 紧凑、设置入口与前 10 天引导
 4. 固化 Windows 发布链路与 Steam 提审资料清单
@@ -34,6 +34,10 @@
 - 叙事引擎已接入 `GameEngine`，政策 / 战役 / 强化忠诚可产生 `DayReport`
 - `historical_note` 已接入 Rust → GDExt → TurnManager → Sidebar/叙事日志链路，历史事件会在当回合结算后即时显示正文与史注
 - 已对 8 条重点历史事件做首轮文案 QA，修正了部分史实硬伤、解释不足和过度文学化问题
+- 累计已新增 18 条中盘 / 联军 / 小人物 / 指挥事件，补齐 Day 20-84 的多处节奏空白；本轮再补 `soult_chief_of_staff`、`carnot_returns_government`、`lavalette_postal_network`、`drouet_march_confusion`，事件池扩至 49 条
+- `events::pool` 已有事件数量、ID 唯一性、`historical_note` 非空、tier 对应叙事段数、禁止无效负 bonus 等回归测试，防止后续扩容时静默退化
+- 结局弹窗已开始消费 `OUTCOME_TEXT` 里的 `epilogue / review_hint`，并按终局统计生成复盘说明；行动后果微叙事也已改为中文类别标签
+- `map_controller.gd` 已改为运行时 `load(...).new()` 加载地图渲染脚本，Windows Godot 无头验证恢复可通过
 - Save / Load 已接入主菜单顶栏，但仍是开发态单槽存档
 - 主菜单已完成多轮解耦，职责已拆到 `map / layout / tray / sidebar / dialogs` 五类 controller
 
@@ -42,8 +46,9 @@
 - `Decision Tray` 仍有双滚动问题
 - 主菜单仍有中英混排，文本语言策略未统一
 - `Map Inspector` 长文本在部分节点上仍偏紧
-- `main_menu.gd` 仍有 `543` 行，`map_controller.gd` 已到 `656` 行，控制器拆分还没完全收口
-- `docs/advice/claude_event_history.md` 指出的史实与文风问题只修了首批 8 条，剩余事件仍待批量审校
+- `main_menu.gd` 仍有 `549` 行，`map_controller.gd` 已到 `658` 行，控制器拆分还没完全收口
+- `docs/advice/claude_event_history.md` 指出的史实与文风问题只完成了首批 8 条旧事件修订；累计 18 条新增事件虽已按新标准入库，但全量 49 条仍待统一审校
+- 政策执行日志仍只显示 `policy_id`，缺少更面向玩家的政策名与效果摘要
 - 仓库内仍缺 `export_presets.cfg`、Windows 发布脚本、Steam 提审与商店素材清单
 - 资产层仍处于占位阶段：地图底图、肖像、卡片插图、BGM、SFX、结局画面均未完成
 
@@ -117,6 +122,7 @@ E:\software\godot\Godot_v4.6.1-stable_win64_console.exe --headless --path E:\pro
 - 不要默认回退工作区里的现有改动
 - 不要把 Linux / WSL 无头测试当成默认步骤
 - 若继续做内容线，先按 `ADR-008` 的 Checklist 和 `claude_event_history` 的修订意见落地
+- 本轮已修掉 `napoleon_leaves_paris_north` 中不会生效的负 `paris_security_bonus / political_stability_bonus`；后续新增事件不要再用这类负 bonus 表达减益
 - 若继续做 UI 线，优先解决玩家可感知问题，再做大文件工程收口
 - 若被 Windows 验证卡住，先记录到 handoff，再切到不依赖该验证的下一条高价值任务继续推进
 

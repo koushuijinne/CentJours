@@ -6,7 +6,9 @@ func _ready() -> void:
 	print("state=", engine.get_state())
 	print("loyalties=", engine.get_all_loyalties())
 
-	engine.process_day_rest()
+	engine.process_day_policy("constitutional_promise")
 
-	print("after_rest_state=", engine.get_state())
+	print("after_policy_state=", engine.get_state())
+	print("last_action_events=", engine.get_last_action_events())
 	print("last_report=", engine.get_last_report())
+	get_tree().quit()
