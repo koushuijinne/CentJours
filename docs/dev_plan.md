@@ -1,6 +1,6 @@
 # Cent Jours — 开发优先级计划
 
-> **更新**: 2026-03-23 v46
+> **更新**: 2026-03-23 v47
 > **通用原则**: 项目长期稳定原则详见 `docs/development_principles.md`
 > **快速接手**: 当前状态见 `docs/codex_handoff.md`，新会话首条 prompt 模板见 `docs/codex_session_prompts.md`
 
