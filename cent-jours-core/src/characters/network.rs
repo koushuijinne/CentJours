@@ -218,6 +218,32 @@ impl CharacterNetwork {
         }
     }
 
+    /// 计算将领执行命令的偏差系数（命令偏差系统 Tier 3.1）。
+    /// 返回 0.80–1.20 之间的乘数（1.0 = 完美执行）。
+    /// 偏差幅度由忠诚度决定，方向由随机数决定。
+    ///
+    /// 规则：
+    /// - 忠诚度 ≥ 80：偏差 ±5%（绝对忠诚，几乎完美执行）
+    /// - 忠诚度 60–79：偏差 ±10%
+    /// - 忠诚度 40–59：偏差 ±15%
+    /// - 忠诚度 < 40：偏差 ±20%（危机忠诚度，大幅偏差）
+    pub fn calculate_deviation<R: rand::Rng>(&self, general_id: &str, rng: &mut R) -> f64 {
+        let loyalty = self.loyalty(general_id);
+        // 根据忠诚度区间确定最大偏差幅度
+        let max_deviation = if loyalty >= LOYALTY_ABSOLUTE_THRESHOLD {
+            0.05
+        } else if loyalty >= 60.0 {
+            0.10
+        } else if loyalty >= 40.0 {
+            0.15
+        } else {
+            0.20
+        };
+        // 在 [-max_deviation, +max_deviation] 范围内随机取值
+        let deviation = rng.gen_range(-max_deviation..=max_deviation);
+        (1.0_f64 + deviation).clamp(0.80, 1.20)
+    }
+
     /// 将领是否处于危机忠诚度（可能拒绝命令）
     pub fn is_loyalty_crisis(&self, id: &str) -> bool {
         self.loyalty(id) < LOYALTY_CRISIS_THRESHOLD
@@ -581,5 +607,69 @@ mod tests {
         let ids: Vec<&str> = crisis.iter().map(|&(id, _)| id).collect();
         assert!(ids.contains(&"fouche"));
         assert!(ids.contains(&"ney"));
+    }
+
+    // ── 命令偏差系统（Tier 3.1）──────────────────────────
+
+    #[test]
+    fn 高忠诚度将领偏差幅度小() {
+        let mut net = CharacterNetwork::new();
+        net.add_general("davout", 90.0); // 绝对忠诚
+        let mut rng = rand::thread_rng();
+        // 跑 100 次取最大偏差
+        let mut max_dev = 0.0_f64;
+        for _ in 0..100 {
+            let d = net.calculate_deviation("davout", &mut rng);
+            max_dev = max_dev.max((d - 1.0).abs());
+        }
+        // 忠诚度 ≥80，最大偏差应 ≤5%
+        assert!(max_dev <= 0.051, "高忠诚偏差超限: {:.3}", max_dev);
+    }
+
+    #[test]
+    fn 低忠诚度将领偏差幅度大() {
+        let mut net = CharacterNetwork::new();
+        net.add_general("fouche", 20.0); // 危机忠诚
+        let mut rng = rand::thread_rng();
+        let mut found_large = false;
+        for _ in 0..200 {
+            let d = net.calculate_deviation("fouche", &mut rng);
+            if (d - 1.0).abs() > 0.10 {
+                found_large = true;
+                break;
+            }
+        }
+        // 忠诚度 <40，应在 200 次内出现 >10% 偏差
+        assert!(found_large, "低忠诚将领应产生大偏差");
+    }
+
+    #[test]
+    fn 偏差系数始终在合法范围() {
+        let mut net = CharacterNetwork::new();
+        net.add_general("test", 10.0); // 极低忠诚
+        let mut rng = rand::thread_rng();
+        for _ in 0..500 {
+            let d = net.calculate_deviation("test", &mut rng);
+            assert!(d >= 0.80, "偏差低于下限: {:.3}", d);
+            assert!(d <= 1.20, "偏差超出上限: {:.3}", d);
+        }
+    }
+
+    #[test]
+    fn 偏差影响实际参战兵力() {
+        let mut net = CharacterNetwork::new();
+        net.add_general("ney", 55.0); // 中等忠诚，偏差 ±15%
+        let mut rng = rand::thread_rng();
+        let commanded = 20000_u32;
+        let mut seen_diff = false;
+        for _ in 0..50 {
+            let d = net.calculate_deviation("ney", &mut rng);
+            let actual = ((commanded as f64) * d).round() as u32;
+            if actual != commanded {
+                seen_diff = true;
+                break;
+            }
+        }
+        assert!(seen_diff, "中等忠诚将领应至少偶尔产生兵力偏差");
     }
 }

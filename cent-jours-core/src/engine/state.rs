@@ -504,7 +504,7 @@ impl GameEngine {
         }]
     }
 
-    /// 战役处理：解算战斗 → 更新三系统
+    /// 战役处理：命令偏差 → 解算战斗 → 更新三系统
     pub fn process_battle<R: Rng>(
         &mut self,
         general_id: &str,
@@ -512,15 +512,19 @@ impl GameEngine {
         terrain: Terrain,
         rng: &mut R,
     ) -> Vec<DayEvent> {
+        // 命令偏差：将领忠诚度影响实际投入兵力（Tier 3.1）
+        let deviation = self.characters.calculate_deviation(general_id, rng);
+        let actual_troops = ((troops as f64) * deviation).round() as u32;
+
         let general_skill = self.general_skill(general_id);
-        let attacker = self.army.to_force_data(general_skill, troops);
+        let attacker = self.army.to_force_data(general_skill, actual_troops);
 
         // 敌军：随日期增长（联军集结）
         let enemy = self.coalition_force();
         let outcome = resolve_battle(&attacker, &enemy, terrain, rng);
         let result = outcome.result;
 
-        // 更新军队
+        // 更新军队（以命令兵力为基准计算损失，而非偏差后兵力）
         self.army.apply_battle(result, troops);
 
         // 更新将领忠诚度
@@ -529,9 +533,28 @@ impl GameEngine {
         // 更新政治：战胜提升军方，战败降低军方 + 民众
         self.apply_battle_politics(result);
 
+        // 地形防御加成百分比（0% = 平原无加成）
+        let terrain_pct = (terrain.defense_bonus() - 1.0) * 100.0;
+
+        // 命令偏差叙事：仅当偏差超过 ±5% 时显示
+        let deviation_text = if deviation > 1.05 {
+            format!(
+                "\n{} 过于激进，实际投入 {} 人（超出命令 {} 人）",
+                general_id, actual_troops, actual_troops.saturating_sub(troops)
+            )
+        } else if deviation < 0.95 {
+            format!(
+                "\n{} 执行迟疑，仅投入 {} 人（少于命令 {} 人）",
+                general_id, actual_troops, troops.saturating_sub(actual_troops)
+            )
+        } else {
+            String::new()
+        };
+
         let description = format!(
-            "Day {}: {} 率军 {} 人于 {:?} 地形作战，结果：{}",
-            self.day, general_id, troops, terrain, result.as_str()
+            "Day {}: {} 率军 {} 人于 {:?} 地形（守方加成 {:.0}%）作战，结果：{}{}",
+            self.day, general_id, actual_troops, terrain, terrain_pct,
+            result.as_str(), deviation_text
         );
 
         vec![DayEvent {
@@ -541,6 +564,7 @@ impl GameEngine {
             effects: vec![
                 format!("军队损失: {}", outcome.attacker_casualties),
                 format!("士气变化: {:.1}", outcome.attacker_morale_delta),
+                format!("命令偏差: {:.0}%", (deviation - 1.0) * 100.0),
             ],
         }]
     }

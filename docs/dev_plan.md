@@ -1,6 +1,6 @@
 # Cent Jours — 开发优先级计划
 
-> **更新**: 2026-03-23 v40
+> **更新**: 2026-03-23 v41
 > **当前分支**: `claude/review-project-plan-vgQTN`
 > **通用原则**: 项目长期稳定原则详见 `docs/development_principles.md`
 > **快速接手**: 当前状态见 `docs/codex_handoff.md`，新会话首条 prompt 模板见 `docs/codex_session_prompts.md`
@@ -96,7 +96,7 @@ M6  打磨发布   ░░░░░░░░░░░░   0%
 | 行军系统 | `battle/march.rs` | 10 | ✅ +4直接测试rest_army()（高低补给/边界/公式验证） |
 | 政治系统 | `politics/system.rs` | 8 | ✅ |
 | 命令偏差 | `characters/order_deviation.rs` | 6 | ✅ |
-| 将领关系网络 | `characters/network.rs` | 23 | ✅ |
+| 将领关系网络 | `characters/network.rs` | 27 | ✅ +4 命令偏差测试 |
 | 三系统状态机 | `engine/state.rs` | 16 | ✅ |
 | 历史事件池 | `events/pool.rs` | 16 | ✅ 33条×5叙事（+3 Day10-19补白） |
 | 蒙特卡洛模拟 | `simulation/monte_carlo.rs` | 8 | ✅ |
@@ -327,11 +327,12 @@ M6  打磨发布   ░░░░░░░░░░░░   0%
 - 决策托盘新增”行军”卡片，点击后切换到地图交互模式
 - `TurnManager.submit_action(“march”, {target_node})`
 
-#### 2.4 行军与战斗关联 [S]
-- 战斗地形从当前位置的 `map_nodes.json` 节点 `type` 推断
-- 行军疲劳影响下一次战斗结果
+#### 2.4 行军与战斗关联 ✅
+- ✅ 战斗地形从当前位置的 `map_nodes.json` 节点 `terrain` 推断（`_battle_popup_state()` 默认填充）
+- ✅ 行军疲劳影响下一次战斗结果（`march_fatigue_penalty()` → `ArmyState` 持久化 → `calculate_force_score()` 消耗）
+- ✅ 战报叙事包含地形守方加成百分比
 
-**Tier 2 完成标志**: 玩家在地图上移动拿破仑，行军消耗疲劳，到达目标后发起战斗。
+**Tier 2 完成标志**: ✅ 玩家在地图上移动拿破仑，行军消耗疲劳，到达目标后发起战斗。
 
 ---
 
@@ -339,10 +340,13 @@ M6  打磨发布   ░░░░░░░░░░░░   0%
 
 > 让已实现但未接入的系统发挥作用。
 
-#### 3.1 命令偏差接入战斗 [M]
-**文件**: `engine/state.rs` `process_battle()`
-- 战斗前调 `calculate_deviation()` 影响将领表现
-- 前端战报展示偏差叙事
+#### 3.1 命令偏差接入战斗 ✅
+**文件**: `engine/state.rs` `process_battle()` + `characters/network.rs`
+- ✅ `calculate_deviation()` 根据忠诚度计算偏差系数（0.80–1.20）
+- ✅ `process_battle()` 用偏差系数调整实际投入兵力
+- ✅ 战报叙事展示偏差信息（超出/少于命令兵力）
+- ✅ 4 个偏差单元测试（高/低忠诚度、范围合法性、兵力影响）
+- 测试覆盖：135 个（+4 偏差测试）
 
 #### 3.2 叛逃/倒戈触发 [M]
 **文件**: `engine/state.rs` `dusk_settlement()`
