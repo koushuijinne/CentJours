@@ -1,6 +1,6 @@
 # Cent Jours — 前端开发优先级计划
 
-> **更新**: 2026-03-23 v19
+> **更新**: 2026-03-23 v20
 > **当前分支**: `claude/review-project-plan-vgQTN`
 > **目标**: 用最少轮次把 Godot 入口从“占位页 + 联调脚本”推进到“可展示、可讲解、可继续绑定数据”的主场景
 > **通用原则**: 项目长期稳定原则详见 `docs/development_principles.md`
@@ -80,7 +80,7 @@ F5  视觉统一与动效      ████████░░░░  55% 🔶 RN
 4. ~~叙事文本被 `_refresh_ui()` 覆盖，玩家看不到司汤达日记。~~ **✅ 已解决**
 5. ~~地图区仍是静态战略感占位，尚未读取 `map_nodes.json` 做数据驱动布局。~~ **✅ 已解决**：38 节点 + 完整边数据驱动
 6. ~~派系支持度无趋势方向箭头。~~ **✅ 已解决**：趋势箭头 ↑/↓/→ 已接入
-7. `src/ui/main_menu.gd` 已压到 `436` 行，但仍残留回合流、UI 刷新和状态组装职责，主菜单第三波收尾尚未完成。
+7. ~~`src/ui/main_menu.gd` 已压到 `436` 行，但仍残留回合流、UI 刷新和状态组装职责，主菜单第三波收尾尚未完成。~~ **✅ 已解决**：第三波解耦完成，行军→map_controller，HUD闪烁→layout_controller，弹窗状态→dialogs_controller，主脚本 427 行。
 8. ~~卡片冷却态目前仅为本回合视觉标记，引擎未暴露政策冷却 API~~ ✅ ADR-005 已实现：`get_state()` 返回 `cooldowns`，前端从 `GameState.policy_cooldowns` 读取真实剩余天数。
 9. ✅ `ADR-006` 第一轮已通过 Windows `1280x720` 手动验收：顶栏无垂直裁切。
 10. ✅ `ADR-006` 第一轮已通过 Windows `1280x720` 手动验收：托盘与卡片主体完整可见。
@@ -182,9 +182,18 @@ F5  视觉统一与动效      ████████░░░░  55% 🔶 RN
 - Windows 无头测试已通过，说明第二波总装没有引入新的主菜单脚本加载错误
 - 当前验证原则已收紧：无头测试只执行 Windows 环境，不再要求 Linux / WSL 补充无头验证
 
+### 第三波已落地（2026-03-23）
+
+- 行军选点逻辑（验证、确认、反馈文本）迁入 `map_controller.gd`，新增 `march_confirmed` / `march_feedback` 信号
+- 顶栏数值刷新与闪烁动效迁入 `layout_controller.gd`，新增 `refresh_topbar()` / `snapshot_prev_values()` / `apply_rn_atmosphere()`
+- 弹窗状态组装（game_over / battle / boost）迁入 `dialogs_controller.gd`，新增 `build_*_from_engine()` 系列方法
+- 地形标准化 `_normalize_battle_terrain()` 迁入 `dialogs_controller.gd`
+- `main_menu.gd` 从 `436` 行继续收缩到 `427` 行，不再包含任何业务逻辑
+- Rust 131 测试全部通过，无回归
+
 ### 本轮目标
 
-把 `main_menu.gd` 从“大一统脚本”收缩成**主场景编排器**，目标是：
+把 `main_menu.gd` 从”大一统脚本”收缩成**主场景编排器**，目标是：
 
 - `main_menu.gd` 只保留节点装配、信号绑定、顶层调度
 - 地图、托盘、Sidebar、弹窗、格式化和配置从主文件中拆出
@@ -295,7 +304,7 @@ F5  视觉统一与动效      ████████░░░░  55% 🔶 RN
 - `map_controller.gd`：已落地
 - `layout_controller.gd`：已落地
 - `dialogs_controller.gd`：已落地
-- `main_menu.gd`：已从 `1531` 行降到 `436` 行，已基本降为编排器
+- `main_menu.gd`：已从 `1531` 行降到 `427` 行，第三波解耦完成，已降为纯编排器
 
 ### 推荐拆分顺序
 

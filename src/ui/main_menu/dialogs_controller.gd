@@ -367,3 +367,51 @@ func _get_int_stat(stats: Dictionary, key: String, fallback: int) -> int:
 func _get_float_stat(stats: Dictionary, key: String, fallback: float) -> float:
 	var value: Variant = stats.get(key, fallback)
 	return float(value) if value != null else fallback
+
+
+# ── 弹窗状态自取（从 main_menu.gd 迁入） ──────────────────────────
+
+## 直接从 GameState 构建游戏结束统计字典
+func build_game_over_state_from_engine() -> Dictionary:
+	return build_game_over_state({
+		STATE_KEY_CURRENT_DAY: GameState.current_day,
+		STATE_KEY_LEGITIMACY: GameState.legitimacy,
+		STATE_KEY_VICTORIES: GameState.victories,
+		STATE_KEY_TOTAL_TROOPS: GameState.total_troops,
+		STATE_KEY_AVG_MORALE: GameState.avg_morale,
+	})
+
+
+## 直接从 GameState + map_controller 构建战斗弹窗状态
+func build_battle_state(map_controller: MainMenuMapController) -> Dictionary:
+	var location_node: Dictionary = map_controller.get_map_node(GameState.napoleon_location)
+	var location_label := MainMenuFormattersLib.napoleon_location_label(
+		map_controller.get_map_nodes(), GameState.napoleon_location
+	)
+	return {
+		STATE_KEY_CHARACTERS: GameState.characters,
+		STATE_KEY_TOTAL_TROOPS: GameState.total_troops,
+		STATE_KEY_LOCATION_LABEL: location_label,
+		STATE_KEY_LOCATION_TERRAIN: _normalize_battle_terrain(
+			String(location_node.get("terrain", "plains"))
+		),
+	}
+
+
+## 直接从 GameState 构建忠诚度强化弹窗状态
+func build_boost_state() -> Dictionary:
+	return {
+		STATE_KEY_CHARACTERS: GameState.characters,
+		STATE_KEY_LEGITIMACY: GameState.legitimacy,
+	}
+
+
+## 标准化战场地形 ID（ADR-004）
+func _normalize_battle_terrain(terrain_id: String) -> String:
+	match terrain_id:
+		"river_junction":
+			return "river_crossing"
+		"plains", "hills", "mountains", "forest", "urban", "coastal", "fortress", "ridgeline":
+			return terrain_id
+		_:
+			return "plains"

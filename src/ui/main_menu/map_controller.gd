@@ -13,6 +13,9 @@ signal map_data_loaded(success: bool)
 signal map_rebuilt
 signal hovered_node_changed(node_id: String)
 signal selected_node_changed(node_id: String)
+## 行军模式信号：确认行军 / 反馈文本（由编排器转发给 sidebar）
+signal march_confirmed(target_node: String)
+signal march_feedback(text: String, color: Color)
 
 var _map_nodes_path: String = DEFAULT_MAP_NODES_PATH
 var _map_region: String = ""
@@ -44,6 +47,8 @@ var _map_rebuild_in_progress: bool = false
 var _map_rebuild_pending: bool = false
 var _march_origin_node_id: String = ""
 var _march_target_node_ids: Array[String] = []
+var _pending_march_target: String = ""  # 行军模式下待确认的目标节点
+var _march_mode_active: bool = false    # 当前是否处于行军选点模式
 
 
 func configure(
@@ -876,3 +881,92 @@ func _normalize_node_id_array(target_node_ids: Array) -> Array[String]:
 			continue
 		normalized.append(node_id)
 	return normalized
+
+
+# ── 行军模式逻辑（从 main_menu.gd 迁入） ──────────────────────────
+
+## 设置行军选点模式开关，由编排器在 tray 选中 "march" 时调用
+func set_march_mode(enabled: bool) -> void:
+	_march_mode_active = enabled
+	if enabled:
+		set_march_preview(GameState.napoleon_location, GameState.available_march_targets)
+	else:
+		clear_march_state()
+
+
+## 地图节点被选中时，若处于行军模式则验证并更新待确认目标
+func on_map_node_selected_for_march(node_id: String) -> void:
+	if not _march_mode_active:
+		return
+	_update_march_target(node_id)
+
+
+## 尝试确认行军：验证目标有效后发射 march_confirmed 信号
+## 返回 true 表示行军已提交，false 表示无有效目标
+func try_confirm_march() -> bool:
+	if not _march_mode_active:
+		return false
+	if _pending_march_target == "":
+		march_feedback.emit(
+			"行军部署\n\n请先在地图上选择一个与当前位置相邻的节点。",
+			CentJoursTheme.COLOR["text_secondary"]
+		)
+		return false
+	var target := _pending_march_target
+	clear_march_state()
+	march_confirmed.emit(target)
+	return true
+
+
+## 清除行军状态（目标、预览高亮）
+func clear_march_state() -> void:
+	_pending_march_target = ""
+	_march_mode_active = false
+	clear_march_preview()
+
+
+## 获取当前待确认的行军目标节点 ID
+func get_pending_march_target() -> String:
+	return _pending_march_target
+
+
+## 验证并更新行军目标，发射 march_feedback 通知编排器更新侧边栏文本
+func _update_march_target(node_id: String) -> void:
+	var location_label := MainMenuFormattersLib.napoleon_location_label(
+		_map_nodes, GameState.napoleon_location
+	)
+	# 空选取消行军目标
+	if node_id == "":
+		_pending_march_target = ""
+		march_feedback.emit("", Color.WHITE)
+		return
+	# 不能行军到当前驻扎位置
+	if node_id == GameState.napoleon_location:
+		_pending_march_target = ""
+		march_feedback.emit(
+			"行军部署\n\n当前已驻扎在 %s，请选择一个相邻节点。" % location_label,
+			CentJoursTheme.COLOR["text_secondary"]
+		)
+		return
+	# 只允许行军到直接相邻的节点
+	if not GameState.available_march_targets.has(node_id):
+		_pending_march_target = ""
+		var node_info: Dictionary = get_map_node(node_id)
+		march_feedback.emit(
+			"行军部署\n\n%s 目前不与 %s 直接相邻，无法在一天内抵达。" % [
+				String(node_info.get("name_fr", node_id)),
+				location_label
+			],
+			CentJoursTheme.COLOR["text_secondary"]
+		)
+		return
+	# 有效目标：设置待确认
+	_pending_march_target = node_id
+	var target_info: Dictionary = get_map_node(node_id)
+	march_feedback.emit(
+		"行军部署\n\n从 %s 行军至 %s。\n确认后将推进一天，并同步疲劳与士气。" % [
+			location_label,
+			String(target_info.get("name_fr", node_id))
+		],
+		CentJoursTheme.COLOR["text_secondary"]
+	)
