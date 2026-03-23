@@ -1,6 +1,6 @@
 # Cent Jours — 开发优先级计划
 
-> **更新**: 2026-03-24 v60
+> **更新**: 2026-03-24 v61
 > **通用原则**: 项目长期稳定原则详见 `docs/development_principles.md`
 > **快速接手**: 当前状态见 `docs/codex_handoff.md`
 > **自动推进**: 全自动开发循环见 `docs/codex_autonomous_workflow.md`
@@ -17,6 +17,7 @@
 - 事件池又补入 `3` 条政治 / 联军协同条目：`ghent_bourbon_court`、`royalist_pamphlets_from_ghent`、`brussels_allied_staff_conference`，把波旁流亡宫廷、保皇派舆论战和布鲁塞尔联军参谋协调正式接入百日主线。
 - 旧事件文本 QA 继续推进：本轮又修 `fontainebleau_eve`、`diplomatic_offer_rejected`、`chamber_opposition_grows`、`waterloo_eve`、`murat_naples_betrayal` 五条事件，补强外交 / 议会 / 战役因果，压低过度文学化表达。
 - `historical_note` 风格统一继续推进：本轮再修 `elba_veterans_rally`、`allies_mobilization`、`davout_paris_assignment`、`fouche_conspiracy`、`imperial_guard_rebuilt`、`royalist_uprising_vendee`、`paris_bourse_silence`、`war_ministry_night_shift`、`national_guard_callup`、`horse_requisition_resentment`、`federes_paris_drills` 共 `11` 条史注，收紧日期锚点并补齐事实 → 后果链。
+- 自动推进规则已回收为会话内执行：不再依赖外部监督器，默认直接按 `docs/codex_autonomous_workflow.md` 的零阻塞循环规则在当前会话内连续开发。
 - 结局弹窗现已实际显示 `OUTCOME_TEXT` 中的 `epilogue / review_hint`，行动后果微叙事也已改为中文类别标签，不再直接暴露裸 `action_type` key。
 - 行动结算日志链已打通：`GameEngine.last_action_events -> GDExt get_last_action_events() -> TurnManager/EventBus -> MainMenu`，政策 / 战役 / 行军 / 强化忠诚结果都已有结构化摘要；角色显示名也已回收到 `characters.json.display_name`，行动日志与主菜单角色列表统一改用中文短称。
 - 前端已经拆出 `map / layout / tray / sidebar / dialogs` 控制器，但主菜单相关文件仍然偏大，UI 收口还没完成。

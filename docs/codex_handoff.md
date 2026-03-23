@@ -141,6 +141,7 @@ E:\software\godot\Godot_v4.6.1-stable_win64_console.exe --headless --path E:\pro
 - 本轮已修掉 `napoleon_leaves_paris_north` 中不会生效的负 `paris_security_bonus / political_stability_bonus`；后续新增事件不要再用这类负 bonus 表达减益
 - 若继续做 UI 线，优先解决玩家可感知问题，再做大文件工程收口
 - 若被 Windows 验证卡住，先记录到 handoff，再切到不依赖该验证的下一条高价值任务继续推进
+- 若继续做零阻塞开发，直接按 `docs/codex_autonomous_workflow.md` 在当前会话内连续推进，不再引入外部监督器
 
 ## 10. 维护约定
 
@@ -152,7 +153,6 @@ E:\software\godot\Godot_v4.6.1-stable_win64_console.exe --headless --path E:\pro
 ## 11. 最近一轮压缩摘要
 
 - 当前可信基线：`15` 角色 / `41` 节点 / `58` 历史事件 / `164` Rust tests
-- 已把根特流亡宫廷、根特保皇派传单、布鲁塞尔联军参谋会议接入事件池，补齐政治 / 联军协同视角的一小段中盘内容
-- `events::pool` 现已用 `37` 个测试守住 58 条事件基线、7 条 minor 下限和 3 条新事件触发时机
-- 当前旧事件累计 QA 数仍为 `24` 条；剩余高优先级仍是政治 / 外交 / 联军视角条目的全量文本统一
-- 下一轮主线分成两条：一是继续扩事件并做 QA，二是补“零阻塞自动监督脚本”把外部循环真正跑起来
+- 已删除外部监督器方案，零阻塞自动循环重新收口到 `docs/codex_autonomous_workflow.md` 的会话内执行规则
+- 当前剩余高优先级仍是政治 / 外交 / 联军视角条目的全量文本统一；下一轮直接继续内容主线，不再分叉到工具链实验
+- 下一轮默认动作：补下一小包政治 / 外交 / 联军事件，并同步做旧事件文本 QA

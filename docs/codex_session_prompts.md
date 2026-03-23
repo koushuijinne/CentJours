@@ -26,6 +26,8 @@
 - 不要先做大改。
 - 不要先生成泛泛而谈的长方案。
 - 按 `docs/codex_autonomous_workflow.md` 的零阻塞规则自动推进。
+- 禁止把“总结当前状态 / 写 handoff / 给出下一步建议”当成停机点；写完后必须立刻继续下一轮。
+- 只要还有无阻塞的 `P0 / P1` 任务，就不要停在 final 总结里。
 ```
 
 ## 2. 主菜单开发线启动模板
@@ -80,4 +82,11 @@ E:\software\godot\Godot_v4.6.1-stable_win64_console.exe --headless --path E:\pro
 1. 报出具体文件和行号。
 2. 优先做最小修复。
 3. 修完后重新跑同一条 Windows 无头命令确认。
+```
+
+## 5. 零阻塞循环附加要求
+
+```text
+不要引入仓库外或仓库内的额外监督器、loop runner、代理脚本。
+直接按 docs/codex_autonomous_workflow.md 在当前会话内连续推进。
 ```
