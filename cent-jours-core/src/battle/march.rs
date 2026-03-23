@@ -84,6 +84,13 @@ impl MapGraph {
         }
     }
 
+    pub fn node_name(&self, node_id: &str) -> String {
+        self.nodes
+            .get(node_id)
+            .map(|node| node.name.clone())
+            .unwrap_or_else(|| node_id.to_string())
+    }
+
     /// 节点是否相邻（直接连接）
     pub fn is_adjacent(&self, from: &str, to: &str) -> bool {
         self.edges

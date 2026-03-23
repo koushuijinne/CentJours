@@ -10,9 +10,10 @@
 ## 1. 当前项目状态
 
 - Rust 规则层与 Godot 前端已完成基础联调，主循环可跑通，正式入口是 `src/ui/main_menu.tscn`
-- 2026-03-23 复核 `cargo test` 为 **150/150 全通过**
+- 2026-03-23 复核 `cargo test` 为 **156/156 全通过**
 - 当前核心数据基线：`15` 名角色、`41` 个地图节点、`49` 条历史事件（major 15 / normal 29 / minor 5）
 - 行军、战斗、政治、命令偏差、联军动态化、叙事池、单槽存档/读档均已接入
+- 玩家行动结算日志已可见：政策 / 战役 / 行军 / 强化忠诚会显示结构化影响摘要，日志通过 `last_action_events -> GDExt -> TurnManager/EventBus -> MainMenu` 进入侧栏；角色短名已统一来自 `characters.json.display_name`
 - 前端已拆出 `map / layout / tray / sidebar / dialogs` 控制器，但发布级 polish 尚未完成
 - Windows Godot 运行与 Windows 无头测试仍是默认验证路径；**不要切到 Linux / WSL 无头测试作为默认方案**
 - 当前尚未达到 Steam 发布就绪：内容量、文案 QA、UI 收口、设置/导出/商店链路、最终资产都还缺
@@ -20,7 +21,7 @@
 ## 2. 当前最高优先级
 
 1. 历史事件从 `49` 条扩充到 `100+`，并按 `docs/advice/claude_event_history.md` 修正文风与史实问题
-2. 补齐政策后果文本、结局文本，让失败归因与信息解释完整成立
+2. 补前 10 天引导、失败归因与结局文本，让新玩家信息解释真正完整成立
 3. 收口 F5：托盘双滚动、中英混排、`Map Inspector` 紧凑、设置入口与前 10 天引导
 4. 固化 Windows 发布链路与 Steam 提审资料清单
 
@@ -37,7 +38,11 @@
 - 累计已新增 18 条中盘 / 联军 / 小人物 / 指挥事件，补齐 Day 20-84 的多处节奏空白；本轮再补 `soult_chief_of_staff`、`carnot_returns_government`、`lavalette_postal_network`、`drouet_march_confusion`，事件池扩至 49 条
 - `events::pool` 已有事件数量、ID 唯一性、`historical_note` 非空、tier 对应叙事段数、禁止无效负 bonus 等回归测试，防止后续扩容时静默退化
 - 结局弹窗已开始消费 `OUTCOME_TEXT` 里的 `epilogue / review_hint`，并按终局统计生成复盘说明；行动后果微叙事也已改为中文类别标签
+- `GameEngine` 已缓存最近一次玩家行动的 `DayEvent`，`CentJoursEngine.get_last_action_events()` 已暴露到 Godot；政策 / 战役 / 行军 / 强化忠诚结算都会输出可读描述和结构化 effects
+- `characters.json` 已补 `display_name` 字段，GDScript 角色列表与 Rust 行动结算日志都改为优先使用中文短称
+- 叙事面板的“预览/日志”冲突已缓解：选择下一张卡不会再清空既有历史日志，结构化行动结算会写入侧栏滚动日志
 - `map_controller.gd` 已改为运行时 `load(...).new()` 加载地图渲染脚本，Windows Godot 无头验证恢复可通过
+- `src/dev/engine_smoke_test_scene.tscn` 现可直接验证 `process_day_policy()` / `process_day_boost_loyalty()` / `process_day_battle()` 与 `get_last_action_events()` 的 GDExt 调用链
 - Save / Load 已接入主菜单顶栏，但仍是开发态单槽存档
 - 主菜单已完成多轮解耦，职责已拆到 `map / layout / tray / sidebar / dialogs` 五类 controller
 
@@ -48,7 +53,7 @@
 - `Map Inspector` 长文本在部分节点上仍偏紧
 - `main_menu.gd` 仍有 `549` 行，`map_controller.gd` 已到 `658` 行，控制器拆分还没完全收口
 - `docs/advice/claude_event_history.md` 指出的史实与文风问题只完成了首批 8 条旧事件修订；累计 18 条新增事件虽已按新标准入库，但全量 49 条仍待统一审校
-- 政策执行日志仍只显示 `policy_id`，缺少更面向玩家的政策名与效果摘要
+- 行动结算与角色短名已统一，但主菜单其余 UI 仍有中英法混排，离最终文本统一还有距离
 - 仓库内仍缺 `export_presets.cfg`、Windows 发布脚本、Steam 提审与商店素材清单
 - 资产层仍处于占位阶段：地图底图、肖像、卡片插图、BGM、SFX、结局画面均未完成
 
@@ -65,6 +70,10 @@
 
 - `src/ui/main_menu.gd`
 - `src/ui/main_menu.tscn`
+- `cent-jours-core/src/engine/state.rs`
+- `cent-jours-core/src/lib.rs`
+- `src/core/turn_manager.gd`
+- `src/core/event_bus.gd`
 
 ### 叶子模块
 
@@ -100,6 +109,12 @@ cargo build --features godot-extension
 
 ```bash
 E:\software\godot\Godot_v4.6.1-stable_win64_console.exe --headless --path E:\projects\CentJours --quit
+```
+
+- 若本轮改动涉及新增 GDExt 接口，补跑一次 smoke scene（当前覆盖 policy / boost / battle 三条路径）：
+
+```bash
+E:\software\godot\Godot_v4.6.1-stable_win64_console.exe --headless --path E:\projects\CentJours res://src/dev/engine_smoke_test_scene.tscn
 ```
 
 ### 当前验证优先级

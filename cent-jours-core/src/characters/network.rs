@@ -11,6 +11,8 @@ use std::collections::HashMap;
 #[derive(Debug, Deserialize)]
 struct CharacterEntry {
     pub id: String,
+    pub name: String,
+    pub display_name: Option<String>,
     pub loyalty: f64,
     pub military_skill: f64,
     pub relationships: HashMap<String, f64>,
@@ -118,6 +120,8 @@ pub struct LoyaltyEvent {
 pub struct CharacterNetwork {
     /// 各将领当前忠诚度（0-100）
     pub loyalty: HashMap<String, f64>,
+    /// 各将领展示名（来自 characters.json）
+    pub names: HashMap<String, String>,
     /// 各将领军事技能（0-100），从 characters.json 加载，唯一来源
     pub skills: HashMap<String, f64>,
     /// 双向关系强度（-100..100），key=(id_a, id_b)，a<b字典序
@@ -138,6 +142,19 @@ impl CharacterNetwork {
         self.loyalty
             .insert(id.to_string(), initial_loyalty.clamp(0.0, 100.0));
         self.skills.entry(id.to_string()).or_insert(60.0);
+    }
+
+    /// 设置将领展示名
+    pub fn set_display_name(&mut self, id: &str, name: &str) {
+        self.names.insert(id.to_string(), name.to_string());
+    }
+
+    /// 获取将领展示名（优先使用 characters.json，缺失时回退到友好化 ID）
+    pub fn display_name(&self, id: &str) -> String {
+        self.names
+            .get(id)
+            .cloned()
+            .unwrap_or_else(|| humanize_identifier(id))
     }
 
     /// 获取将领军事技能（唯一来源：characters.json，未知将领返回60）
@@ -288,6 +305,10 @@ impl CharacterNetwork {
         // 先添加所有将领的忠诚度和技能值
         for ch in &data.characters {
             net.add_general(&ch.id, ch.loyalty);
+            net.names.insert(
+                ch.id.clone(),
+                ch.display_name.clone().unwrap_or_else(|| ch.name.clone()),
+            );
             net.skills
                 .insert(ch.id.clone(), ch.military_skill.clamp(0.0, 100.0));
         }
@@ -340,8 +361,28 @@ pub fn historical_network_day1() -> CharacterNetwork {
     // napoleon 字段用于存储"拿破仑声望"，初始值100
     // （characters.json 中无此条目，需手动添加）
     net.add_general("napoleon", 100.0);
+    net.set_display_name("napoleon", "拿破仑");
 
     net
+}
+
+fn humanize_identifier(id: &str) -> String {
+    id.split('_')
+        .filter(|part| !part.is_empty())
+        .map(|part| {
+            let mut chars = part.chars();
+            match chars.next() {
+                Some(first) => {
+                    let mut out = String::new();
+                    out.extend(first.to_uppercase());
+                    out.push_str(chars.as_str());
+                    out
+                }
+                None => String::new(),
+            }
+        })
+        .collect::<Vec<_>>()
+        .join(" ")
 }
 
 // ── 单元测试 ──────────────────────────────────────────
@@ -553,6 +594,13 @@ mod tests {
         use approx::assert_abs_diff_eq;
         // characters.json 中 ney.loyalty = 55
         assert_abs_diff_eq!(net.loyalty("ney"), 55.0, epsilon = 0.001);
+    }
+
+    #[test]
+    fn json加载后内伊显示名正确() {
+        const JSON: &str = include_str!("../../../src/data/characters.json");
+        let net = CharacterNetwork::from_json(JSON).expect("parse error");
+        assert_eq!(net.display_name("ney"), "内伊");
     }
 
     #[test]

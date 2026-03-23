@@ -537,31 +537,35 @@ impl GameEngine {
             supply: 60.0,
         };
         let result = move_army(&march_state, target_node, false, &self.map_graph);
+        let from_name = self.map_graph.node_name(&self.napoleon_location);
+        let target_name = self.map_graph.node_name(target_node);
         if !result.success {
             return vec![DayEvent {
                 day: self.day,
                 event_type: "march_failed",
-                description: format!(
-                    "行军失败：{}",
-                    result.reason.unwrap_or_else(|| "未知原因".to_string())
-                ),
+                description: format!("行军受阻：{} 无法直接行军至 {}", from_name, target_name),
                 effects: vec![],
             }];
         }
 
-        let from_node = self.napoleon_location.clone();
         self.napoleon_location = result.new_location.clone();
         self.army.avg_fatigue = result.new_fatigue;
         self.army.avg_morale = result.new_morale;
+        let new_location_name = self.map_graph.node_name(&self.napoleon_location);
+
+        let mut effects = Vec::new();
+        if let Some(effect) = format_signed_effect("疲劳", result.fatigue_delta) {
+            effects.push(effect);
+        }
+        if let Some(effect) = format_signed_effect("士气", result.morale_delta) {
+            effects.push(effect);
+        }
 
         vec![DayEvent {
             day: self.day,
             event_type: "march",
-            description: format!("拿破仑从 {} 行军至 {}", from_node, self.napoleon_location),
-            effects: vec![
-                format!("疲劳变化: {:+.1}", result.fatigue_delta),
-                format!("士气变化: {:+.1}", result.morale_delta),
-            ],
+            description: format!("拿破仑主力自 {} 行军至 {}", from_name, new_location_name),
+            effects,
         }]
     }
 
@@ -576,6 +580,11 @@ impl GameEngine {
         // 命令偏差：将领忠诚度影响实际投入兵力（Tier 3.1）
         let deviation = self.characters.calculate_deviation(general_id, rng);
         let actual_troops = ((troops as f64) * deviation).round() as u32;
+        let general_name = self.characters.display_name(general_id);
+        let before_loyalty = self.characters.loyalty(general_id);
+        let before_legitimacy = self.politics.legitimacy;
+        let before_military = self.politics.faction_support["military"];
+        let before_populace = self.politics.faction_support["populace"];
 
         let general_skill = self.general_skill(general_id);
         let attacker = self.army.to_force_data(general_skill, actual_troops);
@@ -600,46 +609,60 @@ impl GameEngine {
 
         // 地形防御加成百分比（0% = 平原无加成）
         let terrain_pct = (terrain.defense_bonus() - 1.0) * 100.0;
-
-        // 命令偏差叙事：仅当偏差超过 ±5% 时显示
-        let deviation_text = if deviation > 1.05 {
-            format!(
-                "\n{} 过于激进，实际投入 {} 人（超出命令 {} 人）",
-                general_id,
-                actual_troops,
-                actual_troops.saturating_sub(troops)
-            )
-        } else if deviation < 0.95 {
-            format!(
-                "\n{} 执行迟疑，仅投入 {} 人（少于命令 {} 人）",
-                general_id,
-                actual_troops,
-                troops.saturating_sub(actual_troops)
-            )
-        } else {
-            String::new()
-        };
-
         let description = format!(
-            "Day {}: {} 率军 {} 人于 {:?} 地形（守方加成 {:.0}%）作战，结果：{}{}",
-            self.day,
-            general_id,
+            "{} 率 {} 人在{}发起战役，结果：{}（守军地形加成 {:.0}%）",
+            general_name,
             actual_troops,
-            terrain,
-            terrain_pct,
-            result.as_str(),
-            deviation_text
+            terrain.display_name(),
+            result.display_name(),
+            terrain_pct
         );
+
+        let mut effects = vec![
+            format!("我军伤亡 {}", outcome.attacker_casualties),
+            format!("敌军伤亡 {}", outcome.defender_casualties),
+        ];
+        if let Some(effect) = format_signed_effect("士气", outcome.attacker_morale_delta) {
+            effects.push(effect);
+        }
+        if actual_troops != troops {
+            effects.push(format!(
+                "实际投入 {}（命令 {}，偏差 {:+.0}%）",
+                actual_troops,
+                troops,
+                (deviation - 1.0) * 100.0
+            ));
+        }
+        let loyalty_label = format!("{} 忠诚", general_name);
+        if let Some(effect) = format_signed_effect(
+            &loyalty_label,
+            self.characters.loyalty(general_id) - before_loyalty,
+        ) {
+            effects.push(effect);
+        }
+        if let Some(effect) = format_signed_effect(
+            "军方",
+            self.politics.faction_support["military"] - before_military,
+        ) {
+            effects.push(effect);
+        }
+        if let Some(effect) = format_signed_effect(
+            "民众",
+            self.politics.faction_support["populace"] - before_populace,
+        ) {
+            effects.push(effect);
+        }
+        if let Some(effect) =
+            format_signed_effect("合法性", self.politics.legitimacy - before_legitimacy)
+        {
+            effects.push(effect);
+        }
 
         vec![DayEvent {
             day: self.day,
             event_type: "battle",
             description,
-            effects: vec![
-                format!("军队损失: {}", outcome.attacker_casualties),
-                format!("士气变化: {:.1}", outcome.attacker_morale_delta),
-                format!("命令偏差: {:.0}%", (deviation - 1.0) * 100.0),
-            ],
+            effects,
         }]
     }
 
@@ -734,11 +757,12 @@ impl GameEngine {
 
     /// 强化忠诚度处理（消耗合法性）
     fn process_boost_loyalty(&mut self, general_id: &str) -> Vec<DayEvent> {
+        let general_name = self.characters.display_name(general_id);
         if self.politics.legitimacy < 10.0 {
             return vec![DayEvent {
                 day: self.day,
                 event_type: "boost_failed",
-                description: "合法性不足，无法强化将领关系".to_string(),
+                description: format!("合法性不足，无法安抚 {}", general_name),
                 effects: vec![],
             }];
         }
@@ -749,8 +773,11 @@ impl GameEngine {
         vec![DayEvent {
             day: self.day,
             event_type: "boost_loyalty",
-            description: format!("亲自接见 {}，消耗5点合法性", general_id),
-            effects: vec![format!("{} 忠诚度+8", general_id)],
+            description: format!("亲自接见 {}，试图稳住军心", general_name),
+            effects: vec![
+                "合法性 -5.0".to_string(),
+                format!("{} 忠诚 +8.0", general_name),
+            ],
         }]
     }
 
@@ -1369,6 +1396,26 @@ mod tests {
     }
 
     #[test]
+    fn 行军结算使用玩家可读地名() {
+        let mut engine = GameEngine::new();
+        let mut rng = seeded_rng();
+        engine.process_day(
+            PlayerAction::March {
+                target_node: "grasse".to_string(),
+            },
+            &mut rng,
+        );
+
+        let event = engine.last_action_events().first().expect("应有行军结算");
+        assert!(event.description.contains("儒安湾"));
+        assert!(event.description.contains("格拉斯"));
+        assert!(
+            !event.description.contains("golfe_juan"),
+            "日志不应再暴露节点 id"
+        );
+    }
+
+    #[test]
     fn 联军兵力加成会进入联军状态() {
         let mut engine = GameEngine::new();
         let baseline = engine.coalition_force().troops;
@@ -1550,6 +1597,28 @@ mod tests {
     }
 
     #[test]
+    fn 强化忠诚结算使用将领显示名() {
+        let mut engine = GameEngine::new();
+        let mut rng = seeded_rng();
+        engine.process_day(
+            PlayerAction::BoostLoyalty {
+                general_id: "ney".to_string(),
+            },
+            &mut rng,
+        );
+
+        let event = engine
+            .last_action_events()
+            .first()
+            .expect("应有强化忠诚结算");
+        assert!(event.description.contains("内伊"));
+        assert!(
+            !event.description.contains("亲自接见 ney"),
+            "日志不应再暴露将领 id"
+        );
+    }
+
+    #[test]
     fn 游戏开始前无叙事报告() {
         let engine = GameEngine::new();
         assert!(engine.last_report().is_none(), "初始状态应无叙事报告");
@@ -1635,6 +1704,32 @@ mod tests {
                 "最近触发事件应保留 historical_note，供 UI 展示"
             );
         }
+    }
+
+    #[test]
+    fn 战役结算使用可读地形与结果标签() {
+        let mut engine = GameEngine::new();
+        let mut rng = seeded_rng();
+        engine.process_day(
+            PlayerAction::LaunchBattle {
+                general_id: "ney".to_string(),
+                troops: 60_000,
+                terrain: Terrain::Plains,
+            },
+            &mut rng,
+        );
+
+        let event = engine.last_action_events().first().expect("应有战役结算");
+        assert!(event.description.contains("内伊"));
+        assert!(event.description.contains("平原"));
+        assert!(
+            event.description.contains("大捷")
+                || event.description.contains("小胜")
+                || event.description.contains("僵持")
+                || event.description.contains("小败")
+                || event.description.contains("惨败"),
+            "战役描述应使用中文结果标签"
+        );
     }
 
     // ── 联军增长 ──────────────────────────────────────

@@ -28,6 +28,16 @@ impl BattleResult {
         }
     }
 
+    pub fn display_name(&self) -> &'static str {
+        match self {
+            Self::DecisiveVictory => "大捷",
+            Self::MarginalVictory => "小胜",
+            Self::Stalemate => "僵持",
+            Self::MarginalDefeat => "小败",
+            Self::DecisiveDefeat => "惨败",
+        }
+    }
+
     /// 攻防双方战损比率 (attacker, defender)
     pub fn casualty_rates(&self) -> (f64, f64) {
         match self {
@@ -90,6 +100,20 @@ impl Terrain {
             Self::RiverJunction => 1.40,
             Self::Coastal => 1.10,
             Self::Fortress => 1.60,
+        }
+    }
+
+    pub fn display_name(&self) -> &'static str {
+        match self {
+            Self::Plains => "平原",
+            Self::Hills => "丘陵",
+            Self::Mountains => "山地",
+            Self::Forest => "森林",
+            Self::Urban => "城镇",
+            Self::Ridgeline => "高地",
+            Self::RiverJunction => "河口",
+            Self::Coastal => "海岸",
+            Self::Fortress => "要塞",
         }
     }
 
