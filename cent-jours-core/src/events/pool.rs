@@ -324,8 +324,8 @@ mod tests {
     fn json加载成功且事件数量达到扩充基线() {
         let pool = EventPool::from_json(HISTORICAL_JSON).expect("JSON解析失败");
         assert!(
-            pool.len() >= 49,
-            "应有至少49个历史事件，实际: {}",
+            pool.len() >= 55,
+            "应有至少55个历史事件，实际: {}",
             pool.len()
         );
     }
@@ -385,9 +385,18 @@ mod tests {
             .filter(|event| matches!(event.tier, EventTier::Minor))
             .count();
         assert!(
-            minor_count >= 5,
-            "minor 事件至少应有5条，实际: {}",
+            minor_count >= 6,
+            "minor 事件至少应有6条，实际: {}",
             minor_count
+        );
+        let late_minor_count = events
+            .iter()
+            .filter(|event| matches!(event.tier, EventTier::Minor) && event.day_range[1] >= 85)
+            .count();
+        assert!(
+            late_minor_count >= 1,
+            "Day 85+ 终盘至少应有1条 minor 事件，实际: {}",
+            late_minor_count
         );
 
         for event in &events {
@@ -895,6 +904,106 @@ mod tests {
         assert!(
             ids.contains(&"drouet_march_confusion"),
             "Day 83应触发德尔隆军团迷失: {:?}",
+            ids
+        );
+    }
+
+    #[test]
+    fn 布吕歇尔承诺支援在Day88触发() {
+        let pool = EventPool::from_json(HISTORICAL_JSON).unwrap();
+        let ctx = TriggerContext {
+            day: 88,
+            coalition_defeated: false,
+            ..Default::default()
+        };
+        let ids: Vec<&str> = pool
+            .available_events(&ctx)
+            .iter()
+            .map(|e| e.id.as_str())
+            .collect();
+        assert!(
+            ids.contains(&"blucher_promises_support"),
+            "Day 88应触发布吕歇尔承诺支援: {:?}",
+            ids
+        );
+    }
+
+    #[test]
+    fn 利尼伤兵车队在Day89触发() {
+        let pool = EventPool::from_json(HISTORICAL_JSON).unwrap();
+        let ctx = TriggerContext {
+            day: 89,
+            coalition_defeated: false,
+            ..Default::default()
+        };
+        let ids: Vec<&str> = pool
+            .available_events(&ctx)
+            .iter()
+            .map(|e| e.id.as_str())
+            .collect();
+        assert!(
+            ids.contains(&"wounded_wagons_from_ligny"),
+            "Day 89应触发利尼伤兵车队: {:?}",
+            ids
+        );
+    }
+
+    #[test]
+    fn 格鲁希听见炮声在Day95触发() {
+        let pool = EventPool::from_json(HISTORICAL_JSON).unwrap();
+        let ctx = TriggerContext {
+            day: 95,
+            coalition_defeated: false,
+            ..Default::default()
+        };
+        let ids: Vec<&str> = pool
+            .available_events(&ctx)
+            .iter()
+            .map(|e| e.id.as_str())
+            .collect();
+        assert!(
+            ids.contains(&"grouchy_hears_cannon"),
+            "Day 95应触发格鲁希听见炮声: {:?}",
+            ids
+        );
+    }
+
+    #[test]
+    fn 普军压向普朗斯努瓦在Day96触发() {
+        let pool = EventPool::from_json(HISTORICAL_JSON).unwrap();
+        let ctx = TriggerContext {
+            day: 96,
+            coalition_defeated: false,
+            ..Default::default()
+        };
+        let ids: Vec<&str> = pool
+            .available_events(&ctx)
+            .iter()
+            .map(|e| e.id.as_str())
+            .collect();
+        assert!(
+            ids.contains(&"plancenoit_under_attack"),
+            "Day 96应触发普军压向普朗斯努瓦: {:?}",
+            ids
+        );
+    }
+
+    #[test]
+    fn 齐滕军团接上左翼在Day97触发() {
+        let pool = EventPool::from_json(HISTORICAL_JSON).unwrap();
+        let ctx = TriggerContext {
+            day: 97,
+            coalition_defeated: false,
+            ..Default::default()
+        };
+        let ids: Vec<&str> = pool
+            .available_events(&ctx)
+            .iter()
+            .map(|e| e.id.as_str())
+            .collect();
+        assert!(
+            ids.contains(&"zieten_left_flank_arrival"),
+            "Day 97应触发齐滕军团接上左翼: {:?}",
             ids
         );
     }

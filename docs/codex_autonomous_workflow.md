@@ -1,9 +1,9 @@
 # Codex Autonomous Workflow
 
-> **更新**: 2026-03-23
+> **更新**: 2026-03-24
 > **目的**: 把 `CLAUDE.md` 里的开发循环规则展开为可执行 SOP，支持“尽量零阻塞、不暂停、自动决策”的连续开发。
 > **适用范围**: 本仓库的日常开发、接手、夜间推进、交接整理与发布前收口。
-> **重要：1.用户已指定在必要时开启Subagent 2.每完成一轮任务后自动总结压缩上下文**
+> **重要：1.用户已指定在必要时开启Subagent 2.每完成一轮任务后自动 `add / commit / push` 3.每完成一轮任务后自动总结压缩上下文**
 
 ---
 
@@ -35,7 +35,13 @@
    - 更新 `docs/dev_plan.md`
    - 更新 `docs/codex_handoff.md`
    - 若默认流程变化，更新本文件
-7. 自动重排下一轮
+7. 提交并推送
+   - 默认执行 `git add -A`
+   - 按本轮独立范围写清晰 commit message
+   - push 到当前工作分支
+8. 压缩上下文并自动重排下一轮
+   - 用 5-10 行写清本轮产出、验证结果、剩余最高优先级
+   - 将压缩摘要同步到 handoff 或本轮总结
    - 扫描剩余缺口
    - 若当前主线已闭环，立刻切到下一条最高价值任务继续推进
 
@@ -177,6 +183,8 @@ E:\software\godot\Godot_v4.6.1-stable_win64_console.exe --headless --path E:\pro
   - 仅在本轮确实改变产品里程碑状态时更新
 - 本文件
   - 仅在自动开发规则本身变化时更新
+- git 状态
+  - 默认 `git add -A`、commit、push，让代码、文档与 handoff 一起落地
 
 ## 8. 工作区与安全规则
 
@@ -192,6 +200,8 @@ E:\software\godot\Godot_v4.6.1-stable_win64_console.exe --headless --path E:\pro
 - 当前目标有清晰产出，不再是半成品
 - 已完成对应验证，或已明确记录无法验证的原因
 - `docs/dev_plan.md` 与 `docs/codex_handoff.md` 已同步
+- 已完成 `git add -A`、commit、push，或已明确记录无法 push 的原因
+- 已产出压缩摘要，足够让下一轮不重读全部上下文
 - 已经选出下一轮最高价值任务
 
 如果提前做完，默认继续：

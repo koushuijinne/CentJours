@@ -566,6 +566,128 @@
     "tier": "normal"
   },
   {
+    "id": "blucher_promises_support",
+    "label": "布吕歇尔承诺支援威灵顿",
+    "day_range": [86, 90],
+    "trigger": {
+      "day_min": 86,
+      "coalition_not_defeated": true
+    },
+    "effects": {
+      "coalition_troops_bonus": 5000,
+      "legitimacy_delta": -2
+    },
+    "narratives": [
+      "利尼战后，布吕歇尔没有向东彻底脱离战场，而是命令普军向瓦夫尔方向集中。",
+      "他给威灵顿回话：如果英军在圣让山脊接战，普军会去支援。",
+      "这意味着拿破仑面对的不是两支各自后退的军队，而是仍准备重新合拢的联军。"
+    ],
+    "historical_note": "1815年6月17日，布吕歇尔与格奈森瑙在瓦夫尔方向重整普军，并向威灵顿确认：若英军在滑铁卢附近接战，普军将尽力支援。联军协同因此没有在利尼后断裂。",
+    "tier": "normal"
+  },
+  {
+    "id": "wounded_wagons_from_ligny",
+    "label": "从利尼撤下来的伤兵车队",
+    "day_range": [87, 91],
+    "trigger": {
+      "day_min": 87,
+      "coalition_not_defeated": true
+    },
+    "effects": {
+      "military_support_delta": -1
+    },
+    "narratives": [
+      "从利尼方向撤下来的伤兵车把道路压得更慢了。士兵先闻到的不是火药，是血和湿布的味道。",
+      "胜负还没定，但北方军已经开始为下一场战斗付代价。"
+    ],
+    "historical_note": "1815年6月17日，利尼与四臂村后的伤员、辎重和溃散小队挤满了比利时道路。对双方而言，接下来的一天不是从整齐队列开始，而是从重新整顿开始。",
+    "tier": "minor"
+  },
+  {
+    "id": "grouchy_hears_cannon",
+    "label": "格鲁希听见滑铁卢炮声",
+    "day_range": [95, 96],
+    "trigger": {
+      "day_min": 95,
+      "coalition_not_defeated": true
+    },
+    "effects": {
+      "military_support_delta": -3,
+      "napoleon_morale_bonus": -4
+    },
+    "narratives": [
+      "6月18日上午，格鲁希部在瓦夫尔方向推进时已经能听见西面主战场的炮声。",
+      "热拉尔主张转向主战场，格鲁希拒绝了。他选择继续执行追击命令。",
+      "命令保持了字面的一致，兵团却因此离决定胜负的地方越来越远。"
+    ],
+    "historical_note": "1815年6月18日，格鲁希在瓦夫尔方向听到滑铁卢炮声后，仍继续按既定命令追击普军后队。是否应主动转向主战场，一直是战后争论焦点。",
+    "tier": "normal"
+  },
+  {
+    "id": "la_haye_sainte_taken_too_late",
+    "label": "拉艾圣农庄拿下得太晚",
+    "day_range": [95, 97],
+    "trigger": {
+      "day_min": 95,
+      "coalition_not_defeated": true
+    },
+    "effects": {
+      "military_support_delta": 2,
+      "napoleon_morale_bonus": 2
+    },
+    "narratives": [
+      "法军在傍晚前夺取拉艾圣农庄，终于撬开了英军中路前沿。",
+      "但这一步来得太晚了。中路缺口出现时，普军已经压到战场另一侧。",
+      "一个战术突破没有来得及变成战略结果。"
+    ],
+    "historical_note": "1815年6月18日傍晚，法军攻占拉艾圣农庄，短暂打开了威灵顿中路前方的火力位置。但此时普军已陆续投入战场，法国已失去独占战局节奏的窗口。",
+    "tier": "normal"
+  },
+  {
+    "id": "plancenoit_under_attack",
+    "label": "普军压向普朗斯努瓦",
+    "day_range": [96, 98],
+    "trigger": {
+      "day_min": 96,
+      "coalition_not_defeated": true
+    },
+    "effects": {
+      "coalition_troops_bonus": 8000,
+      "military_support_delta": -4,
+      "legitimacy_delta": -3,
+      "napoleon_morale_bonus": -6
+    },
+    "narratives": [
+      "下午之后，普军不断向普朗斯努瓦压上。近卫军预备队不得不一批批转向东侧。",
+      "这不是侧面骚扰，而是对法军后方和撤退线的直接威胁。",
+      "拿破仑原本准备用在中央决胜的兵，现在先被送去堵村庄和街道。",
+      "滑铁卢的失败，不只是正面进攻没打穿，也是侧后方先被普军撕开。"
+    ],
+    "historical_note": "1815年6月18日下午至傍晚，布吕歇尔部不断攻击普朗斯努瓦。拿破仑被迫投入近卫军和洛博军团稳定东翼，原本可用于中央决胜的预备队因此被严重分流。",
+    "tier": "major"
+  },
+  {
+    "id": "zieten_left_flank_arrival",
+    "label": "齐滕军团接上威灵顿左翼",
+    "day_range": [97, 99],
+    "trigger": {
+      "day_min": 97,
+      "coalition_not_defeated": true
+    },
+    "effects": {
+      "coalition_troops_bonus": 6000,
+      "military_support_delta": -5,
+      "legitimacy_delta": -3
+    },
+    "narratives": [
+      "到傍晚，齐滕第一军团已经接上威灵顿左翼，英荷军的薄弱段不再裸露。",
+      "这批援军没有制造戏剧性的转折，它只是让联军阵线不再需要靠侥幸维持。",
+      "当普军和英军真正握到一起时，拿破仑就只剩下正面硬压这一条路。"
+    ],
+    "historical_note": "1815年6月18日傍晚，齐滕第一军团接上威灵顿左翼，进一步稳固了联军整条防线。法军此后已难再通过局部突破迫使英军单独撤退。",
+    "tier": "normal"
+  },
+  {
     "id": "old_guard_last_charge",
     "label": "老近卫军最后的冲锋",
     "day_range": [96, 100],

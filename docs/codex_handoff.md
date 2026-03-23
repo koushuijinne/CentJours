@@ -1,6 +1,6 @@
 # Codex Handoff
 
-> **更新**: 2026-03-23
+> **更新**: 2026-03-24
 > **当前分支**: 以 `git branch --show-current` 为准（不再在 handoff 中硬编码）
 > **目标读者**: 新开会话后需要快速接手项目的 Codex / 协作者
 > **自动推进**: 见 `docs/codex_autonomous_workflow.md`
@@ -10,8 +10,8 @@
 ## 1. 当前项目状态
 
 - Rust 规则层与 Godot 前端已完成基础联调，主循环可跑通，正式入口是 `src/ui/main_menu.tscn`
-- 2026-03-23 复核 `cargo test` 为 **156/156 全通过**
-- 当前核心数据基线：`15` 名角色、`41` 个地图节点、`49` 条历史事件（major 15 / normal 29 / minor 5）
+- 2026-03-24 复核 `cargo test` 为 **161/161 全通过**
+- 当前核心数据基线：`15` 名角色、`41` 个地图节点、`55` 条历史事件（major 16 / normal 33 / minor 6）
 - 行军、战斗、政治、命令偏差、联军动态化、叙事池、单槽存档/读档均已接入
 - 玩家行动结算日志已可见：政策 / 战役 / 行军 / 强化忠诚会显示结构化影响摘要，日志通过 `last_action_events -> GDExt -> TurnManager/EventBus -> MainMenu` 进入侧栏；角色短名已统一来自 `characters.json.display_name`
 - 前端已拆出 `map / layout / tray / sidebar / dialogs` 控制器，但发布级 polish 尚未完成
@@ -20,7 +20,7 @@
 
 ## 2. 当前最高优先级
 
-1. 历史事件从 `49` 条扩充到 `100+`，并按 `docs/advice/claude_event_history.md` 修正文风与史实问题
+1. 历史事件从 `55` 条扩充到 `100+`，并按 `docs/advice/claude_event_history.md` 修正文风与史实问题
 2. 补前 10 天引导、失败归因与结局文本，让新玩家信息解释真正完整成立
 3. 收口 F5：托盘双滚动、中英混排、`Map Inspector` 紧凑、设置入口与前 10 天引导
 4. 固化 Windows 发布链路与 Steam 提审资料清单
@@ -35,8 +35,8 @@
 - 叙事引擎已接入 `GameEngine`，政策 / 战役 / 强化忠诚可产生 `DayReport`
 - `historical_note` 已接入 Rust → GDExt → TurnManager → Sidebar/叙事日志链路，历史事件会在当回合结算后即时显示正文与史注
 - 已对 8 条重点历史事件做首轮文案 QA，修正了部分史实硬伤、解释不足和过度文学化问题
-- 累计已新增 18 条中盘 / 联军 / 小人物 / 指挥事件，补齐 Day 20-84 的多处节奏空白；本轮再补 `soult_chief_of_staff`、`carnot_returns_government`、`lavalette_postal_network`、`drouet_march_confusion`，事件池扩至 49 条
-- `events::pool` 已有事件数量、ID 唯一性、`historical_note` 非空、tier 对应叙事段数、禁止无效负 bonus 等回归测试，防止后续扩容时静默退化
+- 本轮再补 `blucher_promises_support`、`wounded_wagons_from_ligny`、`grouchy_hears_cannon`、`la_haye_sainte_taken_too_late`、`plancenoit_under_attack`、`zieten_left_flank_arrival` 六条终盘事件，事件池扩至 55 条，并补上终盘 `minor` 覆盖
+- `events::pool` 已有事件数量、ID 唯一性、`historical_note` 非空、tier 对应叙事段数、禁止无效负 bonus、Day 85+ 至少 1 条 `minor` 等回归测试，防止后续扩容时静默退化
 - 结局弹窗已开始消费 `OUTCOME_TEXT` 里的 `epilogue / review_hint`，并按终局统计生成复盘说明；行动后果微叙事也已改为中文类别标签
 - `GameEngine` 已缓存最近一次玩家行动的 `DayEvent`，`CentJoursEngine.get_last_action_events()` 已暴露到 Godot；政策 / 战役 / 行军 / 强化忠诚结算都会输出可读描述和结构化 effects
 - `characters.json` 已补 `display_name` 字段，GDScript 角色列表与 Rust 行动结算日志都改为优先使用中文短称
@@ -51,8 +51,8 @@
 - `Decision Tray` 仍有双滚动问题
 - 主菜单仍有中英混排，文本语言策略未统一
 - `Map Inspector` 长文本在部分节点上仍偏紧
-- `main_menu.gd` 仍有 `549` 行，`map_controller.gd` 已到 `658` 行，控制器拆分还没完全收口
-- `docs/advice/claude_event_history.md` 指出的史实与文风问题只完成了首批 8 条旧事件修订；累计 18 条新增事件虽已按新标准入库，但全量 49 条仍待统一审校
+- `main_menu.gd` 仍有 `566` 行，`map_controller.gd` 已到 `658` 行，控制器拆分还没完全收口
+- `docs/advice/claude_event_history.md` 指出的史实与文风问题只完成了首批 8 条旧事件修订；本轮新增 6 条终盘事件虽已按新标准入库，但全量 55 条仍待统一审校
 - 行动结算与角色短名已统一，但主菜单其余 UI 仍有中英法混排，离最终文本统一还有距离
 - 仓库内仍缺 `export_presets.cfg`、Windows 发布脚本、Steam 提审与商店素材清单
 - 资产层仍处于占位阶段：地图底图、肖像、卡片插图、BGM、SFX、结局画面均未完成
@@ -146,3 +146,4 @@ E:\software\godot\Godot_v4.6.1-stable_win64_console.exe --headless --path E:\pro
 - 每完成一轮开发后，默认同步更新本文件
 - 若默认验证方式、自动推进规则或接手入口变化，同步更新 `docs/codex_autonomous_workflow.md`
 - 若当前优先级发生变化，同步更新 `docs/dev_plan.md`
+- 每完成一轮独立任务后，默认执行 `git add -A`、commit、push，并在 handoff 或本轮总结里写压缩摘要，供下一轮直接续跑
