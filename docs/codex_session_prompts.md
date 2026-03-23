@@ -10,7 +10,6 @@
 先接手这个项目。请先只阅读以下文件，再开始判断当前状态：
 - docs/development_principles.md
 - docs/dev_plan.md
-- docs/frontend_dev_plan.md
 - docs/codex_handoff.md
 - src/ui/main_menu.gd
 
@@ -32,7 +31,6 @@
 继续接手主菜单开发线。先阅读：
 - docs/development_principles.md
 - docs/dev_plan.md
-- docs/frontend_dev_plan.md
 - docs/codex_handoff.md
 - src/ui/main_menu.gd
 - src/ui/main_menu/layout_controller.gd
@@ -59,7 +57,7 @@
 - 当前分支
 - src/ui/main_menu.gd 当前行数
 - docs/codex_handoff.md 里的当前重点
-- docs/dev_plan.md 和 docs/frontend_dev_plan.md 是否与代码状态一致
+- docs/dev_plan.md 是否与代码状态一致
 
 然后输出：
 1. 当前代码状态是否与 handoff 一致。

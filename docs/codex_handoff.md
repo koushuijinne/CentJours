@@ -40,7 +40,8 @@
 - `coalition_troops_bonus` 已接入 `coalition_force()`；`paris_security_bonus` / `political_stability_bonus` 已接入每日结算，并已纳入存档 / 读档一致性。
 - 当前 Rust 测试数量已提升到 `131`，包含新增的事件效果状态承接测试。
 - 已新增 `docs/codex_session_prompts.md`，并在计划文档中建立了 handoff / prompt 模板入口。
-- 已新增 `docs/codex_overnight_plan.md`，用于定义夜间自动开发的循环机制与交付标准。
+- ~~`docs/codex_overnight_plan.md`~~ 已废弃（v42）：有用规则迁入 `CLAUDE.md` 开发循环规则段落。
+- ~~`docs/frontend_dev_plan.md`~~ 已废弃（v42）：前端进度合并到 `docs/dev_plan.md` 前端层分区。
 
 ## 4. 当前已知问题
 
@@ -109,10 +110,8 @@ E:\software\godot\Godot_v4.6.1-stable_win64_console.exe --headless --path E:\pro
 ## 8. 新会话最少必读文件
 
 - `docs/development_principles.md`
-- `docs/dev_plan.md`
-- `docs/frontend_dev_plan.md`
+- `docs/dev_plan.md`（Rust + 前端统一计划）
 - `docs/codex_handoff.md`
-- `docs/codex_overnight_plan.md`
 - `src/ui/main_menu.gd`
 
 ## 9. 新会话接手时的注意点
