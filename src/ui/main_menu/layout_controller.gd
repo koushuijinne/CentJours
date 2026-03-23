@@ -95,6 +95,9 @@ func configure_static_ui() -> void:
 	if _legitimacy_bar != null:
 		_legitimacy_bar.show_percentage = false
 		_legitimacy_bar.max_value = 100.0
+	if _decision_scroll != null:
+		_decision_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_ALWAYS
+		_decision_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	for label in [_situation_body, _narrative_body, _map_inspector_meta, _map_inspector_stats, _map_inspector_history]:
 		if label != null:
 			label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -232,9 +235,16 @@ func apply_responsive_layout(viewport_size: Vector2 = Vector2.ZERO) -> void:
 	)
 	apply_decision_card_metrics(card_size)
 
-	var scroll_safe_bottom := _compute_decision_scroll_safe_bottom()
+	var hover_padding := _compute_decision_hover_padding(card_size.y)
+	var row_height := _compute_decision_row_height(card_size.y)
+	var scroll_safe_bottom := _compute_decision_scroll_safe_bottom() + hover_padding
+	_set_margin(_decision_scroll_content, "margin_top", int(roundf(hover_padding)))
 	_set_margin(_decision_scroll_content, "margin_bottom", int(roundf(scroll_safe_bottom)))
-	var scroll_height := card_size.y + scroll_safe_bottom
+	if _decision_scroll_content != null:
+		_decision_scroll_content.custom_minimum_size.y = row_height + hover_padding + scroll_safe_bottom
+	if _decision_row != null:
+		_decision_row.custom_minimum_size.y = row_height
+	var scroll_height := row_height + hover_padding + scroll_safe_bottom
 	if _decision_scroll != null:
 		_decision_scroll.custom_minimum_size = Vector2(0.0, scroll_height)
 	if _decision_tray != null:
@@ -300,6 +310,17 @@ func _compute_decision_scroll_safe_bottom() -> float:
 	if h_scroll_bar == null:
 		return fallback
 	return maxf(fallback, h_scroll_bar.get_combined_minimum_size().y + 4.0)
+
+
+func _compute_decision_row_height(card_height: float) -> float:
+	var row_height := card_height
+	if _decision_row != null:
+		row_height = maxf(row_height, _decision_row.get_combined_minimum_size().y)
+	return row_height
+
+
+func _compute_decision_hover_padding(card_height: float) -> float:
+	return maxf(4.0, ceilf(card_height * 0.04))
 
 
 func _panel_min_height(content: Control, breathing_room: float, floor_value: float) -> float:
