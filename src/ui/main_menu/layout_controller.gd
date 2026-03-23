@@ -228,6 +228,15 @@ func apply_responsive_layout(viewport_size: Vector2 = Vector2.ZERO) -> void:
 	var sidebar_width := clampf(viewport.x * 0.27, 332.0, 372.0)
 	if _sidebar != null:
 		_sidebar.custom_minimum_size.x = sidebar_width
+	if _map_inspector_panel != null:
+		var inspector_width := clampf(viewport.x * 0.235, 272.0, 320.0)
+		var inspector_height := clampf(viewport.y * 0.295, 188.0, 236.0)
+		var inspector_top := clampf(viewport.y * 0.074, 48.0, 60.0)
+		_map_inspector_panel.custom_minimum_size = Vector2(inspector_width, inspector_height)
+		_map_inspector_panel.offset_left = -inspector_width - 4.0
+		_map_inspector_panel.offset_top = inspector_top
+		_map_inspector_panel.offset_right = -4.0
+		_map_inspector_panel.offset_bottom = inspector_top + inspector_height
 
 	var card_size := Vector2(
 		clampf(viewport.x * 0.102, 124.0, 140.0),

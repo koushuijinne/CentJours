@@ -205,25 +205,31 @@ theme_override_constants/margin_top = 10
 theme_override_constants/margin_right = 12
 theme_override_constants/margin_bottom = 10
 
-[node name="MapInspectorBox" type="VBoxContainer" parent="RootLayout/MainArea/LeftColumn/MapArea/MapMargin/MapContent/MapInspectorPanel/MapInspectorMargin"]
+[node name="MapInspectorScroll" type="ScrollContainer" parent="RootLayout/MainArea/LeftColumn/MapArea/MapMargin/MapContent/MapInspectorPanel/MapInspectorMargin"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="MapInspectorBox" type="VBoxContainer" parent="RootLayout/MainArea/LeftColumn/MapArea/MapMargin/MapContent/MapInspectorPanel/MapInspectorMargin/MapInspectorScroll"]
 layout_mode = 2
 theme_override_constants/separation = 6
 
-[node name="MapInspectorTitle" type="Label" parent="RootLayout/MainArea/LeftColumn/MapArea/MapMargin/MapContent/MapInspectorPanel/MapInspectorMargin/MapInspectorBox"]
+[node name="MapInspectorTitle" type="Label" parent="RootLayout/MainArea/LeftColumn/MapArea/MapMargin/MapContent/MapInspectorPanel/MapInspectorMargin/MapInspectorScroll/MapInspectorBox"]
 layout_mode = 2
 text = "Map Inspector"
 
-[node name="MapInspectorMeta" type="Label" parent="RootLayout/MainArea/LeftColumn/MapArea/MapMargin/MapContent/MapInspectorPanel/MapInspectorMargin/MapInspectorBox"]
+[node name="MapInspectorMeta" type="Label" parent="RootLayout/MainArea/LeftColumn/MapArea/MapMargin/MapContent/MapInspectorPanel/MapInspectorMargin/MapInspectorScroll/MapInspectorBox"]
 layout_mode = 2
 autowrap_mode = 3
 text = "悬停查看节点，点击后锁定详情。"
 
-[node name="MapInspectorStats" type="Label" parent="RootLayout/MainArea/LeftColumn/MapArea/MapMargin/MapContent/MapInspectorPanel/MapInspectorMargin/MapInspectorBox"]
+[node name="MapInspectorStats" type="Label" parent="RootLayout/MainArea/LeftColumn/MapArea/MapMargin/MapContent/MapInspectorPanel/MapInspectorMargin/MapInspectorScroll/MapInspectorBox"]
 layout_mode = 2
 autowrap_mode = 3
 text = ""
 
-[node name="MapInspectorHistory" type="Label" parent="RootLayout/MainArea/LeftColumn/MapArea/MapMargin/MapContent/MapInspectorPanel/MapInspectorMargin/MapInspectorBox"]
+[node name="MapInspectorHistory" type="Label" parent="RootLayout/MainArea/LeftColumn/MapArea/MapMargin/MapContent/MapInspectorPanel/MapInspectorMargin/MapInspectorScroll/MapInspectorBox"]
 layout_mode = 2
 autowrap_mode = 3
 text = ""

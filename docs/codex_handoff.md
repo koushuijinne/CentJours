@@ -40,6 +40,7 @@
 - `events::pool` 已有事件数量、ID 唯一性、`historical_note` 非空、tier 对应叙事段数、禁止无效负 bonus、Day 85+ 至少 1 条 `minor` 等回归测试，防止后续扩容时静默退化
 - 本轮已清理 Rust 测试噪音：`characters/network.rs` 补回遗漏测试，`events/pool.rs` 与 `narratives/mod.rs` 的本地化测试名改为模块级允许；`cargo test` 当前只剩硬链接缓存环境提示
 - 本轮已对 `DecisionTray` 做结构性滚动修复：锁定为仅横向滚动，并把卡片行高度 / hover 余量显式纳入布局计算，减少竖向滚动条被误触发的机会；Godot Windows 无头加载已通过
+- 本轮已对 `Map Inspector` 做结构性松绑：加入内部纵向滚动层，并改为响应式宽高，长文本不再只能硬塞进固定 `272x180` 面板
 - 结局弹窗已开始消费 `OUTCOME_TEXT` 里的 `epilogue / review_hint`，并按终局统计生成复盘说明；行动后果微叙事也已改为中文类别标签
 - `GameEngine` 已缓存最近一次玩家行动的 `DayEvent`，`CentJoursEngine.get_last_action_events()` 已暴露到 Godot；政策 / 战役 / 行军 / 强化忠诚结算都会输出可读描述和结构化 effects
 - `characters.json` 已补 `display_name` 字段，GDScript 角色列表与 Rust 行动结算日志都改为优先使用中文短称
@@ -53,7 +54,7 @@
 
 - `Decision Tray` 已补结构性修复，但仍需 Windows 真机截图确认“双滚动”是否已完全消失
 - 主菜单仍有中英混排，文本语言策略未统一
-- `Map Inspector` 长文本在部分节点上仍偏紧
+- `Map Inspector` 已补内部滚动和响应式扩容，但仍需 Windows 真机截图确认“偏紧”问题是否完全收口
 - `main_menu.gd` 仍有 `566` 行，`map_controller.gd` 已到 `658` 行，控制器拆分还没完全收口
 - `docs/advice/claude_event_history.md` 指出的史实与文风问题已累计修订 24 条旧事件；但全量 58 条仍未统一审校，尤其政治 / 外交 / 联军视角条目还需继续补细节
 - 行动结算与角色短名已统一，但主菜单其余 UI 仍有中英法混排，离最终文本统一还有距离
@@ -158,5 +159,5 @@ E:\software\godot\Godot_v4.6.1-stable_win64_console.exe --headless --path E:\pro
 - 当前可信基线：`15` 角色 / `41` 节点 / `58` 历史事件 / `165` Rust tests
 - 已删除外部监督器方案，零阻塞自动循环重新收口到 `docs/codex_autonomous_workflow.md` 的会话内执行规则
 - 已把“Codex 不负责文案”写入最高优先级规则；后续内容线若继续扩事件，Codex 仅负责结构、触发、数据接入与测试护栏
-- 本轮把 `DecisionTray` 收到“仅横向滚动”模型，并补上 hover / 滚动条余量；Windows Godot 无头加载通过，但尚未做真机截图验收
-- 下一轮默认动作：继续非文案 UI 结构线，优先看 `Map Inspector` 紧凑度，或补一次 Windows 真机验收确认托盘双滚动是否完全消失
+- 本轮继续收口非文案 UI 结构：`DecisionTray` 锁为仅横向滚动，`Map Inspector` 改为内部滚动 + 响应式扩容；两处变更都已通过 Windows Godot 无头加载
+- 下一轮默认动作：优先补一次 Windows 真机验收，确认托盘双滚动与 `Map Inspector` 紧凑度是否真正收口；若视觉验证仍受阻，再切到发布链路或主菜单继续解耦
