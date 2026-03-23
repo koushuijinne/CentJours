@@ -8,7 +8,10 @@ use rand::Rng;
 use crate::battle::resolver::{ForceData, Terrain, BattleResult, resolve_battle};
 use crate::battle::{ArmyState as MarchArmyState, MapEdge, MapGraph, MapNode, move_army};
 use crate::politics::system::{PoliticsState, default_policies};
-use crate::characters::network::{CharacterNetwork, historical_network_day1};
+use crate::characters::network::{
+    CharacterNetwork, historical_network_day1,
+    LOYALTY_CRISIS_THRESHOLD,
+};
 use std::collections::HashMap;
 use serde::{Serialize, Deserialize};
 use crate::events::pool::{EventPool, TriggerContext, EventEffects};
@@ -413,7 +416,7 @@ impl GameEngine {
 
         // Dusk：系统结算
         self.phase = TurnPhase::Dusk;
-        self.dusk_settlement();
+        self.dusk_settlement(rng);
 
         // 记录当日事件
         for e in events {
@@ -533,6 +536,9 @@ impl GameEngine {
         // 更新政治：战胜提升军方，战败降低军方 + 民众
         self.apply_battle_politics(result);
 
+        // 联军动态化：拿破仑胜利削弱联军，失败则联军士气提振
+        self.apply_battle_coalition_impact(result, troops);
+
         // 地形防御加成百分比（0% = 平原无加成）
         let terrain_pct = (terrain.defense_bonus() - 1.0) * 100.0;
 
@@ -613,8 +619,8 @@ impl GameEngine {
         }]
     }
 
-    /// Dusk结算：政治每日tick、关系衰减、特殊事件检查
-    fn dusk_settlement(&mut self) {
+    /// Dusk结算：政治每日tick、关系衰减、叛逃检查、连锁效果
+    fn dusk_settlement<R: Rng>(&mut self, rng: &mut R) {
         self.politics.daily_tick();
         self.characters.tick_day();
 
@@ -629,6 +635,10 @@ impl GameEngine {
             ).clamp(0.0, 100.0);
         }
 
+        // ── 将领叛逃每日检查 ──────────────────────────────
+        self.check_ney_defection(rng);
+        self.check_grouchy_abandonment(rng);
+
         // 兵力过少 → 政治连锁反应
         if self.army.total_troops < 20_000 {
             self.politics.modify_faction("military", -5.0);
@@ -638,6 +648,92 @@ impl GameEngine {
         if self.day > 60 && self.army.avg_fatigue > 70.0 {
             self.politics.modify_faction("populace", -2.0);
         }
+    }
+
+    /// 内伊叛逃每日检查（Day 3–20）。
+    /// 当内伊忠诚度跌破危机阈值且尚未被事件系统触发时，
+    /// 按 defection_probability() 概率判定叛逃。
+    fn check_ney_defection<R: Rng>(&mut self, rng: &mut R) {
+        const NEY_DEFECTION_ID: &str = "ney_defection_dusk";
+        // 只在Day 3–20窗口内检查（历史事件覆盖Day 5–7，此处扩大为安全窗口）
+        if self.day < 3 || self.day > 20 {
+            return;
+        }
+        // 已触发过（事件系统或dusk检查），不重复
+        if self.triggered_event_ids.iter().any(|id| id == NEY_DEFECTION_ID || id == "ney_defection") {
+            return;
+        }
+        // 忠诚度未跌破危机阈值，暂不触发
+        let ney_loyalty = self.characters.loyalty("ney");
+        if ney_loyalty >= LOYALTY_CRISIS_THRESHOLD {
+            return;
+        }
+        // 用完整概率公式判定
+        let cond = self.characters.ney_defection_condition();
+        let prob = cond.defection_probability();
+        if rng.gen::<f64>() >= prob {
+            return; // 本日未触发
+        }
+        // 触发叛逃：忠诚度归零、兵力损失、政治冲击
+        let day = self.day;
+        self.characters.modify_loyalty("ney", -ney_loyalty, day, "叛逃");
+        // 内伊带走约5000兵力
+        let troops_lost = 5000u32.min(self.army.total_troops.saturating_sub(1000));
+        self.army.total_troops = self.army.total_troops.saturating_sub(troops_lost);
+        self.politics.modify_faction("military", -8.0);
+        self.politics.legitimacy = (self.politics.legitimacy - 5.0).max(0.0);
+        // 记录并阻止重复触发
+        self.triggered_event_ids.push(NEY_DEFECTION_ID.to_string());
+        self.history.push(DayEvent {
+            day,
+            event_type:  "defection",
+            description: format!("内伊元帅叛逃！带走{}名士兵，军心动摇", troops_lost),
+            effects:     vec![
+                format!("内伊忠诚度→0"),
+                format!("兵力-{}", troops_lost),
+                "军方支持-8, 合法性-5".to_string(),
+            ],
+        });
+    }
+
+    /// 格鲁希失联检查（Day 90+）。
+    /// 格鲁希忠诚度低时可能擅自脱离战场，导致联军侧翼增援不被牵制。
+    fn check_grouchy_abandonment<R: Rng>(&mut self, rng: &mut R) {
+        const GROUCHY_ABANDON_ID: &str = "grouchy_abandon_dusk";
+        // 只在Day 90+检查（滑铁卢窗口）
+        if self.day < 90 {
+            return;
+        }
+        // 已触发过，不重复
+        if self.triggered_event_ids.iter().any(|id| id == GROUCHY_ABANDON_ID || id == "grouchy_assignment") {
+            return;
+        }
+        let grouchy_loyalty = self.characters.loyalty("grouchy");
+        // 忠诚度高于50时不会擅自脱离
+        if grouchy_loyalty >= 50.0 {
+            return;
+        }
+        // 脱离概率：忠诚度越低越可能（0~50映射到0.0~0.5）
+        let abandon_prob = (50.0 - grouchy_loyalty) / 100.0;
+        if rng.gen::<f64>() >= abandon_prob {
+            return;
+        }
+        // 触发脱离：联军增援加强（格鲁希不牵制普军 → 联军+15000）
+        let day = self.day;
+        self.coalition_troops_bonus = self.coalition_troops_bonus.saturating_add(15_000);
+        self.characters.modify_loyalty("grouchy", -grouchy_loyalty, day, "脱离战场");
+        self.politics.modify_faction("military", -5.0);
+        self.triggered_event_ids.push(GROUCHY_ABANDON_ID.to_string());
+        self.history.push(DayEvent {
+            day,
+            event_type:  "defection",
+            description: "格鲁希元帅脱离战场！普军增援不受牵制，联军兵力+15000".to_string(),
+            effects:     vec![
+                "格鲁希忠诚度→0".to_string(),
+                "联军兵力+15000".to_string(),
+                "军方支持-5".to_string(),
+            ],
+        });
     }
 
     /// 胜负判定（百日结束或提前终止）
@@ -768,6 +864,30 @@ impl GameEngine {
             general_skill: 75.0,  // Wellington/Blücher平均
             supply_ok:     true,
         }
+    }
+
+    /// 战斗结果 → 联军兵力影响（Tier 3.3 联军动态化）。
+    /// 拿破仑胜利 → 联军损失兵力（按投入兵力比例）；失败 → 联军士气提振。
+    fn apply_battle_coalition_impact(&mut self, result: BattleResult, troops_committed: u32) {
+        let delta = match result {
+            // 大胜：联军损失约投入兵力的80%（反映敌方溃败）
+            BattleResult::DecisiveVictory => {
+                -(troops_committed as f64 * 0.8) as i32
+            }
+            // 小胜：联军损失约投入兵力的30%
+            BattleResult::MarginalVictory => {
+                -(troops_committed as f64 * 0.3) as i32
+            }
+            // 平局：微小消耗
+            BattleResult::Stalemate => {
+                -(troops_committed as f64 * 0.05) as i32
+            }
+            // 小败：联军士气提振，增援加速（+5000）
+            BattleResult::MarginalDefeat => 5_000,
+            // 大败：联军全面反攻（+12000）
+            BattleResult::DecisiveDefeat => 12_000,
+        };
+        self.coalition_troops_bonus = self.coalition_troops_bonus.saturating_add(delta);
     }
 
     /// 战斗结果 → 政治影响
@@ -1015,8 +1135,9 @@ mod tests {
         effects.political_stability_bonus = Some(8.0);
 
         engine.apply_event_effects(&effects);
-        engine.dusk_settlement();
-        control.dusk_settlement();
+        let mut rng = rand::thread_rng();
+        engine.dusk_settlement(&mut rng);
+        control.dusk_settlement(&mut rng);
 
         assert!(
             engine.politics.faction_support["populace"] > control.politics.faction_support["populace"],
@@ -1195,5 +1316,155 @@ mod tests {
         engine.day = 90;
         let late = engine.coalition_force().troops;
         assert!(late > early * 2, "Day 90联军应远多于Day 1: early={}, late={}", early, late);
+    }
+
+    // ── 叛逃/倒戈每日检查（Tier 3.2）──────────────────
+
+    #[test]
+    fn 内伊忠诚正常时不触发叛逃() {
+        let mut engine = GameEngine::new();
+        let mut rng = seeded_rng();
+        engine.day = 6;
+        // 初始忠诚度60，远高于危机阈值30
+        assert!(engine.characters.loyalty("ney") > LOYALTY_CRISIS_THRESHOLD);
+        engine.dusk_settlement(&mut rng);
+        // 不应有叛逃事件
+        assert!(
+            !engine.triggered_event_ids.iter().any(|id| id == "ney_defection_dusk"),
+            "忠诚正常时不应触发内伊叛逃"
+        );
+    }
+
+    #[test]
+    fn 内伊忠诚危机时可触发叛逃() {
+        // 辅助函数：创建一个内伊低忠诚引擎
+        fn make_low_ney_engine() -> GameEngine {
+            let mut engine = GameEngine::new();
+            engine.day = 6;
+            let ney_loyalty = engine.characters.loyalty("ney");
+            engine.characters.modify_loyalty("ney", -(ney_loyalty - 10.0), engine.day, "测试");
+            engine.characters.set_relationship("ney", "napoleon", 80.0);
+            engine
+        }
+
+        // 多次尝试（概率性），至少一次应触发
+        let mut triggered = false;
+        for seed in 0..100u64 {
+            let mut test_engine = make_low_ney_engine();
+            let mut rng = rand::rngs::StdRng::seed_from_u64(seed);
+            test_engine.dusk_settlement(&mut rng);
+            if test_engine.triggered_event_ids.iter().any(|id| id == "ney_defection_dusk") {
+                triggered = true;
+                // 验证效果
+                assert!(test_engine.characters.loyalty("ney") < 1.0, "叛逃后忠诚应归零");
+                assert!(
+                    test_engine.history.iter().any(|e| e.event_type == "defection"),
+                    "应有叛逃事件记录"
+                );
+                break;
+            }
+        }
+        assert!(triggered, "100次尝试中至少一次应触发内伊叛逃");
+    }
+
+    #[test]
+    fn 叛逃后不会重复触发() {
+        let mut engine = GameEngine::new();
+        engine.day = 6;
+        // 标记已叛逃
+        engine.triggered_event_ids.push("ney_defection_dusk".to_string());
+        let ney_loyalty = engine.characters.loyalty("ney");
+        engine.characters.modify_loyalty("ney", -(ney_loyalty - 10.0), engine.day, "测试");
+        let troops_before = engine.army.total_troops;
+
+        let mut rng = seeded_rng();
+        engine.dusk_settlement(&mut rng);
+        // 兵力不应再因叛逃减少
+        assert_eq!(engine.army.total_troops, troops_before, "已叛逃后不应再扣兵力");
+    }
+
+    #[test]
+    fn 格鲁希day90前不触发脱离() {
+        let mut engine = GameEngine::new();
+        engine.day = 50;
+        // 强制低忠诚
+        let g_loyalty = engine.characters.loyalty("grouchy");
+        engine.characters.modify_loyalty("grouchy", -(g_loyalty - 10.0), engine.day, "测试");
+
+        let mut rng = seeded_rng();
+        let bonus_before = engine.coalition_troops_bonus;
+        engine.dusk_settlement(&mut rng);
+        assert_eq!(
+            engine.coalition_troops_bonus, bonus_before,
+            "Day 90之前不应触发格鲁希脱离"
+        );
+    }
+
+    #[test]
+    fn 格鲁希忠诚低且day90后可触发脱离() {
+        fn make_low_grouchy_engine() -> GameEngine {
+            let mut engine = GameEngine::new();
+            engine.day = 92;
+            let g_loyalty = engine.characters.loyalty("grouchy");
+            engine.characters.modify_loyalty("grouchy", -(g_loyalty - 10.0), engine.day, "测试");
+            engine
+        }
+
+        let mut triggered = false;
+        for seed in 0..100u64 {
+            let mut test_engine = make_low_grouchy_engine();
+            let mut rng = rand::rngs::StdRng::seed_from_u64(seed);
+            test_engine.dusk_settlement(&mut rng);
+            if test_engine.triggered_event_ids.iter().any(|id| id == "grouchy_abandon_dusk") {
+                triggered = true;
+                assert_eq!(
+                    test_engine.coalition_troops_bonus, 15_000,
+                    "格鲁希脱离应增加联军兵力"
+                );
+                break;
+            }
+        }
+        assert!(triggered, "100次尝试中至少一次应触发格鲁希脱离");
+    }
+
+    // ── 联军动态化（Tier 3.3）──────────────────────────
+
+    #[test]
+    fn 大胜后联军兵力下降() {
+        let mut engine = GameEngine::new();
+        let bonus_before = engine.coalition_troops_bonus;
+        // 投入20000兵力大胜
+        engine.apply_battle_coalition_impact(BattleResult::DecisiveVictory, 20_000);
+        // 联军应损失 20000*0.8 = 16000
+        assert_eq!(
+            engine.coalition_troops_bonus,
+            bonus_before - 16_000,
+            "大胜后联军应损失兵力"
+        );
+    }
+
+    #[test]
+    fn 大败后联军兵力增加() {
+        let mut engine = GameEngine::new();
+        let bonus_before = engine.coalition_troops_bonus;
+        engine.apply_battle_coalition_impact(BattleResult::DecisiveDefeat, 20_000);
+        assert_eq!(
+            engine.coalition_troops_bonus,
+            bonus_before + 12_000,
+            "大败后联军应获得增援"
+        );
+    }
+
+    #[test]
+    fn 小胜后联军兵力适度下降() {
+        let mut engine = GameEngine::new();
+        let bonus_before = engine.coalition_troops_bonus;
+        engine.apply_battle_coalition_impact(BattleResult::MarginalVictory, 10_000);
+        // 10000*0.3 = 3000
+        assert_eq!(
+            engine.coalition_troops_bonus,
+            bonus_before - 3_000,
+            "小胜后联军应适度损失"
+        );
     }
 }

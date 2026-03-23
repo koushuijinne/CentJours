@@ -1,6 +1,6 @@
 # Cent Jours — 开发优先级计划
 
-> **更新**: 2026-03-23 v42
+> **更新**: 2026-03-23 v44
 > **通用原则**: 项目长期稳定原则详见 `docs/development_principles.md`
 > **快速接手**: 当前状态见 `docs/codex_handoff.md`，新会话首条 prompt 模板见 `docs/codex_session_prompts.md`
 
@@ -31,10 +31,11 @@
 ### 提交前强制检查
 
 1. 将已完成项标记 ✅ 并移入模块清单
-2. 更新进度快照（Rust 层 + 前端层）和 `docs/codex_handoff.md`
-3. 重新扫描代码库，记录新出现的技术债
-4. 重排下一轮优先级
-5. 文档更新与代码放入同一次 commit
+2. **删除已完成的任务描述、已解决的阻塞点、过时的上下文说明**（用 `git log` 追溯，不留历史）
+3. 更新进度快照（Rust 层 + 前端层）和 `docs/codex_handoff.md`
+4. 重新扫描代码库，记录新出现的技术债
+5. 重排下一轮优先级，**每个待办项须附一句话决策理由**
+6. 文档更新与代码放入同一次 commit
 
 ### 验证规则
 
@@ -57,7 +58,7 @@ M5  美术音乐   ░░░░░░░░░░░░   0%
 M6  打磨发布   ░░░░░░░░░░░░   0%
 ```
 
-**135 单元测试全部通过**
+**143 单元测试全部通过**
 
 **平衡结果**: Military 24.2% ✅ | Political 21.2% ✅ | Balanced 22.4% ✅
 
@@ -107,64 +108,31 @@ F5  视觉统一与动效      ████████░░░░  55% 🔶
 | 政治系统 | `politics/system.rs` | 8 | ✅ |
 | 命令偏差 | `characters/order_deviation.rs` | 6 | ✅ |
 | 将领关系网络 | `characters/network.rs` | 27 | ✅ +4 命令偏差测试 |
-| 三系统状态机 | `engine/state.rs` | 16 | ✅ |
+| 三系统状态机 | `engine/state.rs` | 24 | ✅ +5叛逃+3联军 |
 | 历史事件池 | `events/pool.rs` | 16 | ✅ 33条×5叙事 |
 | 蒙特卡洛模拟 | `simulation/monte_carlo.rs` | 8 | ✅ |
 | 叙事引擎 | `narratives/mod.rs` | 10 | ✅ |
 | GDExtension | `lib.rs` | — | ✅ 4节点 |
-| Save/Load | `engine/state.rs` | — | ✅ to_json/from_json |
+| Save/Load 后端 | `engine/state.rs` | — | ✅ to_json/from_json |
+| Save/Load UI | `main_menu.gd` + `turn_manager.gd` | — | ✅ 顶栏按钮+确认对话框 |
 
-**合计**: 135 tests 全部通过
-
----
-
-## GATE 2：✅ 通过
-
-| 检查项 | 证据 |
-|--------|------|
-| 三系统耦合状态机 | `engine::state` 16 tests |
-| 蒙特卡洛平衡验证 | Military 24.2% / Political 21.2% / Balanced 22.4% |
-| 30条历史事件集成 | 触发率验证通过 |
-| Godot 4.6 升级 | gdext 0.4.5, api-4-5 |
+**合计**: 143 tests 全部通过
 
 ---
 
 ## Tier 路线图
 
-### Tier 0 — 快速修复 ✅
+> Tier 0–2 ✅ 已全部完成（详见 git log）
 
-- ✅ GDExt 补全 3 条缺失政策
-- ✅ UI 显示全部 8 张政策卡片
+### Tier 3 — 深度与沉浸 ✅
 
-### Tier 1 — 最小可玩 ✅
+**完成标志**: 将领会叛逃 ✅、命令会偏差 ✅、联军会因败仗动摇 ✅、玩家可存档 ✅
 
-- ✅ 战斗选择 UI
-- ✅ 忠诚度强化 UI
-- ✅ 游戏结束画面
-- ✅ 冷却逻辑
-
-### Tier 2 — 战略纵深 ✅
-
-- ✅ 2.1 Rust PlayerAction::March + 引擎集成
-- ✅ 2.2 GDExt 暴露行军 API
-- ✅ 2.3 前端地图点击行军
-- ✅ 2.4 行军与战斗关联（地形推断 + 疲劳持久化 + 战报地形加成）
-
-### Tier 3 — 深度与沉浸（当前）
-
-- ✅ **3.1 命令偏差接入战斗**（`calculate_deviation()` + 战报偏差叙事 + 4 测试）
-- 🔶 **3.2 叛逃/倒戈触发** [M] — `dusk_settlement()` 每日检查 Ney/Grouchy 条件
-- 🔶 **3.3 联军动态化** [M] — 战败后联军士气/兵力下降
-- 🔶 **3.4 存档/读档 UI** [S] — 顶栏按钮 + 确认对话框
-- 🔶 **3.5 事件效果补完** [S] — `coalition_troops_delta` / `paris_security_bonus` / `political_stability_bonus`
-
-**Tier 3 完成标志**: 将领会叛逃、命令会偏差、联军会因败仗动摇、玩家可存档。
-
-### 依赖关系
-
-```
-Tier 0 ──→ Tier 1 ──→ Tier 2 ✅ ──→ Tier 3（当前）
-```
+| 项目 | 状态 | 说明 |
+|------|------|------|
+| 3.2 叛逃/倒戈触发 | ✅ | `dusk_settlement()` 每日检查 Ney/Grouchy，概率性叛逃 +5 测试 |
+| 3.3 联军动态化 | ✅ | `apply_battle_coalition_impact()` 胜利削弱/失败增强联军 +3 测试 |
+| 3.4 存档/读档 UI | ✅ | 顶栏 Save/Load 按钮 + 确认对话框，接入 SaveManager + TurnManager |
 
 ### 不在本路线图范围
 

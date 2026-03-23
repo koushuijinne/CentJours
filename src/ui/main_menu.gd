@@ -59,6 +59,8 @@ const MainMenuTrayControllerScript = preload("res://src/ui/main_menu/tray_contro
 @onready var _decision_row: HBoxContainer = $RootLayout/MainArea/LeftColumn/DecisionTray/TrayMargin/TrayContent/DecisionScroll/DecisionScrollContent/DecisionRow
 
 var _confirm_button: Button       # 执行行动确认按钮（动态创建）
+var _save_btn: Button             # 顶栏存档按钮（动态创建）
+var _load_btn: Button             # 顶栏读档按钮（动态创建）
 var _awaiting_action: bool = false  # 是否处于等待玩家操作的 Action Phase
 # 上回合数值快照，用于派系趋势箭头和数值变化动效
 var _prev_faction_support: Dictionary = {}
@@ -84,6 +86,7 @@ func _ready() -> void:
 	_build_rouge_noir_slider()
 	_configure_sidebar_controller()
 	_build_confirm_button()
+	_build_save_load_buttons()
 	_configure_tray_controller()
 	_configure_dialogs_controller()
 	_build_decision_cards()
@@ -222,6 +225,52 @@ func _append_narrative(entry: String, color: Color) -> void:
 ## 在 TrayHeader 右侧动态创建"执行行动"确认按钮
 func _build_confirm_button() -> void:
 	_confirm_button = _tray_controller.create_confirm_button(_tray_header, "执行行动 →")
+
+## 在 TopBarRow 右侧动态创建存档/读档按钮
+func _build_save_load_buttons() -> void:
+	var save_btn := Button.new()
+	save_btn.text = "存档"
+	save_btn.custom_minimum_size = Vector2(60, 0)
+	save_btn.pressed.connect(_on_save_pressed)
+	_top_bar_row.add_child(save_btn)
+
+	var load_btn := Button.new()
+	load_btn.text = "读档"
+	load_btn.custom_minimum_size = Vector2(60, 0)
+	load_btn.pressed.connect(_on_load_pressed)
+	# 仅在存档存在时可用
+	load_btn.disabled = not SaveManager.has_save()
+	_top_bar_row.add_child(load_btn)
+	# 缓存按钮引用，读档后刷新可用状态
+	_save_btn = save_btn
+	_load_btn = load_btn
+
+## 存档按钮回调
+func _on_save_pressed() -> void:
+	if TurnManager.save_to_file():
+		_load_btn.disabled = false
+		# 短暂闪烁按钮文字作为反馈
+		_save_btn.text = "已存档 ✓"
+		get_tree().create_timer(1.0).timeout.connect(func(): _save_btn.text = "存档")
+	else:
+		_save_btn.text = "存档失败"
+		get_tree().create_timer(1.5).timeout.connect(func(): _save_btn.text = "存档")
+
+## 读档按钮回调（带确认）
+func _on_load_pressed() -> void:
+	var confirm := ConfirmationDialog.new()
+	confirm.dialog_text = "读档将丢失当前进度，确定吗？"
+	confirm.ok_button_text = "确认读档"
+	confirm.cancel_button_text = "取消"
+	confirm.confirmed.connect(func():
+		if TurnManager.load_from_save():
+			_build_decision_cards()
+			_refresh_ui()
+			_awaiting_action = true
+			_set_tray_interactive(true)
+	)
+	add_child(confirm)
+	confirm.popup_centered()
 
 ## 引导第一回合：Dawn Phase 同步引擎真实状态，然后进入 Action Phase 等待玩家
 func _start_game() -> void:

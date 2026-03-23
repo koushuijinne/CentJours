@@ -199,6 +199,25 @@ func _emit_new_triggered_events() -> void:
 			GameState.triggered_events.append(event_id)
 			EventBus.historical_event_triggered.emit(event_id)
 
+## 从存档加载引擎状态（供 Save/Load UI 调用）
+## 成功返回 true，失败返回 false
+func load_from_save() -> bool:
+	_ensure_engine()
+	if not SaveManager.load_game(engine):
+		return false
+	current_phase = Phase.DAWN
+	GameState.triggered_events.clear()
+	# 从引擎读取已触发事件列表
+	for event_id in Array(engine.get_triggered_events()):
+		GameState.triggered_events.append(String(event_id))
+	_sync_state_from_engine()
+	return true
+
+## 保存当前引擎状态到存档
+func save_to_file() -> bool:
+	_ensure_engine()
+	return SaveManager.save_game(engine)
+
 ## 重置引擎，用于重新开始游戏
 func reset_engine() -> void:
 	engine = CentJoursEngine.new()
