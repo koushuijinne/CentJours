@@ -34,7 +34,7 @@
 - `coalition_troops_bonus`、`paris_security_bonus`、`political_stability_bonus` 已真实进入状态机
 - 叙事引擎已接入 `GameEngine`，政策 / 战役 / 强化忠诚可产生 `DayReport`
 - `historical_note` 已接入 Rust → GDExt → TurnManager → Sidebar/叙事日志链路，历史事件会在当回合结算后即时显示正文与史注
-- 已累计对 13 条旧事件做文案 QA；本轮再修 `fontainebleau_eve`、`diplomatic_offer_rejected`、`chamber_opposition_grows`、`waterloo_eve`、`murat_naples_betrayal`，补强外交 / 议会 / 终盘战役条目的信息密度与直接表达
+- 已累计对 24 条旧事件做文案 QA；上一轮修 `fontainebleau_eve`、`diplomatic_offer_rejected`、`chamber_opposition_grows`、`waterloo_eve`、`murat_naples_betrayal`，本轮再收紧 11 条 `historical_note` 的日期锚点与事实 → 后果链
 - 本轮再补 `blucher_promises_support`、`wounded_wagons_from_ligny`、`grouchy_hears_cannon`、`la_haye_sainte_taken_too_late`、`plancenoit_under_attack`、`zieten_left_flank_arrival` 六条终盘事件，事件池扩至 55 条，并补上终盘 `minor` 覆盖
 - `events::pool` 已有事件数量、ID 唯一性、`historical_note` 非空、tier 对应叙事段数、禁止无效负 bonus、Day 85+ 至少 1 条 `minor` 等回归测试，防止后续扩容时静默退化
 - 结局弹窗已开始消费 `OUTCOME_TEXT` 里的 `epilogue / review_hint`，并按终局统计生成复盘说明；行动后果微叙事也已改为中文类别标签
@@ -52,7 +52,7 @@
 - 主菜单仍有中英混排，文本语言策略未统一
 - `Map Inspector` 长文本在部分节点上仍偏紧
 - `main_menu.gd` 仍有 `566` 行，`map_controller.gd` 已到 `658` 行，控制器拆分还没完全收口
-- `docs/advice/claude_event_history.md` 指出的史实与文风问题已累计修订 13 条旧事件；但全量 55 条仍未统一审校，尤其政治 / 外交 / 联军视角条目还需继续补细节
+- `docs/advice/claude_event_history.md` 指出的史实与文风问题已累计修订 24 条旧事件；但全量 55 条仍未统一审校，尤其政治 / 外交 / 联军视角条目还需继续补细节
 - 行动结算与角色短名已统一，但主菜单其余 UI 仍有中英法混排，离最终文本统一还有距离
 - 仓库内仍缺 `export_presets.cfg`、Windows 发布脚本、Steam 提审与商店素材清单
 - 资产层仍处于占位阶段：地图底图、肖像、卡片插图、BGM、SFX、结局画面均未完成
@@ -152,5 +152,6 @@ E:\software\godot\Godot_v4.6.1-stable_win64_console.exe --headless --path E:\pro
 
 - 当前可信基线：`15` 角色 / `41` 节点 / `55` 历史事件 / `161` Rust tests
 - 已补完终盘一小包内容：6 条 Day 85+ 事件，且用测试护栏锁住“晚期至少 1 条 minor”
-- 已继续修 5 条旧事件文案，重点压低文学腔、补具体外交 / 议会 / 战役因果
+- 已继续修 5 条旧事件正文，并再收紧 11 条 `historical_note` 的日期和因果表达
+- 当前旧事件累计 QA 数已到 `24` 条；接下来优先处理剩余政治 / 外交 / 联军视角条目
 - 下一轮优先级不变：继续沿内容线扩事件 + 做全量文本 QA，再切新玩家引导和失败归因
