@@ -324,8 +324,8 @@ mod tests {
     fn json加载成功且事件数量达到扩充基线() {
         let pool = EventPool::from_json(HISTORICAL_JSON).expect("JSON解析失败");
         assert!(
-            pool.len() >= 55,
-            "应有至少55个历史事件，实际: {}",
+            pool.len() >= 58,
+            "应有至少58个历史事件，实际: {}",
             pool.len()
         );
     }
@@ -385,8 +385,8 @@ mod tests {
             .filter(|event| matches!(event.tier, EventTier::Minor))
             .count();
         assert!(
-            minor_count >= 6,
-            "minor 事件至少应有6条，实际: {}",
+            minor_count >= 7,
+            "minor 事件至少应有7条，实际: {}",
             minor_count
         );
         let late_minor_count = events
@@ -1004,6 +1004,65 @@ mod tests {
         assert!(
             ids.contains(&"zieten_left_flank_arrival"),
             "Day 97应触发齐滕军团接上左翼: {:?}",
+            ids
+        );
+    }
+
+    #[test]
+    fn 根特流亡宫廷在Day24触发() {
+        let pool = EventPool::from_json(HISTORICAL_JSON).unwrap();
+        let ctx = TriggerContext {
+            day: 24,
+            coalition_defeated: false,
+            ..Default::default()
+        };
+        let ids: Vec<&str> = pool
+            .available_events(&ctx)
+            .iter()
+            .map(|e| e.id.as_str())
+            .collect();
+        assert!(
+            ids.contains(&"ghent_bourbon_court"),
+            "Day 24应触发根特流亡宫廷: {:?}",
+            ids
+        );
+    }
+
+    #[test]
+    fn 根特保皇派传单在Day30触发() {
+        let pool = EventPool::from_json(HISTORICAL_JSON).unwrap();
+        let ctx = TriggerContext {
+            day: 30,
+            ..Default::default()
+        };
+        let ids: Vec<&str> = pool
+            .available_events(&ctx)
+            .iter()
+            .map(|e| e.id.as_str())
+            .collect();
+        assert!(
+            ids.contains(&"royalist_pamphlets_from_ghent"),
+            "Day 30应触发根特保皇派传单: {:?}",
+            ids
+        );
+    }
+
+    #[test]
+    fn 布鲁塞尔联军参谋会议在Day56触发() {
+        let pool = EventPool::from_json(HISTORICAL_JSON).unwrap();
+        let ctx = TriggerContext {
+            day: 56,
+            coalition_defeated: false,
+            ..Default::default()
+        };
+        let ids: Vec<&str> = pool
+            .available_events(&ctx)
+            .iter()
+            .map(|e| e.id.as_str())
+            .collect();
+        assert!(
+            ids.contains(&"brussels_allied_staff_conference"),
+            "Day 56应触发布鲁塞尔联军参谋会议: {:?}",
             ids
         );
     }

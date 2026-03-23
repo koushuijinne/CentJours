@@ -213,6 +213,26 @@
     "tier": "normal"
   },
   {
+    "id": "ghent_bourbon_court",
+    "label": "根特的流亡宫廷开始运转",
+    "day_range": [22, 35],
+    "trigger": {
+      "day_min": 22,
+      "coalition_not_defeated": true
+    },
+    "effects": {
+      "nobility_support_delta": -4,
+      "legitimacy_delta": -3
+    },
+    "narratives": [
+      "路易十八到根特后很快重新摆出一个完整宫廷：顾问、书记、使者和等待复辟的旧贵族都围了上来。",
+      "对同盟国来说，这不是礼节安排，而是现成的替代政府。法国一旦战败，谁来接管政权的问题已经提前准备。",
+      "巴黎不只要面对前线军队，还要面对一个始终有人押注的旧王朝。"
+    ],
+    "historical_note": "1815年3月下旬，路易十八在根特建立流亡宫廷。根特由此成为保皇派、流亡贵族和同盟国协调复辟方案的政治中心，也给反拿破仑阵营提供了明确的政权替代选项。",
+    "tier": "normal"
+  },
+  {
     "id": "davout_paris_assignment",
     "label": "达武留守巴黎",
     "day_range": [20, 30],
@@ -322,6 +342,24 @@
     ],
     "historical_note": "1815年4月22日颁布的帝国补充法案，试图以自由宪政框架稳定国内政治，但引发了皇权与议会权力的长期博弈。",
     "tier": "major"
+  },
+  {
+    "id": "royalist_pamphlets_from_ghent",
+    "label": "根特的保皇派传单",
+    "day_range": [26, 42],
+    "trigger": {
+      "day_min": 26
+    },
+    "effects": {
+      "legitimacy_delta": -1,
+      "nobility_support_delta": -2
+    },
+    "narratives": [
+      "从根特印出的传单开始经商路和驿站往法国北部流。它们不谈战略，只反复强调一件事：皇帝回来得快，倒得也会快。",
+      "纸张很轻，但它提醒所有摇摆者，波旁王朝并没有真的离场。"
+    ],
+    "historical_note": "1815年4月前后，根特的保皇派网络持续向法国散发传单、公告和私函，试图稳住旧贵族与地方官的观望态度。舆论战本身不能决定胜负，但会放大政权合法性的摇摆。",
+    "tier": "minor"
   },
   {
     "id": "fouche_conspiracy",
@@ -950,6 +988,26 @@
       "每多一支能守后方的队伍，拿破仑就能把更多老兵推向北线。"
     ],
     "historical_note": "1815年5月下旬至6月上旬，百日政府在巴黎和各省重新整编国民自卫军，用于城防、治安和后方守备。这样做的目的，是尽量把正规军抽出来投入北线决战。",
+    "tier": "normal"
+  },
+  {
+    "id": "brussels_allied_staff_conference",
+    "label": "布鲁塞尔联军参谋会议",
+    "day_range": [50, 66],
+    "trigger": {
+      "day_min": 50,
+      "coalition_not_defeated": true
+    },
+    "effects": {
+      "coalition_troops_bonus": 6000,
+      "legitimacy_delta": -2
+    },
+    "narratives": [
+      "布鲁塞尔的联军司令部不再满足于各军各守一段道路。参谋官开始把行军时刻、联络路线和会合点一张张对齐。",
+      "威灵顿和普鲁士方面都知道，真正危险的不是法军正面强攻，而是他们自己反应太慢。",
+      "当协调做完，拿破仑能利用的就只剩时间差。"
+    ],
+    "historical_note": "1815年5月下旬至6月上旬，布鲁塞尔和比利时各前进司令部不断校对道路、联络和会合方案。联军协同并不完美，但其准备程度已足以缩短对法军先手的反应时间。",
     "tier": "normal"
   },
   {
