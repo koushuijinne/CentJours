@@ -14,7 +14,7 @@ use crate::characters::network::{
 };
 use std::collections::HashMap;
 use serde::{Serialize, Deserialize};
-use crate::events::pool::{EventPool, TriggerContext, EventEffects};
+use crate::events::pool::{EventPool, TriggerContext, EventEffects, TriggeredEvent};
 use crate::narratives::{NarrativePool, policy_narrative_key};
 
 // ── 游戏结局 ──────────────────────────────────────────
@@ -243,6 +243,8 @@ pub struct GameEngine {
     narratives:     NarrativePool,
     /// 最近一天的叙事报告（可供 UI 层读取）
     last_report:    Option<DayReport>,
+    /// 最近一次 Dawn 触发的历史事件详情（供 UI 在本回合立即展示）
+    last_triggered_events: Vec<TriggeredEvent>,
 }
 
 impl Default for GameEngine {
@@ -267,6 +269,7 @@ impl Default for GameEngine {
             triggered_event_ids: Vec::new(),
             narratives:  NarrativePool::new(),
             last_report: None,
+            last_triggered_events: Vec::new(),
         }
     }
 }
@@ -306,6 +309,11 @@ impl GameEngine {
     /// 最近一天的叙事报告（游戏刚开始还没处理过任何天时为 None）
     pub fn last_report(&self) -> Option<&DayReport> {
         self.last_report.as_ref()
+    }
+
+    /// 最近一次 Dawn 阶段触发的历史事件详情。
+    pub fn last_triggered_events(&self) -> &[TriggeredEvent] {
+        &self.last_triggered_events
     }
 
     // ── 存档 / 读档 ───────────────────────────────────
@@ -396,6 +404,8 @@ impl GameEngine {
         self.phase = TurnPhase::Dawn;
         let ctx = self.build_trigger_ctx();
         let triggered = self.event_pool.trigger_all(&ctx, rng);
+        // 缓存最近触发详情，供 UI 在本回合结算后直接读取。
+        self.last_triggered_events = triggered.clone();
         for t in triggered {
             self.triggered_event_ids.push(t.id.clone());
             self.apply_event_effects(&t.effects);
@@ -1303,6 +1313,25 @@ mod tests {
             assert!(
                 engine.history.iter().any(|e| e.event_type == "historical_event"),
                 "触发的历史事件应出现在 history 日志中"
+            );
+        }
+    }
+
+    #[test]
+    fn 最近触发事件详情保留史注内容() {
+        let mut engine = GameEngine::new();
+        let mut rng = seeded_rng();
+        for _ in 0..20 {
+            engine.process_day(PlayerAction::Rest, &mut rng);
+            if !engine.last_triggered_events().is_empty() {
+                break;
+            }
+        }
+
+        if !engine.last_triggered_events().is_empty() {
+            assert!(
+                engine.last_triggered_events().iter().all(|event| !event.historical_note.is_empty()),
+                "最近触发事件应保留 historical_note，供 UI 展示"
             );
         }
     }

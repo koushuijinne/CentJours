@@ -14,6 +14,11 @@ const SPECIAL_POLICY_PREVIEW_TEXTS := {
 	"boost_loyalty": "亲自接见将领\n\n消耗 5 合法性，目标将领忠诚度 +8。需合法性 >= 10。"
 }
 const FACTION_ORDER := ["military", "populace", "liberals", "nobility"]
+const EVENT_TIER_LABELS := {
+	"major": "重大史事",
+	"normal": "历史事件",
+	"minor": "历史片段"
+}
 const LOYALTY_VALUE_WIDTH := 126.0
 const LOYALTY_MIN_NAME_WIDTH := 96.0
 const LOYALTY_MIN_ROW_WIDTH := 228.0
@@ -79,6 +84,21 @@ func append_narrative(entry: String, color: Color = CentJoursTheme.COLOR["text_p
 		return
 	_narrative_body.text = NARRATIVE_SEPARATOR.join(_narrative_log)
 	_narrative_body.add_theme_color_override("font_color", color)
+
+## 历史事件日志同时保留随机叙事和史注，帮助玩家区分氛围文本与史实说明。
+func build_historical_event_entry(event_id: String, event_data: Dictionary = {}) -> String:
+	var label := String(event_data.get("label", event_id))
+	var tier := String(event_data.get("tier", "normal"))
+	var narrative := String(event_data.get("narrative", "")).strip_edges()
+	var historical_note := String(event_data.get("historical_note", "")).strip_edges()
+	var header := "◆ [%s] %s" % [EVENT_TIER_LABELS.get(tier, "历史事件"), label]
+
+	var sections: Array[String] = [header]
+	if narrative != "":
+		sections.append(narrative)
+	if historical_note != "":
+		sections.append("史注\n%s" % historical_note)
+	return "\n\n".join(sections)
 
 func refresh_situation(
 	phase_id: String,

@@ -41,9 +41,6 @@ func _run_dawn_phase() -> void:
 	# 同步引擎状态到 GameState 单例（供 UI 读取）
 	_sync_state_from_engine()
 
-	# 发射新触发的历史事件信号（引擎在 Dawn 阶段内部自动触发）
-	_emit_new_triggered_events()
-
 	# UI 调用 begin_action_phase() 后进入下一段
 
 ## Action Phase：等待玩家做出决策
@@ -96,6 +93,9 @@ func _run_dusk_phase(action_type: String, params: Dictionary) -> void:
 
 	# ── 同步状态 ─────────────────────────────────────
 	_sync_state_from_engine()
+	# 历史事件已在 process_day() 的 Dawn 阶段生效；这里立刻转发给 UI，
+	# 避免玩家要等到下一回合才看到事件正文和史注。
+	_emit_new_triggered_events()
 	if action_type == "march" and previous_location != GameState.napoleon_location:
 		EventBus.unit_moved.emit("napoleon_main_force", previous_location, GameState.napoleon_location)
 
@@ -189,15 +189,24 @@ func _sync_state_from_engine() -> void:
 				GameState.characters[char_id]["loyalty"] = new_loyalty
 				EventBus.loyalty_changed.emit(char_id, old_loyalty, new_loyalty)
 
-## 发射本次 Dawn 阶段新触发的历史事件信号
-## engine.get_triggered_events() 返回 Array[String]（事件 ID 列表，与 events/pool.rs 一致）
+## 发射本回合新触发的历史事件详情
+## engine.get_last_triggered_events() 返回 Array[Dictionary]，每项键：
+##   id(String)              — 事件 ID
+##   label(String)           — 展示标题
+##   tier(String)            — major | normal | minor
+##   narrative(String)       — 本次抽到的叙事正文
+##   historical_note(String) — 史实注释
 func _emit_new_triggered_events() -> void:
 	_ensure_engine()
-	var all_triggered: Array = Array(engine.get_triggered_events())
-	for event_id in all_triggered:
+	var triggered_details: Array = Array(engine.get_last_triggered_events())
+	for event_variant in triggered_details:
+		var event_data: Dictionary = Dictionary(event_variant)
+		var event_id: String = String(event_data.get("id", ""))
+		if event_id == "":
+			continue
 		if not GameState.triggered_events.has(event_id):
 			GameState.triggered_events.append(event_id)
-			EventBus.historical_event_triggered.emit(event_id)
+			EventBus.historical_event_triggered.emit(event_id, event_data)
 
 ## 从存档加载引擎状态（供 Save/Load UI 调用）
 ## 成功返回 true，失败返回 false

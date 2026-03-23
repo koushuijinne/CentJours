@@ -486,7 +486,12 @@ func _on_legitimacy_changed(_old_value: float, _new_value: float) -> void:
 func _on_loyalty_changed(_character_id: String, _old_value: float, _new_value: float) -> void:
 	_refresh_ui()
 
-func _on_history_changed(_event_id: String) -> void:
+## 历史事件到达时，直接写入叙事日志，让正文和史注在同一时间出现。
+func _on_history_changed(event_id: String, event_data: Dictionary) -> void:
+	_append_narrative(
+		_sidebar_controller.build_historical_event_entry(event_id, event_data),
+		CentJoursTheme.COLOR["gold"]
+	)
 	_refresh_ui()
 
 func _phase_display_name(phase_id: String) -> String:

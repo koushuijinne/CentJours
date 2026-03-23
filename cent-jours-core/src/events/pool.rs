@@ -66,6 +66,17 @@ impl Default for EventTier {
     fn default() -> Self { Self::Normal }
 }
 
+impl EventTier {
+    /// 导出稳定字符串值，供 GDExtension / UI 直接消费。
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Self::Major => "major",
+            Self::Normal => "normal",
+            Self::Minor => "minor",
+        }
+    }
+}
+
 /// 单个历史事件定义
 #[derive(Debug, Clone, Deserialize)]
 pub struct HistoricalEvent {
@@ -219,7 +230,9 @@ impl EventPool {
                 results.push(TriggeredEvent {
                     id:        event.id.clone(),
                     label:     event.label.clone(),
+                    tier:      event.tier.clone(),
                     narrative,
+                    historical_note: event.historical_note.clone(),
                     effects:   event.effects.clone(),
                 });
             }
@@ -250,7 +263,9 @@ impl EventPool {
 pub struct TriggeredEvent {
     pub id:        String,
     pub label:     String,
+    pub tier:      EventTier,
     pub narrative: String,
+    pub historical_note: String,
     pub effects:   EventEffects,
 }
 
@@ -409,6 +424,20 @@ mod tests {
         let ney_event = triggered.iter().find(|e| e.id == "ney_defection");
         assert!(ney_event.is_some(), "内伊倒戈应被触发");
         assert!(!ney_event.unwrap().narrative.is_empty(), "叙事文本不应为空");
+    }
+
+    #[test]
+    fn 触发结果保留tier与historical_note() {
+        let mut pool = EventPool::from_json(HISTORICAL_JSON).unwrap();
+        let ctx = ney_defection_context(6);
+        let mut rng = seeded_rng();
+        let triggered = pool.trigger_all(&ctx, &mut rng);
+        let ney_event = triggered.iter().find(|e| e.id == "ney_defection");
+
+        assert!(ney_event.is_some(), "内伊倒戈应被触发");
+        let ney_event = ney_event.unwrap();
+        assert!(matches!(ney_event.tier, EventTier::Major), "tier 应随事件一并保留");
+        assert!(!ney_event.historical_note.is_empty(), "historical_note 不应在触发结果中丢失");
     }
 
     // ── 效果数值 ──────────────────────────────────────

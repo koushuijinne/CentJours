@@ -11,18 +11,21 @@
 - docs/development_principles.md
 - docs/dev_plan.md
 - docs/codex_handoff.md
-- src/ui/main_menu.gd
+- docs/codex_autonomous_workflow.md
+- docs/decisions/ADR-008-historical-events-expansion.md
+- docs/advice/claude_event_history.md
+
 
 请先完成这 4 件事：
-1. 用 5 句话总结项目当前状态。
-2. 说明当前最高优先级是什么。
-3. 列出下一步最合理的 1-3 个开发任务。
-4. 明确这轮默认验证方式，不要擅自切换到 Linux/WSL 无头测试。
+1. 简要总结项目当前状态。
+2. 列出离项目上线 Steam 还需哪些开发任务，并按优先级排序。
+3. 明确这轮默认验证方式，不要切换到 Linux / WSL 无头测试。
+4. 按开发循环规则写详细的全自动开发文档，默认零阻塞自动决策。
 
 额外要求：
 - 不要先做大改。
 - 不要先生成泛泛而谈的长方案。
-- 如果需要继续开发，优先沿着 main menu 当前解耦方向推进。
+- 按 `docs/codex_autonomous_workflow.md` 的零阻塞规则自动推进。
 ```
 
 ## 2. 主菜单开发线启动模板

@@ -437,6 +437,25 @@ mod gdext_bindings {
                 .collect()
         }
 
+        /// 获取最近一次触发的历史事件详情。
+        /// 返回 Array[Dictionary]，每项键：
+        ///   id / label / tier / narrative / historical_note
+        #[func]
+        pub fn get_last_triggered_events(&self) -> Array<Dictionary> {
+            self.engine.last_triggered_events()
+                .iter()
+                .map(|event| {
+                    let mut d = Dictionary::new();
+                    let _ = d.insert("id", event.id.as_str());
+                    let _ = d.insert("label", event.label.as_str());
+                    let _ = d.insert("tier", event.tier.as_str());
+                    let _ = d.insert("narrative", event.narrative.as_str());
+                    let _ = d.insert("historical_note", event.historical_note.as_str());
+                    d
+                })
+                .collect()
+        }
+
         /// 游戏是否已结束
         #[func]
         pub fn is_over(&self) -> bool {
