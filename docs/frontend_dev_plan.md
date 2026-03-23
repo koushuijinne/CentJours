@@ -1,6 +1,6 @@
 # Cent Jours — 前端开发优先级计划
 
-> **更新**: 2026-03-23 v20
+> **更新**: 2026-03-23 v21
 > **当前分支**: `claude/review-project-plan-vgQTN`
 > **目标**: 用最少轮次把 Godot 入口从“占位页 + 联调脚本”推进到“可展示、可讲解、可继续绑定数据”的主场景
 > **通用原则**: 项目长期稳定原则详见 `docs/development_principles.md`
@@ -81,7 +81,7 @@ F5  视觉统一与动效      ████████░░░░  55% 🔶 RN
 5. ~~地图区仍是静态战略感占位，尚未读取 `map_nodes.json` 做数据驱动布局。~~ **✅ 已解决**：38 节点 + 完整边数据驱动
 6. ~~派系支持度无趋势方向箭头。~~ **✅ 已解决**：趋势箭头 ↑/↓/→ 已接入
 7. `src/ui/main_menu.gd` 已压到 `494` 行，第三波完成行军逻辑迁出（→ map_controller 信号驱动），HUD 刷新与弹窗状态组装保留在编排器（决策：变化频率不同不宜混入 layout_controller；callback 解耦模式不宜破坏）。
-13. **已知技术债**：`map_controller.gd` 983 行承载四层职责（数据模型/交互状态机/渲染引擎/行军交互），处于体量上限。当行军动画或战斗位置联动推入时需考虑拆分 `map_renderer.gd`。
+13. ~~**已知技术债**：`map_controller.gd` 983 行承载四层职责（数据模型/交互状态机/渲染引擎/行军交互），处于体量上限。~~ **✅ 已解决**：渲染引擎拆分至 `map_render_controller.gd`（592 行），`map_controller.gd` 降至 656 行（数据模型 + 交互状态机 + 行军交互）。
 8. ~~卡片冷却态目前仅为本回合视觉标记，引擎未暴露政策冷却 API~~ ✅ ADR-005 已实现：`get_state()` 返回 `cooldowns`，前端从 `GameState.policy_cooldowns` 读取真实剩余天数。
 9. ✅ `ADR-006` 第一轮已通过 Windows `1280x720` 手动验收：顶栏无垂直裁切。
 10. ✅ `ADR-006` 第一轮已通过 Windows `1280x720` 手动验收：托盘与卡片主体完整可见。
@@ -192,6 +192,16 @@ F5  视觉统一与动效      ████████░░░░  55% 🔶 RN
 - `main_menu.gd` 从 `523` 行降到 `494` 行；`map_controller.gd` 从 `879` 行增到 `983` 行
 - Rust 测试 131 个全部通过，确认纯前端重构不影响引擎层
 
+### 第四波已落地（2026-03-23）
+
+- 渲染引擎从 `map_controller.gd` 拆分至新建的 `map_render_controller.gd`（592 行）
+- 拆分内容：节点/边绘制、标签碰撞布局、视觉状态计算（圆点/光环/标签颜色）共 21 个函数
+- `map_controller.gd` 从 `983` 行降至 `656` 行，与其他 controller 体量对齐
+- 渲染器通过结构化参数 `rebuild(context: Dictionary)` 接口工作，不持有父 controller 引用
+- 热点控件信号绑定由 map_controller 在渲染完成后统一完成（渲染器只创建控件不绑定交互）
+- 所有 Dictionary 接口补齐键名契约注释（渲染上下文 12 键、返回值 3 键、label_candidate 12 键、node_label_policy 7 键、node_info JSON 结构）
+- Rust 测试 131 个全部通过
+
 ### 本轮目标
 
 把 `main_menu.gd` 从“大一统脚本”收缩成**主场景编排器**，目标是：
@@ -225,14 +235,24 @@ F5  视觉统一与动效      ████████░░░░  55% 🔶 RN
 
 职责：
 
-- 地图节点绘制
-- 标签去碰撞与锚点计算
-- hover / click 状态
-- 相邻路线高亮
+- 数据模型（JSON 加载、节点索引、AABB）
+- 交互状态机（hover / click / select）
 - `Map Inspector` 内容刷新
-- 行军选点交互状态机（第三波新增，通过 `march_confirmed` / `march_feedback` 信号通信）
+- 行军选点交互状态机（通过 `march_confirmed` / `march_feedback` 信号通信）
+- 渲染编排（组装 context → 委托 `map_render_controller` → 绑定信号）
 
 已落地。
+
+#### 2b. `src/ui/main_menu/map_render_controller.gd`
+
+职责：
+
+- 节点/边视觉创建（圆点、光环、Line2D）
+- 标签碰撞布局（优先级排序 + 四方向锚点尝试 + 强制 clamp）
+- 视觉状态计算（颜色、透明度、高亮等级）
+- 通过 `rebuild(context: Dictionary)` 纯函数接口工作，不持有外部状态
+
+已落地（第四波新增）。
 
 #### 3. `src/ui/main_menu/tray_controller.gd`
 
@@ -304,9 +324,11 @@ F5  视觉统一与动效      ████████░░░░  55% 🔶 RN
 - `sidebar_controller.gd`：已落地
 - `tray_controller.gd`：已落地
 - `map_controller.gd`：已落地
+- `map_render_controller.gd`：已落地（第四波从 map_controller 拆出）
 - `layout_controller.gd`：已落地
 - `dialogs_controller.gd`：已落地
-- `main_menu.gd`：已从 `1531` 行降到 `494` 行，已基本降为编排器（第三波完成行军迁出 + 地形映射迁入 config）
+- `main_menu.gd`：已从 `1531` 行降到 `494` 行，已基本降为编排器
+- 体量总览：main_menu `494` / map_controller `656` / map_render_controller `592` / sidebar `~300` / tray `~300` / layout `344` / dialogs `369`
 
 ### 推荐拆分顺序
 
