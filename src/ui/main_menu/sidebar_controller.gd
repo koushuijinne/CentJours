@@ -83,11 +83,64 @@ func set_policy_preview(policy_id: String, policy_meta: Dictionary = {}, color: 
 func build_policy_preview_text(policy_id: String, policy_meta: Dictionary = {}) -> String:
 	var normalized_policy_id := String(policy_id)
 	if SPECIAL_POLICY_PREVIEW_TEXTS.has(normalized_policy_id):
+		if normalized_policy_id == "rest":
+			return _build_rest_preview_text()
 		return String(SPECIAL_POLICY_PREVIEW_TEXTS[normalized_policy_id])
+	if normalized_policy_id == "requisition_supplies":
+		return _build_requisition_preview_text(policy_meta)
+	if normalized_policy_id == "stabilize_supply_lines":
+		return _build_supply_line_preview_text(policy_meta)
 
 	var policy_name := String(policy_meta.get("name", normalized_policy_id))
 	var policy_summary := String(policy_meta.get("summary", "等待结算…"))
 	return "▷ %s\n\n%s" % [policy_name, policy_summary]
+
+
+func _build_rest_preview_text() -> String:
+	var guidance := "当前以恢复疲劳和士气为主。"
+	if GameState.supply < 45.0:
+		guidance = "当前补给已经偏低，单纯休整的恢复会打折。若还要继续推进，先补补给更稳。"
+	elif GameState.current_day <= 10:
+		guidance = "前 10 天更适合把休整当作节奏控制，而不是长期停顿。看下一站仓储再决定是否继续赶路。"
+	return "休整 · 养精蓄锐\n\n让军队获得喘息之机，为下一步行动积蓄力量。\n%s" % guidance
+
+
+func _build_requisition_preview_text(policy_meta: Dictionary) -> String:
+	var policy_name := String(policy_meta.get("name", "征用沿线仓储"))
+	var summary := String(policy_meta.get("summary", "快速回补补给，代价是激怒沿线民众与自由派"))
+	var guidance := ""
+	if GameState.supply < 45.0:
+		guidance = "适用：补给已进危险区，且你还得继续行军或准备接战。它是止血按钮，不适合当常规维护。"
+	elif GameState.supply < 60.0:
+		guidance = "适用：补给开始吃紧，下一站又不是高容量节点时。"
+	else:
+		guidance = "当前补给还顶得住。更适合把它留到前线连续推进、库存跌到 45-60 之间时再用。"
+	if GameState.current_day <= 10:
+		guidance += "\n前 10 天不要太早把这张牌交掉，除非你已经决定连续北上。"
+	return "▷ %s\n\n%s\n\n当前补给 %.0f。\n%s" % [
+		policy_name,
+		summary,
+		GameState.supply,
+		guidance
+	]
+
+
+func _build_supply_line_preview_text(policy_meta: Dictionary) -> String:
+	var policy_name := String(policy_meta.get("name", "整顿驿站运输"))
+	var summary := String(policy_meta.get("summary", "短期整顿运输线，立刻小幅回补补给，并在接下来数日提高补给线效率"))
+	var guidance := ""
+	if GameState.supply < 45.0:
+		guidance = "适用：如果已经跌进危险区，通常应先用征用仓储止血；这张牌更适合在还没断供前提前保线。"
+	elif GameState.current_day <= 10:
+		guidance = "适用：前 10 天连续北上前先把运输线整顿好。它更像是为了连续两三天推进提前铺路。"
+	else:
+		guidance = "适用：你准备连续推进、又不想每次都靠征用仓储硬撑时。它解决的是补给线效率，不是一次性大回补。"
+	return "▷ %s\n\n%s\n\n当前补给 %.0f。\n%s" % [
+		policy_name,
+		summary,
+		GameState.supply,
+		guidance
+	]
 
 func append_narrative(entry: String, color: Color = CentJoursTheme.COLOR["text_primary"]) -> void:
 	_narrative_preview_text = ""
