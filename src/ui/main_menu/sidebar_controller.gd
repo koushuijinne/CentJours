@@ -212,6 +212,7 @@ func refresh_situation(
 	legitimacy: float,
 	supply: float,
 	fatigue: float,
+	logistics_runway_label: String,
 	logistics_posture_label: String,
 	logistics_focus_title: String,
 	logistics_focus_detail: String,
@@ -236,6 +237,8 @@ func refresh_situation(
 	var logistics_lines: Array[String] = []
 	if logistics_posture_label.strip_edges() != "":
 		logistics_lines.append("后勤态势 · %s" % logistics_posture_label)
+	if logistics_runway_label.strip_edges() != "":
+		logistics_lines.append(logistics_runway_label)
 	if logistics_focus_title.strip_edges() != "":
 		logistics_lines.append(logistics_focus_title)
 	if logistics_focus_detail.strip_edges() != "":
@@ -307,6 +310,7 @@ func refresh_all(
 	legitimacy: float,
 	supply: float,
 	fatigue: float,
+	logistics_runway_label: String,
 	logistics_posture_label: String,
 	logistics_focus_title: String,
 	logistics_focus_detail: String,
@@ -322,6 +326,7 @@ func refresh_all(
 		legitimacy,
 		supply,
 		fatigue,
+		logistics_runway_label,
 		logistics_posture_label,
 		logistics_focus_title,
 		logistics_focus_detail,

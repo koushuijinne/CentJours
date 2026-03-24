@@ -451,6 +451,7 @@ mod gdext_bindings {
             let _ = d.insert("supply_role_label", preview.supply_role_label.as_str());
             let _ = d.insert("supply_hub_name", preview.supply_hub_name.as_str());
             let _ = d.insert("supply_hub_distance", preview.supply_hub_distance as i64);
+            let _ = d.insert("supply_runway_days", preview.supply_runway_days);
             d
         }
 
@@ -494,6 +495,16 @@ mod gdext_bindings {
             let _ = d.insert("logistics_focus_title", logistics.focus_title.as_str());
             let _ = d.insert("logistics_focus_detail", logistics.focus_detail.as_str());
             let _ = d.insert("logistics_focus_short", logistics.focus_short.as_str());
+            let _ = d.insert(
+                "logistics_runway_days",
+                e.current_supply_runway_days()
+                    .map(|days| days as i64)
+                    .unwrap_or(-1),
+            );
+            let _ = d.insert(
+                "logistics_runway_label",
+                e.current_supply_runway_label().as_str(),
+            );
 
             let mut factions = Dictionary::new();
             for (k, v) in &e.politics.faction_support {

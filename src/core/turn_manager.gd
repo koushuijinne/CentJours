@@ -84,6 +84,7 @@ func submit_action(action_type: String, params: Dictionary = {}) -> void:
 ##   supply_role_label(String)
 ##   supply_hub_name(String)
 ##   supply_hub_distance(int)
+##   supply_runway_days(int)
 func get_march_preview(target_node: String) -> Dictionary:
 	_ensure_engine()
 	if target_node.strip_edges() == "":
@@ -106,7 +107,8 @@ func get_march_preview(target_node: String) -> Dictionary:
 			"supply_role": "",
 			"supply_role_label": "",
 			"supply_hub_name": "",
-			"supply_hub_distance": 0
+			"supply_hub_distance": 0,
+			"supply_runway_days": -1
 		}
 	return Dictionary(engine.preview_march(target_node))
 
@@ -200,6 +202,8 @@ func _run_dusk_phase(action_type: String, params: Dictionary) -> void:
 ##   logistics_focus_title(String)
 ##   logistics_focus_detail(String)
 ##   logistics_focus_short(String)
+##   logistics_runway_days(int)
+##   logistics_runway_label(String)
 ##   is_over(bool)    — 游戏是否结束
 ##   outcome(String)  — 结局标识（游戏进行中为 "in_progress"）
 ##   factions(Dictionary) — { faction_id(String): support(float) }
@@ -230,6 +234,8 @@ func _sync_state_from_engine() -> void:
 	GameState.logistics_focus_title = String(state.get("logistics_focus_title", ""))
 	GameState.logistics_focus_detail = String(state.get("logistics_focus_detail", ""))
 	GameState.logistics_focus_short = String(state.get("logistics_focus_short", ""))
+	GameState.logistics_runway_days = int(state.get("logistics_runway_days", -1))
+	GameState.logistics_runway_label = String(state.get("logistics_runway_label", ""))
 	GameState.available_march_targets.clear()
 	for node_id in Array(engine.get_adjacent_nodes()):
 		GameState.available_march_targets.append(String(node_id))

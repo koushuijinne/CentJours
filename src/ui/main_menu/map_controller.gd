@@ -565,11 +565,15 @@ func refresh_map_inspector() -> void:
 		var hub_line := "最近枢纽：%s" % String(hub_info.get("label", "未知补给点"))
 		if int(hub_info.get("distance", -1)) >= 0:
 			hub_line += "（%d 跳）" % int(hub_info.get("distance", 0))
-		_map_inspector_stats.text = "%s补给角色：%s\n%s\n%s\n防御加成：%.1f\n驻军：%d" % [
+		var runway_line := ""
+		if inspector_node_id == _napoleon_location_id and GameState.logistics_runway_label.strip_edges() != "":
+			runway_line = "%s\n" % GameState.logistics_runway_label
+		_map_inspector_stats.text = "%s补给角色：%s\n%s\n%s\n%s防御加成：%.1f\n驻军：%d" % [
 			marker,
 			MainMenuFormattersLib.supply_role_label_for_capacity(base_capacity),
 			capacity_line,
 			hub_line,
+			runway_line,
 			float(node_info.get("defense_bonus", 0.0)),
 			int(node_info.get("garrison", 0))
 		]
@@ -700,8 +704,10 @@ func _update_march_target(node_id: String) -> void:
 		var supply_role_label := String(march_preview.get("supply_role_label", MainMenuFormattersLib.supply_role_label_for_capacity(base_supply_capacity)))
 		var hub_name := String(march_preview.get("supply_hub_name", "未知补给点"))
 		var hub_distance := int(march_preview.get("supply_hub_distance", -1))
+		var supply_runway_days := int(march_preview.get("supply_runway_days", -1))
+		var runway_label := _supply_runway_label(supply_runway_days)
 		var pressure_label := _march_pressure_label(projected_supply, supply_capacity)
-		preview_text = "预计补给：%s（%.0f，%+.1f）\n预计疲劳：%.0f（%+.1f）\n预计士气：%.0f（%+.1f）\n节点角色：%s\n原因：%s\n建议：%s" % [
+		preview_text = "预计补给：%s（%.0f，%+.1f）\n预计疲劳：%.0f（%+.1f）\n预计士气：%.0f（%+.1f）\n%s\n节点角色：%s\n原因：%s\n建议：%s" % [
 			pressure_label,
 			projected_supply,
 			supply_delta,
@@ -709,6 +715,7 @@ func _update_march_target(node_id: String) -> void:
 			fatigue_delta,
 			float(march_preview.get("projected_morale", GameState.avg_morale)),
 			morale_delta,
+			runway_label,
 			supply_role_label,
 			_build_supply_reason_text(
 				base_supply_capacity,
@@ -867,6 +874,16 @@ func _hub_distance_suffix(distance: int) -> String:
 	if distance < 0:
 		return ""
 	return "（%d 跳）" % distance
+
+
+func _supply_runway_label(days: int) -> String:
+	if days < 0:
+		return "补给窗口：当前节点可持续维持"
+	if days == 0:
+		return "补给窗口：落点后已在战斗惩罚区"
+	if days == 1:
+		return "补给窗口：约再停 1 天会跌进战斗惩罚区"
+	return "补给窗口：约还能维持 %d 天" % days
 
 
 func _nearest_supply_hub(node_id: String) -> Dictionary:

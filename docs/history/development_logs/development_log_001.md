@@ -322,3 +322,22 @@
 - 本轮将与功能代码、规则文档和交接文档一起提交并推送到 `auto/gameplay_update`。
 下一步:
 - 继续把补给系统从“知道当下该做什么”推进到“能看见几回合后的代价与窗口”，优先补前线推进节奏和更明确的阶段目标反馈。
+
+## 2026-03-24 第 20 轮
+分支: `auto/gameplay_update`
+范围: 把前线推进节奏做成补给窗口提示
+变更:
+- 引擎新增了当前驻地和行军落点的补给窗口推导，直接给出“当前节点可持续维持”“约还能维持 N 天”或“已在战斗惩罚区”等权威结论。
+- `lib.rs`、`turn_manager.gd` 和 `game_state.gd` 现在会同步 `logistics_runway_*` 与 `supply_runway_days` 字段；GDScript 不再自己估算前线能撑几天。
+- 侧栏态势区、地图检查器和行军预判都接入了补给窗口提示，玩家能在决策前看到当前位置和目标位置的时间余量。
+- 这一轮没有新增补给政策，而是把已有三张牌放进更可运营的多回合节奏里。
+验证:
+- `cargo fmt --manifest-path cent-jours-core/Cargo.toml` 已通过。
+- Windows `cargo test` 已通过，基线提升到 `187/187`。
+- Windows `cargo build --features godot-extension` 已通过。
+- Windows Godot 无头主项目和 smoke scene 已通过。
+- 本轮未运行 Linux / WSL 侧测试。
+提交/推送:
+- 本轮将与功能代码和文档同步一起提交并推送到 `auto/gameplay_update`。
+下一步:
+- 继续把补给系统从“能看见几天后会出事”推进到“会提前提醒哪几步组合最危险”，优先补多回合推进成本和失败归因串联。

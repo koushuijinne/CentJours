@@ -354,6 +354,7 @@ func _refresh_situation_panel() -> void:
 		GameState.legitimacy,
 		GameState.supply,
 		GameState.avg_fatigue,
+		GameState.logistics_runway_label,
 		GameState.logistics_posture_label,
 		GameState.logistics_focus_title,
 		GameState.logistics_focus_detail,

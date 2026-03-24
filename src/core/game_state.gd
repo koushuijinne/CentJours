@@ -36,6 +36,8 @@ var logistics_posture_label: String = ""
 var logistics_focus_title: String = ""
 var logistics_focus_detail: String = ""
 var logistics_focus_short: String = ""
+var logistics_runway_days: int = -1
+var logistics_runway_label: String = ""
 
 # 军队摘要（从 CentJoursEngine.get_state() 同步，只读缓存）
 var total_troops: int   = 6000   # 当前总兵力

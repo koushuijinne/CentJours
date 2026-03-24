@@ -115,6 +115,7 @@ pub struct MarchPreview {
     pub supply_role_label: String,
     pub supply_hub_name: String,
     pub supply_hub_distance: u32,
+    pub supply_runway_days: i32,
 }
 
 #[derive(Debug, Clone)]
@@ -528,6 +529,14 @@ impl GameEngine {
         }
     }
 
+    pub fn current_supply_runway_days(&self) -> Option<u32> {
+        self.supply_runway_days_for(&self.napoleon_location, self.army.supply)
+    }
+
+    pub fn current_supply_runway_label(&self) -> String {
+        Self::supply_runway_label(self.current_supply_runway_days())
+    }
+
     /// 当前可直接行军到的相邻节点列表。
     pub fn adjacent_nodes(&self) -> Vec<String> {
         self.map_graph.neighbors_of(&self.napoleon_location)
@@ -558,6 +567,7 @@ impl GameEngine {
                 supply_role_label: String::new(),
                 supply_hub_name: String::new(),
                 supply_hub_distance: 0,
+                supply_runway_days: -1,
             };
         }
 
@@ -577,6 +587,10 @@ impl GameEngine {
         let supply_result =
             update_supply_with_capacity(&projected_army, line_efficiency, effective_capacity);
         let (hub_name, hub_distance) = self.nearest_supply_hub(&projected_army.location);
+        let supply_runway_days = self
+            .supply_runway_days_for(&projected_army.location, supply_result.new_supply)
+            .map(|days| days as i32)
+            .unwrap_or(-1);
 
         MarchPreview {
             valid: true,
@@ -604,6 +618,7 @@ impl GameEngine {
                 .to_string(),
             supply_hub_name: hub_name,
             supply_hub_distance: hub_distance,
+            supply_runway_days,
         }
     }
 
@@ -1604,6 +1619,51 @@ impl GameEngine {
         }
     }
 
+    fn supply_runway_days_for(&self, location: &str, starting_supply: f64) -> Option<u32> {
+        if starting_supply < SUPPLY_OK_THRESHOLD {
+            return Some(0);
+        }
+
+        let line_efficiency = self.supply_line_efficiency_for(location);
+        let capacity = self.effective_supply_capacity_for(location);
+        let mut projected_supply = starting_supply;
+
+        for day in 1..=7 {
+            let result = update_supply_with_capacity(
+                &MarchArmyState {
+                    id: "napoleon_main_force".to_string(),
+                    location: location.to_string(),
+                    troops: self.army.total_troops,
+                    morale: self.army.avg_morale,
+                    fatigue: self.army.avg_fatigue,
+                    supply: projected_supply,
+                },
+                line_efficiency,
+                capacity,
+            );
+
+            if result.supply_delta >= 0.0 && result.new_supply >= projected_supply {
+                return None;
+            }
+
+            projected_supply = result.new_supply;
+            if projected_supply < SUPPLY_OK_THRESHOLD {
+                return Some(day);
+            }
+        }
+
+        Some(7)
+    }
+
+    fn supply_runway_label(days: Option<u32>) -> String {
+        match days {
+            None => "补给窗口：当前驻地可持续维持".to_string(),
+            Some(0) => "补给窗口：已处于战斗惩罚区".to_string(),
+            Some(1) => "补给窗口：再停 1 天就会跌进战斗惩罚区".to_string(),
+            Some(day_count) => format!("补给窗口：约还能维持 {} 天", day_count),
+        }
+    }
+
     /// 获取将领军事技能（单一来源：characters.json，通过 CharacterNetwork 加载）
     fn general_skill(&self, id: &str) -> f64 {
         self.characters.skill(id)
@@ -2020,6 +2080,33 @@ mod tests {
         assert!(
             engine.logistics_brief().focus_title.contains("终盘"),
             "终盘应切换到决战目标"
+        );
+    }
+
+    #[test]
+    fn 高容量节点的补给窗口会显示为可持续维持() {
+        let mut engine = GameEngine::new();
+        engine.napoleon_location = "paris".to_string();
+        engine.army.supply = 68.0;
+
+        assert_eq!(engine.current_supply_runway_days(), None);
+        assert!(
+            engine.current_supply_runway_label().contains("可持续维持"),
+            "高容量节点应显示为可持续维持"
+        );
+    }
+
+    #[test]
+    fn 行军预览会给出落点补给窗口() {
+        let mut engine = GameEngine::new();
+        engine.army.supply = 52.0;
+
+        let preview = engine.preview_march("grasse");
+
+        assert!(preview.valid);
+        assert!(
+            preview.supply_runway_days >= 0,
+            "低容量落点应给出明确补给窗口"
         );
     }
 
