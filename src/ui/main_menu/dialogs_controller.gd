@@ -25,9 +25,13 @@ const STATE_KEY_LEGITIMACY := "legitimacy"
 const STATE_KEY_VICTORIES := "victories"
 const STATE_KEY_TOTAL_TROOPS := "total_troops"
 const STATE_KEY_AVG_MORALE := "avg_morale"
+const STATE_KEY_SUPPLY := "supply"
 const STATE_KEY_CHARACTERS := "characters"
 const STATE_KEY_LOCATION_LABEL := "location_label"
 const STATE_KEY_LOCATION_TERRAIN := "location_terrain"
+const STATE_KEY_LOGISTICS_POSTURE_LABEL := "logistics_posture_label"
+const STATE_KEY_LOGISTICS_OBJECTIVE_LABEL := "logistics_objective_label"
+const STATE_KEY_LOGISTICS_RUNWAY_LABEL := "logistics_runway_label"
 
 const DEFAULT_GAME_OVER_STATE := {
 	STATE_KEY_CURRENT_DAY: 1,
@@ -35,6 +39,11 @@ const DEFAULT_GAME_OVER_STATE := {
 	STATE_KEY_VICTORIES: 0,
 	STATE_KEY_TOTAL_TROOPS: 0,
 	STATE_KEY_AVG_MORALE: 0.0,
+	STATE_KEY_SUPPLY: 0.0,
+	STATE_KEY_LOCATION_LABEL: "",
+	STATE_KEY_LOGISTICS_POSTURE_LABEL: "",
+	STATE_KEY_LOGISTICS_OBJECTIVE_LABEL: "",
+	STATE_KEY_LOGISTICS_RUNWAY_LABEL: "",
 }
 
 signal restart_requested
@@ -71,6 +80,11 @@ func build_game_over_state(stats: Dictionary = {}) -> Dictionary:
 	normalized[STATE_KEY_VICTORIES] = _get_int_stat(stats, STATE_KEY_VICTORIES, int(DEFAULT_GAME_OVER_STATE[STATE_KEY_VICTORIES]))
 	normalized[STATE_KEY_TOTAL_TROOPS] = _get_int_stat(stats, STATE_KEY_TOTAL_TROOPS, int(DEFAULT_GAME_OVER_STATE[STATE_KEY_TOTAL_TROOPS]))
 	normalized[STATE_KEY_AVG_MORALE] = _get_float_stat(stats, STATE_KEY_AVG_MORALE, float(DEFAULT_GAME_OVER_STATE[STATE_KEY_AVG_MORALE]))
+	normalized[STATE_KEY_SUPPLY] = _get_float_stat(stats, STATE_KEY_SUPPLY, float(DEFAULT_GAME_OVER_STATE[STATE_KEY_SUPPLY]))
+	normalized[STATE_KEY_LOCATION_LABEL] = String(stats.get(STATE_KEY_LOCATION_LABEL, DEFAULT_GAME_OVER_STATE[STATE_KEY_LOCATION_LABEL]))
+	normalized[STATE_KEY_LOGISTICS_POSTURE_LABEL] = String(stats.get(STATE_KEY_LOGISTICS_POSTURE_LABEL, DEFAULT_GAME_OVER_STATE[STATE_KEY_LOGISTICS_POSTURE_LABEL]))
+	normalized[STATE_KEY_LOGISTICS_OBJECTIVE_LABEL] = String(stats.get(STATE_KEY_LOGISTICS_OBJECTIVE_LABEL, DEFAULT_GAME_OVER_STATE[STATE_KEY_LOGISTICS_OBJECTIVE_LABEL]))
+	normalized[STATE_KEY_LOGISTICS_RUNWAY_LABEL] = String(stats.get(STATE_KEY_LOGISTICS_RUNWAY_LABEL, DEFAULT_GAME_OVER_STATE[STATE_KEY_LOGISTICS_RUNWAY_LABEL]))
 	return normalized
 
 
@@ -129,6 +143,7 @@ func show_game_over(outcome: String, stats: Dictionary = {}) -> void:
 	var victories := int(game_over_state[STATE_KEY_VICTORIES])
 	var total_troops := int(game_over_state[STATE_KEY_TOTAL_TROOPS])
 	var avg_morale := float(game_over_state[STATE_KEY_AVG_MORALE])
+	var supply := float(game_over_state[STATE_KEY_SUPPLY])
 	_append_game_over_section(
 		vbox,
 		"终局尾声",
@@ -138,12 +153,13 @@ func show_game_over(outcome: String, stats: Dictionary = {}) -> void:
 	)
 
 	var stats_label := Label.new()
-	stats_label.text = "\n最终统计\n天数: %d  |  合法性: %.0f\n胜场: %d  |  兵力: %d  |  士气: %.0f" % [
+	stats_label.text = "\n最终统计\n天数: %d  |  合法性: %.0f\n胜场: %d  |  兵力: %d  |  士气: %.0f  |  补给: %.0f" % [
 		current_day,
 		legitimacy,
 		victories,
 		total_troops,
-		avg_morale
+		avg_morale,
+		supply
 	]
 	stats_label.add_theme_color_override("font_color", CentJoursTheme.COLOR["text_primary"])
 	stats_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -183,6 +199,11 @@ func _build_game_over_review(outcome: String, game_over_state: Dictionary, info:
 	var victories := int(game_over_state[STATE_KEY_VICTORIES])
 	var total_troops := int(game_over_state[STATE_KEY_TOTAL_TROOPS])
 	var avg_morale := float(game_over_state[STATE_KEY_AVG_MORALE])
+	var supply := float(game_over_state[STATE_KEY_SUPPLY])
+	var location_label := String(game_over_state.get(STATE_KEY_LOCATION_LABEL, "")).strip_edges()
+	var logistics_posture_label := String(game_over_state.get(STATE_KEY_LOGISTICS_POSTURE_LABEL, "")).strip_edges()
+	var logistics_objective_label := String(game_over_state.get(STATE_KEY_LOGISTICS_OBJECTIVE_LABEL, "")).strip_edges()
+	var logistics_runway_label := String(game_over_state.get(STATE_KEY_LOGISTICS_RUNWAY_LABEL, "")).strip_edges()
 
 	match outcome:
 		"napoleon_victory":
@@ -200,10 +221,20 @@ func _build_game_over_review(outcome: String, game_over_state: Dictionary, info:
 		lines.append("有效胜场只有 %d 场，军事窗口没有被扩大成决定性优势。" % victories)
 	if legitimacy < 35.0:
 		lines.append("终局合法性只剩 %.0f，政治支持已经不足以继续承担战争。" % legitimacy)
+	if supply < 45.0:
+		lines.append("终局补给只剩 %.0f，说明你在最后几步里已经把库存压进了前线惩罚区。" % supply)
 	if total_troops < 20000:
 		lines.append("终局兵力只剩 %d，人力储备已经不够继续换时间。" % total_troops)
 	if avg_morale < 45.0:
 		lines.append("终局士气 %.0f，说明连续损耗和疲劳没有被及时修复。" % avg_morale)
+	if logistics_posture_label != "":
+		lines.append("最后的后勤态势是“%s”。" % logistics_posture_label)
+	if logistics_objective_label != "":
+		lines.append("最后阶段的运营目标仍是“%s”，说明你还没把节奏切到更安全的位置。" % logistics_objective_label)
+	if logistics_runway_label != "":
+		lines.append(logistics_runway_label)
+	if location_label != "":
+		lines.append("最后位置在 %s。" % location_label)
 
 	return "\n".join(lines)
 

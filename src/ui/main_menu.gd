@@ -382,13 +382,31 @@ func _sync_tray_state() -> void:
 	_sync_march_preview()
 
 func _refresh_logistics_guidance() -> void:
-	var hint_text := "选择一项政策或直接休整"
-	if GameState.logistics_objective_short.strip_edges() != "":
-		hint_text = GameState.logistics_objective_short
-	elif GameState.logistics_focus_short.strip_edges() != "":
-		hint_text = GameState.logistics_focus_short
+	var hint_text := _build_tutorial_hint_text()
+	if hint_text.strip_edges() == "":
+		hint_text = "选择一项政策或直接休整"
+		if GameState.logistics_objective_short.strip_edges() != "":
+			hint_text = GameState.logistics_objective_short
+		elif GameState.logistics_focus_short.strip_edges() != "":
+			hint_text = GameState.logistics_focus_short
 	_tray_controller.set_tray_hint_texts(hint_text, "结算中…")
 	_map_controller.set_context_subtitle(hint_text)
+
+
+func _build_tutorial_hint_text() -> String:
+	if GameState.current_day > 10:
+		return ""
+	if GameState.current_day <= 3 and GameState.logistics_objective_target_role_label.strip_edges() != "":
+		return "前10天教程：先离开前沿消耗点，优先把路线接到%s。" % GameState.logistics_objective_target_role_label
+	if GameState.logistics_runway_days == 0:
+		return "前10天教程：你已经跌进战斗惩罚区。下一步优先休整或补给，不要继续硬顶。"
+	if GameState.logistics_runway_days == 1 or GameState.supply < 55.0:
+		return "前10天教程：补给开始见底时，先打补给牌或休整，不要连续站在低容量节点。"
+	if GameState.current_day <= 7 and GameState.logistics_objective_short.strip_edges() != "":
+		return "前10天教程：%s" % GameState.logistics_objective_short
+	if GameState.current_day <= 10 and GameState.logistics_objective_target_role_label.strip_edges() != "":
+		return "前10天教程：把%s接成跳板后，再考虑发动战役或继续前推。" % GameState.logistics_objective_target_role_label
+	return ""
 
 
 func _clear_tray_selection() -> void:
@@ -553,6 +571,11 @@ func _dialog_stats_snapshot() -> Dictionary:
 		MainMenuDialogsControllerScript.STATE_KEY_VICTORIES: GameState.victories,
 		MainMenuDialogsControllerScript.STATE_KEY_TOTAL_TROOPS: GameState.total_troops,
 		MainMenuDialogsControllerScript.STATE_KEY_AVG_MORALE: GameState.avg_morale,
+		MainMenuDialogsControllerScript.STATE_KEY_SUPPLY: GameState.supply,
+		MainMenuDialogsControllerScript.STATE_KEY_LOCATION_LABEL: _napoleon_location_label(),
+		MainMenuDialogsControllerScript.STATE_KEY_LOGISTICS_POSTURE_LABEL: GameState.logistics_posture_label,
+		MainMenuDialogsControllerScript.STATE_KEY_LOGISTICS_OBJECTIVE_LABEL: GameState.logistics_objective_label,
+		MainMenuDialogsControllerScript.STATE_KEY_LOGISTICS_RUNWAY_LABEL: GameState.logistics_runway_label,
 	})
 
 ## 组装战斗弹窗所需的状态 Dictionary

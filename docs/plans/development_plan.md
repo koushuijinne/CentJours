@@ -1,6 +1,6 @@
 # Cent Jours — 开发优先级计划
 
-> **更新**: 2026-03-24 v78
+> **更新**: 2026-03-24 v79
 > **通用原则**: [docs/rules/development_principles.md](/mnt/e/projects/CentJours/docs/rules/development_principles.md)
 > **快速接手**: [docs/history/agent_handoff.md](/mnt/e/projects/CentJours/docs/history/agent_handoff.md)
 > **开发历史**: [docs/history/development_logs/development_log_001.md](/mnt/e/projects/CentJours/docs/history/development_logs/development_log_001.md)
@@ -28,6 +28,8 @@
 - 当前驻地与行军目标现在还会给出“补给窗口”提示：当前节点大约还能维持几天，或是否已经处于战斗惩罚区，前线推进节奏开始变得可读。
 - 行军预判现在还会给出“第二跳推进风险”：落点后还剩几条相对稳妥的继续推进路线、哪条后续线路最稳，以及是否已经把自己推进补给陷阱。
 - 引擎状态现在还会给出“阶段运营目标”：这一阶段应该优先抢哪类节点、当前是不是在往正确的仓储层级走；侧栏、地图副标题和行军预判都已复用这层目标。
+- `DecisionTray` 提示现在会在前 10 天主动输出后勤教程链，根据补给窗口和阶段目标告诉玩家何时该先补给、何时该先抢整补节点。
+- 终局复盘现在会带上终盘补给、最后位置、后勤态势、阶段运营目标和补给窗口，失败归因开始从纯政治/军事统计扩展到后勤节奏。
 - 前端已拆出 `map / layout / tray / sidebar / dialogs` 控制器，但主菜单相关文件仍偏大，发布级 polish 尚未完成。
 - 默认验证路径只接受 Windows 原生运行、Windows 无头和 Windows 原生 `cargo build --features godot-extension`。
 - 当前这条补给玩法切片已经完成 Windows `cargo test`、Windows DLL 重编、Windows 主项目无头启动和 Windows smoke scene；后续自动工作流不再回退到 Linux / WSL 侧测试补位。
@@ -72,7 +74,7 @@ E:\software\godot\Godot_v4.6.1-stable_win64_console.exe --headless --path E:\pro
 
 - `内容量仍不足`：事件池虽然扩到 `58` 条，但离 `100+` 仍差 `42` 条。
 - `补给玩法还没完全产品化`：当前已经有三层玩家杠杆、补给角色与枢纽可视化，以及后勤态势 / 阶段目标 / 补给窗口 / 第二跳风险 / 阶段运营目标提示，但长线运营感和区域节奏仍不够完整。
-- `补给教学还没收口`：玩家现在能在行军前和行动后看到仓储容量、补给线效率、可得量与需求拆解，也能在侧栏、地图副标题和决策区看到后勤态势 / 阶段目标；但前 10 天仍缺更系统的引导节奏和失败归因串联。
+- `补给教学还没收口`：玩家现在能在行军前和行动后看到仓储容量、补给线效率、可得量与需求拆解，也能在侧栏、地图副标题和决策区看到后勤态势 / 阶段目标；前 10 天教程链和终局后勤复盘已经开始接通，但还缺更完整的失败归因串联。
 - `文本 QA 未收口`：已做多轮事件修订，但全量事件还没完成统一史实锚点、信息密度与句式清理。
 - `前端发布级 polish 仍未收口`：`DecisionTray` 和 `Map Inspector` 已做结构修复，但仍需持续用 Windows 真机确认。
 - `产品化能力缺口`：仍缺设置/选项页、稳定发布导出链路、Steam 商店与宣传资产。
