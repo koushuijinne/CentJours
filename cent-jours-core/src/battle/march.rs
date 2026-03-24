@@ -176,7 +176,13 @@ pub const FORCED_MARCH_FATIGUE: f64 = 20.0;
 pub const FORCED_MARCH_MORALE: f64 = -10.0;
 pub const NORMAL_FATIGUE_RECOVERY: f64 = 15.0;
 pub const REST_FATIGUE_RECOVERY: f64 = 30.0;
-pub const SUPPLY_CONSUMPTION_RATE: f64 = 0.1; // 每日消耗/兵力比
+pub const SUPPLY_OK_THRESHOLD: f64 = 45.0;
+pub const SUPPLY_TROOP_STEP: f64 = 12_000.0;
+pub const MIN_SUPPLY_DEMAND: f64 = 4.0;
+pub const BASE_LINE_SUPPLY: f64 = 2.0;
+pub const SUPPLY_BALANCE_MULTIPLIER: f64 = 4.0;
+pub const MAX_DAILY_SUPPLY_GAIN: f64 = 12.0;
+pub const MAX_DAILY_SUPPLY_LOSS: f64 = -15.0;
 
 // ── 行军输入/输出 ─────────────────────────────────────
 
@@ -208,6 +214,8 @@ pub struct SupplyResult {
     pub supply_delta: f64,
     pub demand: f64,
     pub available: f64,
+    pub new_supply: f64,
+    pub line_efficiency: f64,
 }
 
 // ── 核心行军函数 ──────────────────────────────────────
@@ -260,29 +268,37 @@ pub fn move_army(army: &ArmyState, target_node: &str, forced: bool, map: &MapGra
 /// 驻扎休整（不移动）
 pub fn rest_army(army: &ArmyState) -> (f64, f64) {
     // 返回 (fatigue_recovery, morale_recovery)
-    let fat_rec = if army.supply > 50.0 {
+    let fat_rec = if army.supply > SUPPLY_OK_THRESHOLD {
         REST_FATIGUE_RECOVERY + 10.0
     } else {
         REST_FATIGUE_RECOVERY
     };
-    let mor_rec = if army.supply > 50.0 { 10.0 } else { 5.0 };
+    let mor_rec = if army.supply > SUPPLY_OK_THRESHOLD {
+        10.0
+    } else {
+        5.0
+    };
     (fat_rec, mor_rec)
 }
 
 /// 更新补给状态
-pub fn update_supply(army: &ArmyState, supply_lines_intact: bool, map: &MapGraph) -> SupplyResult {
+pub fn update_supply(army: &ArmyState, line_efficiency: f64, map: &MapGraph) -> SupplyResult {
     let capacity = map.supply_capacity_of(&army.location) as f64;
-    let demand = army.troops as f64 * SUPPLY_CONSUMPTION_RATE;
-    let available = capacity * if supply_lines_intact { 1.0 } else { 0.3 };
-
-    let supply_ok = available >= demand * 0.5;
-    let supply_delta = available.min(demand) - army.supply;
+    let demand = (army.troops as f64 / SUPPLY_TROOP_STEP).max(MIN_SUPPLY_DEMAND)
+        * (1.0 + army.fatigue / 250.0);
+    let available = capacity * line_efficiency.clamp(0.2, 1.2) + BASE_LINE_SUPPLY;
+    let supply_delta = ((available - demand) * SUPPLY_BALANCE_MULTIPLIER)
+        .clamp(MAX_DAILY_SUPPLY_LOSS, MAX_DAILY_SUPPLY_GAIN);
+    let new_supply = (army.supply + supply_delta).clamp(0.0, 100.0);
+    let supply_ok = new_supply >= SUPPLY_OK_THRESHOLD;
 
     SupplyResult {
         supply_ok,
         supply_delta,
         demand,
         available,
+        new_supply,
+        line_efficiency,
     }
 }
 
@@ -442,9 +458,31 @@ mod tests {
     fn 补给线断裂时供应减少() {
         let map = simple_map();
         let army = army_at("waterloo"); // 远离补给线
-        let intact = update_supply(&army, true, &map);
-        let severed = update_supply(&army, false, &map);
+        let intact = update_supply(&army, 0.9, &map);
+        let severed = update_supply(&army, 0.3, &map);
         assert!(severed.available < intact.available);
+        assert!(severed.new_supply < intact.new_supply);
+    }
+
+    #[test]
+    fn 前线低容量节点会持续消耗补给() {
+        let map = simple_map();
+        let army = army_at("waterloo");
+        let result = update_supply(&army, 0.7, &map);
+
+        assert!(result.supply_delta < 0.0, "滑铁卢低容量节点应难以维持补给");
+        assert!(result.new_supply < army.supply);
+    }
+
+    #[test]
+    fn 高容量节点能补回补给() {
+        let map = simple_map();
+        let mut army = army_at("paris");
+        army.supply = 40.0;
+        let result = update_supply(&army, 1.1, &map);
+
+        assert!(result.supply_delta > 0.0, "巴黎应具备明显补给恢复能力");
+        assert!(result.new_supply > army.supply);
     }
 
     // ── rest_army() 直接单元测试 ─────────────────────
@@ -457,7 +495,7 @@ mod tests {
             troops: 50_000,
             morale: 70.0,
             fatigue: 60.0,
-            supply: 80.0, // > 50
+            supply: 80.0, // > 阈值
         };
         let (fat_rec, mor_rec) = rest_army(&army);
         assert_eq!(
@@ -476,7 +514,7 @@ mod tests {
             troops: 50_000,
             morale: 70.0,
             fatigue: 60.0,
-            supply: 30.0, // ≤ 50
+            supply: 30.0, // ≤ 阈值
         };
         let (fat_rec, mor_rec) = rest_army(&army);
         assert_eq!(fat_rec, REST_FATIGUE_RECOVERY, "不足补给疲劳恢复应为30");
@@ -484,22 +522,22 @@ mod tests {
     }
 
     #[test]
-    fn 补给恰好50时取低档() {
-        // supply = 50.0，条件 supply > 50.0 为 false → 低档
+    fn 补给恰好阈值时取低档() {
+        // supply = 阈值，条件 supply > 阈值 为 false → 低档
         let army = ArmyState {
             id: "test".into(),
             location: "paris".into(),
             troops: 50_000,
             morale: 70.0,
             fatigue: 60.0,
-            supply: 50.0,
+            supply: SUPPLY_OK_THRESHOLD,
         };
         let (fat_rec, mor_rec) = rest_army(&army);
         assert_eq!(
             fat_rec, REST_FATIGUE_RECOVERY,
-            "supply=50时应取低档疲劳恢复"
+            "supply=阈值时应取低档疲劳恢复"
         );
-        assert_eq!(mor_rec, 5.0, "supply=50时应取低档士气恢复");
+        assert_eq!(mor_rec, 5.0, "supply=阈值时应取低档士气恢复");
     }
 
     #[test]

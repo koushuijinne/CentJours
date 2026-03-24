@@ -418,7 +418,8 @@ mod gdext_bindings {
         // ── 状态查询 ─────────────────────────────────────
 
         /// 获取当前引擎状态快照
-        /// 返回 Dictionary，包含 day, legitimacy, rouge_noir, troops, victories,
+        /// 返回 Dictionary，包含 day, legitimacy, rouge_noir, troops, morale,
+        /// fatigue, supply, victories, defeats,
         ///   is_over, outcome, faction_support(Dict)
         #[func]
         pub fn get_state(&self) -> Dictionary {
@@ -430,7 +431,9 @@ mod gdext_bindings {
             let _ = d.insert("troops", e.army.total_troops as i64);
             let _ = d.insert("morale", e.army.avg_morale);
             let _ = d.insert("fatigue", e.army.avg_fatigue);
+            let _ = d.insert("supply", e.army.supply);
             let _ = d.insert("victories", e.army.victories as i64);
+            let _ = d.insert("defeats", e.army.defeats as i64);
             let _ = d.insert("napoleon_location", e.napoleon_location.as_str());
             let _ = d.insert("is_over", e.is_over());
             let _ = d.insert(

@@ -6,7 +6,10 @@
 use rand::Rng;
 
 use crate::battle::resolver::{resolve_battle, BattleResult, ForceData, Terrain};
-use crate::battle::{move_army, ArmyState as MarchArmyState, MapEdge, MapGraph, MapNode};
+use crate::battle::{
+    move_army, rest_army, update_supply, ArmyState as MarchArmyState, MapEdge, MapGraph, MapNode,
+    SUPPLY_OK_THRESHOLD,
+};
 use crate::characters::network::{
     historical_network_day1, CharacterNetwork, LOYALTY_CRISIS_THRESHOLD,
 };
@@ -99,6 +102,7 @@ pub struct ArmyState {
     pub total_troops: u32,
     pub avg_morale: f64,
     pub avg_fatigue: f64,
+    pub supply: f64,
     /// 战役胜场计数（影响军方支持度）
     pub victories: u32,
     pub defeats: u32,
@@ -110,6 +114,7 @@ impl Default for ArmyState {
             total_troops: 72_000, // 历史：百日初期约72000人
             avg_morale: 75.0,
             avg_fatigue: 10.0,
+            supply: default_army_supply(),
             victories: 0,
             defeats: 0,
         }
@@ -124,7 +129,7 @@ impl ArmyState {
             morale: self.avg_morale,
             fatigue: self.avg_fatigue,
             general_skill,
-            supply_ok: true, // 简化：补给状态可扩展
+            supply_ok: self.supply >= SUPPLY_OK_THRESHOLD,
         }
     }
 
@@ -148,9 +153,19 @@ impl ArmyState {
     }
 
     /// 休整恢复（每日）
-    pub fn rest_recovery(&mut self) {
-        self.avg_fatigue = (self.avg_fatigue - 8.0).max(0.0);
-        self.avg_morale = (self.avg_morale + 2.0).min(100.0);
+    pub fn rest_recovery(&mut self, location: &str) -> (f64, f64) {
+        let march_state = MarchArmyState {
+            id: "napoleon_main_force".to_string(),
+            location: location.to_string(),
+            troops: self.total_troops,
+            morale: self.avg_morale,
+            fatigue: self.avg_fatigue,
+            supply: self.supply,
+        };
+        let (fatigue_recovery, morale_recovery) = rest_army(&march_state);
+        self.avg_fatigue = (self.avg_fatigue - fatigue_recovery).max(0.0);
+        self.avg_morale = (self.avg_morale + morale_recovery).min(100.0);
+        (fatigue_recovery, morale_recovery)
     }
 }
 
@@ -171,6 +186,8 @@ pub struct SaveState {
     pub troops: u32,
     pub morale: f64,
     pub fatigue: f64,
+    #[serde(default = "default_army_supply")]
+    pub supply: f64,
     pub victories: u32,
     pub defeats: u32,
     pub napoleon_location: String,
@@ -198,6 +215,10 @@ fn default_campaign_map() -> MapGraph {
     const MAP_JSON: &str = include_str!("../../../src/data/map_nodes.json");
     let data: CampaignMapData = serde_json::from_str(MAP_JSON).expect("map_nodes.json parse error");
     MapGraph::new(data.nodes, data.edges)
+}
+
+fn default_army_supply() -> f64 {
+    75.0
 }
 
 fn migrate_triggered_event_ids(ids: Vec<String>) -> Vec<String> {
@@ -396,6 +417,7 @@ impl GameEngine {
             troops: self.army.total_troops,
             morale: self.army.avg_morale,
             fatigue: self.army.avg_fatigue,
+            supply: self.army.supply,
             victories: self.army.victories,
             defeats: self.army.defeats,
             napoleon_location: self.napoleon_location.clone(),
@@ -426,6 +448,7 @@ impl GameEngine {
         engine.army.total_troops = state.troops;
         engine.army.avg_morale = state.morale;
         engine.army.avg_fatigue = state.fatigue;
+        engine.army.supply = state.supply;
         engine.army.victories = state.victories;
         engine.army.defeats = state.defeats;
         engine.napoleon_location = state.napoleon_location;
@@ -527,38 +550,44 @@ impl GameEngine {
 
     /// 执行玩家行动，返回产生的事件列表
     fn execute_action<R: Rng>(&mut self, action: PlayerAction, rng: &mut R) -> Vec<DayEvent> {
-        match action {
+        let (action_type, mut events) = match action {
             PlayerAction::LaunchBattle {
                 general_id,
                 troops,
                 terrain,
-            } => self.process_battle(&general_id, troops, terrain, rng),
-            PlayerAction::March { target_node } => self.process_march(&target_node),
-            PlayerAction::EnactPolicy { policy_id } => self.process_policy(policy_id),
-            PlayerAction::BoostLoyalty { general_id } => self.process_boost_loyalty(&general_id),
-            PlayerAction::Rest => {
-                self.army.rest_recovery();
-                vec![DayEvent {
-                    day: self.day,
-                    event_type: "rest",
-                    description: "军队休整。".to_string(),
-                    effects: vec!["疲劳-8, 士气+2".to_string()],
-                }]
+            } => (
+                "battle",
+                self.process_battle(&general_id, troops, terrain, rng),
+            ),
+            PlayerAction::March { target_node } => ("march", self.process_march(&target_node)),
+            PlayerAction::EnactPolicy { policy_id } => ("policy", self.process_policy(policy_id)),
+            PlayerAction::BoostLoyalty { general_id } => {
+                ("boost_loyalty", self.process_boost_loyalty(&general_id))
             }
-        }
+            PlayerAction::Rest => {
+                let (fatigue_recovery, morale_recovery) =
+                    self.army.rest_recovery(&self.napoleon_location);
+                let mut effects = Vec::new();
+                effects.push(format!("疲劳-{:.0}", fatigue_recovery));
+                effects.push(format!("士气+{:.0}", morale_recovery));
+                (
+                    "rest",
+                    vec![DayEvent {
+                        day: self.day,
+                        event_type: "rest",
+                        description: "军队休整。".to_string(),
+                        effects,
+                    }],
+                )
+            }
+        };
+        events.push(self.refresh_supply_after_action(action_type));
+        events
     }
 
     /// 行军处理：只允许移动到相邻节点，并同步位置 / 疲劳 / 士气。
     fn process_march(&mut self, target_node: &str) -> Vec<DayEvent> {
-        let march_state = MarchArmyState {
-            id: "napoleon_main_force".to_string(),
-            location: self.napoleon_location.clone(),
-            troops: self.army.total_troops,
-            morale: self.army.avg_morale,
-            fatigue: self.army.avg_fatigue,
-            // 当前版本先用稳定供给占位，后续再接补给线与库存。
-            supply: 60.0,
-        };
+        let march_state = self.current_march_army_state();
         let result = move_army(&march_state, target_node, false, &self.map_graph);
         let from_name = self.map_graph.node_name(&self.napoleon_location);
         let target_name = self.map_graph.node_name(target_node);
@@ -1050,6 +1079,97 @@ impl GameEngine {
 
     // ── 辅助方法 ──────────────────────────────────────
 
+    fn current_march_army_state(&self) -> MarchArmyState {
+        MarchArmyState {
+            id: "napoleon_main_force".to_string(),
+            location: self.napoleon_location.clone(),
+            troops: self.army.total_troops,
+            morale: self.army.avg_morale,
+            fatigue: self.army.avg_fatigue,
+            supply: self.army.supply,
+        }
+    }
+
+    fn supply_line_efficiency(&self) -> f64 {
+        const SUPPLY_HUBS: [&str; 6] = [
+            "golfe_juan",
+            "grenoble",
+            "lyon",
+            "paris",
+            "lille",
+            "maubeuge",
+        ];
+
+        let nearest_distance = SUPPLY_HUBS
+            .iter()
+            .filter_map(|hub| {
+                let distance = self.map_graph.node_distance(&self.napoleon_location, hub);
+                (distance != u32::MAX).then_some(distance)
+            })
+            .min()
+            .unwrap_or(u32::MAX);
+
+        match nearest_distance {
+            0 => 1.15,
+            1 => 1.0,
+            2 => 0.85,
+            3 => 0.7,
+            4 => 0.55,
+            u32::MAX => 0.25,
+            _ => 0.4,
+        }
+    }
+
+    fn refresh_supply_after_action(&mut self, action_type: &'static str) -> DayEvent {
+        let supply_result = update_supply(
+            &self.current_march_army_state(),
+            self.supply_line_efficiency(),
+            &self.map_graph,
+        );
+        self.army.supply = supply_result.new_supply;
+
+        let location_name = self.map_graph.node_name(&self.napoleon_location);
+        let description = if supply_result.supply_delta <= -8.0 {
+            format!("{} 的补给线明显吃紧。", location_name)
+        } else if supply_result.supply_delta < -1.0 {
+            format!("{} 的补给开始承压。", location_name)
+        } else if supply_result.supply_delta >= 6.0 {
+            format!("{} 的补给站顺利接续。", location_name)
+        } else if supply_result.supply_delta > 1.0 {
+            format!("{} 的补给略有恢复。", location_name)
+        } else {
+            format!("{} 的补给暂时维持。", location_name)
+        };
+
+        let mut effects = Vec::new();
+        if let Some(effect) = format_signed_effect("补给", supply_result.supply_delta) {
+            effects.push(effect);
+        } else {
+            effects.push("补给 +0.0".to_string());
+        }
+        effects.push(format!(
+            "线效 {:.0}%",
+            supply_result.line_efficiency * 100.0
+        ));
+        effects.push(format!(
+            "需求 {:.1} / 可得 {:.1}",
+            supply_result.demand, supply_result.available
+        ));
+        if !supply_result.supply_ok {
+            effects.push("补给告急：战斗将承受惩罚".to_string());
+        }
+        if action_type == "march" && supply_result.supply_delta < 0.0 {
+            effects.push("前线推进正在拉长运输线".to_string());
+        }
+
+        DayEvent {
+            day: self.day,
+            event_type: "supply",
+            description,
+            effects,
+        }
+    }
+
     /// 获取将领军事技能（单一来源：characters.json，通过 CharacterNetwork 加载）
     fn general_skill(&self, id: &str) -> f64 {
         self.characters.skill(id)
@@ -1227,9 +1347,15 @@ mod tests {
         );
 
         let action_events = engine.last_action_events();
-        assert_eq!(action_events.len(), 1, "本回合应缓存一条政策结算");
+        assert!(
+            action_events.len() >= 1,
+            "本回合至少应缓存政策结算，允许附带补给结算"
+        );
 
-        let event = &action_events[0];
+        let event = action_events
+            .iter()
+            .find(|event| event.event_type == "policy")
+            .expect("应包含 policy 结算");
         assert_eq!(event.event_type, "policy");
         assert!(
             event.description.contains("承诺宪政改革"),
@@ -1262,9 +1388,15 @@ mod tests {
         );
 
         let action_events = engine.last_action_events();
-        assert_eq!(action_events.len(), 1, "失败政策也应写入最近行动记录");
+        assert!(
+            action_events.len() >= 1,
+            "失败政策也应写入最近行动记录，允许附带补给结算"
+        );
 
-        let event = &action_events[0];
+        let event = action_events
+            .iter()
+            .find(|event| event.event_type == "policy_failed")
+            .expect("应包含 policy_failed 结算");
         assert_eq!(event.event_type, "policy_failed");
         assert!(
             event.description.contains("颁布征兵令"),
@@ -1359,10 +1491,38 @@ mod tests {
         let mut engine = GameEngine::new();
         engine.army.avg_fatigue = 80.0;
         engine.army.avg_morale = 60.0;
+        engine.army.supply = 80.0;
         let mut rng = seeded_rng();
         engine.process_day(PlayerAction::Rest, &mut rng);
         assert!(engine.army.avg_fatigue < 80.0, "休整后疲劳应减少");
         assert!(engine.army.avg_morale > 60.0, "休整后士气应提升");
+    }
+
+    #[test]
+    fn 低补给时休整恢复较弱() {
+        let mut high_supply = GameEngine::new();
+        high_supply.army.avg_fatigue = 80.0;
+        high_supply.army.avg_morale = 60.0;
+        high_supply.army.supply = 80.0;
+
+        let mut low_supply = GameEngine::new();
+        low_supply.army.avg_fatigue = 80.0;
+        low_supply.army.avg_morale = 60.0;
+        low_supply.army.supply = 20.0;
+
+        let mut rng = seeded_rng();
+        high_supply.process_day(PlayerAction::Rest, &mut rng);
+        let mut rng = seeded_rng();
+        low_supply.process_day(PlayerAction::Rest, &mut rng);
+
+        assert!(
+            high_supply.army.avg_fatigue < low_supply.army.avg_fatigue,
+            "高补给休整后应恢复更多疲劳"
+        );
+        assert!(
+            high_supply.army.avg_morale > low_supply.army.avg_morale,
+            "高补给休整后应恢复更多士气"
+        );
     }
 
     #[test]
@@ -1383,6 +1543,7 @@ mod tests {
         let mut engine = GameEngine::new();
         let mut rng = seeded_rng();
         let fatigue_before = engine.army.avg_fatigue;
+        let supply_before = engine.army.supply;
         engine.process_day(
             PlayerAction::March {
                 target_node: "grasse".to_string(),
@@ -1393,6 +1554,10 @@ mod tests {
         assert!(
             engine.army.avg_fatigue != fatigue_before,
             "行军后疲劳应发生变化"
+        );
+        assert!(
+            engine.army.supply != supply_before,
+            "行军后补给应随位置变化而变化"
         );
     }
 
@@ -1502,6 +1667,7 @@ mod tests {
         let saved_day = engine.day;
         let saved_legit = engine.politics.legitimacy;
         let saved_troops = engine.army.total_troops;
+        let saved_supply = engine.army.supply;
         let saved_location = engine.napoleon_location.clone();
         engine.coalition_troops_bonus = 12_000;
         engine.paris_security_bonus = 15.0;
@@ -1520,6 +1686,10 @@ mod tests {
             "legitimacy 应一致"
         );
         assert_eq!(restored.army.total_troops, saved_troops, "troops 应一致");
+        assert!(
+            (restored.army.supply - saved_supply).abs() < 0.001,
+            "supply 应一致"
+        );
         assert_eq!(
             restored.napoleon_location, saved_location,
             "napoleon_location 应一致"
@@ -1577,6 +1747,47 @@ mod tests {
         let json = engine.to_json();
         assert!(!json.is_empty(), "JSON 不应为空");
         let _ = GameEngine::from_json(&json).expect("合法 JSON 应可反序列化");
+    }
+
+    #[test]
+    fn 旧存档缺少补给字段时使用默认值() {
+        let json = json!({
+            "version": 2,
+            "day": 18,
+            "legitimacy": 60.0,
+            "rouge_noir": 0.0,
+            "factions": {
+                "military": 50.0,
+                "populace": 50.0,
+                "liberals": 50.0,
+                "nobility": 50.0
+            },
+            "actions_remaining": 2,
+            "troops": 72000,
+            "morale": 75.0,
+            "fatigue": 10.0,
+            "victories": 0,
+            "defeats": 0,
+            "napoleon_location": "paris",
+            "coalition_troops_bonus": 0,
+            "paris_security_bonus": 0.0,
+            "political_stability_bonus": 0.0,
+            "loyalty": {
+                "ney": 65.0
+            },
+            "relationships": [
+                ["ney", "napoleon", 60.0]
+            ],
+            "triggered_event_ids": [],
+            "outcome": null
+        })
+        .to_string();
+
+        let restored = GameEngine::from_json(&json).expect("缺少补给字段的旧存档应可加载");
+        assert!(
+            (restored.army.supply - default_army_supply()).abs() < 0.001,
+            "缺少补给字段时应回退到默认补给值"
+        );
     }
 
     #[test]

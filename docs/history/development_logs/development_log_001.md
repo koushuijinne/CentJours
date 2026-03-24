@@ -112,3 +112,22 @@
 - 本轮将作为文档重构提交推送到当前分支。
 下一步:
 - 回到内容主线，继续扩充历史事件并推进文本 QA 与发布收口。
+
+## 2026-03-24 第 8 轮
+分支: `auto/gameplay_update`
+范围: 把补给压力真正接进回合循环
+变更:
+- 读取 `agent_chat_history` 后，明确把“补给 / 后勤”作为本轮最小可闭环的玩法创新切口，而不是继续停留在纯内容扩写。
+- 主菜单顶栏已显示补给值，`GameState` 和 `TurnManager` 也能从 `engine.get_state()` 同步补给状态。
+- Rust 侧把补给正式接进核心循环：补给进入 `SaveState`、`get_state()`、休整恢复、战斗补给惩罚、行军后补给刷新和每日行动结算日志。
+- 行军补给公式从占位实现改成可用的前线压力模型：高容量后方节点能明显回补，低容量前线节点会持续消耗补给。
+- 补了回归测试，覆盖旧存档缺少补给字段、低补给休整更弱、行军会改变补给、高低容量节点补给差异等新行为。
+验证:
+- `cd cent-jours-core && cargo test` 通过，测试基线从 `168` 提升到 `172`。
+- `cd cent-jours-core && cargo build --features godot-extension` 通过，但当前环境只更新了 Linux `.so`。
+- Windows Godot 无头主项目启动和 `engine_smoke_test_scene.tscn` 仍能运行。
+- 已确认当前环境没有 `x86_64-pc-windows-gnu` target，所以 Windows 无头本轮加载的是旧 `cent_jours_core.dll`，不能把它当作新 Rust 扩展逻辑已验证。
+提交/推送:
+- 本轮将与文档同步一起提交并推送到 `auto/gameplay_update`。
+下一步:
+- 继续把补给系统从“后台压力”推进到“明确玩法”：补给来源、前线惩罚、玩家可控补给手段与失败反馈。

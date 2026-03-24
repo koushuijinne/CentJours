@@ -460,10 +460,7 @@ mod tests {
         for event in &events {
             for (idx, narrative) in event.narratives.iter().enumerate() {
                 if contains_banned_reframing(narrative) {
-                    violations.push(format!(
-                        "{} narratives[{}]: {}",
-                        event.id, idx, narrative
-                    ));
+                    violations.push(format!("{} narratives[{}]: {}", event.id, idx, narrative));
                 }
             }
             if contains_banned_reframing(&event.historical_note) {
