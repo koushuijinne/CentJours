@@ -3,8 +3,8 @@
 > **工作标题**: *Cent Jours*（法语”百日”）
 > **一句话**: 你是拿破仑，从厄尔巴岛出逃到滑铁卢，100天内重建帝国或永远流放。每一天都是决策点。
 > **Author**: Julien
-> **Version**: v0.28 — 2026-03-23
-> **Status**: Draft — M0-M4 完成，GATE 2 通过，测试143个；事件池按 ADR-008 分级（major 13 / normal 17 / minor 1），叙事段数已裁剪，合并重复 2 条→31 条
+> **Version**: v0.30 — 2026-03-24
+> **Status**: Draft — M0-M4 完成，GATE 2 通过，测试143个；历史事件修正6项（地点/id/时间线/文风/叙事/historical_note），Tier 4 修改方案 ADR-009 已制定
 
 -----
 
@@ -705,16 +705,18 @@ W1──W2──W3────W7────W11────W14────W19─
 ### Tier 3: 深度与沉浸 ✅ 完成（2026-03-23）
 > 叛逃/倒戈每日检查（Ney/Grouchy dusk_settlement 接入）+5测试，联军动态化（战败/胜利影响联军兵力）+3测试，存档/读档UI（顶栏按钮+确认对话框）。**143 tests 全通过。**
 
-### M4: 内容填充（W15-W19）🔶 进行中 82%
+### M4: 内容填充（W15-W19）🔶 进行中 85%
 
 **目标**: 用LLM批量生成所有文本内容，填充100天的完整事件池
 
 **交付物**:
 
-- [x] 历史事件池（当前33条，含5条叙事/事件）`src/data/events/historical.json` ← 仍需扩充至300-500条，Day10-19已填充
+- [x] 历史事件池 31 条（ADR-008 分级：major 13 / normal 17 / minor 1）`src/data/events/historical.json`
 - [x] 司汤达日记文本池（8类决策 × 5变体）`src/data/narratives/stendhal_diary.json`
 - [x] 微叙事后果片段池（6类 × 5条）`src/data/narratives/consequences.json`
 - [x] **叙事引擎**：`NarrativePool` 接入 `GameEngine`，`process_day()` 后提供 `DayReport`
+- [x] **Tier 4 修改方案**：ADR-009 制定四优先级路线图（事件扩充/视觉统一/解耦/unwrap 清理）
+- [ ] 事件池扩充至 100+ 条（按 ADR-009 P1 分四批实施）
 - [ ] 政策描述 + 后果文本
 - [ ] 结局文本（4-6个主要结局路径 × 2-3个变体）
 - [ ] 文本质量审核（人工检查LLM输出的历史准确性和文风一致性）

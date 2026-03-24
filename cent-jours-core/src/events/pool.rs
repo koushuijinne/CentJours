@@ -543,9 +543,9 @@ mod tests {
     #[test]
     fn 威灵顿山脊事件需要联军未败() {
         let pool = EventPool::from_json(HISTORICAL_JSON).unwrap();
-        // 正常游戏中联军未被击败
+        // 正常游戏中联军未被击败（day_range [87,89]）
         let ctx_active = TriggerContext {
-            day: 90,
+            day: 88,
             coalition_defeated: false,
             napoleon_reputation: 65.0,
             ..Default::default()
@@ -554,7 +554,7 @@ mod tests {
         assert!(ids.contains(&"wellington_ridge_position"), "联军未败时应触发威灵顿山脊: {:?}", ids);
         // 联军已败则不触发
         let ctx_defeated = TriggerContext {
-            day: 90,
+            day: 88,
             coalition_defeated: true,
             napoleon_reputation: 65.0,
             ..Default::default()
@@ -590,7 +590,8 @@ mod tests {
     }
 
     #[test]
-    fn 枫丹白露前夜在Day17到19触发() {
+    // 杜伊勒里宫前夜（原 fontainebleau_eve，修正 id 后）
+    fn 杜伊勒里宫前夜在Day17到19触发() {
         let pool = EventPool::from_json(HISTORICAL_JSON).unwrap();
         let ctx = TriggerContext {
             day: 18,
@@ -598,6 +599,6 @@ mod tests {
             ..Default::default()
         };
         let ids: Vec<&str> = pool.available_events(&ctx).iter().map(|e| e.id.as_str()).collect();
-        assert!(ids.contains(&"fontainebleau_eve"), "Day 18应触发枫丹白露前夜: {:?}", ids);
+        assert!(ids.contains(&"tuileries_eve"), "Day 18应触发杜伊勒里宫前夜: {:?}", ids);
     }
 }
