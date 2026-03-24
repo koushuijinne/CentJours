@@ -399,14 +399,16 @@ mod tests {
     // ── 基础操作 ──────────────────────────────────────
 
     #[test]
-    fn 添加将领并查询忠诚度() {
+    // 添加将领并查询忠诚度
+    fn add_general_and_query_loyalty() {
         let mut net = CharacterNetwork::new();
         net.add_general("ney", 65.0);
         assert_abs_diff_eq!(net.loyalty("ney"), 65.0, epsilon = 0.001);
     }
 
     #[test]
-    fn 忠诚度钳制在0到100() {
+    // 忠诚度钳制在 0–100
+    fn loyalty_clamped_0_to_100() {
         let mut net = CharacterNetwork::new();
         net.add_general("ney", 65.0);
         net.modify_loyalty("ney", 200.0, 1, "test");
@@ -416,7 +418,8 @@ mod tests {
     }
 
     #[test]
-    fn 关系值双向查询一致() {
+    // 关系值双向查询一致
+    fn relationship_symmetric() {
         let net = make_historical_net();
         assert_abs_diff_eq!(
             net.relationship("ney", "napoleon"),
@@ -426,7 +429,8 @@ mod tests {
     }
 
     #[test]
-    fn 未知将领默认忠诚度50() {
+    // 未知将领默认忠诚度 50
+    fn unknown_general_default_loyalty_50() {
         let net = CharacterNetwork::new();
         assert_abs_diff_eq!(net.loyalty("unknown"), 50.0, epsilon = 0.001);
     }
@@ -434,7 +438,8 @@ mod tests {
     // ── 战斗结果影响 ──────────────────────────────────
 
     #[test]
-    fn 决定性胜利大幅提升忠诚度() {
+    // 决定性胜利大幅提升忠诚度
+    fn decisive_victory_boosts_loyalty() {
         let mut net = make_historical_net();
         let before = net.loyalty("ney");
         net.apply_battle_outcome("ney", BattleResult::DecisiveVictory, 10);
@@ -442,7 +447,8 @@ mod tests {
     }
 
     #[test]
-    fn 决定性失败大幅降低忠诚度() {
+    // 决定性失败大幅降低忠诚度
+    fn decisive_defeat_drops_loyalty() {
         let mut net = make_historical_net();
         let before = net.loyalty("ney");
         net.apply_battle_outcome("ney", BattleResult::DecisiveDefeat, 10);
@@ -450,7 +456,8 @@ mod tests {
     }
 
     #[test]
-    fn 战平不影响忠诚度() {
+    // 战平不影响忠诚度
+    fn stalemate_no_loyalty_change() {
         let mut net = make_historical_net();
         let before = net.loyalty("ney");
         net.apply_battle_outcome("ney", BattleResult::Stalemate, 10);
@@ -460,7 +467,8 @@ mod tests {
     // ── 关系衰减 ──────────────────────────────────────
 
     #[test]
-    fn 每日衰减使正向关系逐渐减弱() {
+    // 每日衰减使正向关系逐渐减弱
+    fn daily_decay_positive_relationship() {
         let mut net = make_historical_net();
         let initial = net.relationship("napoleon", "davout"); // 85.0
         for _ in 0..10 {
@@ -470,7 +478,8 @@ mod tests {
     }
 
     #[test]
-    fn 每日衰减使负向关系逐渐减弱() {
+    // 每日衰减使负向关系向零靠近
+    fn daily_decay_negative_relationship() {
         let mut net = make_historical_net();
         let initial = net.relationship("ney", "grouchy"); // -30.0
         for _ in 0..10 {
@@ -483,20 +492,23 @@ mod tests {
     // ── 危机判断 ──────────────────────────────────────
 
     #[test]
-    fn 忠诚度低于阈值为危机状态() {
+    // 忠诚度低于阈值为危机状态
+    fn low_loyalty_is_crisis() {
         let mut net = CharacterNetwork::new();
         net.add_general("fouche", 25.0);
         assert!(net.is_loyalty_crisis("fouche"));
     }
 
     #[test]
-    fn 达武高忠诚度为绝对忠诚() {
+    // 达武高忠诚度为绝对忠诚
+    fn davout_absolutely_loyal() {
         let net = make_historical_net();
         assert!(net.is_absolutely_loyal("davout"));
     }
 
     #[test]
-    fn 内伊和格鲁希历史敌意() {
+    // 内伊和格鲁希历史敌意
+    fn ney_grouchy_hostile() {
         let net = make_historical_net();
         assert!(net.are_hostile("ney", "grouchy"));
     }
@@ -504,7 +516,8 @@ mod tests {
     // ── 内伊倒戈场景 ──────────────────────────────────
 
     #[test]
-    fn 内伊倒戈概率与关系正相关() {
+    // 内伊倒戈概率与关系正相关
+    fn ney_defection_prob_correlates_with_relationship() {
         // 拿破仑声望高 + 内伊与拿破仑关系深 → 高倒戈概率
         let cond_high = NeyDefectionCondition {
             ney_loyalty_to_bourbon: 20.0,
@@ -522,7 +535,8 @@ mod tests {
     }
 
     #[test]
-    fn 内伊关系不足时不会倒戈() {
+    // 内伊关系不足时不会倒戈
+    fn ney_low_relationship_no_defection() {
         let cond = NeyDefectionCondition {
             ney_loyalty_to_bourbon: 10.0,
             ney_relationship_napoleon: 40.0, // 低于50阈值
@@ -532,7 +546,8 @@ mod tests {
     }
 
     #[test]
-    fn 历史网络内伊倒戈场景概率合理() {
+    // 历史网络下内伊倒戈概率合理
+    fn historical_ney_defection_prob_reasonable() {
         let net = make_historical_net();
         let cond = net.ney_defection_condition();
         let prob = cond.defection_probability();
@@ -543,7 +558,8 @@ mod tests {
     // ── 格鲁希增援场景 ────────────────────────────────
 
     #[test]
-    fn 格鲁希距离过远无法及时增援() {
+    // 格鲁希距离过远无法增援
+    fn grouchy_too_far_no_arrival() {
         let cond = GrouchyArrivalCondition {
             grouchy_loyalty: 72.0,
             communication_distance: 6, // 超过4节点上限
@@ -553,7 +569,8 @@ mod tests {
     }
 
     #[test]
-    fn 格鲁希近距离高忠诚有一定增援概率() {
+    // 格鲁希近距离高忠诚有增援概率
+    fn grouchy_close_high_loyalty_may_arrive() {
         let cond = GrouchyArrivalCondition {
             grouchy_loyalty: 90.0,
             communication_distance: 2,

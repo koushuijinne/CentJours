@@ -347,7 +347,8 @@ mod tests {
     // ── JSON 加载 ──────────────────────────────────────
 
     #[test]
-    fn json加载成功且事件数量达到扩充基线() {
+    // JSON 加载成功且事件数量正确
+    fn json_load_success_and_event_count() {
         let pool = EventPool::from_json(HISTORICAL_JSON).expect("JSON解析失败");
         assert!(
             pool.len() >= 58,
@@ -357,7 +358,8 @@ mod tests {
     }
 
     #[test]
-    fn json解析失败返回错误() {
+    // JSON 解析失败应返回错误
+    fn json_parse_invalid_returns_error() {
         let result = EventPool::from_json("not valid json");
         assert!(result.is_err());
     }
@@ -482,7 +484,8 @@ mod tests {
     // ── 触发条件 ──────────────────────────────────────
 
     #[test]
-    fn 内伊倒戈在Day5到7触发() {
+    // 内伊倒戈在 Day 5–7 触发
+    fn ney_defection_triggers_day5_to_7() {
         let pool = EventPool::from_json(HISTORICAL_JSON).unwrap();
         let ctx = ney_defection_context(6);
         let available = pool.available_events(&ctx);
@@ -495,7 +498,8 @@ mod tests {
     }
 
     #[test]
-    fn 内伊倒戈不在Day1触发() {
+    // 内伊倒戈不在 Day 1 触发
+    fn ney_defection_not_on_day1() {
         let pool = EventPool::from_json(HISTORICAL_JSON).unwrap();
         let ctx = ney_defection_context(1);
         let available = pool.available_events(&ctx);
@@ -504,7 +508,8 @@ mod tests {
     }
 
     #[test]
-    fn 内伊忠诚度过低不触发倒戈() {
+    // 内伊忠诚度过低不触发倒戈
+    fn ney_low_loyalty_no_defection() {
         let pool = EventPool::from_json(HISTORICAL_JSON).unwrap();
         let ctx = TriggerContext {
             day: 6,
@@ -519,7 +524,8 @@ mod tests {
     }
 
     #[test]
-    fn 格鲁希任命在Day87到89触发() {
+    // 格鲁希任命在 Day 85 后触发
+    fn grouchy_assignment_after_day85() {
         let pool = EventPool::from_json(HISTORICAL_JSON).unwrap();
         let ctx = TriggerContext {
             day: 87,
@@ -537,7 +543,8 @@ mod tests {
     }
 
     #[test]
-    fn 富歇阴谋在极端Noir时触发() {
+    // 富歇阴谋在极端 Noir 时触发
+    fn fouche_conspiracy_extreme_noir() {
         let pool = EventPool::from_json(HISTORICAL_JSON).unwrap();
         let ctx = TriggerContext {
             day: 40,
@@ -555,7 +562,8 @@ mod tests {
     }
 
     #[test]
-    fn 富歇阴谋在高忠诚时不触发() {
+    // 富歇高忠诚时阴谋不触发
+    fn fouche_high_loyalty_no_conspiracy() {
         let pool = EventPool::from_json(HISTORICAL_JSON).unwrap();
         let ctx = TriggerContext {
             day: 40,
@@ -574,7 +582,8 @@ mod tests {
     // ── 触发机制 ──────────────────────────────────────
 
     #[test]
-    fn 触发后不再重复触发() {
+    // 事件触发后不再重复触发
+    fn no_duplicate_trigger() {
         let mut pool = EventPool::from_json(HISTORICAL_JSON).unwrap();
         let ctx = ney_defection_context(6);
         let mut rng = seeded_rng();
@@ -593,7 +602,8 @@ mod tests {
     }
 
     #[test]
-    fn is_triggered追踪已触发事件() {
+    // is_triggered 追踪已触发事件
+    fn is_triggered_tracks_fired_events() {
         let mut pool = EventPool::from_json(HISTORICAL_JSON).unwrap();
         assert!(!pool.is_triggered("ney_defection"));
 
@@ -605,7 +615,8 @@ mod tests {
     }
 
     #[test]
-    fn 叙事文本非空() {
+    // 触发后叙事文本非空
+    fn narrative_text_not_empty() {
         let mut pool = EventPool::from_json(HISTORICAL_JSON).unwrap();
         let ctx = ney_defection_context(6);
         let mut rng = seeded_rng();
@@ -638,7 +649,8 @@ mod tests {
     // ── 效果数值 ──────────────────────────────────────
 
     #[test]
-    fn 内伊倒戈效果含忠诚度提升() {
+    // 内伊倒戈效果包含忠诚度提升
+    fn ney_defection_increases_loyalty() {
         let mut pool = EventPool::from_json(HISTORICAL_JSON).unwrap();
         let ctx = ney_defection_context(6);
         let mut rng = seeded_rng();
@@ -657,7 +669,8 @@ mod tests {
     // ── 通用 loyalty_deltas + loyalty_min 数据驱动化 ──────
 
     #[test]
-    fn loyalty_deltas通用字段支持任意将领() {
+    // loyalty_deltas 通用字段支持任意将领
+    fn loyalty_deltas_supports_any_character() {
         let json = r#"[{
             "id": "test_event", "label": "测试", "day_range": [1, 100],
             "trigger": {},
@@ -682,7 +695,8 @@ mod tests {
     }
 
     #[test]
-    fn loyalty_min触发条件检查通用将领忠诚不足时不触发() {
+    // loyalty_min 条件：将领忠诚不足时不触发
+    fn loyalty_min_insufficient_no_trigger() {
         let json = r#"[{
             "id": "test_event", "label": "测试", "day_range": [1, 100],
             "trigger": { "loyalty_min": {"davout": 75.0} },
@@ -701,7 +715,8 @@ mod tests {
     }
 
     #[test]
-    fn loyalty_min触发条件检查通用将领忠诚足够时触发() {
+    // loyalty_min 条件：将领忠诚足够时触发
+    fn loyalty_min_sufficient_triggers() {
         let json = r#"[{
             "id": "test_event", "label": "测试", "day_range": [1, 100],
             "trigger": { "loyalty_min": {"davout": 75.0} },
@@ -717,7 +732,8 @@ mod tests {
     }
 
     #[test]
-    fn 达武任命事件需要达武高忠诚() {
+    // 达武任命事件需要达武高忠诚
+    fn davout_assignment_requires_high_loyalty() {
         let pool = EventPool::from_json(HISTORICAL_JSON).unwrap();
         // 达武忠诚不足 → 不触发
         let ctx_low = TriggerContext {
@@ -753,7 +769,8 @@ mod tests {
     }
 
     #[test]
-    fn 反法同盟宣战在Day15到20触发() {
+    // 反法同盟宣战在 Day 15–20 触发
+    fn allies_mobilization_day15_to_20() {
         let pool = EventPool::from_json(HISTORICAL_JSON).unwrap();
         let ctx = TriggerContext {
             day: 17,
@@ -772,7 +789,8 @@ mod tests {
     // ── coalition_not_defeated 触发条件 ───────────────
 
     #[test]
-    fn coalition_not_defeated为true时联军未败才触发() {
+    // coalition_not_defeated 为 true 时联军未败才触发
+    fn coalition_not_defeated_true_requires_active() {
         let json = r#"[{
             "id": "battle_event", "label": "决战", "day_range": [1, 100],
             "trigger": { "coalition_not_defeated": true },
@@ -803,7 +821,8 @@ mod tests {
     }
 
     #[test]
-    fn coalition_not_defeated为None时不影响触发() {
+    // coalition_not_defeated 未设置时不影响触发
+    fn coalition_not_defeated_none_always_triggers() {
         let json = r#"[{
             "id": "neutral_event", "label": "中性事件", "day_range": [1, 100],
             "trigger": {},
@@ -824,7 +843,8 @@ mod tests {
     }
 
     #[test]
-    fn 威灵顿山脊事件需要联军未败() {
+    // 威灵顿山脊事件需要联军未被击败
+    fn wellington_ridge_requires_active_coalition() {
         let pool = EventPool::from_json(HISTORICAL_JSON).unwrap();
         // 正常游戏中联军未被击败
         let ctx_active = TriggerContext {
@@ -864,7 +884,8 @@ mod tests {
     // ── Day 13-19 新增事件覆盖测试 ───────────────────
 
     #[test]
-    fn 里昂入城在Day10到14触发() {
+    // 里昂入城在 Day 10–14 触发
+    fn lyon_entry_day10_to_14() {
         let pool = EventPool::from_json(HISTORICAL_JSON).unwrap();
         let ctx = TriggerContext {
             day: 12,
@@ -884,7 +905,8 @@ mod tests {
     }
 
     #[test]
-    fn 勃艮第民众浪潮在Day14到17触发() {
+    // 勃艮第民众浪潮在 Day 14–17 触发
+    fn burgundy_surge_day14_to_17() {
         let pool = EventPool::from_json(HISTORICAL_JSON).unwrap();
         let ctx = TriggerContext {
             day: 15,
@@ -904,7 +926,8 @@ mod tests {
     }
 
     #[test]
-    fn 杜伊勒里宫前夜在Day17到19触发() {
+    // 杜伊勒里宫前夜在 Day 17–19 触发（原 fontainebleau_eve，修正 id 后）
+    fn tuileries_eve_day17_to_19() {
         let pool = EventPool::from_json(HISTORICAL_JSON).unwrap();
         let ctx = TriggerContext {
             day: 18,

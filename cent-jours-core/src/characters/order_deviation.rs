@@ -189,7 +189,8 @@ mod tests {
     }
 
     #[test]
-    fn 达武高忠诚度基础偏差小() {
+    // 达武高忠诚度基础偏差小
+    fn davout_high_loyalty_small_base_deviation() {
         let result = calculate_deviation(&davout(), 0, 0.0, &mut rng(1));
         assert!(result.order_followed);
         // base_reliability = 1 - 0.95*0.5 = 0.525；偏差幅度应很小
@@ -197,7 +198,8 @@ mod tests {
     }
 
     #[test]
-    fn 内伊冲动性格倾向提前行动() {
+    // 内伊冲动性格倾向提前行动
+    fn ney_impulsive_tends_early() {
         let ney = ney_waterloo_general();
         let results: Vec<_> = (0..100)
             .map(|i| calculate_deviation(&ney, 0, 0.6, &mut rng(i)))
@@ -212,7 +214,8 @@ mod tests {
     }
 
     #[test]
-    fn 格鲁希谨慎性格倾向延迟() {
+    // 格鲁希谨慎性格倾向延迟
+    fn grouchy_cautious_tends_delay() {
         let grouchy = grouchy_wavre_general();
         let results: Vec<_> = (0..100)
             .map(|i| calculate_deviation(&grouchy, 3, 0.4, &mut rng(i)))
@@ -226,7 +229,8 @@ mod tests {
     }
 
     #[test]
-    fn 通信距离增加偏差() {
+    // 通信距离增加偏差
+    fn communication_distance_increases_deviation() {
         let general = davout();
         let near = calculate_deviation(&general, 0, 0.0, &mut rng(42));
         let far = calculate_deviation(&general, 8, 0.0, &mut rng(42));
@@ -235,14 +239,16 @@ mod tests {
     }
 
     #[test]
-    fn 距离惩罚上限40percent() {
+    // 距离惩罚上限 40%
+    fn distance_penalty_cap_40_percent() {
         let general = davout();
         let result = calculate_deviation(&general, 100, 0.0, &mut rng(0));
         assert!(result.distance_penalty <= MAX_DISTANCE_PENALTY + f64::EPSILON);
     }
 
     #[test]
-    fn 低忠诚度有概率拒绝命令() {
+    // 低忠诚度有概率拒绝命令
+    fn low_loyalty_may_refuse_order() {
         let traitor = GeneralData {
             id: "traitor".into(),
             name: "叛将".into(),
@@ -258,7 +264,8 @@ mod tests {
     }
 
     #[test]
-    fn 高忠诚度将领几乎不拒绝() {
+    // 高忠诚度将领几乎不拒绝
+    fn high_loyalty_rarely_refuses() {
         let loyal = GeneralData {
             id: "loyal".into(),
             name: "忠臣".into(),
