@@ -94,6 +94,19 @@ pub struct DayReport {
     pub consequence: Option<String>,
 }
 
+#[derive(Debug, Clone)]
+pub struct MarchPreview {
+    pub valid: bool,
+    pub reason: Option<String>,
+    pub target_node: String,
+    pub fatigue_delta: f64,
+    pub morale_delta: f64,
+    pub supply_delta: f64,
+    pub projected_fatigue: f64,
+    pub projected_morale: f64,
+    pub projected_supply: f64,
+}
+
 // ── 全局游戏状态 ──────────────────────────────────────
 
 /// 拿破仑的军事力量摘要
@@ -374,6 +387,51 @@ impl GameEngine {
     /// 当前可直接行军到的相邻节点列表。
     pub fn adjacent_nodes(&self) -> Vec<String> {
         self.map_graph.neighbors_of(&self.napoleon_location)
+    }
+
+    /// 预览一次普通行军的预计变化，不修改真实状态。
+    pub fn preview_march(&self, target_node: &str) -> MarchPreview {
+        let current = self.current_march_army_state();
+        let move_result = move_army(&current, target_node, false, &self.map_graph);
+        if !move_result.success {
+            return MarchPreview {
+                valid: false,
+                reason: move_result.reason,
+                target_node: current.location,
+                fatigue_delta: 0.0,
+                morale_delta: 0.0,
+                supply_delta: 0.0,
+                projected_fatigue: self.army.avg_fatigue,
+                projected_morale: self.army.avg_morale,
+                projected_supply: self.army.supply,
+            };
+        }
+
+        let projected_army = MarchArmyState {
+            id: current.id,
+            location: move_result.new_location.clone(),
+            troops: self.army.total_troops,
+            morale: move_result.new_morale,
+            fatigue: move_result.new_fatigue,
+            supply: self.army.supply,
+        };
+        let supply_result = update_supply(
+            &projected_army,
+            self.supply_line_efficiency_for(&move_result.new_location),
+            &self.map_graph,
+        );
+
+        MarchPreview {
+            valid: true,
+            reason: None,
+            target_node: move_result.new_location,
+            fatigue_delta: move_result.fatigue_delta,
+            morale_delta: move_result.morale_delta,
+            supply_delta: supply_result.supply_delta,
+            projected_fatigue: move_result.new_fatigue,
+            projected_morale: move_result.new_morale,
+            projected_supply: supply_result.new_supply,
+        }
     }
 
     /// 已触发的历史事件 ID 列表（按触发顺序）
@@ -1103,6 +1161,10 @@ impl GameEngine {
     }
 
     fn supply_line_efficiency(&self) -> f64 {
+        self.supply_line_efficiency_for(&self.napoleon_location)
+    }
+
+    fn supply_line_efficiency_for(&self, location: &str) -> f64 {
         const SUPPLY_HUBS: [&str; 6] = [
             "golfe_juan",
             "grenoble",
@@ -1115,7 +1177,7 @@ impl GameEngine {
         let nearest_distance = SUPPLY_HUBS
             .iter()
             .filter_map(|hub| {
-                let distance = self.map_graph.node_distance(&self.napoleon_location, hub);
+                let distance = self.map_graph.node_distance(location, hub);
                 (distance != u32::MAX).then_some(distance)
             })
             .min()
@@ -1603,6 +1665,17 @@ mod tests {
             engine.army.supply != supply_before,
             "行军后补给应随位置变化而变化"
         );
+    }
+
+    #[test]
+    fn 行军预览会返回权威预测值() {
+        let engine = GameEngine::new();
+        let preview = engine.preview_march("grasse");
+
+        assert!(preview.valid, "相邻节点应可预览");
+        assert_eq!(preview.target_node, "grasse");
+        assert!(preview.fatigue_delta.abs() > 0.0);
+        assert!(preview.projected_supply >= 0.0 && preview.projected_supply <= 100.0);
     }
 
     #[test]

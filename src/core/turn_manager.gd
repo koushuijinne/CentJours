@@ -63,6 +63,33 @@ func submit_action(action_type: String, params: Dictionary = {}) -> void:
 		return
 	_run_dusk_phase(action_type, params)
 
+## 只读预览一次普通行军，不修改真实状态。
+## 返回值契约（来自 lib.rs CentJoursEngine::preview_march）:
+##   valid(bool)
+##   reason(String)
+##   target_node(String)
+##   fatigue_delta(float)
+##   morale_delta(float)
+##   supply_delta(float)
+##   projected_fatigue(float)
+##   projected_morale(float)
+##   projected_supply(float)
+func get_march_preview(target_node: String) -> Dictionary:
+	_ensure_engine()
+	if target_node.strip_edges() == "":
+		return {
+			"valid": false,
+			"reason": "缺少目标节点。",
+			"target_node": "",
+			"fatigue_delta": 0.0,
+			"morale_delta": 0.0,
+			"supply_delta": 0.0,
+			"projected_fatigue": GameState.avg_fatigue,
+			"projected_morale": GameState.avg_morale,
+			"projected_supply": GameState.supply
+		}
+	return Dictionary(engine.preview_march(target_node))
+
 ## Dusk Phase：调用 Rust 引擎执行行动，同步结果，触发叙事
 func _run_dusk_phase(action_type: String, params: Dictionary) -> void:
 	_ensure_engine()

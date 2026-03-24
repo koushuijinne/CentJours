@@ -650,13 +650,35 @@ func _update_march_target(node_id: String) -> void:
 	var location_label := MainMenuFormattersLib.napoleon_location_label(
 		_map_nodes, GameState.napoleon_location
 	)
-	var supply_preview := _build_march_supply_preview(target_info)
-	var feedback_color := CentJoursTheme.COLOR["warning"] if supply_preview["is_warning"] else CentJoursTheme.COLOR["text_secondary"]
+	var march_preview := TurnManager.get_march_preview(node_id)
+	var preview_text := ""
+	var feedback_color := CentJoursTheme.COLOR["text_secondary"]
+	if bool(march_preview.get("valid", false)):
+		var supply_delta := float(march_preview.get("supply_delta", 0.0))
+		var fatigue_delta := float(march_preview.get("fatigue_delta", 0.0))
+		var morale_delta := float(march_preview.get("morale_delta", 0.0))
+		var projected_supply := float(march_preview.get("projected_supply", GameState.supply))
+		var pressure_label := _march_pressure_label(projected_supply, int(target_info.get("supply_capacity", 0)))
+		preview_text = "预计补给：%s（%.0f，%+.1f）\n预计疲劳：%.0f（%+.1f）\n预计士气：%.0f（%+.1f）" % [
+			pressure_label,
+			projected_supply,
+			supply_delta,
+			float(march_preview.get("projected_fatigue", GameState.avg_fatigue)),
+			fatigue_delta,
+			float(march_preview.get("projected_morale", GameState.avg_morale)),
+			morale_delta
+		]
+		if projected_supply < SUPPLY_WARNING_THRESHOLD or supply_delta < -4.0:
+			feedback_color = CentJoursTheme.COLOR["warning"]
+	else:
+		var supply_preview := _build_march_supply_preview(target_info)
+		preview_text = String(supply_preview["text"])
+		feedback_color = CentJoursTheme.COLOR["warning"] if supply_preview["is_warning"] else CentJoursTheme.COLOR["text_secondary"]
 	march_feedback.emit(
 		"行军部署\n\n从 %s 行军至 %s。\n确认后将推进一天，并同步疲劳与士气。\n%s" % [
 			location_label,
 			String(target_info.get("name_fr", node_id)),
-			String(supply_preview["text"])
+			preview_text
 		],
 		feedback_color
 	)
@@ -697,3 +719,13 @@ func _build_march_supply_preview(target_info: Dictionary) -> Dictionary:
 		],
 		"is_warning": is_warning
 	}
+
+
+func _march_pressure_label(projected_supply: float, supply_capacity: int) -> String:
+	if projected_supply < SUPPLY_WARNING_THRESHOLD or supply_capacity <= 2:
+		return "补给压力很高"
+	if projected_supply < 60.0 or supply_capacity <= 5:
+		return "补给压力偏高"
+	if projected_supply >= 75.0 and supply_capacity >= 8:
+		return "补给有望回升"
+	return "补给大致可维持"

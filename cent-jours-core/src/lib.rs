@@ -418,6 +418,23 @@ mod gdext_bindings {
             );
         }
 
+        /// 预览一次普通行军，不修改真实状态。
+        #[func]
+        pub fn preview_march(&self, target_node: GString) -> Dictionary {
+            let preview = self.engine.preview_march(target_node.to_string().as_str());
+            let mut d = Dictionary::new();
+            let _ = d.insert("valid", preview.valid);
+            let _ = d.insert("reason", preview.reason.unwrap_or_default());
+            let _ = d.insert("target_node", preview.target_node.as_str());
+            let _ = d.insert("fatigue_delta", preview.fatigue_delta);
+            let _ = d.insert("morale_delta", preview.morale_delta);
+            let _ = d.insert("supply_delta", preview.supply_delta);
+            let _ = d.insert("projected_fatigue", preview.projected_fatigue);
+            let _ = d.insert("projected_morale", preview.projected_morale);
+            let _ = d.insert("projected_supply", preview.projected_supply);
+            d
+        }
+
         // ── 状态查询 ─────────────────────────────────────
 
         /// 获取当前引擎状态快照
