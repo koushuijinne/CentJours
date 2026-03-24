@@ -65,6 +65,12 @@ const POLICY_META: Dictionary = {
 		"rouge_noir_hint": "+4 Rouge",
 		"summary": "快速回补补给，代价是激怒沿线民众与自由派"
 	},
+	"stabilize_supply_lines": {
+		"name": "整顿驿站运输",
+		"cost": 1,
+		"rouge_noir_hint": "-2 Noir",
+		"summary": "短期整顿运输线，立刻小幅回补补给，并在接下来数日提高补给线效率"
+	},
 	"secret_diplomacy": {
 		"name": "秘密外交（分化反法同盟）",
 		"cost": 2,

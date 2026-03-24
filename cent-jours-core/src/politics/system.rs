@@ -37,6 +37,8 @@ pub struct PolicyEffect {
     pub faction_deltas: HashMap<&'static str, f64>,
     pub economic_delta: f64,
     pub supply_delta: f64,
+    pub supply_line_bonus: f64,
+    pub supply_line_bonus_days: u8,
     pub cooldown_days: u8,
 }
 
@@ -54,6 +56,8 @@ pub fn default_policies() -> Vec<PolicyEffect> {
                 .collect(),
             economic_delta: -5.0,
             supply_delta: 0.0,
+            supply_line_bonus: 0.0,
+            supply_line_bonus_days: 0,
             cooldown_days: 5,
         },
         PolicyEffect {
@@ -67,6 +71,8 @@ pub fn default_policies() -> Vec<PolicyEffect> {
                 .collect(),
             economic_delta: 0.0,
             supply_delta: 0.0,
+            supply_line_bonus: 0.0,
+            supply_line_bonus_days: 0,
             cooldown_days: 10,
         },
         PolicyEffect {
@@ -80,6 +86,8 @@ pub fn default_policies() -> Vec<PolicyEffect> {
                 .collect(),
             economic_delta: 0.0,
             supply_delta: 0.0,
+            supply_line_bonus: 0.0,
+            supply_line_bonus_days: 0,
             cooldown_days: 3,
         },
         PolicyEffect {
@@ -93,6 +101,8 @@ pub fn default_policies() -> Vec<PolicyEffect> {
                 .collect(),
             economic_delta: 0.0,
             supply_delta: 0.0,
+            supply_line_bonus: 0.0,
+            supply_line_bonus_days: 0,
             cooldown_days: 7,
         },
         PolicyEffect {
@@ -106,6 +116,8 @@ pub fn default_policies() -> Vec<PolicyEffect> {
                 .collect(),
             economic_delta: -8.0,
             supply_delta: 0.0,
+            supply_line_bonus: 0.0,
+            supply_line_bonus_days: 0,
             cooldown_days: 8,
         },
         PolicyEffect {
@@ -119,6 +131,8 @@ pub fn default_policies() -> Vec<PolicyEffect> {
                 .collect(),
             economic_delta: -10.0,
             supply_delta: 0.0,
+            supply_line_bonus: 0.0,
+            supply_line_bonus_days: 0,
             cooldown_days: 5,
         },
         PolicyEffect {
@@ -132,6 +146,23 @@ pub fn default_policies() -> Vec<PolicyEffect> {
                 .collect(),
             economic_delta: -3.0,
             supply_delta: 18.0,
+            supply_line_bonus: 0.0,
+            supply_line_bonus_days: 0,
+            cooldown_days: 6,
+        },
+        PolicyEffect {
+            id: "stabilize_supply_lines",
+            name: "整顿驿站运输",
+            cost_actions: 1,
+            rouge_noir_delta: -2.0,
+            faction_deltas: [("military", 5.0), ("liberals", -2.0), ("populace", -3.0)]
+                .iter()
+                .cloned()
+                .collect(),
+            economic_delta: -2.0,
+            supply_delta: 6.0,
+            supply_line_bonus: 0.18,
+            supply_line_bonus_days: 3,
             cooldown_days: 6,
         },
         PolicyEffect {
@@ -142,6 +173,8 @@ pub fn default_policies() -> Vec<PolicyEffect> {
             faction_deltas: HashMap::new(),
             economic_delta: 0.0,
             supply_delta: 0.0,
+            supply_line_bonus: 0.0,
+            supply_line_bonus_days: 0,
             cooldown_days: 15,
         },
         PolicyEffect {
@@ -155,6 +188,8 @@ pub fn default_policies() -> Vec<PolicyEffect> {
                 .collect(),
             economic_delta: 15.0,
             supply_delta: 0.0,
+            supply_line_bonus: 0.0,
+            supply_line_bonus_days: 0,
             cooldown_days: 20,
         },
     ]
@@ -380,6 +415,17 @@ mod tests {
     fn 征用沿线仓储定义为补给政策() {
         let p = policy("requisition_supplies");
         assert_eq!(p.supply_delta, 18.0);
+        assert_eq!(p.cooldown_days, 6);
+        assert!(p.faction_deltas["military"] > 0.0);
+        assert!(p.faction_deltas["populace"] < 0.0);
+    }
+
+    #[test]
+    fn 整顿驿站运输定义为补给线政策() {
+        let p = policy("stabilize_supply_lines");
+        assert_eq!(p.supply_delta, 6.0);
+        assert_eq!(p.supply_line_bonus, 0.18);
+        assert_eq!(p.supply_line_bonus_days, 3);
         assert_eq!(p.cooldown_days, 6);
         assert!(p.faction_deltas["military"] > 0.0);
         assert!(p.faction_deltas["populace"] < 0.0);

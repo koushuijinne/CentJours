@@ -45,6 +45,7 @@ impl PlayerStrategy {
                     "conscription",
                     "increase_military_budget",
                     "requisition_supplies",
+                    "stabilize_supply_lines",
                     "print_money",
                 ];
                 mil[rng.gen_range(0..mil.len())]
@@ -363,6 +364,7 @@ fn engine_action<R: Rng>(engine: &GameEngine, rng: &mut R) -> PlayerAction {
         "public_speech",
         "reduce_taxes",
         "increase_military_budget",
+        "stabilize_supply_lines",
         "grant_titles",
         "secret_diplomacy",
         "print_money",

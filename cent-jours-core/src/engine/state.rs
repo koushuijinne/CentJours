@@ -211,6 +211,10 @@ pub struct SaveState {
     pub coalition_troops_bonus: i32,
     pub paris_security_bonus: f64,
     pub political_stability_bonus: f64,
+    #[serde(default = "default_supply_line_bonus")]
+    pub supply_line_bonus: f64,
+    #[serde(default = "default_supply_line_bonus_days")]
+    pub supply_line_bonus_days: u8,
     // 将领网络（当前忠诚度 + 关系强度）
     pub loyalty: HashMap<String, f64>,
     pub relationships: Vec<(String, String, f64)>,
@@ -236,6 +240,14 @@ fn default_campaign_map() -> MapGraph {
 
 fn default_army_supply() -> f64 {
     75.0
+}
+
+fn default_supply_line_bonus() -> f64 {
+    0.0
+}
+
+fn default_supply_line_bonus_days() -> u8 {
+    0
 }
 
 fn migrate_triggered_event_ids(ids: Vec<String>) -> Vec<String> {
@@ -321,6 +333,10 @@ pub struct GameEngine {
     paris_security_bonus: f64,
     /// 政治稳定收益：会在每日结算中持续托举合法性
     political_stability_bonus: f64,
+    /// 临时补给线效率修正（由短期政策提供）
+    supply_line_bonus: f64,
+    /// 临时补给线修正剩余天数（包含当前结算）
+    supply_line_bonus_days: u8,
     pub history: Vec<DayEvent>,
     /// 游戏结局（Some = 游戏已结束）
     outcome: Option<GameOutcome>,
@@ -353,6 +369,8 @@ impl Default for GameEngine {
             coalition_troops_bonus: 0,
             paris_security_bonus: 0.0,
             political_stability_bonus: 0.0,
+            supply_line_bonus: 0.0,
+            supply_line_bonus_days: 0,
             history: Vec::new(),
             outcome: None,
             map_graph: default_campaign_map(),
@@ -491,6 +509,8 @@ impl GameEngine {
             coalition_troops_bonus: self.coalition_troops_bonus,
             paris_security_bonus: self.paris_security_bonus,
             political_stability_bonus: self.political_stability_bonus,
+            supply_line_bonus: self.supply_line_bonus,
+            supply_line_bonus_days: self.supply_line_bonus_days,
             loyalty: self.characters.loyalty.clone(),
             relationships,
             triggered_event_ids: self.triggered_event_ids.clone(),
@@ -522,6 +542,8 @@ impl GameEngine {
         engine.coalition_troops_bonus = state.coalition_troops_bonus;
         engine.paris_security_bonus = state.paris_security_bonus;
         engine.political_stability_bonus = state.political_stability_bonus;
+        engine.supply_line_bonus = state.supply_line_bonus;
+        engine.supply_line_bonus_days = state.supply_line_bonus_days;
         engine.characters.loyalty = state.loyalty;
         engine.characters.relationships = state
             .relationships
@@ -801,6 +823,10 @@ impl GameEngine {
                         self.army.supply =
                             (self.army.supply + policy.supply_delta).clamp(0.0, 100.0);
                     }
+                    if policy.supply_line_bonus_days > 0 && policy.supply_line_bonus.abs() > 0.01 {
+                        self.supply_line_bonus = policy.supply_line_bonus;
+                        self.supply_line_bonus_days = policy.supply_line_bonus_days;
+                    }
                     vec![DayEvent {
                         day: self.day,
                         event_type: "policy",
@@ -880,6 +906,13 @@ impl GameEngine {
         if let Some(effect) = format_signed_effect("补给", self.army.supply - before_supply) {
             effects.push(effect);
         }
+        if policy.supply_line_bonus_days > 0 && policy.supply_line_bonus.abs() > 0.01 {
+            effects.push(format!(
+                "补给线效率 +{:.0}%（{} 天）",
+                policy.supply_line_bonus * 100.0,
+                policy.supply_line_bonus_days
+            ));
+        }
         if policy.cooldown_days > 0 {
             effects.push(format!("进入冷却 {} 天", policy.cooldown_days));
         }
@@ -932,6 +965,12 @@ impl GameEngine {
             self.politics.legitimacy = (self.politics.legitimacy
                 + (self.political_stability_bonus / 20.0).clamp(-2.5, 2.5))
             .clamp(0.0, 100.0);
+        }
+        if self.supply_line_bonus_days > 0 {
+            self.supply_line_bonus_days = self.supply_line_bonus_days.saturating_sub(1);
+            if self.supply_line_bonus_days == 0 {
+                self.supply_line_bonus = 0.0;
+            }
         }
 
         // ── 将领叛逃每日检查 ──────────────────────────────
@@ -1192,7 +1231,7 @@ impl GameEngine {
             .min()
             .unwrap_or(u32::MAX);
 
-        match nearest_distance {
+        let base = match nearest_distance {
             0 => 1.15,
             1 => 1.0,
             2 => 0.85,
@@ -1200,7 +1239,13 @@ impl GameEngine {
             4 => 0.55,
             u32::MAX => 0.25,
             _ => 0.4,
-        }
+        };
+        let bonus = if self.supply_line_bonus_days > 0 {
+            self.supply_line_bonus
+        } else {
+            0.0
+        };
+        (base + bonus).clamp(0.2, 1.2)
     }
 
     fn refresh_supply_after_action(&mut self, action_type: &'static str) -> DayEvent {
@@ -1570,6 +1615,53 @@ mod tests {
             "政策结算应显式展示补给变化"
         );
         assert!(engine.army.supply > 30.0, "政策执行后补给应高于执行前");
+    }
+
+    #[test]
+    fn 整顿驿站运输会暂时提高补给线效率() {
+        let baseline = GameEngine::new();
+        let base_preview = baseline.preview_march("grasse");
+
+        let mut engine = GameEngine::new();
+        let mut rng = seeded_rng();
+        engine.process_day(
+            PlayerAction::EnactPolicy {
+                policy_id: "stabilize_supply_lines",
+            },
+            &mut rng,
+        );
+
+        let policy_event = engine
+            .last_action_events()
+            .iter()
+            .find(|event| event.event_type == "policy")
+            .expect("应包含政策结算");
+        assert!(
+            policy_event
+                .effects
+                .iter()
+                .any(|effect| effect.contains("补给线效率")),
+            "政策结算应显式展示补给线效率加成"
+        );
+
+        let boosted_preview = engine.preview_march("grasse");
+        assert!(
+            base_preview.valid && boosted_preview.valid,
+            "预览应保持可用"
+        );
+        assert!(
+            boosted_preview.line_efficiency > base_preview.line_efficiency,
+            "政策执行后预览中的补给线效率应更高"
+        );
+        assert_eq!(engine.supply_line_bonus_days, 2, "当天结算后应剩余2天加成");
+
+        engine.process_day(PlayerAction::Rest, &mut rng);
+        engine.process_day(PlayerAction::Rest, &mut rng);
+        assert_eq!(engine.supply_line_bonus_days, 0, "加成应按天数衰减归零");
+        assert!(
+            engine.supply_line_bonus.abs() <= f64::EPSILON,
+            "加成结束后数值应清零"
+        );
     }
 
     // ── 忠诚度强化 ────────────────────────────────────

@@ -391,6 +391,9 @@ mod gdext_bindings {
                 "requisition_supplies" => PlayerAction::EnactPolicy {
                     policy_id: "requisition_supplies",
                 },
+                "stabilize_supply_lines" => PlayerAction::EnactPolicy {
+                    policy_id: "stabilize_supply_lines",
+                },
                 // 补全缺失的 3 条政策（之前静默退化为 Rest）
                 "grant_titles" => PlayerAction::EnactPolicy {
                     policy_id: "grant_titles",
