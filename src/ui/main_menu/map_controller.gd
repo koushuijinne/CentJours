@@ -702,6 +702,7 @@ func _update_march_target(node_id: String) -> void:
 		var supply_available := float(march_preview.get("supply_available", 0.0))
 		var supply_demand := float(march_preview.get("supply_demand", 0.0))
 		var supply_role_label := String(march_preview.get("supply_role_label", MainMenuFormattersLib.supply_role_label_for_capacity(base_supply_capacity)))
+		var supply_role := String(march_preview.get("supply_role", MainMenuFormattersLib.supply_role_for_capacity(base_supply_capacity)))
 		var hub_name := String(march_preview.get("supply_hub_name", "未知补给点"))
 		var hub_distance := int(march_preview.get("supply_hub_distance", -1))
 		var supply_runway_days := int(march_preview.get("supply_runway_days", -1))
@@ -713,7 +714,7 @@ func _update_march_target(node_id: String) -> void:
 		var follow_up_best_runway_days := int(march_preview.get("follow_up_best_runway_days", -1))
 		var runway_label := _supply_runway_label(supply_runway_days)
 		var pressure_label := _march_pressure_label(projected_supply, supply_capacity)
-		preview_text = "预计补给：%s（%.0f，%+.1f）\n预计疲劳：%.0f（%+.1f）\n预计士气：%.0f（%+.1f）\n%s\n%s\n节点角色：%s\n原因：%s\n建议：%s" % [
+		preview_text = "预计补给：%s（%.0f，%+.1f）\n预计疲劳：%.0f（%+.1f）\n预计士气：%.0f（%+.1f）\n%s\n%s\n%s\n节点角色：%s\n原因：%s\n建议：%s" % [
 			pressure_label,
 			projected_supply,
 			supply_delta,
@@ -730,6 +731,7 @@ func _update_march_target(node_id: String) -> void:
 				follow_up_best_target_label,
 				follow_up_best_runway_days
 			),
+			_build_objective_alignment_text(supply_role, supply_role_label),
 			supply_role_label,
 			_build_supply_reason_text(
 				base_supply_capacity,
@@ -918,6 +920,26 @@ func _build_follow_up_text(
 		total_options,
 		risky_options,
 		best_line
+	]
+
+
+func _build_objective_alignment_text(target_role: String, target_role_label: String) -> String:
+	var objective_label := GameState.logistics_objective_label.strip_edges()
+	var objective_target_role := GameState.logistics_objective_target_role.strip_edges()
+	var objective_target_role_label := GameState.logistics_objective_target_role_label.strip_edges()
+	if objective_label == "" or objective_target_role == "":
+		return "阶段目标：当前未设定额外运营目标。"
+	if target_role == objective_target_role:
+		return "阶段目标：这一步正把你带向当前需要的%s。" % target_role_label
+	if objective_target_role == "regional_depot" and target_role == "strategic_depot":
+		return "阶段目标：这一步直接接上更强的%s，符合当前整补目标。" % target_role_label
+	if objective_target_role == "strategic_depot" and target_role == "regional_depot":
+		return "阶段目标：这一步还在为%s铺路，节奏上可以接受，但还没到最终目标。" % objective_target_role_label
+	if objective_target_role == "frontline_outpost" and target_role != "frontline_outpost":
+		return "阶段目标：这一步仍在做终盘前推的铺路，还没真正压到决定性前线点。"
+	return "阶段目标：当前更需要%s，这一步落在%s，适合先评估是否值得绕行。" % [
+		objective_target_role_label,
+		target_role_label
 	]
 
 

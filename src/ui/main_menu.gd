@@ -358,6 +358,8 @@ func _refresh_situation_panel() -> void:
 		GameState.logistics_posture_label,
 		GameState.logistics_focus_title,
 		GameState.logistics_focus_detail,
+		GameState.logistics_objective_label,
+		GameState.logistics_objective_detail,
 		GameState.faction_support,
 		_prev_faction_support
 	)
@@ -381,10 +383,12 @@ func _sync_tray_state() -> void:
 
 func _refresh_logistics_guidance() -> void:
 	var hint_text := "选择一项政策或直接休整"
-	if GameState.logistics_focus_short.strip_edges() != "":
+	if GameState.logistics_objective_short.strip_edges() != "":
+		hint_text = GameState.logistics_objective_short
+	elif GameState.logistics_focus_short.strip_edges() != "":
 		hint_text = GameState.logistics_focus_short
 	_tray_controller.set_tray_hint_texts(hint_text, "结算中…")
-	_map_controller.set_context_subtitle(GameState.logistics_focus_short)
+	_map_controller.set_context_subtitle(hint_text)
 
 
 func _clear_tray_selection() -> void:

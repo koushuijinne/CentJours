@@ -524,6 +524,27 @@ mod gdext_bindings {
             let _ = d.insert("logistics_focus_title", logistics.focus_title.as_str());
             let _ = d.insert("logistics_focus_detail", logistics.focus_detail.as_str());
             let _ = d.insert("logistics_focus_short", logistics.focus_short.as_str());
+            let _ = d.insert("logistics_objective_id", logistics.objective_id.as_str());
+            let _ = d.insert(
+                "logistics_objective_label",
+                logistics.objective_label.as_str(),
+            );
+            let _ = d.insert(
+                "logistics_objective_target_role",
+                logistics.objective_target_role.as_str(),
+            );
+            let _ = d.insert(
+                "logistics_objective_target_role_label",
+                logistics.objective_target_role_label.as_str(),
+            );
+            let _ = d.insert(
+                "logistics_objective_detail",
+                logistics.objective_detail.as_str(),
+            );
+            let _ = d.insert(
+                "logistics_objective_short",
+                logistics.objective_short.as_str(),
+            );
             let _ = d.insert(
                 "logistics_runway_days",
                 e.current_supply_runway_days()

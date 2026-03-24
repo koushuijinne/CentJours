@@ -36,6 +36,12 @@ var logistics_posture_label: String = ""
 var logistics_focus_title: String = ""
 var logistics_focus_detail: String = ""
 var logistics_focus_short: String = ""
+var logistics_objective_id: String = ""
+var logistics_objective_label: String = ""
+var logistics_objective_target_role: String = ""
+var logistics_objective_target_role_label: String = ""
+var logistics_objective_detail: String = ""
+var logistics_objective_short: String = ""
 var logistics_runway_days: int = -1
 var logistics_runway_label: String = ""
 

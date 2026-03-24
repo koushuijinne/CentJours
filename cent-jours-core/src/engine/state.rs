@@ -7,8 +7,8 @@ use rand::Rng;
 
 use crate::battle::resolver::{resolve_battle, BattleResult, ForceData, Terrain};
 use crate::battle::{
-    move_army, rest_army, update_supply_with_capacity, ArmyState as MarchArmyState, MapEdge,
-    MapGraph, MapNode, SUPPLY_OK_THRESHOLD,
+    move_army, rest_army, supply_role_label, update_supply_with_capacity,
+    ArmyState as MarchArmyState, MapEdge, MapGraph, MapNode, SUPPLY_OK_THRESHOLD,
 };
 use crate::characters::network::{
     historical_network_day1, CharacterNetwork, LOYALTY_CRISIS_THRESHOLD,
@@ -133,6 +133,12 @@ pub struct LogisticsBrief {
     pub focus_title: String,
     pub focus_detail: String,
     pub focus_short: String,
+    pub objective_id: String,
+    pub objective_label: String,
+    pub objective_target_role: String,
+    pub objective_target_role_label: String,
+    pub objective_detail: String,
+    pub objective_short: String,
 }
 
 #[derive(Debug, Clone)]
@@ -520,6 +526,20 @@ impl GameEngine {
             capacity_bonus,
             hub_distance,
         );
+        let (
+            objective_id,
+            objective_label,
+            objective_target_role,
+            objective_detail,
+            objective_short,
+        ) = self.operational_objective_for(
+            location,
+            posture_id,
+            supply,
+            fatigue,
+            capacity,
+            hub_distance,
+        );
         let focus_title = self.campaign_focus_title().to_string();
         let focus_detail = match posture_id {
             "critical_recovery" => format!(
@@ -569,6 +589,12 @@ impl GameEngine {
             focus_title,
             focus_detail,
             focus_short,
+            objective_id: objective_id.to_string(),
+            objective_label: objective_label.to_string(),
+            objective_target_role: objective_target_role.to_string(),
+            objective_target_role_label: supply_role_label(objective_target_role).to_string(),
+            objective_detail,
+            objective_short,
         }
     }
 
@@ -1805,6 +1831,102 @@ impl GameEngine {
         }
     }
 
+    fn operational_objective_for(
+        &self,
+        location: &str,
+        posture_id: &str,
+        supply: f64,
+        fatigue: f64,
+        capacity: u32,
+        hub_distance: u32,
+    ) -> (&'static str, &'static str, &'static str, String, String) {
+        let location_name = self.map_graph.node_name(location);
+        let current_role = self.map_graph.supply_role_of(location);
+
+        match self.day {
+            0..=10 if posture_id == "critical_recovery" || capacity <= 2 => (
+                "secure_regional_depot",
+                "阶段运营目标：先抢区域整补点",
+                "regional_depot",
+                format!(
+                    "{} 还只是前线消耗点。下一段优先落到区域整补点或战略大仓，先把回补线接稳。",
+                    location_name
+                ),
+                "下一段目标：先抢区域整补点，不要继续连走前线点。".to_string(),
+            ),
+            0..=10 => (
+                "connect_strategic_depot",
+                "阶段运营目标：把跳板接到战略大仓",
+                "strategic_depot",
+                format!(
+                    "{} 已能做短暂停留，但还不算真正的大后方。下一段应尽量接上战略大仓，为北上留更厚的补给余量。",
+                    location_name
+                ),
+                "下一段目标：把跳板接到战略大仓。".to_string(),
+            ),
+            11..=60 if posture_id == "overextended_line" || hub_distance >= 3 => (
+                "repair_depot_chain",
+                "阶段运营目标：补上线中继仓储",
+                "regional_depot",
+                format!(
+                    "{} 离后方枢纽已经偏远。中盘不要只盯前线点，先把区域整补点串起来，再谈持续推进。",
+                    location_name
+                ),
+                "阶段运营目标：先补上线中继仓储，再继续前推。".to_string(),
+            ),
+            11..=60 if supply < 55.0 || fatigue > 45.0 => (
+                "recover_at_regional_depot",
+                "阶段运营目标：回到区域整补点整补",
+                "regional_depot",
+                format!(
+                    "当前补给 {:.0}、疲劳 {:.0}，还不适合继续透支前线。下一段优先找区域整补点恢复库存和体力。",
+                    supply, fatigue
+                ),
+                "阶段运营目标：先回区域整补点整补。".to_string(),
+            ),
+            11..=85 => (
+                "stage_from_regional_depot",
+                "阶段运营目标：以区域整补点做跳板",
+                "regional_depot",
+                format!(
+                    "{} 现在更适合当跳板，而不是终点。把区域整补点握在手里，才能把后续推进维持成可持续节奏。",
+                    location_name
+                ),
+                "阶段运营目标：以区域整补点做跳板推进。".to_string(),
+            ),
+            _ if posture_id == "advance_ready" && supply >= 65.0 && fatigue <= 35.0 => (
+                "pay_for_decisive_frontline",
+                "阶段运营目标：只为决定性前线点付补给代价",
+                "frontline_outpost",
+                format!(
+                    "{} 当前已具备前推条件。终盘只为真正决定性的前线点支付补给代价，不再为普通前沿消耗点透支库存。",
+                    location_name
+                ),
+                "终盘目标：只为决定性前线点付补给代价。".to_string(),
+            ),
+            _ if current_role == "strategic_depot" => (
+                "launch_from_strategic_depot",
+                "阶段运营目标：从战略大仓发起最后一段推进",
+                "regional_depot",
+                format!(
+                    "{} 已是战略大仓。终盘应从这里先接上区域整补点，再决定是否压向前线关键点。",
+                    location_name
+                ),
+                "终盘目标：从战略大仓接区域整补点，再压前线。".to_string(),
+            ),
+            _ => (
+                "reset_before_decisive_push",
+                "阶段运营目标：先回区域整补点蓄力",
+                "regional_depot",
+                format!(
+                    "{} 还不适合直接支付终盘前线代价。先回区域整补点蓄力，再决定最后几步怎么走。",
+                    location_name
+                ),
+                "终盘目标：先回区域整补点蓄力。".to_string(),
+            ),
+        }
+    }
+
     fn supply_runway_days_for(&self, location: &str, starting_supply: f64) -> Option<u32> {
         if starting_supply < SUPPLY_OK_THRESHOLD {
             return Some(0);
@@ -2279,6 +2401,35 @@ mod tests {
         assert!(
             engine.current_supply_runway_label().contains("可持续维持"),
             "高容量节点应显示为可持续维持"
+        );
+    }
+
+    #[test]
+    fn 前10天前线消耗区会要求先抢区域整补点() {
+        let engine = GameEngine::new();
+        let brief = engine.logistics_brief();
+
+        assert_eq!(brief.objective_target_role, "regional_depot");
+        assert!(
+            brief.objective_label.contains("区域整补点"),
+            "前期前线消耗区应优先接区域整补点"
+        );
+    }
+
+    #[test]
+    fn 终盘推进窗口会把目标切到决定性前线点() {
+        let mut engine = GameEngine::new();
+        engine.day = 92;
+        engine.napoleon_location = "brussels".to_string();
+        engine.army.supply = 78.0;
+        engine.army.avg_fatigue = 18.0;
+
+        let brief = engine.logistics_brief();
+
+        assert_eq!(brief.objective_target_role, "frontline_outpost");
+        assert!(
+            brief.objective_short.contains("决定性前线点"),
+            "终盘推进窗口应聚焦决定性前线点"
         );
     }
 

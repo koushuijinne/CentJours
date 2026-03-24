@@ -361,3 +361,22 @@
 - 本轮将与功能代码、规则文档和当前态文档一起提交并推送到 `auto/gameplay_update`。
 下一步:
 - 继续把补给系统从“知道第二跳危险不危险”推进到“主动给出区域整补目标和前线推进节奏”，优先补区域运营目标、前 10 天教程串联和更强的失败归因。
+
+## 2026-03-24 第 22 轮
+分支: `auto/gameplay_update`
+范围: 把阶段运营目标做成引擎权威状态，并接进侧栏、地图副标题和行军预判
+变更:
+- `engine/state.rs` 新增阶段运营目标推导：不同日期、补给状态、驻地容量和运输线距离会导向不同的节点层级目标，例如“先抢区域整补点”“把跳板接到战略大仓”“只为决定性前线点付补给代价”。
+- `lib.rs`、`game_state.gd`、`turn_manager.gd`、`main_menu.gd`、`sidebar_controller.gd` 和 `map_controller.gd` 已接通新字段；侧栏会显示当前运营目标，地图副标题和决策区提示也会复用这层信息。
+- 行军预判现在不只解释风险，还会直接判断这一步是否在朝当前需要的节点层级推进，告诉玩家是“符合阶段目标”“还在铺路”还是“偏离当前更需要的仓储层级”。
+- 新增两条 Rust 回归，分别钉住“前10天前线消耗区会要求先抢区域整补点”和“终盘推进窗口会把目标切到决定性前线点”。
+验证:
+- `cargo fmt --manifest-path cent-jours-core/Cargo.toml` 已通过。
+- Windows `cargo test` 已通过，基线提升到 `191/191`。
+- Windows `cargo build --features godot-extension` 已通过。
+- Windows Godot 无头主项目和 Windows Godot smoke scene 已通过；smoke 输出已确认新 `logistics_objective_*` 字段进入运行时。
+- 本轮未运行 Linux / WSL 侧测试。
+提交/推送:
+- 本轮将与功能代码和当前态文档一起提交并推送到 `auto/gameplay_update`。
+下一步:
+- 继续把补给系统从“知道该往哪类节点走”推进到“前 10 天教程会主动串起政策、行军、整补与失败归因”，优先补教程链和失败复盘。
