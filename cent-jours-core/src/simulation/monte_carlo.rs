@@ -40,8 +40,13 @@ impl PlayerStrategy {
     pub fn select_policy<'a>(&self, policies: &'a [&'a str], rng: &mut impl Rng) -> &'a str {
         match self {
             Self::Military => {
-                // 军事向：征兵 + 军费 + 印钞应急
-                let mil = ["conscription", "increase_military_budget", "print_money"];
+                // 军事向：征兵 + 军费 + 征用沿线仓储 + 印钞应急
+                let mil = [
+                    "conscription",
+                    "increase_military_budget",
+                    "requisition_supplies",
+                    "print_money",
+                ];
                 mil[rng.gen_range(0..mil.len())]
             }
             Self::Political => {

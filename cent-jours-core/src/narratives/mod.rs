@@ -83,6 +83,7 @@ pub fn policy_narrative_key(policy_id: &str) -> Option<&'static str> {
         "public_speech" => Some("public_speech"),
         "reduce_taxes" => Some("reduce_taxes"),
         "increase_military_budget" => Some("increase_military_budget"),
+        "requisition_supplies" => Some("requisition_supplies"),
         "grant_titles" => Some("grant_titles"),
         "secret_diplomacy" => Some("diplomatic_secret"),
         "print_money" => Some("print_money"),
@@ -120,7 +121,7 @@ mod tests {
     }
 
     #[test]
-    fn 司汤达11个行动类型全部有内容() {
+    fn 司汤达12个行动类型全部有内容() {
         let pool = NarrativePool::new();
         for key in &[
             "conscription",
@@ -133,6 +134,7 @@ mod tests {
             "diplomatic_secret",
             "grant_titles",
             "increase_military_budget",
+            "requisition_supplies",
             "print_money",
         ] {
             assert!(
@@ -144,7 +146,7 @@ mod tests {
     }
 
     #[test]
-    fn 后果12个类型全部有内容() {
+    fn 后果13个类型全部有内容() {
         let pool = NarrativePool::new();
         for key in &[
             "conscription",
@@ -157,6 +159,7 @@ mod tests {
             "boost_loyalty",
             "grant_titles",
             "increase_military_budget",
+            "requisition_supplies",
             "diplomatic_secret",
             "print_money",
         ] {
@@ -214,6 +217,10 @@ mod tests {
             policy_narrative_key("increase_military_budget"),
             Some("increase_military_budget")
         );
+        assert_eq!(
+            policy_narrative_key("requisition_supplies"),
+            Some("requisition_supplies")
+        );
         assert_eq!(policy_narrative_key("grant_titles"), Some("grant_titles"));
         assert_eq!(
             policy_narrative_key("secret_diplomacy"),
@@ -238,6 +245,7 @@ mod tests {
             "public_speech",
             "reduce_taxes",
             "increase_military_budget",
+            "requisition_supplies",
             "grant_titles",
             "secret_diplomacy",
             "print_money",
@@ -265,6 +273,7 @@ mod tests {
             "public_speech",
             "reduce_taxes",
             "increase_military_budget",
+            "requisition_supplies",
             "grant_titles",
             "secret_diplomacy",
             "print_money",

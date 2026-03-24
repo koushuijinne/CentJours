@@ -388,6 +388,9 @@ mod gdext_bindings {
                 "increase_military_budget" => PlayerAction::EnactPolicy {
                     policy_id: "increase_military_budget",
                 },
+                "requisition_supplies" => PlayerAction::EnactPolicy {
+                    policy_id: "requisition_supplies",
+                },
                 // 补全缺失的 3 条政策（之前静默退化为 Rest）
                 "grant_titles" => PlayerAction::EnactPolicy {
                     policy_id: "grant_titles",

@@ -11,12 +11,13 @@
 ## 当前项目状态
 
 - 正式入口为 `src/ui/main_menu.tscn`，主循环 `TurnManager -> CentJoursEngine -> GameState -> UI` 已接通。
-- Rust 规则层当前基线是 `172/172` 测试通过。
+- Rust 规则层当前基线是 `174/174` 测试通过。
 - 当前核心数据基线：`15` 名角色、`41` 个地图节点、`58` 条历史事件，其中 `major 16 / normal 35 / minor 7`。
 - 当前活跃开发分支为 `auto/gameplay_update`。
 - Save / Load 已进入 `v2` 兼容路径，旧存档会把 `fontainebleau_eve` 迁移为正式 ID `tuileries_eve`。
 - 历史事件正文、`historical_note` 与玩家行动结算日志都已接入侧栏日志链路。
 - 动态补给已接进核心循环：补给值会进入存档、`get_state()`、主菜单顶栏、休整恢复、战斗补给惩罚和每日行动结算日志。
+- 首个玩家可控补给政策 `requisition_supplies / 征用沿线仓储` 已接入政策表、叙事池、模拟策略和 UI 元数据。
 - 文档目录已重构为 `docs/plans`、`docs/rules`、`docs/history`、`docs/decisions`，开发历史已从 live 计划文档中抽离到 `docs/history/development_logs/`。
 - 前端已拆出 `map / layout / tray / sidebar / dialogs` 控制器，但发布级视觉和交互收口仍未完成。
 - Windows 原生 Godot 与 Windows 无头仍是默认验证路径；不要把 Linux / WSL Godot 无头结果当成默认结论。
@@ -24,7 +25,7 @@
 
 ## 当前最高优先级
 
-1. 把补给系统继续产品化：补给来源、前线压力、玩家可控补给手段与失败反馈
+1. 把补给系统继续产品化：补给来源、前线压力、玩家可控补给手段、预判反馈与失败解释
 2. 把历史事件从 `58` 条继续推到 `100+`，并逐条完成文本 QA
 3. 补前 10 天引导、失败归因、结局文本和关键 UI 文案统一
 4. 收口 F5：`DecisionTray`、`Map Inspector`、中英混排与设置入口
@@ -34,6 +35,7 @@
 
 - `内容量仍不足`：事件池距离 `100+` 目标还差 `42` 条
 - `补给玩法还不够显式`：底层压力已经接通，但玩家还缺少明确的补给操作、反制手段和教学提示
+- `补给反馈还不够前置`：玩家能在结算后看到补给变化，但行军前预判、为何断补给、如何补救仍需继续产品化
 - `文本 QA 未收口`：剩余事件仍需统一史实锚点、信息密度和句式风格
 - `前端发布级 polish 未完成`：结构问题已缓解，但仍需 Windows 真机持续验收
 - `产品化能力仍缺`：设置/选项页、导出配置、Steam 商店素材、教程引导都未完成
@@ -107,6 +109,7 @@ E:\software\godot\Godot_v4.6.1-stable_win64_console.exe --headless --path E:\pro
 - 不要把 Linux / WSL Godot 无头测试当成默认步骤
 - 若继续做内容线，先按 `ADR-008` 和 `historical_event_review` 的修订意见推进
 - 若继续做玩法线，优先把补给压力扩成明确的玩家决策，而不是继续堆纯后台数值
+- 自动工作流开启时，每轮提交后都要先在对话里输出一份完整压缩摘要，再继续下一轮；这不是结束语
 - `tuileries_eve` 现为正式事件 ID；旧 ID 只应出现在迁移代码和兼容性测试里
 - 允许直接修改文案，但必须遵守 ADR-008：直接、清楚、可考据，避免 reframing 句式
 - 若继续做 UI 线，优先解决玩家可感知问题，再做大文件工程收口

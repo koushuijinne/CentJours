@@ -726,21 +726,29 @@ impl GameEngine {
             let before_rn = self.politics.rouge_noir_index;
             let before_legitimacy = self.politics.legitimacy;
             let before_economic = self.politics.economic_index;
+            let before_supply = self.army.supply;
             let before_factions = self.politics.faction_support.clone();
             match self.politics.enact_policy(policy) {
-                Ok(()) => vec![DayEvent {
-                    day: self.day,
-                    event_type: "policy",
-                    description: format!("颁布政策：{}", policy.name),
-                    effects: self.build_policy_effects(
-                        policy,
-                        &before_factions,
-                        before_legitimacy,
-                        before_rn,
-                        before_economic,
-                        before_actions,
-                    ),
-                }],
+                Ok(()) => {
+                    if policy.supply_delta.abs() > 0.01 {
+                        self.army.supply =
+                            (self.army.supply + policy.supply_delta).clamp(0.0, 100.0);
+                    }
+                    vec![DayEvent {
+                        day: self.day,
+                        event_type: "policy",
+                        description: format!("颁布政策：{}", policy.name),
+                        effects: self.build_policy_effects(
+                            policy,
+                            &before_factions,
+                            before_legitimacy,
+                            before_rn,
+                            before_economic,
+                            before_actions,
+                            before_supply,
+                        ),
+                    }]
+                }
                 Err(e) => vec![DayEvent {
                     day: self.day,
                     event_type: "policy_failed",
@@ -766,6 +774,7 @@ impl GameEngine {
         before_rn: f64,
         before_economic: f64,
         before_actions: u8,
+        before_supply: f64,
     ) -> Vec<String> {
         let mut effects = Vec::new();
         let actions_spent = before_actions.saturating_sub(self.politics.actions_remaining);
@@ -799,6 +808,9 @@ impl GameEngine {
         if let Some(effect) =
             format_signed_effect("经济", self.politics.economic_index - before_economic)
         {
+            effects.push(effect);
+        }
+        if let Some(effect) = format_signed_effect("补给", self.army.supply - before_supply) {
             effects.push(effect);
         }
         if policy.cooldown_days > 0 {
@@ -1409,6 +1421,38 @@ mod tests {
                 .any(|effect| effect.contains("行动点不足")),
             "失败结算应保留原始失败原因"
         );
+    }
+
+    #[test]
+    fn 征用沿线仓储会立刻补充补给() {
+        let mut engine = GameEngine::new();
+        engine.army.supply = 30.0;
+        let mut rng = seeded_rng();
+
+        engine.process_day(
+            PlayerAction::EnactPolicy {
+                policy_id: "requisition_supplies",
+            },
+            &mut rng,
+        );
+
+        let policy_event = engine
+            .last_action_events()
+            .iter()
+            .find(|event| event.event_type == "policy")
+            .expect("应包含政策结算");
+        assert!(
+            policy_event.description.contains("征用沿线仓储"),
+            "应使用可读政策名"
+        );
+        assert!(
+            policy_event
+                .effects
+                .iter()
+                .any(|effect| effect.contains("补给")),
+            "政策结算应显式展示补给变化"
+        );
+        assert!(engine.army.supply > 30.0, "政策执行后补给应高于执行前");
     }
 
     // ── 忠诚度强化 ────────────────────────────────────

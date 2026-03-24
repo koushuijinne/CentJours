@@ -1,6 +1,6 @@
 # Cent Jours — 开发优先级计划
 
-> **更新**: 2026-03-24 v67
+> **更新**: 2026-03-24 v68
 > **通用原则**: [docs/rules/development_principles.md](/mnt/e/projects/CentJours/docs/rules/development_principles.md)
 > **快速接手**: [docs/history/agent_handoff.md](/mnt/e/projects/CentJours/docs/history/agent_handoff.md)
 > **开发历史**: [docs/history/development_logs/development_log_001.md](/mnt/e/projects/CentJours/docs/history/development_logs/development_log_001.md)
@@ -11,12 +11,13 @@
 ## 当前技术基线
 
 - 正式入口为 `src/ui/main_menu.tscn`，主链路 `TurnManager -> CentJoursEngine -> GameState -> UI` 已跑通。
-- Rust 规则层当前基线为 `172/172` 测试通过。
+- Rust 规则层当前基线为 `174/174` 测试通过。
 - 当前数据基线为 `15` 名角色、`41` 个地图节点、`58` 条历史事件，其中 `major 16 / normal 35 / minor 7`。
 - 当前活跃开发分支为 `auto/gameplay_update`；`claude/review-project-status-05vxD` 作为稳定参考基线保留。
 - Save / Load 已进入 `v2` 兼容阶段，旧存档中的 `fontainebleau_eve` 会在读档时迁移到正式 ID `tuileries_eve`。
 - 历史事件正文与 `historical_note` 已接入 UI 日志链路，玩家行动结算日志也已通过 GDExt 回传到主菜单侧栏。
 - 动态补给已经进入核心循环：补给值会进入存档、`get_state()`、主菜单顶栏、休整恢复、战斗补给惩罚和每日行动结算日志。
+- 首个玩家可控补给政策 `requisition_supplies / 征用沿线仓储` 已接入政策表、叙事池、模拟策略和 UI 元数据，补给玩法不再只有被动承压。
 - 前端已拆出 `map / layout / tray / sidebar / dialogs` 控制器，但主菜单相关文件仍偏大，发布级 polish 尚未完成。
 - 默认 Godot 验证路径仍是 Windows 原生运行和 Windows 无头，不以 Linux / WSL Godot 无头替代。
 - 当前 WSL 环境未安装 `x86_64-pc-windows-gnu` target；从这里执行 `cargo build --features godot-extension` 只会更新 Linux `.so`，不能替代 Windows `cent_jours_core.dll` 验证。
@@ -25,7 +26,7 @@
 
 | 优先级 | 项目 | 规模 | 决策理由 |
 |--------|------|------|----------|
-| **P0** | **把补给系统继续产品化：补给来源、前线压力、玩家可控补给手段与失败反馈** | L | `agent_chat_history` 已明确指出后勤是当前最有价值的玩法增深方向；本轮只完成了底层闭环，下一步必须让玩家真正“围绕补给做决策”。 |
+| **P0** | **把补给系统继续产品化：补给来源、前线压力、玩家可控补给手段、预判反馈与失败解释** | L | `agent_chat_history` 已明确指出后勤是当前最有价值的玩法增深方向；现在已有首张补给政策，但还缺行军前预判、更多补给杠杆和明确教学。 |
 | **P0** | **历史事件从 `58` 条扩到 `100+`，并继续做逐条文本 QA** | L | 这是百日长局成立的内容底座；当前事件量仍不足以支撑长局重玩性。 |
 | **P0** | **补前 10 天引导、失败归因、结局文本和关键 UI 文案统一** | M | 新玩家当前仍缺完整解释链，失败后归因和目标感还不够清楚。 |
 | **P1** | **收口 F5：`DecisionTray` / `Map Inspector` / 中英混排 / 设置入口** | M | 结构性问题已缓解，但仍需要 Windows 真机视角下的最终收口。 |
@@ -60,6 +61,7 @@ E:\software\godot\Godot_v4.6.1-stable_win64_console.exe --headless --path E:\pro
 
 - `内容量仍不足`：事件池虽然扩到 `58` 条，但离 `100+` 仍差 `42` 条。
 - `补给玩法还没完全产品化`：当前已经有补给压力，但玩家可控杠杆还不够多，仍需把它扩成清晰的策略层。
+- `补给反馈还不够前置`：玩家现在能在结算后看到补给变化，也有首个补给政策，但行军前预判、失败归因和教学提示还不够完整。
 - `文本 QA 未收口`：已做多轮事件修订，但全量事件还没完成统一史实锚点、信息密度与句式清理。
 - `前端发布级 polish 仍未收口`：`DecisionTray` 和 `Map Inspector` 已做结构修复，但仍需持续用 Windows 真机确认。
 - `产品化能力缺口`：仍缺设置/选项页、稳定发布导出链路、Steam 商店与宣传资产。
@@ -80,10 +82,10 @@ E:\software\godot\Godot_v4.6.1-stable_win64_console.exe --headless --path E:\pro
 |------|------|--------|
 | 战斗解算 | `battle/resolver.rs` | 12 |
 | 行军系统 | `battle/march.rs` | 12 |
-| 政治系统 | `politics/system.rs` | 9 |
+| 政治系统 | `politics/system.rs` | 10 |
 | 命令偏差 | `characters/order_deviation.rs` | 7 |
 | 将领关系网络 | `characters/network.rs` | 32 |
-| 三系统状态机 | `engine/state.rs` | 44 |
+| 三系统状态机 | `engine/state.rs` | 45 |
 | 历史事件池 | `events/pool.rs` + `EventTier` 枚举 | 39 |
 | 蒙特卡洛模拟 | `simulation/monte_carlo.rs` | 8 |
 | 叙事引擎 | `narratives/mod.rs` | 9 |
@@ -91,7 +93,7 @@ E:\software\godot\Godot_v4.6.1-stable_win64_console.exe --headless --path E:\pro
 | Save / Load | `engine/state.rs` + `save_manager.gd` + `main_menu.gd` | — |
 | 历史事件展示闭环 | `events/pool.rs` + `engine/state.rs` + `lib.rs` + `turn_manager.gd` + `sidebar_controller.gd` + `main_menu.gd` | 并入上方统计 |
 
-**合计**: `172` tests
+**合计**: `174` tests
 
 ## 文档边界
 

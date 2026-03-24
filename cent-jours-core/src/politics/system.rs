@@ -36,6 +36,7 @@ pub struct PolicyEffect {
     pub rouge_noir_delta: f64,
     pub faction_deltas: HashMap<&'static str, f64>,
     pub economic_delta: f64,
+    pub supply_delta: f64,
     pub cooldown_days: u8,
 }
 
@@ -52,6 +53,7 @@ pub fn default_policies() -> Vec<PolicyEffect> {
                 .cloned()
                 .collect(),
             economic_delta: -5.0,
+            supply_delta: 0.0,
             cooldown_days: 5,
         },
         PolicyEffect {
@@ -64,6 +66,7 @@ pub fn default_policies() -> Vec<PolicyEffect> {
                 .cloned()
                 .collect(),
             economic_delta: 0.0,
+            supply_delta: 0.0,
             cooldown_days: 10,
         },
         PolicyEffect {
@@ -76,6 +79,7 @@ pub fn default_policies() -> Vec<PolicyEffect> {
                 .cloned()
                 .collect(),
             economic_delta: 0.0,
+            supply_delta: 0.0,
             cooldown_days: 3,
         },
         PolicyEffect {
@@ -88,6 +92,7 @@ pub fn default_policies() -> Vec<PolicyEffect> {
                 .cloned()
                 .collect(),
             economic_delta: 0.0,
+            supply_delta: 0.0,
             cooldown_days: 7,
         },
         PolicyEffect {
@@ -100,6 +105,7 @@ pub fn default_policies() -> Vec<PolicyEffect> {
                 .cloned()
                 .collect(),
             economic_delta: -8.0,
+            supply_delta: 0.0,
             cooldown_days: 8,
         },
         PolicyEffect {
@@ -112,7 +118,21 @@ pub fn default_policies() -> Vec<PolicyEffect> {
                 .cloned()
                 .collect(),
             economic_delta: -10.0,
+            supply_delta: 0.0,
             cooldown_days: 5,
+        },
+        PolicyEffect {
+            id: "requisition_supplies",
+            name: "征用沿线仓储",
+            cost_actions: 1,
+            rouge_noir_delta: 4.0,
+            faction_deltas: [("military", 6.0), ("populace", -6.0), ("liberals", -4.0)]
+                .iter()
+                .cloned()
+                .collect(),
+            economic_delta: -3.0,
+            supply_delta: 18.0,
+            cooldown_days: 6,
         },
         PolicyEffect {
             id: "secret_diplomacy",
@@ -121,6 +141,7 @@ pub fn default_policies() -> Vec<PolicyEffect> {
             rouge_noir_delta: -3.0,
             faction_deltas: HashMap::new(),
             economic_delta: 0.0,
+            supply_delta: 0.0,
             cooldown_days: 15,
         },
         PolicyEffect {
@@ -133,6 +154,7 @@ pub fn default_policies() -> Vec<PolicyEffect> {
                 .cloned()
                 .collect(),
             economic_delta: 15.0,
+            supply_delta: 0.0,
             cooldown_days: 20,
         },
     ]
@@ -352,6 +374,15 @@ mod tests {
         s.daily_tick();
         s.daily_tick();
         assert!(s.enact_policy(&p).is_ok());
+    }
+
+    #[test]
+    fn 征用沿线仓储定义为补给政策() {
+        let p = policy("requisition_supplies");
+        assert_eq!(p.supply_delta, 18.0);
+        assert_eq!(p.cooldown_days, 6);
+        assert!(p.faction_deltas["military"] > 0.0);
+        assert!(p.faction_deltas["populace"] < 0.0);
     }
 
     #[test]
