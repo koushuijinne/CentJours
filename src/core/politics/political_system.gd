@@ -59,6 +59,12 @@ const POLICY_META: Dictionary = {
 		"rouge_noir_hint": "+4 Rouge",
 		"summary": "大幅提升军队支持，削弱自由派，经济重度损耗"
 	},
+	"requisition_supplies": {
+		"name": "征用沿线仓储",
+		"cost": 1,
+		"rouge_noir_hint": "+4 Rouge",
+		"summary": "快速回补补给，代价是激怒沿线民众与自由派"
+	},
 	"secret_diplomacy": {
 		"name": "秘密外交（分化反法同盟）",
 		"cost": 2,

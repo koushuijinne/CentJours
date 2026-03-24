@@ -6,6 +6,7 @@ const PRIORITY_POLICY_IDS := [
 	"public_speech",
 	"constitutional_promise",
 	"increase_military_budget",
+	"requisition_supplies",
 	"grant_titles",
 	"reduce_taxes",
 	"secret_diplomacy",
@@ -17,6 +18,7 @@ const POLICY_EMOJIS := {
 	"public_speech": "📣",
 	"constitutional_promise": "📜",
 	"increase_military_budget": "💰",
+	"requisition_supplies": "🚚",
 	"grant_titles": "👑",
 	"reduce_taxes": "🪙",
 	"secret_diplomacy": "🕵️",
@@ -42,6 +44,12 @@ const POLICY_EFFECTS := {
 	"increase_military_budget": [
 		{"label": "Military", "value": 6, "type": "positive"},
 		{"label": "Economy", "value": -4, "type": "negative"},
+		{"label": "Rouge", "value": 4, "type": "rn"}
+	],
+	"requisition_supplies": [
+		{"label": "Supply", "value": 18, "type": "positive"},
+		{"label": "Military", "value": 6, "type": "positive"},
+		{"label": "Populace", "value": -6, "type": "negative"},
 		{"label": "Rouge", "value": 4, "type": "rn"}
 	],
 	"grant_titles": [
@@ -107,6 +115,7 @@ const NARRATIVE_CATEGORY_LABELS := {
 	"grant_titles": "封爵令余波",
 	"reduce_taxes": "减税令余波",
 	"increase_military_budget": "军费拨款余波",
+	"requisition_supplies": "征用仓储余波",
 	"secret_diplomacy": "秘密外交余波",
 	"diplomatic_secret": "秘密外交余波",
 	"print_money": "印钞令余波"
