@@ -113,6 +113,17 @@ text = "Troops"
 layout_mode = 2
 text = "6,000"
 
+[node name="SupplyBlock" type="VBoxContainer" parent="RootLayout/TopBar/TopBarMargin/TopBarRow/ResourceBlock"]
+layout_mode = 2
+
+[node name="SupplyCaption" type="Label" parent="RootLayout/TopBar/TopBarMargin/TopBarRow/ResourceBlock/SupplyBlock"]
+layout_mode = 2
+text = "Supply"
+
+[node name="SupplyValue" type="Label" parent="RootLayout/TopBar/TopBarMargin/TopBarRow/ResourceBlock/SupplyBlock"]
+layout_mode = 2
+text = "60"
+
 [node name="MoraleBlock" type="VBoxContainer" parent="RootLayout/TopBar/TopBarMargin/TopBarRow/ResourceBlock"]
 layout_mode = 2
 

@@ -23,6 +23,7 @@ const MainMenuTrayControllerScript = preload("res://src/ui/main_menu/tray_contro
 @onready var _legitimacy_value: Label = $RootLayout/TopBar/TopBarMargin/TopBarRow/LegitimacyBlock/LegitimacyHeader/LegitimacyValue
 @onready var _legitimacy_bar: ProgressBar = $RootLayout/TopBar/TopBarMargin/TopBarRow/LegitimacyBlock/LegitimacyBar
 @onready var _troops_value: Label = $RootLayout/TopBar/TopBarMargin/TopBarRow/ResourceBlock/TroopsBlock/TroopsValue
+@onready var _supply_value: Label = $RootLayout/TopBar/TopBarMargin/TopBarRow/ResourceBlock/SupplyBlock/SupplyValue
 @onready var _morale_value: Label = $RootLayout/TopBar/TopBarMargin/TopBarRow/ResourceBlock/MoraleBlock/MoraleValue
 @onready var _fatigue_value: Label = $RootLayout/TopBar/TopBarMargin/TopBarRow/ResourceBlock/FatigueBlock/FatigueValue
 @onready var _main_area: HBoxContainer = $RootLayout/MainArea
@@ -66,6 +67,7 @@ var _awaiting_action: bool = false  # 是否处于等待玩家操作的 Action P
 var _prev_faction_support: Dictionary = {}
 var _prev_legitimacy: float = 50.0
 var _prev_troops: int = 0
+var _prev_supply: float = 60.0
 var _prev_morale: float = 70.0
 var _layout_controller = MainMenuLayoutControllerScript.new()
 var _map_controller = MainMenuMapControllerScript.new()
@@ -311,6 +313,7 @@ func _refresh_ui() -> void:
 	_legitimacy_value.text = "%.1f" % GameState.legitimacy
 	_legitimacy_bar.value = GameState.legitimacy
 	_troops_value.text = _format_number(GameState.total_troops)
+	_supply_value.text = "%.0f" % GameState.supply
 	_morale_value.text = "%.0f" % GameState.avg_morale
 	_fatigue_value.text = "%.0f" % GameState.avg_fatigue
 	_layout_controller.set_rn_value(GameState.rouge_noir_index)
@@ -324,6 +327,7 @@ func _refresh_ui() -> void:
 	# 数值变化闪烁动效（对比上回合快照）
 	_flash_value_change(_legitimacy_value, GameState.legitimacy, _prev_legitimacy)
 	_flash_value_change(_troops_value, float(GameState.total_troops), float(_prev_troops))
+	_flash_value_change(_supply_value, GameState.supply, _prev_supply)
 	_flash_value_change(_morale_value, GameState.avg_morale, _prev_morale)
 
 ## 数值变化时短暂闪烁颜色提示（增=绿 减=红），0.6秒后恢复原色
@@ -436,6 +440,7 @@ func _snapshot_prev_values() -> void:
 	_prev_faction_support = GameState.faction_support.duplicate()
 	_prev_legitimacy = GameState.legitimacy
 	_prev_troops = GameState.total_troops
+	_prev_supply = GameState.supply
 	_prev_morale = GameState.avg_morale
 
 func _begin_next_turn() -> void:

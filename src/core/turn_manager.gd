@@ -145,6 +145,7 @@ func _run_dusk_phase(action_type: String, params: Dictionary) -> void:
 ##   troops(int)      — 当前总兵力
 ##   morale(float)    — 平均士气 0-100
 ##   fatigue(float)   — 平均疲劳 0-100
+##   supply(float)    — 当前补给值 0-100（兼容读取，若 Rust 尚未暴露则使用上次缓存）
 ##   victories(int)   — 已赢得战役场次
 ##   napoleon_location(String) — 拿破仑当前所在地图节点
 ##   is_over(bool)    — 游戏是否结束
@@ -166,6 +167,7 @@ func _sync_state_from_engine() -> void:
 	GameState.total_troops     = int(state.get("troops",    0))
 	GameState.avg_morale       = float(state.get("morale",  70.0))
 	GameState.avg_fatigue      = float(state.get("fatigue", 20.0))
+	GameState.supply           = float(state.get("supply", GameState.supply))
 	GameState.victories        = int(state.get("victories", 0))
 	GameState.napoleon_location = String(state.get("napoleon_location", GameState.napoleon_location))
 	GameState.available_march_targets.clear()

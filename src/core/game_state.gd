@@ -33,6 +33,7 @@ var available_march_targets: Array[String] = []
 var total_troops: int   = 6000   # 当前总兵力
 var avg_morale:   float = 70.0   # 平均士气 0-100
 var avg_fatigue:  float = 20.0   # 平均疲劳 0-100
+var supply:       float = 60.0   # 当前补给值 0-100
 var victories:    int   = 0      # 已赢得的战役场次
 
 # ── 政治状态 ──────────────────────────────────────────
