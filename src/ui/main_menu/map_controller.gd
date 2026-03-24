@@ -52,6 +52,7 @@ var _map_adjacency_by_node: Dictionary = {}
 var _map_canvas: Control = null
 var _map_title: Label = null
 var _map_subtitle: Label = null
+var _context_subtitle: String = ""
 var _map_inspector_panel: PanelContainer = null
 var _map_inspector_title: Label = null
 var _map_inspector_meta: Label = null
@@ -255,7 +256,19 @@ func refresh_map_header(title_text: String = DEFAULT_MAP_TITLE, subtitle_text: S
 	if _map_title != null:
 		_map_title.text = title_text
 	if _map_subtitle != null:
-		_map_subtitle.text = subtitle_text if subtitle_text.strip_edges() != "" else _map_region
+		var resolved_subtitle := subtitle_text
+		if resolved_subtitle.strip_edges() == "":
+			resolved_subtitle = _context_subtitle
+		if resolved_subtitle.strip_edges() == "":
+			resolved_subtitle = _map_region
+		_map_subtitle.text = resolved_subtitle
+
+
+func set_context_subtitle(text: String) -> void:
+	if _context_subtitle == text:
+		return
+	_context_subtitle = text
+	refresh_map_header()
 
 
 func set_napoleon_location(node_id: String) -> void:

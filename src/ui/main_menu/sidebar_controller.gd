@@ -210,6 +210,11 @@ func refresh_situation(
 	phase_id: String,
 	napoleon_location_label: String,
 	legitimacy: float,
+	supply: float,
+	fatigue: float,
+	logistics_posture_label: String,
+	logistics_focus_title: String,
+	logistics_focus_detail: String,
 	faction_support: Dictionary,
 	prev_faction_support: Dictionary
 ) -> void:
@@ -228,10 +233,21 @@ func refresh_situation(
 			arrow
 		])
 
-	_situation_body.text = "%s\n%s · Legitimacy %.1f\n\n%s" % [
+	var logistics_lines: Array[String] = []
+	if logistics_posture_label.strip_edges() != "":
+		logistics_lines.append("后勤态势 · %s" % logistics_posture_label)
+	if logistics_focus_title.strip_edges() != "":
+		logistics_lines.append(logistics_focus_title)
+	if logistics_focus_detail.strip_edges() != "":
+		logistics_lines.append(logistics_focus_detail)
+
+	_situation_body.text = "%s\n%s · Legitimacy %.1f\n补给 %.0f · 疲劳 %.0f\n\n%s\n\n%s" % [
 		MainMenuFormattersLib.phase_display_name(phase_id),
 		napoleon_location_label,
 		legitimacy,
+		supply,
+		fatigue,
+		"\n".join(logistics_lines),
 		"\n".join(faction_lines)
 	]
 	_situation_body.add_theme_color_override("font_color", CentJoursTheme.COLOR["text_primary"])
@@ -289,13 +305,29 @@ func refresh_all(
 	phase_id: String,
 	napoleon_location_label: String,
 	legitimacy: float,
+	supply: float,
+	fatigue: float,
+	logistics_posture_label: String,
+	logistics_focus_title: String,
+	logistics_focus_detail: String,
 	faction_support: Dictionary,
 	prev_faction_support: Dictionary,
 	characters: Dictionary,
 	content_width: float = -1.0,
 	max_visible: int = -1
 ) -> void:
-	refresh_situation(phase_id, napoleon_location_label, legitimacy, faction_support, prev_faction_support)
+	refresh_situation(
+		phase_id,
+		napoleon_location_label,
+		legitimacy,
+		supply,
+		fatigue,
+		logistics_posture_label,
+		logistics_focus_title,
+		logistics_focus_detail,
+		faction_support,
+		prev_faction_support
+	)
 	refresh_loyalty(characters, content_width, max_visible)
 
 func _resolve_loyalty_row_width(content_width: float) -> float:

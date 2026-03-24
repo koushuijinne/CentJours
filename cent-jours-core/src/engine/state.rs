@@ -117,6 +117,15 @@ pub struct MarchPreview {
     pub supply_hub_distance: u32,
 }
 
+#[derive(Debug, Clone)]
+pub struct LogisticsBrief {
+    pub posture_id: String,
+    pub posture_label: String,
+    pub focus_title: String,
+    pub focus_detail: String,
+    pub focus_short: String,
+}
+
 // ── 全局游戏状态 ──────────────────────────────────────
 
 /// 拿破仑的军事力量摘要
@@ -448,6 +457,75 @@ impl GameEngine {
             self.forward_depot_capacity_bonus,
             self.forward_depot_days,
         ))
+    }
+
+    pub fn logistics_brief(&self) -> LogisticsBrief {
+        let location = self.napoleon_location.as_str();
+        let location_name = self.map_graph.node_name(location);
+        let supply = self.army.supply;
+        let fatigue = self.army.avg_fatigue;
+        let capacity_bonus = self.forward_depot_capacity_bonus_for(location);
+        let capacity = self.effective_supply_capacity_for(location);
+        let (hub_name, hub_distance) = self.nearest_supply_hub(location);
+        let role_label = self.map_graph.supply_role_label_of(location);
+        let (posture_id, posture_label) = self.logistics_posture_for(
+            location,
+            supply,
+            fatigue,
+            capacity,
+            capacity_bonus,
+            hub_distance,
+        );
+        let focus_title = self.campaign_focus_title().to_string();
+        let focus_detail = match posture_id {
+            "critical_recovery" => format!(
+                "{} 当前补给 {:.0}、疲劳 {:.0}。先休整或补给，把库存和体力拉回安全线，再谈推进。",
+                location_name, supply, fatigue
+            ),
+            "forward_staging" => format!(
+                "{} 已是前沿粮秣站跳板，当前有效容量 {}，剩余 {} 天。趁窗口恢复补给和疲劳，再决定是否继续前推。",
+                location_name, capacity, self.forward_depot_days
+            ),
+            "frontline_strain" => {
+                let hub_text = if hub_distance != u32::MAX {
+                    format!("距最近补给枢纽 {} 还有 {} 跳", hub_name, hub_distance)
+                } else {
+                    "附近没有稳定补给枢纽".to_string()
+                };
+                format!(
+                    "{} 属于{}，当前有效容量 {}，{}。这里适合短暂停留，不适合连续硬顶。",
+                    location_name, role_label, capacity, hub_text
+                )
+            }
+            "overextended_line" => format!(
+                "{} 是{}，离最近枢纽 {} 还有 {} 跳。若准备继续推进，先整顿运输线或在这里建立前沿粮秣站。",
+                location_name, role_label, hub_name, hub_distance
+            ),
+            "advance_ready" => format!(
+                "当前补给 {:.0}、疲劳 {:.0}，{} 的有效容量为 {}。眼下可以继续推进，但下一站若是低容量节点，仍要预留补给余量。",
+                supply, fatigue, location_name, capacity
+            ),
+            _ => format!(
+                "{} 当前有效容量 {}，补给 {:.0}、疲劳 {:.0}。这里适合先整补，再决定下一步。",
+                location_name, capacity, supply, fatigue
+            ),
+        };
+        let focus_short = match posture_id {
+            "critical_recovery" => "止血整补：先休整或补给，不要继续硬顶。".to_string(),
+            "forward_staging" => "前沿整补跳板：趁粮秣站窗口恢复后再推进。".to_string(),
+            "frontline_strain" => "前线消耗区：不要连续站在低容量节点。".to_string(),
+            "overextended_line" => "运输线拉长：先保线或铺站，再继续北上。".to_string(),
+            "advance_ready" => "推进窗口已开：可以前推，但别连续走进低容量节点。".to_string(),
+            _ => "整补筹备窗口：先把补给和疲劳拉回安全线。".to_string(),
+        };
+
+        LogisticsBrief {
+            posture_id: posture_id.to_string(),
+            posture_label: posture_label.to_string(),
+            focus_title,
+            focus_detail,
+            focus_short,
+        }
     }
 
     /// 当前可直接行军到的相邻节点列表。
@@ -1489,6 +1567,43 @@ impl GameEngine {
         "建议：当前补给还能维持，但应提前看下一站仓储，避免连续走进低容量节点。".to_string()
     }
 
+    fn logistics_posture_for(
+        &self,
+        location: &str,
+        supply: f64,
+        fatigue: f64,
+        capacity: u32,
+        capacity_bonus: u32,
+        hub_distance: u32,
+    ) -> (&'static str, &'static str) {
+        if supply < 42.0 || fatigue >= 72.0 {
+            return ("critical_recovery", "止血整补");
+        }
+        if capacity_bonus > 0 && capacity >= 6 {
+            return ("forward_staging", "前沿整补跳板");
+        }
+        if self.map_graph.supply_role_of(location) == "frontline_outpost" || capacity <= 2 {
+            return ("frontline_strain", "前线消耗区");
+        }
+        if hub_distance >= 3 && self.map_graph.supply_role_of(location) == "transit_stop" {
+            return ("overextended_line", "运输线拉长");
+        }
+        if supply >= 65.0 && fatigue <= 35.0 {
+            return ("advance_ready", "可继续推进");
+        }
+        ("staging_window", "整补筹备窗口")
+    }
+
+    fn campaign_focus_title(&self) -> &'static str {
+        match self.day {
+            0..=10 => "前10天目标：先建立北上跳板",
+            11..=20 => "巴黎阶段目标：让回补线跟得上位置",
+            21..=60 => "中盘目标：把推进放在可持续补给上",
+            61..=85 => "决战前目标：保留补给余量和整补节点",
+            _ => "终盘目标：只为决定性位置支付补给代价",
+        }
+    }
+
     /// 获取将领军事技能（单一来源：characters.json，通过 CharacterNetwork 加载）
     fn general_skill(&self, id: &str) -> f64 {
         self.characters.skill(id)
@@ -1857,6 +1972,55 @@ mod tests {
         engine.process_day(PlayerAction::Rest, &mut rng);
         assert_eq!(engine.forward_depot_days, 0, "粮秣站应按天数衰减归零");
         assert!(engine.forward_depot_location.is_empty());
+    }
+
+    #[test]
+    fn 低补给时后勤态势会转为止血整补() {
+        let mut engine = GameEngine::new();
+        engine.army.supply = 34.0;
+
+        let brief = engine.logistics_brief();
+
+        assert_eq!(brief.posture_id, "critical_recovery");
+        assert_eq!(brief.posture_label, "止血整补");
+        assert!(
+            brief.focus_detail.contains("先休整或补给"),
+            "低补给时应直接提示先止血整补"
+        );
+    }
+
+    #[test]
+    fn 前沿粮秣站激活时后勤态势会转为前沿整补跳板() {
+        let mut engine = GameEngine::new();
+        engine.napoleon_location = "grasse".to_string();
+        engine.forward_depot_location = "grasse".to_string();
+        engine.forward_depot_capacity_bonus = 4;
+        engine.forward_depot_days = 3;
+
+        let brief = engine.logistics_brief();
+
+        assert_eq!(brief.posture_id, "forward_staging");
+        assert_eq!(brief.posture_label, "前沿整补跳板");
+        assert!(
+            brief.focus_short.contains("粮秣站"),
+            "前沿粮秣站激活时应强调窗口期"
+        );
+    }
+
+    #[test]
+    fn 阶段目标会随日期切换() {
+        let mut engine = GameEngine::new();
+        engine.day = 8;
+        assert!(
+            engine.logistics_brief().focus_title.contains("前10天"),
+            "早期应给出前10天阶段目标"
+        );
+
+        engine.day = 92;
+        assert!(
+            engine.logistics_brief().focus_title.contains("终盘"),
+            "终盘应切换到决战目标"
+        );
     }
 
     // ── 忠诚度强化 ────────────────────────────────────

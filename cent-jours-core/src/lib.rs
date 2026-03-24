@@ -488,6 +488,12 @@ mod gdext_bindings {
                 let _ = d.insert("forward_depot_capacity_bonus", 0i64);
                 let _ = d.insert("forward_depot_days", 0i64);
             }
+            let logistics = e.logistics_brief();
+            let _ = d.insert("logistics_posture_id", logistics.posture_id.as_str());
+            let _ = d.insert("logistics_posture_label", logistics.posture_label.as_str());
+            let _ = d.insert("logistics_focus_title", logistics.focus_title.as_str());
+            let _ = d.insert("logistics_focus_detail", logistics.focus_detail.as_str());
+            let _ = d.insert("logistics_focus_short", logistics.focus_short.as_str());
 
             let mut factions = Dictionary::new();
             for (k, v) in &e.politics.faction_support {

@@ -195,6 +195,11 @@ func _run_dusk_phase(action_type: String, params: Dictionary) -> void:
 ##   supply(float)    — 当前补给值 0-100（兼容读取，若 Rust 尚未暴露则使用上次缓存）
 ##   victories(int)   — 已赢得战役场次
 ##   napoleon_location(String) — 拿破仑当前所在地图节点
+##   logistics_posture_id(String)
+##   logistics_posture_label(String)
+##   logistics_focus_title(String)
+##   logistics_focus_detail(String)
+##   logistics_focus_short(String)
 ##   is_over(bool)    — 游戏是否结束
 ##   outcome(String)  — 结局标识（游戏进行中为 "in_progress"）
 ##   factions(Dictionary) — { faction_id(String): support(float) }
@@ -220,6 +225,11 @@ func _sync_state_from_engine() -> void:
 	GameState.forward_depot_location = String(state.get("forward_depot_location", ""))
 	GameState.forward_depot_capacity_bonus = int(state.get("forward_depot_capacity_bonus", 0))
 	GameState.forward_depot_days = int(state.get("forward_depot_days", 0))
+	GameState.logistics_posture_id = String(state.get("logistics_posture_id", ""))
+	GameState.logistics_posture_label = String(state.get("logistics_posture_label", ""))
+	GameState.logistics_focus_title = String(state.get("logistics_focus_title", ""))
+	GameState.logistics_focus_detail = String(state.get("logistics_focus_detail", ""))
+	GameState.logistics_focus_short = String(state.get("logistics_focus_short", ""))
 	GameState.available_march_targets.clear()
 	for node_id in Array(engine.get_adjacent_nodes()):
 		GameState.available_march_targets.append(String(node_id))

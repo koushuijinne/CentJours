@@ -31,6 +31,11 @@ var available_march_targets: Array[String] = []
 var forward_depot_location: String = ""
 var forward_depot_capacity_bonus: int = 0
 var forward_depot_days: int = 0
+var logistics_posture_id: String = ""
+var logistics_posture_label: String = ""
+var logistics_focus_title: String = ""
+var logistics_focus_detail: String = ""
+var logistics_focus_short: String = ""
 
 # 军队摘要（从 CentJoursEngine.get_state() 同步，只读缓存）
 var total_troops: int   = 6000   # 当前总兵力

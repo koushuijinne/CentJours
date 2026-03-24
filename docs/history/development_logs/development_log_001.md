@@ -303,3 +303,22 @@
 - 本轮将与当前功能包代码一起提交并推送到 `auto/gameplay_update`。
 下一步:
 - 继续把补给系统从“看得见来源差异”推进到“有更强的阶段目标和长线运营感”，优先补状态面板、阶段目标和前线推进节奏。
+
+## 2026-03-24 第 19 轮
+分支: `auto/gameplay_update`
+范围: 把后勤态势和阶段目标做成引擎权威状态，并统一投到侧栏、决策区和地图副标题
+变更:
+- `engine/state.rs` 新增后勤态势与阶段目标推导，按补给、疲劳、驻地容量、补给枢纽距离和前沿粮秣站状态，区分止血整补、前沿整补跳板、前线消耗区、运输线拉长和可继续推进等姿态。
+- `lib.rs`、`turn_manager.gd` 和 `game_state.gd` 现在会同步 `logistics_posture_*` 与 `logistics_focus_*` 字段，GDScript 不再自己猜当前后勤目标。
+- 侧栏态势区现在会直接显示后勤态势、阶段目标、补给与疲劳；决策区提示和地图副标题也会复用同一条简要建议。
+- 自动工作流文档补入了 4 条子 agent 硬约束：触发阈值、回传格式、失败回收和无稳定原语时的降级策略。
+验证:
+- `cargo fmt --manifest-path cent-jours-core/Cargo.toml` 已通过。
+- Windows `cargo test` 已通过，基线提升到 `185/185`。
+- Windows `cargo build --features godot-extension` 已通过。
+- Windows Godot 无头主项目和 smoke scene 已通过。
+- 本轮未运行 Linux / WSL 侧测试。
+提交/推送:
+- 本轮将与功能代码、规则文档和交接文档一起提交并推送到 `auto/gameplay_update`。
+下一步:
+- 继续把补给系统从“知道当下该做什么”推进到“能看见几回合后的代价与窗口”，优先补前线推进节奏和更明确的阶段目标反馈。
