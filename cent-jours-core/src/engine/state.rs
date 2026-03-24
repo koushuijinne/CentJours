@@ -1204,6 +1204,7 @@ impl GameEngine {
     }
 
     fn refresh_supply_after_action(&mut self, action_type: &'static str) -> DayEvent {
+        let location_id = self.napoleon_location.clone();
         let supply_result = update_supply(
             &self.current_march_army_state(),
             self.supply_line_efficiency(),
@@ -1211,7 +1212,8 @@ impl GameEngine {
         );
         self.army.supply = supply_result.new_supply;
 
-        let location_name = self.map_graph.node_name(&self.napoleon_location);
+        let location_name = self.map_graph.node_name(&location_id);
+        let capacity = self.map_graph.supply_capacity_of(&location_id);
         let description = if supply_result.supply_delta <= -8.0 {
             format!("{} 的补给线明显吃紧。", location_name)
         } else if supply_result.supply_delta < -1.0 {
@@ -1238,6 +1240,16 @@ impl GameEngine {
             "需求 {:.1} / 可得 {:.1}",
             supply_result.demand, supply_result.available
         ));
+        effects.push(format!("节点容量 {}", capacity));
+        effects.push(Self::supply_guidance(
+            action_type,
+            capacity,
+            supply_result.line_efficiency,
+            supply_result.demand,
+            supply_result.available,
+            supply_result.supply_delta,
+            supply_result.supply_ok,
+        ));
         if !supply_result.supply_ok {
             effects.push("补给告急：战斗将承受惩罚".to_string());
         }
@@ -1251,6 +1263,40 @@ impl GameEngine {
             description,
             effects,
         }
+    }
+
+    fn supply_guidance(
+        action_type: &'static str,
+        capacity: u32,
+        line_efficiency: f64,
+        demand: f64,
+        available: f64,
+        supply_delta: f64,
+        supply_ok: bool,
+    ) -> String {
+        if !supply_ok {
+            if capacity <= 2 || line_efficiency < 0.55 {
+                return "建议：这里更适合作为短暂停留点而非持续前推；优先回高容量节点整补，或立刻用补给政策止血。"
+                    .to_string();
+            }
+            return "建议：当前补给已经跌到战斗惩罚区，下一回合优先休整或补给，不要继续硬顶。"
+                .to_string();
+        }
+
+        if available + 0.5 < demand {
+            return "建议：当前可得量低于部队需求，继续推进会越走越亏，先补再打。".to_string();
+        }
+
+        if action_type == "march" && supply_delta < 0.0 {
+            return "建议：这一步主要是在用位置换补给，若没有决定性战机，下一回合先整补。"
+                .to_string();
+        }
+
+        if supply_delta >= 4.0 && capacity >= 8 {
+            return "建议：这里适合作为整补落点，可以先恢复补给和疲劳，再继续推进。".to_string();
+        }
+
+        "建议：当前补给还能维持，但应提前看下一站仓储，避免连续走进低容量节点。".to_string()
     }
 
     /// 获取将领军事技能（单一来源：characters.json，通过 CharacterNetwork 加载）
@@ -1689,6 +1735,36 @@ mod tests {
         assert!(preview.supply_demand > 0.0);
         assert!(preview.supply_available > 0.0);
         assert!(preview.line_efficiency > 0.0);
+    }
+
+    #[test]
+    fn 补给结算会给出风险归因和建议() {
+        let mut engine = GameEngine::new();
+        engine.napoleon_location = "waterloo".to_string();
+        engine.army.supply = 32.0;
+        let mut rng = seeded_rng();
+
+        engine.process_day(PlayerAction::Rest, &mut rng);
+
+        let supply_event = engine
+            .last_action_events()
+            .iter()
+            .find(|event| event.event_type == "supply")
+            .expect("应包含补给结算");
+        assert!(
+            supply_event
+                .effects
+                .iter()
+                .any(|effect| effect.contains("节点容量")),
+            "补给结算应显式展示节点容量"
+        );
+        assert!(
+            supply_event
+                .effects
+                .iter()
+                .any(|effect| effect.contains("建议：")),
+            "补给结算应显式展示下一步建议"
+        );
     }
 
     #[test]

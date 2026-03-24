@@ -25,6 +25,7 @@ const ACTION_EVENT_LABELS := {
 	"battle": "战役结算",
 	"march": "行军结算",
 	"march_failed": "行军受阻",
+	"supply": "补给结算",
 	"boost_loyalty": "将领关系",
 	"boost_failed": "关系经营受阻",
 	"rest": "休整结算"
