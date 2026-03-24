@@ -9,7 +9,7 @@ const DEFAULT_NARRATIVE_TEXT := "Day 1 - Elba departure\n\nChoose an action; his
 const POLICY_PREVIEW_COLOR := CentJoursTheme.COLOR["text_secondary"]
 const SPECIAL_POLICY_PREVIEW_TEXTS := {
 	"rest": "休整 · 养精蓄锐\n\n让军队获得喘息之机，为下一步行动积蓄力量。",
-	"march": "行军部署\n\n选择一个与当前位置相邻的节点，确认后推进一天并同步拿破仑位置。",
+	"march": "行军部署\n\n选择一个与当前位置相邻的节点，确认后推进一天并同步拿破仑位置。前线低容量节点会明显拉高补给压力。",
 	"battle": "发动战役\n\n选择将领和兵力，与反法联军决战。点击确认后选择参数。",
 	"boost_loyalty": "亲自接见将领\n\n消耗 5 合法性，目标将领忠诚度 +8。需合法性 >= 10。"
 }

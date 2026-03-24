@@ -11,6 +11,7 @@ const DEFAULT_MAP_NODES_PATH := "res://src/data/map_nodes.json"
 const DEFAULT_MAP_TITLE := "THEATRE OF OPERATIONS"
 const DEFAULT_INSPECTOR_TITLE := "Map Inspector"
 const DEFAULT_INSPECTOR_HINT := "悬停查看节点，点击后锁定详情。"
+const SUPPLY_WARNING_THRESHOLD := 45.0
 
 signal map_data_loaded(success: bool)
 signal map_rebuilt
@@ -649,10 +650,50 @@ func _update_march_target(node_id: String) -> void:
 	var location_label := MainMenuFormattersLib.napoleon_location_label(
 		_map_nodes, GameState.napoleon_location
 	)
+	var supply_preview := _build_march_supply_preview(target_info)
+	var feedback_color := CentJoursTheme.COLOR["warning"] if supply_preview["is_warning"] else CentJoursTheme.COLOR["text_secondary"]
 	march_feedback.emit(
-		"行军部署\n\n从 %s 行军至 %s。\n确认后将推进一天，并同步疲劳与士气。" % [
+		"行军部署\n\n从 %s 行军至 %s。\n确认后将推进一天，并同步疲劳与士气。\n%s" % [
 			location_label,
-			String(target_info.get("name_fr", node_id))
+			String(target_info.get("name_fr", node_id)),
+			String(supply_preview["text"])
 		],
-		CentJoursTheme.COLOR["text_secondary"]
+		feedback_color
 	)
+
+
+func _build_march_supply_preview(target_info: Dictionary) -> Dictionary:
+	var supply_capacity := int(target_info.get("supply_capacity", 0))
+	var current_supply := GameState.supply
+	var pressure_label := "补给大致可维持"
+	var risk_hint := "沿线仓储足够支撑短程推进。"
+	var is_warning := false
+
+	if supply_capacity <= 2:
+		pressure_label = "补给压力很高"
+		risk_hint = "这是低容量前线节点，推进后很容易继续掉补给。"
+		is_warning = true
+	elif supply_capacity <= 5:
+		pressure_label = "补给压力偏高"
+		risk_hint = "仓储容量有限，连续推进会明显拉长补给线。"
+		is_warning = true
+	elif supply_capacity >= 9:
+		pressure_label = "补给有望回升"
+		risk_hint = "这是高容量节点，适合作为下一段推进前的整补落点。"
+
+	var stock_hint := "当前库存尚可。"
+	if current_supply < SUPPLY_WARNING_THRESHOLD:
+		stock_hint = "当前库存已经偏低，不宜连续赌前线节点。"
+		is_warning = true
+	elif current_supply >= 75.0 and supply_capacity >= 6:
+		stock_hint = "当前库存较充足，可以承担一次正常推进。"
+
+	return {
+		"text": "预计补给：%s（容量 %d）\n%s\n%s" % [
+			pressure_label,
+			supply_capacity,
+			risk_hint,
+			stock_hint
+		],
+		"is_warning": is_warning
+	}
