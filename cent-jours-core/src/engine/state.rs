@@ -116,6 +116,14 @@ pub struct MarchPreview {
     pub supply_hub_name: String,
     pub supply_hub_distance: u32,
     pub supply_runway_days: i32,
+    pub follow_up_total_options: u32,
+    pub follow_up_safe_options: u32,
+    pub follow_up_risky_options: u32,
+    pub follow_up_status_id: String,
+    pub follow_up_status_label: String,
+    pub follow_up_best_target: String,
+    pub follow_up_best_target_label: String,
+    pub follow_up_best_runway_days: i32,
 }
 
 #[derive(Debug, Clone)]
@@ -125,6 +133,41 @@ pub struct LogisticsBrief {
     pub focus_title: String,
     pub focus_detail: String,
     pub focus_short: String,
+}
+
+#[derive(Debug, Clone)]
+struct MarchStepProjection {
+    target_node: String,
+    fatigue_delta: f64,
+    morale_delta: f64,
+    supply_delta: f64,
+    projected_fatigue: f64,
+    projected_morale: f64,
+    projected_supply: f64,
+    supply_capacity: u32,
+    base_supply_capacity: u32,
+    temporary_capacity_bonus: u32,
+    supply_demand: f64,
+    supply_available: f64,
+    line_efficiency: f64,
+    supply_role: String,
+    supply_role_label: String,
+    supply_hub_name: String,
+    supply_hub_distance: u32,
+    supply_runway_days: i32,
+    settled_army: MarchArmyState,
+}
+
+#[derive(Debug, Clone)]
+struct FollowUpAssessment {
+    total_options: u32,
+    safe_options: u32,
+    risky_options: u32,
+    status_id: String,
+    status_label: String,
+    best_target: String,
+    best_target_label: String,
+    best_runway_days: i32,
 }
 
 // ── 全局游戏状态 ──────────────────────────────────────
@@ -545,8 +588,8 @@ impl GameEngine {
     /// 预览一次普通行军的预计变化，不修改真实状态。
     pub fn preview_march(&self, target_node: &str) -> MarchPreview {
         let current = self.current_march_army_state();
-        let move_result = move_army(&current, target_node, false, &self.map_graph);
-        if !move_result.success {
+        let Some(step) = self.project_march_step(&current, target_node) else {
+            let move_result = move_army(&current, target_node, false, &self.map_graph);
             return MarchPreview {
                 valid: false,
                 reason: move_result.reason,
@@ -568,7 +611,58 @@ impl GameEngine {
                 supply_hub_name: String::new(),
                 supply_hub_distance: 0,
                 supply_runway_days: -1,
+                follow_up_total_options: 0,
+                follow_up_safe_options: 0,
+                follow_up_risky_options: 0,
+                follow_up_status_id: String::new(),
+                follow_up_status_label: String::new(),
+                follow_up_best_target: String::new(),
+                follow_up_best_target_label: String::new(),
+                follow_up_best_runway_days: -1,
             };
+        };
+        let follow_up = self.follow_up_assessment(&step.settled_army, &current.location);
+
+        MarchPreview {
+            valid: true,
+            reason: None,
+            target_node: step.target_node,
+            fatigue_delta: step.fatigue_delta,
+            morale_delta: step.morale_delta,
+            supply_delta: step.supply_delta,
+            projected_fatigue: step.projected_fatigue,
+            projected_morale: step.projected_morale,
+            projected_supply: step.projected_supply,
+            supply_capacity: step.supply_capacity,
+            base_supply_capacity: step.base_supply_capacity,
+            temporary_capacity_bonus: step.temporary_capacity_bonus,
+            supply_demand: step.supply_demand,
+            supply_available: step.supply_available,
+            line_efficiency: step.line_efficiency,
+            supply_role: step.supply_role,
+            supply_role_label: step.supply_role_label,
+            supply_hub_name: step.supply_hub_name,
+            supply_hub_distance: step.supply_hub_distance,
+            supply_runway_days: step.supply_runway_days,
+            follow_up_total_options: follow_up.total_options,
+            follow_up_safe_options: follow_up.safe_options,
+            follow_up_risky_options: follow_up.risky_options,
+            follow_up_status_id: follow_up.status_id,
+            follow_up_status_label: follow_up.status_label,
+            follow_up_best_target: follow_up.best_target,
+            follow_up_best_target_label: follow_up.best_target_label,
+            follow_up_best_runway_days: follow_up.best_runway_days,
+        }
+    }
+
+    fn project_march_step(
+        &self,
+        current: &MarchArmyState,
+        target_node: &str,
+    ) -> Option<MarchStepProjection> {
+        let move_result = move_army(current, target_node, false, &self.map_graph);
+        if !move_result.success {
+            return None;
         }
 
         let line_efficiency = self.supply_line_efficiency_for(&move_result.new_location);
@@ -577,12 +671,12 @@ impl GameEngine {
             self.forward_depot_capacity_bonus_for(&move_result.new_location);
         let effective_capacity = base_capacity + temporary_capacity_bonus;
         let projected_army = MarchArmyState {
-            id: current.id,
+            id: current.id.clone(),
             location: move_result.new_location.clone(),
             troops: self.army.total_troops,
             morale: move_result.new_morale,
             fatigue: move_result.new_fatigue,
-            supply: self.army.supply,
+            supply: current.supply,
         };
         let supply_result =
             update_supply_with_capacity(&projected_army, line_efficiency, effective_capacity);
@@ -591,10 +685,12 @@ impl GameEngine {
             .supply_runway_days_for(&projected_army.location, supply_result.new_supply)
             .map(|days| days as i32)
             .unwrap_or(-1);
+        let settled_army = MarchArmyState {
+            supply: supply_result.new_supply,
+            ..projected_army
+        };
 
-        MarchPreview {
-            valid: true,
-            reason: None,
+        Some(MarchStepProjection {
             target_node: move_result.new_location,
             fatigue_delta: move_result.fatigue_delta,
             morale_delta: move_result.morale_delta,
@@ -610,15 +706,105 @@ impl GameEngine {
             line_efficiency: supply_result.line_efficiency,
             supply_role: self
                 .map_graph
-                .supply_role_of(&projected_army.location)
+                .supply_role_of(&settled_army.location)
                 .to_string(),
             supply_role_label: self
                 .map_graph
-                .supply_role_label_of(&projected_army.location)
+                .supply_role_label_of(&settled_army.location)
                 .to_string(),
             supply_hub_name: hub_name,
             supply_hub_distance: hub_distance,
             supply_runway_days,
+            settled_army,
+        })
+    }
+
+    fn follow_up_assessment(
+        &self,
+        projected_army: &MarchArmyState,
+        previous_location: &str,
+    ) -> FollowUpAssessment {
+        let mut total_options = 0;
+        let mut safe_options = 0;
+        let mut risky_options = 0;
+        let mut best_target = String::new();
+        let mut best_target_label = String::new();
+        let mut best_runway_days = -1;
+        let mut best_runway_score = -1;
+        let mut best_projected_supply = -1.0;
+
+        for neighbor in self.map_graph.neighbors_of(&projected_army.location) {
+            if neighbor == previous_location {
+                continue;
+            }
+            total_options += 1;
+            let Some(step) = self.project_march_step(projected_army, &neighbor) else {
+                continue;
+            };
+            let runway_score = Self::runway_score(step.supply_runway_days);
+            let is_safe = Self::is_safe_follow_up(&step);
+            if is_safe {
+                safe_options += 1;
+            } else {
+                risky_options += 1;
+            }
+            if runway_score > best_runway_score
+                || (runway_score == best_runway_score
+                    && step.projected_supply > best_projected_supply)
+            {
+                best_runway_score = runway_score;
+                best_projected_supply = step.projected_supply;
+                best_target = step.target_node.clone();
+                best_target_label = self.map_graph.node_name(&step.target_node);
+                best_runway_days = step.supply_runway_days;
+            }
+        }
+
+        let (status_id, status_label) = if total_options == 0 {
+            (
+                "dead_end",
+                "第二跳：这里之后没有继续前推空间，只能原地整补或回撤。",
+            )
+        } else if safe_options == 0 {
+            (
+                "frontline_trap",
+                "第二跳：落点后的继续前推都贴着补给惩罚区，属于高风险压线推进。",
+            )
+        } else if safe_options == 1 {
+            (
+                "single_lane_push",
+                "第二跳：只剩 1 条相对稳妥的继续推进路线，机动余地很窄。",
+            )
+        } else {
+            (
+                "flexible_push",
+                "第二跳：落点后仍保留多条相对稳妥的推进路线。",
+            )
+        };
+
+        FollowUpAssessment {
+            total_options,
+            safe_options,
+            risky_options,
+            status_id: status_id.to_string(),
+            status_label: status_label.to_string(),
+            best_target,
+            best_target_label,
+            best_runway_days,
+        }
+    }
+
+    fn is_safe_follow_up(step: &MarchStepProjection) -> bool {
+        step.projected_supply >= SUPPLY_OK_THRESHOLD
+            && step.supply_delta > -8.0
+            && (step.supply_runway_days < 0 || step.supply_runway_days >= 2)
+    }
+
+    fn runway_score(days: i32) -> i32 {
+        if days < 0 {
+            99
+        } else {
+            days
         }
     }
 
@@ -2108,6 +2294,39 @@ mod tests {
             preview.supply_runway_days >= 0,
             "低容量落点应给出明确补给窗口"
         );
+        assert!(
+            preview.follow_up_total_options >= preview.follow_up_safe_options,
+            "第二跳总数应覆盖稳妥路线数量"
+        );
+    }
+
+    #[test]
+    fn 高容量落点会保留第二跳机动余地() {
+        let mut engine = GameEngine::new();
+        engine.napoleon_location = "grenoble".to_string();
+        engine.army.supply = 78.0;
+
+        let preview = engine.preview_march("lyon");
+
+        assert!(preview.valid);
+        assert!(preview.follow_up_total_options >= 2);
+        assert_ne!(preview.follow_up_status_id, "dead_end");
+        assert!(
+            !preview.follow_up_best_target_label.is_empty(),
+            "应给出最稳后续节点"
+        );
+    }
+
+    #[test]
+    fn 低容量前线落点会暴露第二跳陷阱() {
+        let mut engine = GameEngine::new();
+        engine.army.supply = 52.0;
+
+        let preview = engine.preview_march("grasse");
+
+        assert!(preview.valid);
+        assert_eq!(preview.follow_up_status_id, "frontline_trap");
+        assert_eq!(preview.follow_up_safe_options, 0);
     }
 
     // ── 忠诚度强化 ────────────────────────────────────

@@ -452,6 +452,35 @@ mod gdext_bindings {
             let _ = d.insert("supply_hub_name", preview.supply_hub_name.as_str());
             let _ = d.insert("supply_hub_distance", preview.supply_hub_distance as i64);
             let _ = d.insert("supply_runway_days", preview.supply_runway_days);
+            let _ = d.insert(
+                "follow_up_total_options",
+                preview.follow_up_total_options as i64,
+            );
+            let _ = d.insert(
+                "follow_up_safe_options",
+                preview.follow_up_safe_options as i64,
+            );
+            let _ = d.insert(
+                "follow_up_risky_options",
+                preview.follow_up_risky_options as i64,
+            );
+            let _ = d.insert("follow_up_status_id", preview.follow_up_status_id.as_str());
+            let _ = d.insert(
+                "follow_up_status_label",
+                preview.follow_up_status_label.as_str(),
+            );
+            let _ = d.insert(
+                "follow_up_best_target",
+                preview.follow_up_best_target.as_str(),
+            );
+            let _ = d.insert(
+                "follow_up_best_target_label",
+                preview.follow_up_best_target_label.as_str(),
+            );
+            let _ = d.insert(
+                "follow_up_best_runway_days",
+                preview.follow_up_best_runway_days,
+            );
             d
         }
 

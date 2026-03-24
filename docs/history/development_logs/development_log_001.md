@@ -341,3 +341,23 @@
 - 本轮将与功能代码和文档同步一起提交并推送到 `auto/gameplay_update`。
 下一步:
 - 继续把补给系统从“能看见几天后会出事”推进到“会提前提醒哪几步组合最危险”，优先补多回合推进成本和失败归因串联。
+
+## 2026-03-24 第 21 轮
+分支: `auto/gameplay_update`
+范围: 把第二跳推进风险做成引擎权威预判，并收紧自动工作流收尾约束
+变更:
+- `engine/state.rs` 新增“单步投影 + 第二跳评估”模型；行军预判现在会直接算出落点后的可继续推进路线总数、其中相对稳妥的路线数、最稳后续节点，以及是否已经走进前线补给陷阱。
+- `lib.rs`、`turn_manager.gd` 和 `map_controller.gd` 已接通新字段；地图行军提示不再只显示落点补给窗口，而会直接解释“这一步之后还有没有稳妥第二跳”。
+- 新增两条 Rust 回归，分别钉住“高容量落点仍保留第二跳机动余地”和“低容量前线落点会暴露第二跳陷阱”。
+- `agent_autonomous_workflow.md` 已精简最高优先级规则，只保留死循环推进和单轮工作范围约束；同时补上“每轮结束前回看 `agent_session_rules.md`”和“压缩摘要必须覆盖整个上下文窗口”。
+- `agent_session_rules.md` 也已补上硬要求：每轮结束前必须把整个上下文窗口的压缩摘要输出到对话里，防止后续压缩卡住。
+验证:
+- `cargo fmt --manifest-path cent-jours-core/Cargo.toml` 已通过。
+- Windows `cargo test` 已通过，基线提升到 `189/189`。
+- Windows `cargo build --features godot-extension` 已通过。
+- Windows Godot 无头主项目和 Windows Godot smoke scene 已通过。
+- 本轮未运行 Linux / WSL 侧测试。
+提交/推送:
+- 本轮将与功能代码、规则文档和当前态文档一起提交并推送到 `auto/gameplay_update`。
+下一步:
+- 继续把补给系统从“知道第二跳危险不危险”推进到“主动给出区域整补目标和前线推进节奏”，优先补区域运营目标、前 10 天教程串联和更强的失败归因。

@@ -705,9 +705,15 @@ func _update_march_target(node_id: String) -> void:
 		var hub_name := String(march_preview.get("supply_hub_name", "未知补给点"))
 		var hub_distance := int(march_preview.get("supply_hub_distance", -1))
 		var supply_runway_days := int(march_preview.get("supply_runway_days", -1))
+		var follow_up_total_options := int(march_preview.get("follow_up_total_options", 0))
+		var follow_up_safe_options := int(march_preview.get("follow_up_safe_options", 0))
+		var follow_up_risky_options := int(march_preview.get("follow_up_risky_options", 0))
+		var follow_up_status_label := String(march_preview.get("follow_up_status_label", ""))
+		var follow_up_best_target_label := String(march_preview.get("follow_up_best_target_label", ""))
+		var follow_up_best_runway_days := int(march_preview.get("follow_up_best_runway_days", -1))
 		var runway_label := _supply_runway_label(supply_runway_days)
 		var pressure_label := _march_pressure_label(projected_supply, supply_capacity)
-		preview_text = "预计补给：%s（%.0f，%+.1f）\n预计疲劳：%.0f（%+.1f）\n预计士气：%.0f（%+.1f）\n%s\n节点角色：%s\n原因：%s\n建议：%s" % [
+		preview_text = "预计补给：%s（%.0f，%+.1f）\n预计疲劳：%.0f（%+.1f）\n预计士气：%.0f（%+.1f）\n%s\n%s\n节点角色：%s\n原因：%s\n建议：%s" % [
 			pressure_label,
 			projected_supply,
 			supply_delta,
@@ -716,6 +722,14 @@ func _update_march_target(node_id: String) -> void:
 			float(march_preview.get("projected_morale", GameState.avg_morale)),
 			morale_delta,
 			runway_label,
+			_build_follow_up_text(
+				follow_up_status_label,
+				follow_up_safe_options,
+				follow_up_risky_options,
+				follow_up_total_options,
+				follow_up_best_target_label,
+				follow_up_best_runway_days
+			),
 			supply_role_label,
 			_build_supply_reason_text(
 				base_supply_capacity,
@@ -736,10 +750,14 @@ func _update_march_target(node_id: String) -> void:
 				hub_distance,
 				line_efficiency,
 				supply_available,
-				supply_demand
+				supply_demand,
+				follow_up_safe_options,
+				follow_up_total_options,
+				follow_up_best_target_label,
+				follow_up_best_runway_days
 			)
 		]
-		if projected_supply < SUPPLY_WARNING_THRESHOLD or supply_delta < -4.0:
+		if projected_supply < SUPPLY_WARNING_THRESHOLD or supply_delta < -4.0 or (follow_up_total_options > 0 and follow_up_safe_options == 0):
 			feedback_color = CentJoursTheme.COLOR["warning"]
 	else:
 		var supply_preview := _build_march_supply_preview(target_info)
@@ -843,8 +861,18 @@ func _build_supply_recommendation(
 	hub_distance: int,
 	line_efficiency: float,
 	supply_available: float,
-	supply_demand: float
+	supply_demand: float,
+	follow_up_safe_options: int,
+	follow_up_total_options: int,
+	follow_up_best_target_label: String,
+	follow_up_best_runway_days: int
 ) -> String:
+	if follow_up_total_options > 0 and follow_up_safe_options == 0:
+		return "这一步落地后没有稳妥的第二跳推进路线。若不是必须抢位置，先在更高容量节点整补，再考虑前推。"
+	if follow_up_total_options > 1 and follow_up_safe_options == 1:
+		return "这一步之后只剩 1 条相对稳妥的继续推进路线。若要继续前推，最好按 %s 这条线走，并预留整补日。" % [
+			follow_up_best_target_label if follow_up_best_target_label.strip_edges() != "" else "最佳后续节点"
+		]
 	if projected_supply < SUPPLY_WARNING_THRESHOLD or supply_delta <= -6.0:
 		if supply_capacity <= 2 or line_efficiency < 0.55:
 			return "这是低容量前线节点。更稳的是先停在高容量节点整补；若必须前推，下一回合优先征用沿线仓储。"
@@ -855,9 +883,42 @@ func _build_supply_recommendation(
 		return "这里已有前沿粮秣站，适合当两到三天的临时整补跳板。趁窗口还在，先把补给和疲劳拉回安全区。"
 	if projected_supply >= 75.0 and supply_capacity >= 8:
 		return "这里适合作为短暂整补落点，可以在下一步推进前先把疲劳和补给拉回安全区间。"
+	if follow_up_safe_options >= 2 and follow_up_best_target_label.strip_edges() != "":
+		return "这一步后仍保留多条可推进路线。更稳的延伸方向是 %s，落地后的补给窗口%s。" % [
+			follow_up_best_target_label,
+			_follow_up_runway_hint(follow_up_best_runway_days)
+		]
 	if hub_distance >= 3 and supply_role_label == "沿线转运点":
 		return "这里离后方枢纽已经不近。若还要连续前推，先建立前沿粮秣站会比硬顶更稳。"
 	return "当前推进还能维持，但不适合连续硬顶前线；继续东进前先确认下一站也有足够仓储。"
+
+
+func _build_follow_up_text(
+	status_label: String,
+	safe_options: int,
+	risky_options: int,
+	total_options: int,
+	best_target_label: String,
+	best_runway_days: int
+) -> String:
+	if total_options <= 0:
+		return status_label if status_label.strip_edges() != "" else "第二跳：这里之后没有继续前推空间。"
+	var summary := status_label
+	if summary.strip_edges() == "":
+		summary = "第二跳：落点后可继续观察后续推进。"
+	var best_line := ""
+	if best_target_label.strip_edges() != "":
+		best_line = " 最稳后续：%s（%s）。" % [
+			best_target_label,
+			_follow_up_runway_hint(best_runway_days)
+		]
+	return "%s 稳妥路线 %d / 总计 %d，剩余 %d 条属于压线推进。%s" % [
+		summary,
+		safe_options,
+		total_options,
+		risky_options,
+		best_line
+	]
 
 
 func _forward_depot_bonus_for_node(node_id: String) -> int:
@@ -884,6 +945,16 @@ func _supply_runway_label(days: int) -> String:
 	if days == 1:
 		return "补给窗口：约再停 1 天会跌进战斗惩罚区"
 	return "补给窗口：约还能维持 %d 天" % days
+
+
+func _follow_up_runway_hint(days: int) -> String:
+	if days < 0:
+		return "可持续维持"
+	if days == 0:
+		return "落地即在战斗惩罚区"
+	if days == 1:
+		return "约 1 天后跌进战斗惩罚区"
+	return "约还能维持 %d 天" % days
 
 
 func _nearest_supply_hub(node_id: String) -> Dictionary:

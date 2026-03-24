@@ -85,6 +85,14 @@ func submit_action(action_type: String, params: Dictionary = {}) -> void:
 ##   supply_hub_name(String)
 ##   supply_hub_distance(int)
 ##   supply_runway_days(int)
+##   follow_up_total_options(int)
+##   follow_up_safe_options(int)
+##   follow_up_risky_options(int)
+##   follow_up_status_id(String)
+##   follow_up_status_label(String)
+##   follow_up_best_target(String)
+##   follow_up_best_target_label(String)
+##   follow_up_best_runway_days(int)
 func get_march_preview(target_node: String) -> Dictionary:
 	_ensure_engine()
 	if target_node.strip_edges() == "":
@@ -108,7 +116,15 @@ func get_march_preview(target_node: String) -> Dictionary:
 			"supply_role_label": "",
 			"supply_hub_name": "",
 			"supply_hub_distance": 0,
-			"supply_runway_days": -1
+			"supply_runway_days": -1,
+			"follow_up_total_options": 0,
+			"follow_up_safe_options": 0,
+			"follow_up_risky_options": 0,
+			"follow_up_status_id": "",
+			"follow_up_status_label": "",
+			"follow_up_best_target": "",
+			"follow_up_best_target_label": "",
+			"follow_up_best_runway_days": -1
 		}
 	return Dictionary(engine.preview_march(target_node))
 
