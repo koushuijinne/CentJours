@@ -90,6 +90,8 @@ func build_policy_preview_text(policy_id: String, policy_meta: Dictionary = {}) 
 		return _build_requisition_preview_text(policy_meta)
 	if normalized_policy_id == "stabilize_supply_lines":
 		return _build_supply_line_preview_text(policy_meta)
+	if normalized_policy_id == "establish_forward_depot":
+		return _build_forward_depot_preview_text(policy_meta)
 
 	var policy_name := String(policy_meta.get("name", normalized_policy_id))
 	var policy_summary := String(policy_meta.get("summary", "等待结算…"))
@@ -135,6 +137,24 @@ func _build_supply_line_preview_text(policy_meta: Dictionary) -> String:
 		guidance = "适用：前 10 天连续北上前先把运输线整顿好。它更像是为了连续两三天推进提前铺路。"
 	else:
 		guidance = "适用：你准备连续推进、又不想每次都靠征用仓储硬撑时。它解决的是补给线效率，不是一次性大回补。"
+	return "▷ %s\n\n%s\n\n当前补给 %.0f。\n%s" % [
+		policy_name,
+		summary,
+		GameState.supply,
+		guidance
+	]
+
+
+func _build_forward_depot_preview_text(policy_meta: Dictionary) -> String:
+	var policy_name := String(policy_meta.get("name", "建立前沿粮秣站"))
+	var summary := String(policy_meta.get("summary", "在当前驻地建立临时粮秣站，立刻小幅回补补给，并在接下来数日提高该节点的本地仓储容量"))
+	var guidance := "适用：准备把当前节点当作两到三天的前线跳板时。它补的是本地仓储，不是整条补给线。"
+	if GameState.forward_depot_days > 0 and GameState.forward_depot_location == GameState.napoleon_location:
+		guidance = "当前驻地已经有前沿粮秣站，剩余 %d 天。更好的选择通常是利用这几天的窗口把补给和疲劳拉回来，而不是重复铺站。" % GameState.forward_depot_days
+	elif GameState.supply < 45.0:
+		guidance = "当前补给已进危险区。若马上就要断供，通常先用征用仓储止血；粮秣站更适合在还能站稳时提前铺设。"
+	elif GameState.current_day <= 10:
+		guidance = "前 10 天若准备连续北上，这张牌适合放在中等容量节点，把它变成临时整补跳板。"
 	return "▷ %s\n\n%s\n\n当前补给 %.0f。\n%s" % [
 		policy_name,
 		summary,

@@ -8,6 +8,7 @@ const PRIORITY_POLICY_IDS := [
 	"increase_military_budget",
 	"requisition_supplies",
 	"stabilize_supply_lines",
+	"establish_forward_depot",
 	"grant_titles",
 	"reduce_taxes",
 	"secret_diplomacy",
@@ -21,6 +22,7 @@ const POLICY_EMOJIS := {
 	"increase_military_budget": "💰",
 	"requisition_supplies": "🚚",
 	"stabilize_supply_lines": "🛤️",
+	"establish_forward_depot": "📦",
 	"grant_titles": "👑",
 	"reduce_taxes": "🪙",
 	"secret_diplomacy": "🕵️",
@@ -60,6 +62,13 @@ const POLICY_EFFECTS := {
 		{"label": "Military", "value": 5, "type": "positive"},
 		{"label": "Populace", "value": -3, "type": "negative"},
 		{"label": "Noir", "value": -2, "type": "rn"}
+	],
+	"establish_forward_depot": [
+		{"label": "Supply", "value": 4, "type": "positive"},
+		{"label": "Depot", "value": 4, "type": "positive"},
+		{"label": "Military", "value": 4, "type": "positive"},
+		{"label": "Populace", "value": -2, "type": "negative"},
+		{"label": "Noir", "value": -1, "type": "rn"}
 	],
 	"grant_titles": [
 		{"label": "Nobility", "value": 12, "type": "positive"},
@@ -126,6 +135,7 @@ const NARRATIVE_CATEGORY_LABELS := {
 	"increase_military_budget": "军费拨款余波",
 	"requisition_supplies": "征用仓储余波",
 	"stabilize_supply_lines": "驿站整顿余波",
+	"establish_forward_depot": "粮秣站余波",
 	"secret_diplomacy": "秘密外交余波",
 	"diplomatic_secret": "秘密外交余波",
 	"print_money": "印钞令余波"

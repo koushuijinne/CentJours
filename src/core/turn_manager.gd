@@ -75,9 +75,15 @@ func submit_action(action_type: String, params: Dictionary = {}) -> void:
 ##   projected_morale(float)
 ##   projected_supply(float)
 ##   supply_capacity(int)
+##   base_supply_capacity(int)
+##   temporary_capacity_bonus(int)
 ##   supply_demand(float)
 ##   supply_available(float)
 ##   line_efficiency(float)
+##   supply_role(String)
+##   supply_role_label(String)
+##   supply_hub_name(String)
+##   supply_hub_distance(int)
 func get_march_preview(target_node: String) -> Dictionary:
 	_ensure_engine()
 	if target_node.strip_edges() == "":
@@ -92,9 +98,15 @@ func get_march_preview(target_node: String) -> Dictionary:
 			"projected_morale": GameState.avg_morale,
 			"projected_supply": GameState.supply,
 			"supply_capacity": 0,
+			"base_supply_capacity": 0,
+			"temporary_capacity_bonus": 0,
 			"supply_demand": 0.0,
 			"supply_available": 0.0,
-			"line_efficiency": 0.0
+			"line_efficiency": 0.0,
+			"supply_role": "",
+			"supply_role_label": "",
+			"supply_hub_name": "",
+			"supply_hub_distance": 0
 		}
 	return Dictionary(engine.preview_march(target_node))
 
@@ -205,6 +217,9 @@ func _sync_state_from_engine() -> void:
 	GameState.supply           = float(state.get("supply", GameState.supply))
 	GameState.victories        = int(state.get("victories", 0))
 	GameState.napoleon_location = String(state.get("napoleon_location", GameState.napoleon_location))
+	GameState.forward_depot_location = String(state.get("forward_depot_location", ""))
+	GameState.forward_depot_capacity_bonus = int(state.get("forward_depot_capacity_bonus", 0))
+	GameState.forward_depot_days = int(state.get("forward_depot_days", 0))
 	GameState.available_march_targets.clear()
 	for node_id in Array(engine.get_adjacent_nodes()):
 		GameState.available_march_targets.append(String(node_id))

@@ -25,6 +25,8 @@ var _hovered_node_id: String = ""
 var _selected_node_id: String = ""
 var _march_origin_id: String = ""
 var _march_target_ids: Array[String] = []
+var _forward_depot_location: String = ""
+var _forward_depot_days: int = 0
 
 # 渲染期间积累的缓存，rebuild 结束后作为返回值
 var _points_by_id: Dictionary = {}
@@ -46,6 +48,8 @@ var _edge_lines_by_node: Dictionary = {}
 ##   selected_node_id(String)       — 当前选中节点 ID（空串=无）
 ##   march_origin_id(String)        — 行军起点节点 ID（空串=无行军预览）
 ##   march_target_ids(Array[String])— 行军可达目标节点 ID 列表
+##   forward_depot_location(String) — 前沿粮秣站所在节点 ID（空串=无）
+##   forward_depot_days(int)        — 前沿粮秣站剩余天数
 ##   adjacency(Dictionary)          — id(String) → Array[String] 相邻节点
 ##
 ## 返回值契约:
@@ -154,6 +158,8 @@ func _load_context(ctx: Dictionary) -> void:
 	_selected_node_id = ctx.get("selected_node_id", "")
 	_march_origin_id = ctx.get("march_origin_id", "")
 	_march_target_ids = ctx.get("march_target_ids", [] as Array[String])
+	_forward_depot_location = ctx.get("forward_depot_location", "")
+	_forward_depot_days = int(ctx.get("forward_depot_days", 0))
 
 
 ## 渲染结束后清除上下文引用，避免持有 UI 节点引用导致泄漏
@@ -168,6 +174,8 @@ func _clear_context() -> void:
 	_points_by_id = {}
 	_node_controls_by_id = {}
 	_edge_lines_by_node = {}
+	_forward_depot_location = ""
+	_forward_depot_days = 0
 
 
 # ── 坐标变换 ─────────────────────────────────────────────────
@@ -243,6 +251,17 @@ func _add_map_node_hotspot(node_info: Dictionary, point: Vector2) -> void:
 	ring.color = _node_ring_color(node_id, visual_state)
 	ring.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	container.add_child(ring)
+
+	var logistics_ring_color := _node_logistics_ring_color(node_info, node_id)
+	if logistics_ring_color.a > 0.0:
+		var logistics_ring := ColorRect.new()
+		var logistics_ring_size := ring_size + 6
+		logistics_ring.position = (container.size - Vector2.ONE * logistics_ring_size) * 0.5
+		logistics_ring.size = Vector2.ONE * logistics_ring_size
+		logistics_ring.color = logistics_ring_color
+		logistics_ring.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		container.add_child(logistics_ring)
+		container.move_child(logistics_ring, 0)
 
 	# 核心圆点
 	var dot := ColorRect.new()
@@ -556,6 +575,19 @@ func _node_ring_color(node_id: String, visual_state: int) -> Color:
 		return Color(CentJoursTheme.COLOR["gold_dim"].r, CentJoursTheme.COLOR["gold_dim"].g, CentJoursTheme.COLOR["gold_dim"].b, 0.14)
 	if visual_state == 3:
 		return Color(CentJoursTheme.COLOR["gold"].r, CentJoursTheme.COLOR["gold"].g, CentJoursTheme.COLOR["gold"].b, 0.16)
+	return Color(0, 0, 0, 0)
+
+
+func _node_logistics_ring_color(node_info: Dictionary, node_id: String) -> Color:
+	if _forward_depot_days > 0 and node_id == _forward_depot_location:
+		return Color(0.88, 0.78, 0.32, 0.18)
+	var supply_capacity := int(node_info.get("supply_capacity", 0))
+	if supply_capacity >= 10:
+		return Color(0.62, 0.72, 0.58, 0.10)
+	if supply_capacity <= 2:
+		return Color(0.74, 0.42, 0.34, 0.10)
+	if supply_capacity >= 6:
+		return Color(0.58, 0.66, 0.76, 0.08)
 	return Color(0, 0, 0, 0)
 
 

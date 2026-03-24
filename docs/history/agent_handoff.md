@@ -11,21 +11,24 @@
 ## 当前项目状态
 
 - 正式入口为 `src/ui/main_menu.tscn`，主循环 `TurnManager -> CentJoursEngine -> GameState -> UI` 已接通。
-- Rust 规则层当前基线是 `178/178` 测试通过。
+- Rust 规则层最近一次完整回归基线是 `182/182`；自动工作流后续不再把 Linux / WSL `cargo test` 当成默认验证路径。
 - 当前核心数据基线：`15` 名角色、`41` 个地图节点、`58` 条历史事件，其中 `major 16 / normal 35 / minor 7`。
 - 当前活跃开发分支为 `auto/gameplay_update`。
-- Save / Load 已进入 `v2` 兼容路径，旧存档会把 `fontainebleau_eve` 迁移为正式 ID `tuileries_eve`。
+- Save / Load 已进入 `v3` 兼容路径，旧存档会把 `fontainebleau_eve` 迁移为正式 ID `tuileries_eve`，前沿粮秣站状态也会随存档读写。
 - 历史事件正文、`historical_note` 与玩家行动结算日志都已接入侧栏日志链路。
 - 动态补给已接进核心循环：补给值会进入存档、`get_state()`、主菜单顶栏、休整恢复、战斗补给惩罚和每日行动结算日志。
 - 首个玩家可控补给政策 `requisition_supplies / 征用沿线仓储` 已接入政策表、叙事池、模拟策略和 UI 元数据。
 - 第二个玩家可控补给政策 `stabilize_supply_lines / 整顿驿站运输` 已接入：它会短期提高补给线效率，并进存档、预判、结算日志和叙事链。
+- 第三个玩家可控补给政策 `establish_forward_depot / 建立前沿粮秣站` 已接入：它会在当前驻地留下短期容量加成，并把这层状态同步到预判、地图检查器、地图渲染和存档。
 - 行军预览现在会优先读取 Rust 引擎返回的权威预测值，能在确认前直接显示预计补给 / 疲劳 / 士气变化，并拆开显示仓储容量、补给线效率、预计可得量和需求；只有接口不可用时才退回前端轻量提示。
 - 行动后的补给结算现在会写出节点容量、需求 / 可得量与下一步建议，玩家已经能在结算日志里直接看到“为什么缺补给、该怎么补救”。
 - 侧栏政策预览现在会根据当前补给值和前 10 天阶段给出情境化建议，开始把补给教学直接嵌进 UI。
+- 地图检查器和行军预判现在会明确显示补给角色、有效容量、最近补给枢纽与跳数；地图渲染也会标出前沿粮秣站、战略枢纽和前线消耗点。
 - 文档目录已重构为 `docs/plans`、`docs/rules`、`docs/history`、`docs/decisions`，开发历史已从 live 计划文档中抽离到 `docs/history/development_logs/`。
 - 前端已拆出 `map / layout / tray / sidebar / dialogs` 控制器，但发布级视觉和交互收口仍未完成。
 - Windows 原生 Godot 与 Windows 无头仍是默认验证路径；不要把 Linux / WSL Godot 无头结果当成默认结论。
-- 当前环境未安装 `x86_64-pc-windows-gnu` target，且从 WSL 调 Windows `cargo build` 仍会报 `UtilBindVsockAnyPort`；本轮只能确认 Windows 主项目能启动，不能确认新的 `cent_jours_core.dll` 已进入运行时。
+- 自动工作流下不要运行 Linux / WSL 侧测试，包括 Linux `cargo test` 和 Linux Godot 无头；若 Windows 验证链暂时不完整，就明确写“未验证”，不要用 Linux 结果补位。
+- 当前这条补给玩法切片已经完成 Windows DLL 重编、Windows 主项目无头启动和 Windows smoke scene；自动工作流后续不再回到 Linux / WSL 侧测试补位。
 
 ## 当前最高优先级
 
@@ -38,12 +41,12 @@
 ## 当前已知缺口
 
 - `内容量仍不足`：事件池距离 `100+` 目标还差 `42` 条
-- `补给玩法还不够显式`：底层压力已经接通，也已经有两张补给政策，但仍缺更清楚的阶段目标、来源差异和长线运营感
+- `补给玩法还不够显式`：底层压力已经接通，也已经有三张补给政策、补给角色和补给枢纽可视化，但仍缺更清楚的阶段目标和长线运营感
 - `补给教学还没收口`：玩家现在能在行军前和行动后看到仓储容量、补给线效率、可得量与需求拆解，也能在侧栏看到情境化用牌建议；但前 10 天仍缺更系统的目标提示与失败归因串联
 - `文本 QA 未收口`：剩余事件仍需统一史实锚点、信息密度和句式风格
 - `前端发布级 polish 未完成`：结构问题已缓解，但仍需 Windows 真机持续验收
 - `产品化能力仍缺`：设置/选项页、导出配置、Steam 商店素材、教程引导都未完成
-- `Windows GDExt 验证仍有缺口`：本轮 Windows Godot 无头只能证明项目能起；Windows DLL 重编与 smoke scene 仍被 WSL 宿主互操作错误卡住
+- `Windows 真机体验验收仍未收口`：这轮已经补齐 Windows DLL 重编、Windows 无头与 smoke scene，但更长时的真机 UI / 体验验收还没补
 - `最终资产仍是占位`：地图底图、肖像、插图、BGM、SFX、结局画面还没替换
 
 ## 当前写入边界
@@ -77,8 +80,9 @@
 
 ## 默认验证要求
 
-- Rust 改动：`cd cent-jours-core && cargo test`
-- Rust + GDExt API 改动：Windows 侧执行
+- 自动工作流开启时，不运行 Linux / WSL 侧测试，包括 Linux `cargo test`、Linux Godot 无头和任何 WSL 侧补位验证
+- Rust + GDExt API 改动：Windows 侧执行 `cargo build --features godot-extension`
+- 没有 Windows 对应验证就写明缺口，不要把 Linux / WSL 结果写成当前轮验证结论
 
 ```bash
 cd /d E:\projects\CentJours\cent-jours-core

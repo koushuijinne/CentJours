@@ -28,6 +28,9 @@ var armies: Dictionary = {}         # army_id -> ArmyData
 var map_control: Dictionary = {}    # node_id -> controller ("napoleon" / "enemy" / "neutral")
 var napoleon_location: String = "golfe_juan"
 var available_march_targets: Array[String] = []
+var forward_depot_location: String = ""
+var forward_depot_capacity_bonus: int = 0
+var forward_depot_days: int = 0
 
 # 军队摘要（从 CentJoursEngine.get_state() 同步，只读缓存）
 var total_troops: int   = 6000   # 当前总兵力

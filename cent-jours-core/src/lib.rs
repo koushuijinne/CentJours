@@ -394,6 +394,9 @@ mod gdext_bindings {
                 "stabilize_supply_lines" => PlayerAction::EnactPolicy {
                     policy_id: "stabilize_supply_lines",
                 },
+                "establish_forward_depot" => PlayerAction::EnactPolicy {
+                    policy_id: "establish_forward_depot",
+                },
                 // 补全缺失的 3 条政策（之前静默退化为 Rest）
                 "grant_titles" => PlayerAction::EnactPolicy {
                     policy_id: "grant_titles",
@@ -436,9 +439,18 @@ mod gdext_bindings {
             let _ = d.insert("projected_morale", preview.projected_morale);
             let _ = d.insert("projected_supply", preview.projected_supply);
             let _ = d.insert("supply_capacity", preview.supply_capacity as i64);
+            let _ = d.insert("base_supply_capacity", preview.base_supply_capacity as i64);
+            let _ = d.insert(
+                "temporary_capacity_bonus",
+                preview.temporary_capacity_bonus as i64,
+            );
             let _ = d.insert("supply_demand", preview.supply_demand);
             let _ = d.insert("supply_available", preview.supply_available);
             let _ = d.insert("line_efficiency", preview.line_efficiency);
+            let _ = d.insert("supply_role", preview.supply_role.as_str());
+            let _ = d.insert("supply_role_label", preview.supply_role_label.as_str());
+            let _ = d.insert("supply_hub_name", preview.supply_hub_name.as_str());
+            let _ = d.insert("supply_hub_distance", preview.supply_hub_distance as i64);
             d
         }
 
@@ -467,6 +479,15 @@ mod gdext_bindings {
                 "outcome",
                 e.outcome().map(|o| o.as_str()).unwrap_or("in_progress"),
             );
+            if let Some((location, bonus, days)) = e.active_forward_depot() {
+                let _ = d.insert("forward_depot_location", location);
+                let _ = d.insert("forward_depot_capacity_bonus", bonus as i64);
+                let _ = d.insert("forward_depot_days", days as i64);
+            } else {
+                let _ = d.insert("forward_depot_location", "");
+                let _ = d.insert("forward_depot_capacity_bonus", 0i64);
+                let _ = d.insert("forward_depot_days", 0i64);
+            }
 
             let mut factions = Dictionary::new();
             for (k, v) in &e.politics.faction_support {

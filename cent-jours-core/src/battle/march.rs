@@ -166,6 +166,36 @@ impl MapGraph {
             .map(|n| n.supply_capacity)
             .unwrap_or(1)
     }
+
+    pub fn supply_role_of(&self, node_id: &str) -> &'static str {
+        self.nodes
+            .get(node_id)
+            .map(|n| supply_role_for_capacity(n.supply_capacity))
+            .unwrap_or("frontline_outpost")
+    }
+
+    pub fn supply_role_label_of(&self, node_id: &str) -> &'static str {
+        supply_role_label(self.supply_role_of(node_id))
+    }
+}
+
+pub fn supply_role_for_capacity(capacity: u32) -> &'static str {
+    match capacity {
+        0..=2 => "frontline_outpost",
+        3..=5 => "transit_stop",
+        6..=9 => "regional_depot",
+        _ => "strategic_depot",
+    }
+}
+
+pub fn supply_role_label(role: &str) -> &'static str {
+    match role {
+        "frontline_outpost" => "前沿消耗点",
+        "transit_stop" => "沿线转运点",
+        "regional_depot" => "区域整补点",
+        "strategic_depot" => "战略大仓",
+        _ => "前沿消耗点",
+    }
 }
 
 // ── 行军参数常量 ──────────────────────────────────────
@@ -283,7 +313,19 @@ pub fn rest_army(army: &ArmyState) -> (f64, f64) {
 
 /// 更新补给状态
 pub fn update_supply(army: &ArmyState, line_efficiency: f64, map: &MapGraph) -> SupplyResult {
-    let capacity = map.supply_capacity_of(&army.location) as f64;
+    update_supply_with_capacity(
+        army,
+        line_efficiency,
+        map.supply_capacity_of(&army.location),
+    )
+}
+
+pub fn update_supply_with_capacity(
+    army: &ArmyState,
+    line_efficiency: f64,
+    supply_capacity: u32,
+) -> SupplyResult {
+    let capacity = supply_capacity as f64;
     let demand = (army.troops as f64 / SUPPLY_TROOP_STEP).max(MIN_SUPPLY_DEMAND)
         * (1.0 + army.fatigue / 250.0);
     let available = capacity * line_efficiency.clamp(0.2, 1.2) + BASE_LINE_SUPPLY;
@@ -483,6 +525,25 @@ mod tests {
 
         assert!(result.supply_delta > 0.0, "巴黎应具备明显补给恢复能力");
         assert!(result.new_supply > army.supply);
+    }
+
+    #[test]
+    fn 节点容量会映射为补给角色() {
+        let map = simple_map();
+        assert_eq!(map.supply_role_of("waterloo"), "frontline_outpost");
+        assert_eq!(map.supply_role_label_of("waterloo"), "前沿消耗点");
+        assert_eq!(map.supply_role_of("laon"), "transit_stop");
+        assert_eq!(map.supply_role_of("charleroi"), "regional_depot");
+        assert_eq!(map.supply_role_of("paris"), "strategic_depot");
+    }
+
+    #[test]
+    fn 临时容量加成会改变补给结果() {
+        let army = army_at("waterloo");
+        let baseline = update_supply_with_capacity(&army, 0.7, 2);
+        let boosted = update_supply_with_capacity(&army, 0.7, 6);
+        assert!(boosted.available > baseline.available);
+        assert!(boosted.new_supply > baseline.new_supply);
     }
 
     // ── rest_army() 直接单元测试 ─────────────────────

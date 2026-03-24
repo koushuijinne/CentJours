@@ -85,6 +85,7 @@ pub fn policy_narrative_key(policy_id: &str) -> Option<&'static str> {
         "increase_military_budget" => Some("increase_military_budget"),
         "requisition_supplies" => Some("requisition_supplies"),
         "stabilize_supply_lines" => Some("stabilize_supply_lines"),
+        "establish_forward_depot" => Some("establish_forward_depot"),
         "grant_titles" => Some("grant_titles"),
         "secret_diplomacy" => Some("diplomatic_secret"),
         "print_money" => Some("print_money"),
@@ -122,7 +123,7 @@ mod tests {
     }
 
     #[test]
-    fn 司汤达13个行动类型全部有内容() {
+    fn 司汤达14个行动类型全部有内容() {
         let pool = NarrativePool::new();
         for key in &[
             "conscription",
@@ -137,6 +138,7 @@ mod tests {
             "increase_military_budget",
             "requisition_supplies",
             "stabilize_supply_lines",
+            "establish_forward_depot",
             "print_money",
         ] {
             assert!(
@@ -148,7 +150,7 @@ mod tests {
     }
 
     #[test]
-    fn 后果14个类型全部有内容() {
+    fn 后果15个类型全部有内容() {
         let pool = NarrativePool::new();
         for key in &[
             "conscription",
@@ -163,6 +165,7 @@ mod tests {
             "increase_military_budget",
             "requisition_supplies",
             "stabilize_supply_lines",
+            "establish_forward_depot",
             "diplomatic_secret",
             "print_money",
         ] {
@@ -228,6 +231,10 @@ mod tests {
             policy_narrative_key("stabilize_supply_lines"),
             Some("stabilize_supply_lines")
         );
+        assert_eq!(
+            policy_narrative_key("establish_forward_depot"),
+            Some("establish_forward_depot")
+        );
         assert_eq!(policy_narrative_key("grant_titles"), Some("grant_titles"));
         assert_eq!(
             policy_narrative_key("secret_diplomacy"),
@@ -254,6 +261,7 @@ mod tests {
             "increase_military_budget",
             "requisition_supplies",
             "stabilize_supply_lines",
+            "establish_forward_depot",
             "grant_titles",
             "secret_diplomacy",
             "print_money",
@@ -283,6 +291,7 @@ mod tests {
             "increase_military_budget",
             "requisition_supplies",
             "stabilize_supply_lines",
+            "establish_forward_depot",
             "grant_titles",
             "secret_diplomacy",
             "print_money",

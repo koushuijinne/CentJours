@@ -39,6 +39,8 @@ pub struct PolicyEffect {
     pub supply_delta: f64,
     pub supply_line_bonus: f64,
     pub supply_line_bonus_days: u8,
+    pub local_supply_capacity_bonus: u32,
+    pub local_supply_capacity_bonus_days: u8,
     pub cooldown_days: u8,
 }
 
@@ -58,6 +60,8 @@ pub fn default_policies() -> Vec<PolicyEffect> {
             supply_delta: 0.0,
             supply_line_bonus: 0.0,
             supply_line_bonus_days: 0,
+            local_supply_capacity_bonus: 0,
+            local_supply_capacity_bonus_days: 0,
             cooldown_days: 5,
         },
         PolicyEffect {
@@ -73,6 +77,8 @@ pub fn default_policies() -> Vec<PolicyEffect> {
             supply_delta: 0.0,
             supply_line_bonus: 0.0,
             supply_line_bonus_days: 0,
+            local_supply_capacity_bonus: 0,
+            local_supply_capacity_bonus_days: 0,
             cooldown_days: 10,
         },
         PolicyEffect {
@@ -88,6 +94,8 @@ pub fn default_policies() -> Vec<PolicyEffect> {
             supply_delta: 0.0,
             supply_line_bonus: 0.0,
             supply_line_bonus_days: 0,
+            local_supply_capacity_bonus: 0,
+            local_supply_capacity_bonus_days: 0,
             cooldown_days: 3,
         },
         PolicyEffect {
@@ -103,6 +111,8 @@ pub fn default_policies() -> Vec<PolicyEffect> {
             supply_delta: 0.0,
             supply_line_bonus: 0.0,
             supply_line_bonus_days: 0,
+            local_supply_capacity_bonus: 0,
+            local_supply_capacity_bonus_days: 0,
             cooldown_days: 7,
         },
         PolicyEffect {
@@ -118,6 +128,8 @@ pub fn default_policies() -> Vec<PolicyEffect> {
             supply_delta: 0.0,
             supply_line_bonus: 0.0,
             supply_line_bonus_days: 0,
+            local_supply_capacity_bonus: 0,
+            local_supply_capacity_bonus_days: 0,
             cooldown_days: 8,
         },
         PolicyEffect {
@@ -133,6 +145,8 @@ pub fn default_policies() -> Vec<PolicyEffect> {
             supply_delta: 0.0,
             supply_line_bonus: 0.0,
             supply_line_bonus_days: 0,
+            local_supply_capacity_bonus: 0,
+            local_supply_capacity_bonus_days: 0,
             cooldown_days: 5,
         },
         PolicyEffect {
@@ -148,6 +162,8 @@ pub fn default_policies() -> Vec<PolicyEffect> {
             supply_delta: 18.0,
             supply_line_bonus: 0.0,
             supply_line_bonus_days: 0,
+            local_supply_capacity_bonus: 0,
+            local_supply_capacity_bonus_days: 0,
             cooldown_days: 6,
         },
         PolicyEffect {
@@ -163,6 +179,25 @@ pub fn default_policies() -> Vec<PolicyEffect> {
             supply_delta: 6.0,
             supply_line_bonus: 0.18,
             supply_line_bonus_days: 3,
+            local_supply_capacity_bonus: 0,
+            local_supply_capacity_bonus_days: 0,
+            cooldown_days: 6,
+        },
+        PolicyEffect {
+            id: "establish_forward_depot",
+            name: "建立前沿粮秣站",
+            cost_actions: 1,
+            rouge_noir_delta: -1.0,
+            faction_deltas: [("military", 4.0), ("populace", -2.0), ("liberals", -1.0)]
+                .iter()
+                .cloned()
+                .collect(),
+            economic_delta: -3.0,
+            supply_delta: 4.0,
+            supply_line_bonus: 0.0,
+            supply_line_bonus_days: 0,
+            local_supply_capacity_bonus: 4,
+            local_supply_capacity_bonus_days: 4,
             cooldown_days: 6,
         },
         PolicyEffect {
@@ -175,6 +210,8 @@ pub fn default_policies() -> Vec<PolicyEffect> {
             supply_delta: 0.0,
             supply_line_bonus: 0.0,
             supply_line_bonus_days: 0,
+            local_supply_capacity_bonus: 0,
+            local_supply_capacity_bonus_days: 0,
             cooldown_days: 15,
         },
         PolicyEffect {
@@ -190,6 +227,8 @@ pub fn default_policies() -> Vec<PolicyEffect> {
             supply_delta: 0.0,
             supply_line_bonus: 0.0,
             supply_line_bonus_days: 0,
+            local_supply_capacity_bonus: 0,
+            local_supply_capacity_bonus_days: 0,
             cooldown_days: 20,
         },
     ]
@@ -426,6 +465,17 @@ mod tests {
         assert_eq!(p.supply_delta, 6.0);
         assert_eq!(p.supply_line_bonus, 0.18);
         assert_eq!(p.supply_line_bonus_days, 3);
+        assert_eq!(p.cooldown_days, 6);
+        assert!(p.faction_deltas["military"] > 0.0);
+        assert!(p.faction_deltas["populace"] < 0.0);
+    }
+
+    #[test]
+    fn 前沿粮秣站定义为本地容量政策() {
+        let p = policy("establish_forward_depot");
+        assert_eq!(p.supply_delta, 4.0);
+        assert_eq!(p.local_supply_capacity_bonus, 4);
+        assert_eq!(p.local_supply_capacity_bonus_days, 4);
         assert_eq!(p.cooldown_days, 6);
         assert!(p.faction_deltas["military"] > 0.0);
         assert!(p.faction_deltas["populace"] < 0.0);

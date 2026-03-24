@@ -7,8 +7,8 @@ use rand::Rng;
 
 use crate::battle::resolver::{resolve_battle, BattleResult, ForceData, Terrain};
 use crate::battle::{
-    move_army, rest_army, update_supply, ArmyState as MarchArmyState, MapEdge, MapGraph, MapNode,
-    SUPPLY_OK_THRESHOLD,
+    move_army, rest_army, update_supply_with_capacity, ArmyState as MarchArmyState, MapEdge,
+    MapGraph, MapNode, SUPPLY_OK_THRESHOLD,
 };
 use crate::characters::network::{
     historical_network_day1, CharacterNetwork, LOYALTY_CRISIS_THRESHOLD,
@@ -106,9 +106,15 @@ pub struct MarchPreview {
     pub projected_morale: f64,
     pub projected_supply: f64,
     pub supply_capacity: u32,
+    pub base_supply_capacity: u32,
+    pub temporary_capacity_bonus: u32,
     pub supply_demand: f64,
     pub supply_available: f64,
     pub line_efficiency: f64,
+    pub supply_role: String,
+    pub supply_role_label: String,
+    pub supply_hub_name: String,
+    pub supply_hub_distance: u32,
 }
 
 // ── 全局游戏状态 ──────────────────────────────────────
@@ -215,6 +221,12 @@ pub struct SaveState {
     pub supply_line_bonus: f64,
     #[serde(default = "default_supply_line_bonus_days")]
     pub supply_line_bonus_days: u8,
+    #[serde(default = "default_forward_depot_location")]
+    pub forward_depot_location: String,
+    #[serde(default = "default_forward_depot_capacity_bonus")]
+    pub forward_depot_capacity_bonus: u32,
+    #[serde(default = "default_forward_depot_days")]
+    pub forward_depot_days: u8,
     // 将领网络（当前忠诚度 + 关系强度）
     pub loyalty: HashMap<String, f64>,
     pub relationships: Vec<(String, String, f64)>,
@@ -247,6 +259,18 @@ fn default_supply_line_bonus() -> f64 {
 }
 
 fn default_supply_line_bonus_days() -> u8 {
+    0
+}
+
+fn default_forward_depot_location() -> String {
+    String::new()
+}
+
+fn default_forward_depot_capacity_bonus() -> u32 {
+    0
+}
+
+fn default_forward_depot_days() -> u8 {
     0
 }
 
@@ -337,6 +361,12 @@ pub struct GameEngine {
     supply_line_bonus: f64,
     /// 临时补给线修正剩余天数（包含当前结算）
     supply_line_bonus_days: u8,
+    /// 前沿粮秣站所在节点（空串表示当前无部署）
+    forward_depot_location: String,
+    /// 前沿粮秣站提供的本地容量加成
+    forward_depot_capacity_bonus: u32,
+    /// 前沿粮秣站剩余天数（包含当前结算）
+    forward_depot_days: u8,
     pub history: Vec<DayEvent>,
     /// 游戏结局（Some = 游戏已结束）
     outcome: Option<GameOutcome>,
@@ -371,6 +401,9 @@ impl Default for GameEngine {
             political_stability_bonus: 0.0,
             supply_line_bonus: 0.0,
             supply_line_bonus_days: 0,
+            forward_depot_location: String::new(),
+            forward_depot_capacity_bonus: 0,
+            forward_depot_days: 0,
             history: Vec::new(),
             outcome: None,
             map_graph: default_campaign_map(),
@@ -406,6 +439,17 @@ impl GameEngine {
         self.day
     }
 
+    pub fn active_forward_depot(&self) -> Option<(&str, u32, u8)> {
+        (self.forward_depot_days > 0
+            && self.forward_depot_capacity_bonus > 0
+            && !self.forward_depot_location.is_empty())
+        .then_some((
+            self.forward_depot_location.as_str(),
+            self.forward_depot_capacity_bonus,
+            self.forward_depot_days,
+        ))
+    }
+
     /// 当前可直接行军到的相邻节点列表。
     pub fn adjacent_nodes(&self) -> Vec<String> {
         self.map_graph.neighbors_of(&self.napoleon_location)
@@ -427,13 +471,23 @@ impl GameEngine {
                 projected_morale: self.army.avg_morale,
                 projected_supply: self.army.supply,
                 supply_capacity: 0,
+                base_supply_capacity: 0,
+                temporary_capacity_bonus: 0,
                 supply_demand: 0.0,
                 supply_available: 0.0,
                 line_efficiency: 0.0,
+                supply_role: String::new(),
+                supply_role_label: String::new(),
+                supply_hub_name: String::new(),
+                supply_hub_distance: 0,
             };
         }
 
         let line_efficiency = self.supply_line_efficiency_for(&move_result.new_location);
+        let base_capacity = self.map_graph.supply_capacity_of(&move_result.new_location);
+        let temporary_capacity_bonus =
+            self.forward_depot_capacity_bonus_for(&move_result.new_location);
+        let effective_capacity = base_capacity + temporary_capacity_bonus;
         let projected_army = MarchArmyState {
             id: current.id,
             location: move_result.new_location.clone(),
@@ -442,7 +496,9 @@ impl GameEngine {
             fatigue: move_result.new_fatigue,
             supply: self.army.supply,
         };
-        let supply_result = update_supply(&projected_army, line_efficiency, &self.map_graph);
+        let supply_result =
+            update_supply_with_capacity(&projected_army, line_efficiency, effective_capacity);
+        let (hub_name, hub_distance) = self.nearest_supply_hub(&projected_army.location);
 
         MarchPreview {
             valid: true,
@@ -454,10 +510,22 @@ impl GameEngine {
             projected_fatigue: move_result.new_fatigue,
             projected_morale: move_result.new_morale,
             projected_supply: supply_result.new_supply,
-            supply_capacity: self.map_graph.supply_capacity_of(&projected_army.location),
+            supply_capacity: effective_capacity,
+            base_supply_capacity: base_capacity,
+            temporary_capacity_bonus,
             supply_demand: supply_result.demand,
             supply_available: supply_result.available,
             line_efficiency: supply_result.line_efficiency,
+            supply_role: self
+                .map_graph
+                .supply_role_of(&projected_army.location)
+                .to_string(),
+            supply_role_label: self
+                .map_graph
+                .supply_role_label_of(&projected_army.location)
+                .to_string(),
+            supply_hub_name: hub_name,
+            supply_hub_distance: hub_distance,
         }
     }
 
@@ -493,7 +561,7 @@ impl GameEngine {
             .collect();
 
         SaveState {
-            version: 2,
+            version: 3,
             day: self.day,
             legitimacy: self.politics.legitimacy,
             rouge_noir: self.politics.rouge_noir_index,
@@ -511,6 +579,9 @@ impl GameEngine {
             political_stability_bonus: self.political_stability_bonus,
             supply_line_bonus: self.supply_line_bonus,
             supply_line_bonus_days: self.supply_line_bonus_days,
+            forward_depot_location: self.forward_depot_location.clone(),
+            forward_depot_capacity_bonus: self.forward_depot_capacity_bonus,
+            forward_depot_days: self.forward_depot_days,
             loyalty: self.characters.loyalty.clone(),
             relationships,
             triggered_event_ids: self.triggered_event_ids.clone(),
@@ -544,6 +615,9 @@ impl GameEngine {
         engine.political_stability_bonus = state.political_stability_bonus;
         engine.supply_line_bonus = state.supply_line_bonus;
         engine.supply_line_bonus_days = state.supply_line_bonus_days;
+        engine.forward_depot_location = state.forward_depot_location;
+        engine.forward_depot_capacity_bonus = state.forward_depot_capacity_bonus;
+        engine.forward_depot_days = state.forward_depot_days;
         engine.characters.loyalty = state.loyalty;
         engine.characters.relationships = state
             .relationships
@@ -827,6 +901,13 @@ impl GameEngine {
                         self.supply_line_bonus = policy.supply_line_bonus;
                         self.supply_line_bonus_days = policy.supply_line_bonus_days;
                     }
+                    if policy.local_supply_capacity_bonus_days > 0
+                        && policy.local_supply_capacity_bonus > 0
+                    {
+                        self.forward_depot_location = self.napoleon_location.clone();
+                        self.forward_depot_capacity_bonus = policy.local_supply_capacity_bonus;
+                        self.forward_depot_days = policy.local_supply_capacity_bonus_days;
+                    }
                     vec![DayEvent {
                         day: self.day,
                         event_type: "policy",
@@ -913,6 +994,12 @@ impl GameEngine {
                 policy.supply_line_bonus_days
             ));
         }
+        if policy.local_supply_capacity_bonus_days > 0 && policy.local_supply_capacity_bonus > 0 {
+            effects.push(format!(
+                "当前驻地容量 +{}（{} 天）",
+                policy.local_supply_capacity_bonus, policy.local_supply_capacity_bonus_days
+            ));
+        }
         if policy.cooldown_days > 0 {
             effects.push(format!("进入冷却 {} 天", policy.cooldown_days));
         }
@@ -970,6 +1057,13 @@ impl GameEngine {
             self.supply_line_bonus_days = self.supply_line_bonus_days.saturating_sub(1);
             if self.supply_line_bonus_days == 0 {
                 self.supply_line_bonus = 0.0;
+            }
+        }
+        if self.forward_depot_days > 0 {
+            self.forward_depot_days = self.forward_depot_days.saturating_sub(1);
+            if self.forward_depot_days == 0 {
+                self.forward_depot_capacity_bonus = 0;
+                self.forward_depot_location.clear();
             }
         }
 
@@ -1212,7 +1306,7 @@ impl GameEngine {
         self.supply_line_efficiency_for(&self.napoleon_location)
     }
 
-    fn supply_line_efficiency_for(&self, location: &str) -> f64 {
+    fn nearest_supply_hub(&self, location: &str) -> (String, u32) {
         const SUPPLY_HUBS: [&str; 6] = [
             "golfe_juan",
             "grenoble",
@@ -1222,14 +1316,31 @@ impl GameEngine {
             "maubeuge",
         ];
 
-        let nearest_distance = SUPPLY_HUBS
+        SUPPLY_HUBS
             .iter()
             .filter_map(|hub| {
                 let distance = self.map_graph.node_distance(location, hub);
-                (distance != u32::MAX).then_some(distance)
+                (distance != u32::MAX).then_some((self.map_graph.node_name(hub), distance))
             })
-            .min()
-            .unwrap_or(u32::MAX);
+            .min_by_key(|(_, distance)| *distance)
+            .unwrap_or_else(|| ("未知补给点".to_string(), u32::MAX))
+    }
+
+    fn forward_depot_capacity_bonus_for(&self, location: &str) -> u32 {
+        if self.forward_depot_days > 0 && self.forward_depot_location == location {
+            self.forward_depot_capacity_bonus
+        } else {
+            0
+        }
+    }
+
+    fn effective_supply_capacity_for(&self, location: &str) -> u32 {
+        self.map_graph.supply_capacity_of(location)
+            + self.forward_depot_capacity_bonus_for(location)
+    }
+
+    fn supply_line_efficiency_for(&self, location: &str) -> f64 {
+        let (_, nearest_distance) = self.nearest_supply_hub(location);
 
         let base = match nearest_distance {
             0 => 1.15,
@@ -1250,15 +1361,19 @@ impl GameEngine {
 
     fn refresh_supply_after_action(&mut self, action_type: &'static str) -> DayEvent {
         let location_id = self.napoleon_location.clone();
-        let supply_result = update_supply(
+        let supply_result = update_supply_with_capacity(
             &self.current_march_army_state(),
             self.supply_line_efficiency(),
-            &self.map_graph,
+            self.effective_supply_capacity_for(&location_id),
         );
         self.army.supply = supply_result.new_supply;
 
         let location_name = self.map_graph.node_name(&location_id);
-        let capacity = self.map_graph.supply_capacity_of(&location_id);
+        let base_capacity = self.map_graph.supply_capacity_of(&location_id);
+        let capacity_bonus = self.forward_depot_capacity_bonus_for(&location_id);
+        let capacity = base_capacity + capacity_bonus;
+        let (hub_name, hub_distance) = self.nearest_supply_hub(&location_id);
+        let role_label = self.map_graph.supply_role_label_of(&location_id);
         let description = if supply_result.supply_delta <= -8.0 {
             format!("{} 的补给线明显吃紧。", location_name)
         } else if supply_result.supply_delta < -1.0 {
@@ -1285,10 +1400,23 @@ impl GameEngine {
             "需求 {:.1} / 可得 {:.1}",
             supply_result.demand, supply_result.available
         ));
+        effects.push(format!("补给角色 {}", role_label));
         effects.push(format!("节点容量 {}", capacity));
+        if capacity_bonus > 0 {
+            effects.push(format!(
+                "前沿粮秣站 +{}（剩余 {} 天）",
+                capacity_bonus, self.forward_depot_days
+            ));
+        }
+        if hub_distance != u32::MAX {
+            effects.push(format!("最近补给枢纽 {}（{} 跳）", hub_name, hub_distance));
+        }
         effects.push(Self::supply_guidance(
             action_type,
             capacity,
+            capacity_bonus,
+            role_label,
+            hub_distance,
             supply_result.line_efficiency,
             supply_result.demand,
             supply_result.available,
@@ -1313,6 +1441,9 @@ impl GameEngine {
     fn supply_guidance(
         action_type: &'static str,
         capacity: u32,
+        capacity_bonus: u32,
+        role_label: &str,
+        hub_distance: u32,
         line_efficiency: f64,
         demand: f64,
         available: f64,
@@ -1322,6 +1453,10 @@ impl GameEngine {
         if !supply_ok {
             if capacity <= 2 || line_efficiency < 0.55 {
                 return "建议：这里更适合作为短暂停留点而非持续前推；优先回高容量节点整补，或立刻用补给政策止血。"
+                    .to_string();
+            }
+            if capacity_bonus > 0 {
+                return "建议：前沿粮秣站已经在支撑当前驻地，但库存仍跌进危险区；下一回合优先休整或征用仓储，不要继续硬顶。"
                     .to_string();
             }
             return "建议：当前补给已经跌到战斗惩罚区，下一回合优先休整或补给，不要继续硬顶。"
@@ -1337,8 +1472,18 @@ impl GameEngine {
                 .to_string();
         }
 
+        if capacity_bonus > 0 && capacity >= 6 {
+            return "建议：这里已有前沿粮秣站，适合作为短期跳板；趁加成还在，把补给和疲劳拉回安全线再继续前推。"
+                .to_string();
+        }
+
         if supply_delta >= 4.0 && capacity >= 8 {
             return "建议：这里适合作为整补落点，可以先恢复补给和疲劳，再继续推进。".to_string();
+        }
+
+        if hub_distance >= 3 && role_label == "沿线转运点" {
+            return "建议：这里是沿线转运点，离后方枢纽已经不算近；若准备连续推进，先考虑建立前沿粮秣站。"
+                .to_string();
         }
 
         "建议：当前补给还能维持，但应提前看下一站仓储，避免连续走进低容量节点。".to_string()
@@ -1664,6 +1809,56 @@ mod tests {
         );
     }
 
+    #[test]
+    fn 建立前沿粮秣站会暂时提高当前驻地容量() {
+        let mut engine = GameEngine::new();
+        engine.napoleon_location = "grasse".to_string();
+        let base_preview = engine.preview_march("digne");
+        let mut rng = seeded_rng();
+
+        engine.process_day(
+            PlayerAction::EnactPolicy {
+                policy_id: "establish_forward_depot",
+            },
+            &mut rng,
+        );
+
+        let policy_event = engine
+            .last_action_events()
+            .iter()
+            .find(|event| event.event_type == "policy")
+            .expect("应包含政策结算");
+        assert!(
+            policy_event
+                .effects
+                .iter()
+                .any(|effect| effect.contains("当前驻地容量 +4")),
+            "政策结算应显式展示驻地容量加成"
+        );
+        assert_eq!(engine.forward_depot_location, "grasse");
+        assert_eq!(engine.forward_depot_capacity_bonus, 4);
+        assert_eq!(engine.forward_depot_days, 3, "当天结算后应剩余3天");
+
+        let boosted_here = engine.effective_supply_capacity_for("grasse");
+        assert_eq!(boosted_here, 6, "格拉斯基础2点容量，应被抬到6");
+
+        let boosted_preview = engine.preview_march("digne");
+        assert!(
+            boosted_preview.supply_capacity >= base_preview.supply_capacity,
+            "建立粮秣站后，预览中的有效容量不应低于基线"
+        );
+        assert!(
+            boosted_preview.supply_hub_distance <= base_preview.supply_hub_distance,
+            "前沿粮秣站不应让枢纽距离读数更差"
+        );
+
+        engine.process_day(PlayerAction::Rest, &mut rng);
+        engine.process_day(PlayerAction::Rest, &mut rng);
+        engine.process_day(PlayerAction::Rest, &mut rng);
+        assert_eq!(engine.forward_depot_days, 0, "粮秣站应按天数衰减归零");
+        assert!(engine.forward_depot_location.is_empty());
+    }
+
     // ── 忠诚度强化 ────────────────────────────────────
 
     #[test]
@@ -1824,9 +2019,12 @@ mod tests {
         assert!(preview.fatigue_delta.abs() > 0.0);
         assert!(preview.projected_supply >= 0.0 && preview.projected_supply <= 100.0);
         assert!(preview.supply_capacity > 0);
+        assert!(preview.base_supply_capacity > 0);
         assert!(preview.supply_demand > 0.0);
         assert!(preview.supply_available > 0.0);
         assert!(preview.line_efficiency > 0.0);
+        assert!(!preview.supply_role_label.is_empty());
+        assert!(!preview.supply_hub_name.is_empty());
     }
 
     #[test]
@@ -1970,9 +2168,15 @@ mod tests {
         engine.coalition_troops_bonus = 12_000;
         engine.paris_security_bonus = 15.0;
         engine.political_stability_bonus = 6.0;
+        engine.forward_depot_location = "grasse".to_string();
+        engine.forward_depot_capacity_bonus = 4;
+        engine.forward_depot_days = 3;
         let saved_coalition = engine.coalition_troops_bonus;
         let saved_security = engine.paris_security_bonus;
         let saved_stability = engine.political_stability_bonus;
+        let saved_forward_depot_location = engine.forward_depot_location.clone();
+        let saved_forward_depot_capacity_bonus = engine.forward_depot_capacity_bonus;
+        let saved_forward_depot_days = engine.forward_depot_days;
         let saved_triggered = engine.triggered_event_ids.clone();
 
         let json = engine.to_json();
@@ -2003,6 +2207,18 @@ mod tests {
         assert!(
             (restored.political_stability_bonus - saved_stability).abs() < 0.001,
             "政治稳定加成应一致"
+        );
+        assert_eq!(
+            restored.forward_depot_location, saved_forward_depot_location,
+            "前沿粮秣站位置应一致"
+        );
+        assert_eq!(
+            restored.forward_depot_capacity_bonus, saved_forward_depot_capacity_bonus,
+            "前沿粮秣站容量加成应一致"
+        );
+        assert_eq!(
+            restored.forward_depot_days, saved_forward_depot_days,
+            "前沿粮秣站剩余天数应一致"
         );
         assert_eq!(
             restored.triggered_event_ids, saved_triggered,
@@ -2086,6 +2302,9 @@ mod tests {
             (restored.army.supply - default_army_supply()).abs() < 0.001,
             "缺少补给字段时应回退到默认补给值"
         );
+        assert!(restored.forward_depot_location.is_empty());
+        assert_eq!(restored.forward_depot_capacity_bonus, 0);
+        assert_eq!(restored.forward_depot_days, 0);
     }
 
     #[test]

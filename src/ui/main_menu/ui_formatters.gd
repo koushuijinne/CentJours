@@ -35,3 +35,23 @@ static func format_number(value: int) -> String:
 	parts.push_front(digits)
 	var formatted := ",".join(parts)
 	return "-" + formatted if negative else formatted
+
+static func supply_role_for_capacity(capacity: int) -> String:
+	if capacity <= 2:
+		return "frontline_outpost"
+	if capacity <= 5:
+		return "transit_stop"
+	if capacity <= 9:
+		return "regional_depot"
+	return "strategic_depot"
+
+static func supply_role_label_for_capacity(capacity: int) -> String:
+	match supply_role_for_capacity(capacity):
+		"frontline_outpost":
+			return "前沿消耗点"
+		"transit_stop":
+			return "沿线转运点"
+		"regional_depot":
+			return "区域整补点"
+		_:
+			return "战略大仓"

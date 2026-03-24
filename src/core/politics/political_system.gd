@@ -71,6 +71,12 @@ const POLICY_META: Dictionary = {
 		"rouge_noir_hint": "-2 Noir",
 		"summary": "短期整顿运输线，立刻小幅回补补给，并在接下来数日提高补给线效率"
 	},
+	"establish_forward_depot": {
+		"name": "建立前沿粮秣站",
+		"cost": 1,
+		"rouge_noir_hint": "-1 Noir",
+		"summary": "在当前驻地建立临时粮秣站，立刻小幅回补补给，并在接下来数日提高该节点的本地仓储容量"
+	},
 	"secret_diplomacy": {
 		"name": "秘密外交（分化反法同盟）",
 		"cost": 2,

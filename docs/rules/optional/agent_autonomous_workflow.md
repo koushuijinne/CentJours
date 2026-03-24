@@ -17,6 +17,8 @@
 - 除非项目已经达到“可进入 Steam 提审 / 发版收口”的程度，否则不允许把任何过程内汇报、压缩摘要、提交 / 推送结果或阶段性总结当作收尾
 - 自动循环的目标不是“完成一个回答”，而是“连续完成高价值开发闭环”
 - 每轮默认先选“完整功能包”，不要只做一句文案、一个 tooltip、一个提示色或一段纯文档补丁
+- 自动工作流禁止把 Linux / WSL 侧测试当作默认验证路径，包括 Linux `cargo test`、Linux Godot 无头和任何“先用 Linux 顶一下”的替代动作；只有用户明确要求时才允许运行
+- 任何 Linux / WSL 侧结果都不得写成“本轮验证通过”或“当前运行时已确认”的结论；默认验证结论只接受 Windows 原生构建、Windows 无头和 Windows 真机结果
 - 除非在修主链路阻塞，否则一轮至少同时覆盖下列四层中的三层：
   - 规则 / 玩法 / 数据
   - UI / 展示 / 教学反馈
@@ -66,8 +68,9 @@
 5. 直接实现
    - 优先做完整切片，不在同一轮掺入无关大重构
 6. 立即验证
-   - Rust 改动跑 `cargo test`
-   - UI / GDExt 改动走 Windows 原生验证
+   - Rust / GDExt 改动默认走 Windows 原生构建与 Windows 运行时验证
+   - 没有对应 Windows 验证手段时，明确记录“未验证”，不要回退去跑 Linux / WSL 测试补位
+   - UI 改动走 Windows 原生验证
 7. 同步文档
    - 更新 `docs/plans/development_plan.md`
    - 更新 `docs/history/agent_handoff.md`
@@ -124,8 +127,8 @@
 
 ## 6. 默认验证矩阵
 
-- Rust 规则层：`cd cent-jours-core && cargo test`
 - Rust + GDExt API：Windows 侧重编扩展
+- 若改动触及 Rust，但当前没有对应的 Windows 验证手段，就明确记录“本轮未完成运行时验证”，不要回退去跑 Linux / WSL 测试补位
 
 ```bash
 cd /d E:\projects\CentJours\cent-jours-core
@@ -133,6 +136,7 @@ cargo build --features godot-extension
 ```
 
 - GDScript / 场景 / UI：默认只走 Windows 原生验证
+- 不运行 Linux / WSL Godot 无头，不运行 Linux / WSL 侧 `cargo test`
 
 ```bash
 E:\software\godot\Godot_v4.6.1-stable_win64_console.exe --headless --path E:\projects\CentJours --quit

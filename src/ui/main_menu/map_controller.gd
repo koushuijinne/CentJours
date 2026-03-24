@@ -12,6 +12,7 @@ const DEFAULT_MAP_TITLE := "THEATRE OF OPERATIONS"
 const DEFAULT_INSPECTOR_TITLE := "Map Inspector"
 const DEFAULT_INSPECTOR_HINT := "悬停查看节点，点击后锁定详情。"
 const SUPPLY_WARNING_THRESHOLD := 45.0
+const SUPPLY_HUB_IDS := ["golfe_juan", "grenoble", "lyon", "paris", "lille", "maubeuge"]
 
 signal map_data_loaded(success: bool)
 signal map_rebuilt
@@ -436,6 +437,8 @@ func _rebuild_map_nodes() -> void:
 		"selected_node_id": _selected_map_node_id,
 		"march_origin_id": _march_origin_node_id,
 		"march_target_ids": _march_target_node_ids,
+		"forward_depot_location": GameState.forward_depot_location,
+		"forward_depot_days": GameState.forward_depot_days,
 	}
 
 	# 委托渲染器执行全量重绘
@@ -534,9 +537,26 @@ func refresh_map_inspector() -> void:
 		_map_inspector_meta.add_theme_color_override("font_color", CentJoursTheme.COLOR["text_primary"])
 	if _map_inspector_stats != null:
 		var marker := "Napoléon 当前所在\n" if inspector_node_id == _napoleon_location_id else ""
-		_map_inspector_stats.text = "%s补给容量：%d\n防御加成：%.1f\n驻军：%d" % [
+		var base_capacity := int(node_info.get("supply_capacity", 0))
+		var capacity_bonus := _forward_depot_bonus_for_node(inspector_node_id)
+		var effective_capacity := base_capacity + capacity_bonus
+		var hub_info := _nearest_supply_hub(inspector_node_id)
+		var capacity_suffix := ""
+		if capacity_bonus > 0:
+			capacity_suffix = " + 前沿粮秣站 %d" % capacity_bonus
+		var capacity_line := "有效容量：%d（基础 %d%s）" % [
+			effective_capacity,
+			base_capacity,
+			capacity_suffix
+		]
+		var hub_line := "最近枢纽：%s" % String(hub_info.get("label", "未知补给点"))
+		if int(hub_info.get("distance", -1)) >= 0:
+			hub_line += "（%d 跳）" % int(hub_info.get("distance", 0))
+		_map_inspector_stats.text = "%s补给角色：%s\n%s\n%s\n防御加成：%.1f\n驻军：%d" % [
 			marker,
-			int(node_info.get("supply_capacity", 0)),
+			MainMenuFormattersLib.supply_role_label_for_capacity(base_capacity),
+			capacity_line,
+			hub_line,
 			float(node_info.get("defense_bonus", 0.0)),
 			int(node_info.get("garrison", 0))
 		]
@@ -659,11 +679,16 @@ func _update_march_target(node_id: String) -> void:
 		var morale_delta := float(march_preview.get("morale_delta", 0.0))
 		var projected_supply := float(march_preview.get("projected_supply", GameState.supply))
 		var supply_capacity := int(march_preview.get("supply_capacity", int(target_info.get("supply_capacity", 0))))
+		var base_supply_capacity := int(march_preview.get("base_supply_capacity", supply_capacity))
+		var temporary_capacity_bonus := int(march_preview.get("temporary_capacity_bonus", max(0, supply_capacity - base_supply_capacity)))
 		var line_efficiency := float(march_preview.get("line_efficiency", 0.0))
 		var supply_available := float(march_preview.get("supply_available", 0.0))
 		var supply_demand := float(march_preview.get("supply_demand", 0.0))
-		var pressure_label := _march_pressure_label(projected_supply, int(target_info.get("supply_capacity", 0)))
-		preview_text = "预计补给：%s（%.0f，%+.1f）\n预计疲劳：%.0f（%+.1f）\n预计士气：%.0f（%+.1f）\n原因：%s\n建议：%s" % [
+		var supply_role_label := String(march_preview.get("supply_role_label", MainMenuFormattersLib.supply_role_label_for_capacity(base_supply_capacity)))
+		var hub_name := String(march_preview.get("supply_hub_name", "未知补给点"))
+		var hub_distance := int(march_preview.get("supply_hub_distance", -1))
+		var pressure_label := _march_pressure_label(projected_supply, supply_capacity)
+		preview_text = "预计补给：%s（%.0f，%+.1f）\n预计疲劳：%.0f（%+.1f）\n预计士气：%.0f（%+.1f）\n节点角色：%s\n原因：%s\n建议：%s" % [
 			pressure_label,
 			projected_supply,
 			supply_delta,
@@ -671,11 +696,24 @@ func _update_march_target(node_id: String) -> void:
 			fatigue_delta,
 			float(march_preview.get("projected_morale", GameState.avg_morale)),
 			morale_delta,
-			_build_supply_reason_text(supply_capacity, line_efficiency, supply_available, supply_demand),
+			supply_role_label,
+			_build_supply_reason_text(
+				base_supply_capacity,
+				temporary_capacity_bonus,
+				supply_role_label,
+				hub_name,
+				hub_distance,
+				line_efficiency,
+				supply_available,
+				supply_demand
+			),
 			_build_supply_recommendation(
 				projected_supply,
 				supply_delta,
 				supply_capacity,
+				temporary_capacity_bonus,
+				supply_role_label,
+				hub_distance,
 				line_efficiency,
 				supply_available,
 				supply_demand
@@ -698,21 +736,25 @@ func _update_march_target(node_id: String) -> void:
 
 
 func _build_march_supply_preview(target_info: Dictionary) -> Dictionary:
-	var supply_capacity := int(target_info.get("supply_capacity", 0))
+	var node_id := String(target_info.get("id", ""))
+	var base_capacity := int(target_info.get("supply_capacity", 0))
+	var supply_capacity := _effective_supply_capacity_for_node(node_id, target_info)
 	var current_supply := GameState.supply
+	var role_label := MainMenuFormattersLib.supply_role_label_for_capacity(base_capacity)
+	var hub_info := _nearest_supply_hub(node_id)
 	var pressure_label := "补给大致可维持"
 	var risk_hint := "沿线仓储足够支撑短程推进。"
 	var is_warning := false
 
-	if supply_capacity <= 2:
+	if base_capacity <= 2:
 		pressure_label = "补给压力很高"
 		risk_hint = "这是低容量前线节点，推进后很容易继续掉补给。"
 		is_warning = true
-	elif supply_capacity <= 5:
+	elif base_capacity <= 5:
 		pressure_label = "补给压力偏高"
 		risk_hint = "仓储容量有限，连续推进会明显拉长补给线。"
 		is_warning = true
-	elif supply_capacity >= 9:
+	elif base_capacity >= 9:
 		pressure_label = "补给有望回升"
 		risk_hint = "这是高容量节点，适合作为下一段推进前的整补落点。"
 
@@ -724,9 +766,12 @@ func _build_march_supply_preview(target_info: Dictionary) -> Dictionary:
 		stock_hint = "当前库存较充足，可以承担一次正常推进。"
 
 	return {
-		"text": "预计补给：%s（容量 %d）\n%s\n%s" % [
+		"text": "预计补给：%s（容量 %d）\n节点角色：%s\n最近枢纽：%s%s\n%s\n%s" % [
 			pressure_label,
 			supply_capacity,
+			role_label,
+			String(hub_info.get("label", "未知补给点")),
+			_hub_distance_suffix(int(hub_info.get("distance", -1))),
 			risk_hint,
 			stock_hint
 		],
@@ -745,13 +790,24 @@ func _march_pressure_label(projected_supply: float, supply_capacity: int) -> Str
 
 
 func _build_supply_reason_text(
-	supply_capacity: int,
+	base_supply_capacity: int,
+	temporary_capacity_bonus: int,
+	supply_role_label: String,
+	hub_name: String,
+	hub_distance: int,
 	line_efficiency: float,
 	supply_available: float,
 	supply_demand: float
 ) -> String:
-	return "目标仓储容量 %d，补给线效率 %.0f%%，预计可得 %.1f，对应需求 %.1f。" % [
-		supply_capacity,
+	var capacity_suffix := ""
+	if temporary_capacity_bonus > 0:
+		capacity_suffix = " + 前沿粮秣站 %d" % temporary_capacity_bonus
+	return "目标为%s，仓储容量 %d%s，最近枢纽 %s%s，补给线效率 %.0f%%，预计可得 %.1f，对应需求 %.1f。" % [
+		supply_role_label,
+		base_supply_capacity,
+		capacity_suffix,
+		hub_name,
+		_hub_distance_suffix(hub_distance),
 		line_efficiency * 100.0,
 		supply_available,
 		supply_demand
@@ -762,6 +818,9 @@ func _build_supply_recommendation(
 	projected_supply: float,
 	supply_delta: float,
 	supply_capacity: int,
+	temporary_capacity_bonus: int,
+	supply_role_label: String,
+	hub_distance: int,
 	line_efficiency: float,
 	supply_available: float,
 	supply_demand: float
@@ -772,6 +831,51 @@ func _build_supply_recommendation(
 		return "这一步会继续掉补给。若没有决定性战机，优先休整或回到高容量节点，再考虑推进。"
 	if supply_available + 0.5 < supply_demand:
 		return "沿线可得量低于部队需求，连续推进会把风险越积越高，下一步应优先补给而不是继续赶路。"
+	if temporary_capacity_bonus > 0 and supply_capacity >= 6:
+		return "这里已有前沿粮秣站，适合当两到三天的临时整补跳板。趁窗口还在，先把补给和疲劳拉回安全区。"
 	if projected_supply >= 75.0 and supply_capacity >= 8:
 		return "这里适合作为短暂整补落点，可以在下一步推进前先把疲劳和补给拉回安全区间。"
+	if hub_distance >= 3 and supply_role_label == "沿线转运点":
+		return "这里离后方枢纽已经不近。若还要连续前推，先建立前沿粮秣站会比硬顶更稳。"
 	return "当前推进还能维持，但不适合连续硬顶前线；继续东进前先确认下一站也有足够仓储。"
+
+
+func _forward_depot_bonus_for_node(node_id: String) -> int:
+	if GameState.forward_depot_days > 0 and GameState.forward_depot_location == node_id:
+		return GameState.forward_depot_capacity_bonus
+	return 0
+
+
+func _effective_supply_capacity_for_node(node_id: String, node_info: Dictionary) -> int:
+	return int(node_info.get("supply_capacity", 0)) + _forward_depot_bonus_for_node(node_id)
+
+
+func _hub_distance_suffix(distance: int) -> String:
+	if distance < 0:
+		return ""
+	return "（%d 跳）" % distance
+
+
+func _nearest_supply_hub(node_id: String) -> Dictionary:
+	if node_id == "":
+		return {}
+	if SUPPLY_HUB_IDS.has(node_id):
+		var hub_node := get_map_node(node_id)
+		return {"label": _node_label_text(hub_node), "distance": 0}
+
+	var queue: Array[Dictionary] = [{"id": node_id, "distance": 0}]
+	var visited := {node_id: true}
+	while not queue.is_empty():
+		var item: Dictionary = queue.pop_front()
+		var current_id := String(item.get("id", ""))
+		var next_distance := int(item.get("distance", 0)) + 1
+		for neighbor_variant in Array(_map_adjacency_by_node.get(current_id, [])):
+			var neighbor_id := String(neighbor_variant)
+			if visited.has(neighbor_id):
+				continue
+			if SUPPLY_HUB_IDS.has(neighbor_id):
+				var hub_node := get_map_node(neighbor_id)
+				return {"label": _node_label_text(hub_node), "distance": next_distance}
+			visited[neighbor_id] = true
+			queue.append({"id": neighbor_id, "distance": next_distance})
+	return {"label": "未知补给点", "distance": -1}
