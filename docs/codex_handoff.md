@@ -1,64 +1,78 @@
 # Codex Handoff
 
-> **更新**: 2026-03-23
-> **当前分支**: `codex/overnight-project-advance`
+> **更新**: 2026-03-24
+> **当前分支**: 以 `git branch --show-current` 为准（不再在 handoff 中硬编码）
 > **目标读者**: 新开会话后需要快速接手项目的 Codex / 协作者
+> **自动推进**: 见 `docs/codex_autonomous_workflow.md`
 
 ---
 
 ## 1. 当前项目状态
 
-- Rust 规则层与 Godot 前端已完成基础联调，主循环可跑通。
-- Windows Godot 运行与 Windows 无头测试可用，当前默认只走 Windows 验证路径。
-- `Tier 2` 的行军最小闭环已基本打通：Rust `PlayerAction::March`、GDExt `process_day_march/get_adjacent_nodes`、TurnManager 同步、主菜单行军卡片、地图选点与确认流程已经接上。
-- 地图行军模式现在直接吃引擎返回的 `available_march_targets`，并会高亮可达节点与出发路线，不再由前端私算邻接。
-- 战役弹窗已接入当前位置上下文：会显示当前节点，并默认选中当前节点地形；`mountains/coastal/fortress` 等地形的 UI 选项与 GDExt 映射已补齐。
-- `Tier 3.5` 已推进一轮：`coalition_troops_bonus`、`paris_security_bonus`、`political_stability_bonus` 现在会真正进入引擎状态机，不再被事件系统静默吞掉。
-- `src/ui/main_menu.gd` 已从原始 `1531` 行收缩到当前 `523` 行，主菜单已基本转为编排器，但第三波解耦仍未收口。
-- `map / layout / tray / sidebar / dialogs` 五类 controller 已建立，主菜单子系统已完成两波拆分。
+- Rust 规则层与 Godot 前端已完成基础联调，主循环可跑通，正式入口是 `src/ui/main_menu.tscn`
+- 2026-03-24 复核 `cargo test` 为 **168/168 全通过**
+- 当前核心数据基线：`15` 名角色、`41` 个地图节点、`58` 条历史事件（major 16 / normal 35 / minor 7）
+- 当前整合方向已切到 `claude/review-project-status-05vxD`：它从这一轮开始承接主开发，`codex/0323-auto` 转为历史参考分支
+- 行军、战斗、政治、命令偏差、联军动态化、叙事池、单槽存档/读档均已接入
+- Save / Load 已进入 v2 兼容迁移阶段：杜伊勒里宫前夜事件已完成正式改名，旧存档会在读档时自动迁移到新 ID
+- 玩家行动结算日志已可见：政策 / 战役 / 行军 / 强化忠诚会显示结构化影响摘要，日志通过 `last_action_events -> GDExt -> TurnManager/EventBus -> MainMenu` 进入侧栏；角色短名已统一来自 `characters.json.display_name`
+- 前端已拆出 `map / layout / tray / sidebar / dialogs` 控制器，但发布级 polish 尚未完成
+- Windows Godot 运行与 Windows 无头测试仍是默认验证路径；**不要切到 Linux / WSL 无头测试作为默认方案**
+- 当前尚未达到 Steam 发布就绪：内容量、文案 QA、UI 收口、设置/导出/商店链路、最终资产都还缺
 
 ## 2. 当前最高优先级
 
-- 主菜单第三波收尾：把这轮新增的行军 / 战役上下文逻辑继续从 `src/ui/main_menu.gd` 外移。
-- Tier 2 全部完成，Tier 3.1 命令偏差已实装（测试135个），继续推进 Tier 3 子项（3.2 叛逃、3.3 联军动态化）。
-- 优先级仍高于新菜单页、引导页、额外动画和外围视觉扩散。
+1. 历史事件从 `58` 条扩充到 `100+`，并按 `docs/advice/claude_event_history.md` 修正文风与史实问题
+2. 补前 10 天引导、失败归因与结局文本，让新玩家信息解释真正完整成立
+3. 收口 F5：托盘双滚动、中英混排、`Map Inspector` 紧凑、设置入口与前 10 天引导
+4. 固化 Windows 发布链路与 Steam 提审资料清单
 
 ## 3. 已完成的关键改动
 
-- 主场景已脱离 smoke test 入口，`src/ui/main_menu.tscn` 是正式入口。
-- `src/ui/main_menu/map_controller.gd` 已接管地图节点绘制、hover / click、`Map Inspector`。
-- `src/ui/main_menu/layout_controller.gd` 已接管主题样式、响应式布局、RN 滑条与托盘布局。
-- `src/ui/main_menu/sidebar_controller.gd` 已接管 `Current Situation`、`Marshal Loyalty`、`History & Narrative` 刷新。
-- `src/ui/main_menu/tray_controller.gd` 已接管托盘卡片构建、选中态、冷却态和确认按钮联动。
-- `src/ui/main_menu/dialogs_controller.gd` 已接管游戏结束、战斗参数、忠诚度强化弹窗。
-- Windows 无头测试已经通过，修复过一次由 `decision_card.gd` 类型推断引起的连带编译失败。
-- 已为 Rust 引擎新增 `napoleon_location` 存档同步、`PlayerAction::March`、`process_day_march()` 与 `get_adjacent_nodes()`。
-- `TurnManager` 现在会把引擎权威的可达行军目标同步到 `GameState.available_march_targets`。
-- 主菜单地图在行军模式下会高亮可达节点 / 路线，并在 Sidebar 给出无效目标与确认提示。
-- 这轮已确认 Windows GDExt 改动后必须在 Windows 侧执行 `cargo build --features godot-extension`，否则 Godot 会加载到缺少导出符号的 DLL。
-- 已清理 `cent-jours-core/src/lib.rs` 中大批 `VarDictionary::insert` 的 warning 噪音，Windows GDExt 构建输出显著变干净。
-- `coalition_troops_bonus` 已接入 `coalition_force()`；`paris_security_bonus` / `political_stability_bonus` 已接入每日结算，并已纳入存档 / 读档一致性。
-- 当前 Rust 测试数量已提升到 `131`，包含新增的事件效果状态承接测试。
-- 已新增 `docs/codex_session_prompts.md`，并在计划文档中建立了 handoff / prompt 模板入口。
-- ~~`docs/codex_overnight_plan.md`~~ 已废弃（v42）：有用规则迁入 `CLAUDE.md` 开发循环规则段落。
-- ~~`docs/frontend_dev_plan.md`~~ 已废弃（v42）：前端进度合并到 `docs/dev_plan.md` 前端层分区。
+- 主场景已脱离 smoke test 入口，`src/ui/main_menu.tscn` 是正式入口
+- `TurnManager` 已通过 `CentJoursEngine` 驱动 Dawn / Action / Dusk，全局状态由 Rust 引擎权威维护
+- `PlayerAction::March`、`process_day_march()`、`get_adjacent_nodes()`、地图高亮与确认流程均已接上
+- 事件 tier 架构已完成，`historical.json` 已带 `tier` 字段并与 Rust `EventPool` 对齐
+- `coalition_troops_bonus`、`paris_security_bonus`、`political_stability_bonus` 已真实进入状态机
+- 叙事引擎已接入 `GameEngine`，政策 / 战役 / 强化忠诚可产生 `DayReport`
+- `historical_note` 已接入 Rust → GDExt → TurnManager → Sidebar/叙事日志链路，历史事件会在当回合结算后即时显示正文与史注
+- 已累计对 24 条旧事件做文案 QA；上一轮修 `tuileries_eve`、`diplomatic_offer_rejected`、`chamber_opposition_grows`、`waterloo_eve`、`murat_naples_betrayal`，本轮再收紧 11 条 `historical_note` 的日期锚点与事实 → 后果链
+- 本轮再补 `blucher_promises_support`、`wounded_wagons_from_ligny`、`grouchy_hears_cannon`、`la_haye_sainte_taken_too_late`、`plancenoit_under_attack`、`zieten_left_flank_arrival` 六条终盘事件，事件池扩至 55 条，并补上终盘 `minor` 覆盖
+- 本轮继续补入 `ghent_bourbon_court`、`royalist_pamphlets_from_ghent`、`brussels_allied_staff_conference` 三条政治 / 联军协同事件，把根特流亡宫廷、保皇派舆论战与布鲁塞尔联军参谋会正式接进事件池，事件总量推到 58 条
+- 本轮已把 `codex/0323-auto` 的实现基线并入 `claude/review-project-status-05vxD`，并在 `historical.json / events::pool / dev_plan / plan` 这 4 个冲突文件上完成人工决议
+- 本轮已把 `tuileries_eve` 设为正式事件 ID，并补上 Save / Load v2 迁移、终盘时间线回归和事件去重测试
+- `events::pool` 已有事件数量、ID 唯一性、`historical_note` 非空、tier 对应叙事段数、禁止无效负 bonus、Day 85+ 至少 1 条 `minor` 等回归测试，防止后续扩容时静默退化
+- 本轮已清理 Rust 测试噪音：`characters/network.rs` 补回遗漏测试，`events/pool.rs` 与 `narratives/mod.rs` 的本地化测试名改为模块级允许；`cargo test` 当前只剩硬链接缓存环境提示
+- 本轮已对 `DecisionTray` 做结构性滚动修复：锁定为仅横向滚动，并把卡片行高度 / hover 余量显式纳入布局计算，减少竖向滚动条被误触发的机会；Godot Windows 无头加载已通过
+- 本轮已对 `Map Inspector` 做结构性松绑：加入内部纵向滚动层，并改为响应式宽高，长文本不再只能硬塞进固定 `272x180` 面板
+- 本轮已按 `ADR-008` 对旧事件文案做第一批直写化修订：清掉 `historical.json` 里 `19` 段 reframing / 填充句式，并补强 `grouchy_assignment`、`fouche_conspiracy`、`british_subsidies_coalition` 等条目的表达
+- `events::pool` 新增文案护栏测试，禁止历史事件再次出现“不是……而是……”等 reframing 句式；Rust 测试总数已升到 `168`
+- 结局弹窗已开始消费 `OUTCOME_TEXT` 里的 `epilogue / review_hint`，并按终局统计生成复盘说明；行动后果微叙事也已改为中文类别标签
+- `GameEngine` 已缓存最近一次玩家行动的 `DayEvent`，`CentJoursEngine.get_last_action_events()` 已暴露到 Godot；政策 / 战役 / 行军 / 强化忠诚结算都会输出可读描述和结构化 effects
+- `characters.json` 已补 `display_name` 字段，GDScript 角色列表与 Rust 行动结算日志都改为优先使用中文短称
+- 叙事面板的“预览/日志”冲突已缓解：选择下一张卡不会再清空既有历史日志，结构化行动结算会写入侧栏滚动日志
+- `map_controller.gd` 已改为运行时 `load(...).new()` 加载地图渲染脚本，Windows Godot 无头验证恢复可通过
+- `src/dev/engine_smoke_test_scene.tscn` 现可直接验证 `process_day_policy()` / `process_day_boost_loyalty()` / `process_day_battle()` 与 `get_last_action_events()` 的 GDExt 调用链
+- Save / Load 已接入主菜单顶栏，但仍是开发态单槽存档
+- 主菜单已完成多轮解耦，职责已拆到 `map / layout / tray / sidebar / dialogs` 五类 controller
 
-## 4. 当前已知问题
+## 4. 当前已知问题与缺口
 
-- `Decision Tray` 仍是“双滚动”状态：底部横向滚动条 + 右侧竖向滚动条同时存在。
-- 主菜单存在中英混排，文案本地化还未统一。
-- `Map Inspector` 长文本在部分节点上排版偏紧，仍有后续 polish 空间。
-- `src/ui/main_menu.gd` 虽然已显著收缩，但仍混有回合流、UI 刷新、行军预览和战役上下文组装职责。
-- ~~战役虽然已带上当前位置默认地形，但战斗规则本身仍未真正消费”当前地图位置”的战略含义~~ ✅ **已解决**：Tier 2.4 完成（地形加成已在 `resolve_battle()` 中消耗、行军疲劳已持久化、战报含地形加成百分比）；Tier 3.1 命令偏差已实装（`calculate_deviation()` 根据忠诚度调整实际兵力）。
-- Windows Rust DLL 若未按 `--features godot-extension` 重编，Godot 会出现“`gdext_rust_init` / 新 API 不存在”的假性脚本错误。
-- 夜间计划已正式加上“禁止自然收口停机”规则，但执行层仍取决于会话是否持续存活。
+- `Decision Tray` 已补结构性修复，但仍需 Windows 真机截图确认“双滚动”是否已完全消失
+- 主菜单仍有中英混排，文本语言策略未统一
+- `Map Inspector` 已补内部滚动和响应式扩容，但仍需 Windows 真机截图确认“偏紧”问题是否完全收口
+- `main_menu.gd` 仍有 `566` 行，`map_controller.gd` 已到 `658` 行，控制器拆分还没完全收口
+- `docs/advice/claude_event_history.md` 指出的史实与文风问题仍未全量收口；虽然本轮已清掉一批 reframing 句式，但全量 58 条事件仍需继续统一史实锚点、信息密度和句式风格
+- 行动结算与角色短名已统一，但主菜单其余 UI 仍有中英法混排，离最终文本统一还有距离
+- 仓库内仍缺 `export_presets.cfg`、Windows 发布脚本、Steam 提审与商店素材清单
+- 资产层仍处于占位阶段：地图底图、肖像、卡片插图、BGM、SFX、结局画面均未完成
 
 ## 5. 下一步推荐任务
 
-1. 继续拆分 `src/ui/main_menu.gd` 的回合流、行军预览和战役上下文组装。
-2. ~~推进 `Tier 2.4`~~ ✅ 已完成；Tier 3.1 命令偏差已实装。下一步：Tier 3.2 将领叛逃/倒戈触发。
-3. 延续 `Tier 3.3`：在现有 `coalition_troops_bonus` 基础上，让联军动态化不只依赖日期，也响应战役与历史事件累计状态。
-4. 若本轮不继续补战略层，就转做主菜单 polish，优先处理托盘双滚动和中英混排。
+1. 先做内容闭环：扩写事件、继续修文案、补政策/结局文本
+2. 再做新玩家闭环：前 10 天引导、失败归因、文案统一、设置入口
+3. 然后做发布闭环：Windows 导出链路、Steam 提审资料、资产替换
+4. 工程收口任务（大文件解耦、`unwrap` 清理、构建警告清理）穿插进行，但不要压过用户可感知问题
 
 ## 6. 当前结构与写入边界
 
@@ -66,10 +80,15 @@
 
 - `src/ui/main_menu.gd`
 - `src/ui/main_menu.tscn`
+- `cent-jours-core/src/engine/state.rs`
+- `cent-jours-core/src/lib.rs`
+- `src/core/turn_manager.gd`
+- `src/core/event_bus.gd`
 
 ### 叶子模块
 
 - `src/ui/main_menu/map_controller.gd`
+- `src/ui/main_menu/map_render_controller.gd`
 - `src/ui/main_menu/layout_controller.gd`
 - `src/ui/main_menu/tray_controller.gd`
 - `src/ui/main_menu/sidebar_controller.gd`
@@ -80,49 +99,75 @@
 
 ### 协作原则
 
-- 主 agent 负责集成、装配、接口冻结和最终回归。
-- subagent 按独立模块拆分，不要多人同时改 `main_menu.gd`。
-- 若接口需要主入口配合，优先在回复里给出精确集成说明，再由主 agent 接回。
+- 主 agent 负责集成、装配、接口冻结和最终回归
+- 若继续拆主菜单，优先按职责和数据流拆，不按页面名字拆
+- `main_menu.gd` 与 `main_menu.tscn` 仍适合由主 agent 独占，避免并行写冲突
 
 ## 7. 验证要求
 
-### 默认无头验证
+### 默认验证方式
 
-- 只执行 Windows 无头测试，不跑 Linux / WSL 无头测试。
-- 若本轮修改了 Rust GDExt API，先在 Windows 侧重编：
+- Rust 改动：`cd cent-jours-core && cargo test`
+- Rust + GDExt API 改动：Windows 侧先执行
 
 ```bash
 cd /d E:\projects\CentJours\cent-jours-core
 cargo build --features godot-extension
 ```
 
-- 默认命令：
+- 默认 Windows 无头命令：
 
 ```bash
 E:\software\godot\Godot_v4.6.1-stable_win64_console.exe --headless --path E:\projects\CentJours --quit
 ```
 
+- 若本轮改动涉及新增 GDExt 接口，补跑一次 smoke scene（当前覆盖 policy / boost / battle 三条路径）：
+
+```bash
+E:\software\godot\Godot_v4.6.1-stable_win64_console.exe --headless --path E:\projects\CentJours res://src/dev/engine_smoke_test_scene.tscn
+```
+
 ### 当前验证优先级
 
-- 前端视觉问题以 Windows 真机截图为最终准绳。
-- 无头测试主要用于脚本解析、资源装载、扩展初始化兜底。
+- 前端视觉问题以 Windows 真机截图为最终准绳
+- 无头测试主要用于脚本解析、资源装载、扩展初始化兜底
+- **不要默认跑 Linux / WSL 无头测试**
 
 ## 8. 新会话最少必读文件
 
 - `docs/development_principles.md`
-- `docs/dev_plan.md`（Rust + 前端统一计划）
+- `docs/dev_plan.md`
 - `docs/codex_handoff.md`
-- `src/ui/main_menu.gd`
+- `docs/codex_autonomous_workflow.md`
+- `docs/decisions/ADR-008-historical-events-expansion.md`
+- `docs/advice/claude_event_history.md`
 
 ## 9. 新会话接手时的注意点
 
-- 不要默认回退工作区里的现有改动。
-- 不要把 Linux / WSL 无头测试当成默认步骤。
-- 若用户只问“还能不能继续拆”“现在有没有问题”，先基于当前代码和截图回答，不要先扩散到大改。
-- 若继续拆主菜单，优先按模块和写入边界拆，而不是按页面名字拆。
+- 不要默认回退工作区里的现有改动
+- 不要把 Linux / WSL 无头测试当成默认步骤
+- 若继续做内容线，先按 `ADR-008` 的 Checklist 和 `claude_event_history` 的修订意见落地
+- `tuileries_eve` 现为正式事件 ID；旧存档里的旧事件 ID 只应出现在迁移代码和兼容性测试里
+- Codex 现在允许直接修改文案，但必须遵守 `ADR-008` 的写作原则：直接、清楚、可考据；禁止使用“不是……而是……”“真正的问题是……”“与其说……不如说……”等 reframing 句式
+- 本轮已修掉 `napoleon_leaves_paris_north` 中不会生效的负 `paris_security_bonus / political_stability_bonus`；后续新增事件不要再用这类负 bonus 表达减益
+- 若继续做 UI 线，优先解决玩家可感知问题，再做大文件工程收口
+- 若被 Windows 验证卡住，先记录到 handoff，再切到不依赖该验证的下一条高价值任务继续推进
+- 若继续做零阻塞开发，直接按 `docs/codex_autonomous_workflow.md` 在当前会话内连续推进，不再引入外部监督器
 
 ## 10. 维护约定
 
-- 每完成一轮开发后，默认同步更新本文件。
-- 若新会话首条 prompt、接手入口或默认验证方式发生变化，同步更新 `docs/codex_session_prompts.md`。
-- 若碰到环境阻塞，先记录到本文件，再切到不依赖该阻塞的下一条高价值任务继续推进。
+- 每完成一轮开发后，默认同步更新本文件
+- 若默认验证方式、自动推进规则或接手入口变化，同步更新 `docs/codex_autonomous_workflow.md`
+- 若当前优先级发生变化，同步更新 `docs/dev_plan.md`
+- 每完成一轮独立任务后，默认执行 `git add -A`、commit、push，并把压缩摘要直接写进本文件，供下一轮直接续跑
+
+## 11. 最近一轮压缩摘要
+
+- 当前可信基线：`15` 角色 / `41` 节点 / `58` 历史事件 / `168` Rust tests
+- 主开发分支已切换为 `claude/review-project-status-05vxD`，本轮整合以 `codex/0323-auto` 的实现基线为底，并吸收 Claude 分支的事件修订
+- `tuileries_eve` 已成为正式事件 ID，后续代码与文档统一使用新 ID，旧 ID 只保留在存档迁移与兼容性测试中
+- 已删除外部监督器方案，零阻塞自动循环重新收口到 `docs/codex_autonomous_workflow.md` 的会话内执行规则
+- 已把“允许改文案，但必须遵守 `ADR-008` 且禁止 reframing 句式”写入最高优先级规则，并同步到 `dev_plan / session prompt`
+- 本轮已把“`final` / 回顾 / 解释停机原因都不是停机点”补进最高优先级规则，并同步到 `dev_plan / session prompt`
+- 本轮已按 `ADR-008` 清掉 `historical.json` 中 `19` 段 reframing / 填充句式，并给 `events::pool` 加上文案护栏测试；本轮又补上 `tuileries_eve` 正式改名、Save / Load v2 迁移和终盘时间线测试，`cargo test` 现为 `168/168`
+- 下一轮默认动作：继续按 `claude_event_history` 清剩余政治 / 外交 / 联军视角条目，再补一轮 Windows 真机验收确认 `DecisionTray` 和 `Map Inspector` 的结构修复是否真正收口

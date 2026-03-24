@@ -14,7 +14,7 @@ static func phase_display_name(phase_id: String) -> String:
 
 static func character_display_name(characters: Dictionary, hero_id: String) -> String:
 	var char_data: Dictionary = characters.get(hero_id, {})
-	return String(char_data.get("name", hero_id.capitalize()))
+	return String(char_data.get("display_name", char_data.get("name", hero_id.capitalize())))
 
 static func napoleon_location_label(map_nodes: Array, napoleon_location: String) -> String:
 	for node_info in map_nodes:

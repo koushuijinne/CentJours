@@ -1,6 +1,8 @@
-pub mod resolver;
 pub mod march;
+pub mod resolver;
 
-pub use resolver::{BattleResult, BattleOutcome, ForceData, Terrain, resolve_battle};
-pub use march::{MapGraph, MapNode, MapEdge, ArmyState, MoveResult, SupplyResult,
-                move_army, rest_army, update_supply};
+pub use march::{
+    move_army, rest_army, update_supply, ArmyState, MapEdge, MapGraph, MapNode, MoveResult,
+    SupplyResult,
+};
+pub use resolver::{resolve_battle, BattleOutcome, BattleResult, ForceData, Terrain};

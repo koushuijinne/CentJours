@@ -30,7 +30,8 @@ signal character_joined(character_id: String)
 signal narrative_triggered(narrative_id: String, context: Dictionary)
 signal stendhal_diary_entry(day: int, text: String)
 signal micro_narrative_shown(category: String, text: String)
+signal action_resolution_logged(event_type: String, description: String, effects: Array)
 
 # 游戏状态事件
 signal game_over(outcome: String)
-signal historical_event_triggered(event_id: String)
+signal historical_event_triggered(event_id: String, event_data: Dictionary)

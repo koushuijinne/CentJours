@@ -95,6 +95,9 @@ func configure_static_ui() -> void:
 	if _legitimacy_bar != null:
 		_legitimacy_bar.show_percentage = false
 		_legitimacy_bar.max_value = 100.0
+	if _decision_scroll != null:
+		_decision_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_ALWAYS
+		_decision_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	for label in [_situation_body, _narrative_body, _map_inspector_meta, _map_inspector_stats, _map_inspector_history]:
 		if label != null:
 			label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -225,6 +228,15 @@ func apply_responsive_layout(viewport_size: Vector2 = Vector2.ZERO) -> void:
 	var sidebar_width := clampf(viewport.x * 0.27, 332.0, 372.0)
 	if _sidebar != null:
 		_sidebar.custom_minimum_size.x = sidebar_width
+	if _map_inspector_panel != null:
+		var inspector_width := clampf(viewport.x * 0.235, 272.0, 320.0)
+		var inspector_height := clampf(viewport.y * 0.295, 188.0, 236.0)
+		var inspector_top := clampf(viewport.y * 0.074, 48.0, 60.0)
+		_map_inspector_panel.custom_minimum_size = Vector2(inspector_width, inspector_height)
+		_map_inspector_panel.offset_left = -inspector_width - 4.0
+		_map_inspector_panel.offset_top = inspector_top
+		_map_inspector_panel.offset_right = -4.0
+		_map_inspector_panel.offset_bottom = inspector_top + inspector_height
 
 	var card_size := Vector2(
 		clampf(viewport.x * 0.102, 124.0, 140.0),
@@ -232,9 +244,16 @@ func apply_responsive_layout(viewport_size: Vector2 = Vector2.ZERO) -> void:
 	)
 	apply_decision_card_metrics(card_size)
 
-	var scroll_safe_bottom := _compute_decision_scroll_safe_bottom()
+	var hover_padding := _compute_decision_hover_padding(card_size.y)
+	var row_height := _compute_decision_row_height(card_size.y)
+	var scroll_safe_bottom := _compute_decision_scroll_safe_bottom() + hover_padding
+	_set_margin(_decision_scroll_content, "margin_top", int(roundf(hover_padding)))
 	_set_margin(_decision_scroll_content, "margin_bottom", int(roundf(scroll_safe_bottom)))
-	var scroll_height := card_size.y + scroll_safe_bottom
+	if _decision_scroll_content != null:
+		_decision_scroll_content.custom_minimum_size.y = row_height + hover_padding + scroll_safe_bottom
+	if _decision_row != null:
+		_decision_row.custom_minimum_size.y = row_height
+	var scroll_height := row_height + hover_padding + scroll_safe_bottom
 	if _decision_scroll != null:
 		_decision_scroll.custom_minimum_size = Vector2(0.0, scroll_height)
 	if _decision_tray != null:
@@ -300,6 +319,17 @@ func _compute_decision_scroll_safe_bottom() -> float:
 	if h_scroll_bar == null:
 		return fallback
 	return maxf(fallback, h_scroll_bar.get_combined_minimum_size().y + 4.0)
+
+
+func _compute_decision_row_height(card_height: float) -> float:
+	var row_height := card_height
+	if _decision_row != null:
+		row_height = maxf(row_height, _decision_row.get_combined_minimum_size().y)
+	return row_height
+
+
+func _compute_decision_hover_padding(card_height: float) -> float:
+	return maxf(4.0, ceilf(card_height * 0.04))
 
 
 func _panel_min_height(content: Control, breathing_room: float, floor_value: float) -> float:

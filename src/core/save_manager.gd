@@ -6,7 +6,7 @@ class_name SaveManager
 extends RefCounted
 
 const SAVE_PATH    := "user://cent_jours_save.json"
-const SAVE_VERSION := 1
+const SAVE_VERSION := 2
 
 ## 存档：序列化引擎状态并写入磁盘
 ## 返回 true 表示写入成功

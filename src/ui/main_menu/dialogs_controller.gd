@@ -95,7 +95,7 @@ func show_game_over(outcome: String, stats: Dictionary = {}) -> void:
 	_host_or_self().add_child(_game_over_overlay)
 
 	var panel := PanelContainer.new()
-	panel.custom_minimum_size = Vector2(420, 320)
+	panel.custom_minimum_size = Vector2(500, 420)
 	panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
 	var style := StyleBoxFlat.new()
 	style.bg_color = CentJoursTheme.COLOR["bg_primary"]
@@ -124,11 +124,19 @@ func show_game_over(outcome: String, stats: Dictionary = {}) -> void:
 	vbox.add_child(desc_label)
 
 	var game_over_state := build_game_over_state(stats)
-	var current_day := int(game_over_state[STATE_KEY_CURRENT_DAY])
+	var current_day := _display_game_over_day(int(game_over_state[STATE_KEY_CURRENT_DAY]))
 	var legitimacy := float(game_over_state[STATE_KEY_LEGITIMACY])
 	var victories := int(game_over_state[STATE_KEY_VICTORIES])
 	var total_troops := int(game_over_state[STATE_KEY_TOTAL_TROOPS])
 	var avg_morale := float(game_over_state[STATE_KEY_AVG_MORALE])
+	_append_game_over_section(
+		vbox,
+		"终局尾声",
+		_build_game_over_epilogue(outcome, game_over_state, info),
+		CentJoursTheme.COLOR["gold_dim"],
+		CentJoursTheme.COLOR["text_primary"]
+	)
+
 	var stats_label := Label.new()
 	stats_label.text = "\n最终统计\n天数: %d  |  合法性: %.0f\n胜场: %d  |  兵力: %d  |  士气: %.0f" % [
 		current_day,
@@ -141,6 +149,14 @@ func show_game_over(outcome: String, stats: Dictionary = {}) -> void:
 	stats_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(stats_label)
 
+	_append_game_over_section(
+		vbox,
+		"战局复盘",
+		_build_game_over_review(outcome, game_over_state, info),
+		CentJoursTheme.COLOR["gold_dim"],
+		CentJoursTheme.COLOR["text_secondary"]
+	)
+
 	var restart_btn := Button.new()
 	restart_btn.text = "重新开始"
 	restart_btn.custom_minimum_size = Vector2(140, 36)
@@ -149,6 +165,120 @@ func show_game_over(outcome: String, stats: Dictionary = {}) -> void:
 
 	panel.add_child(vbox)
 	_game_over_overlay.add_child(panel)
+
+
+func _build_game_over_epilogue(outcome: String, game_over_state: Dictionary, info: Dictionary) -> String:
+	return _select_outcome_copy(outcome, game_over_state, info, "epilogue_variants", "epilogue")
+
+
+## 终局复盘优先解释“为什么输/赢”，把已有 review_hint 和实时统计拼在一起。
+func _build_game_over_review(outcome: String, game_over_state: Dictionary, info: Dictionary) -> String:
+	var lines: Array[String] = []
+	var review_hint := _select_outcome_copy(outcome, game_over_state, info, "review_hint_variants", "review_hint")
+	if review_hint != "":
+		lines.append(review_hint)
+
+	var current_day := _display_game_over_day(int(game_over_state[STATE_KEY_CURRENT_DAY]))
+	var legitimacy := float(game_over_state[STATE_KEY_LEGITIMACY])
+	var victories := int(game_over_state[STATE_KEY_VICTORIES])
+	var total_troops := int(game_over_state[STATE_KEY_TOTAL_TROOPS])
+	var avg_morale := float(game_over_state[STATE_KEY_AVG_MORALE])
+
+	match outcome:
+		"napoleon_victory":
+			lines.append("你把政权撑到了终局，还拿下了 %d 场有效胜利。政治线和军事线都没有先失手。" % victories)
+		"waterloo_historical":
+			lines.append("你把百日政权维持到了最后，但 %d 场胜利还不足以把中盘优势滚成改写历史的结果。" % victories)
+		"waterloo_defeat":
+			lines.append("终局时合法性 %.0f、胜场 %d，说明政治与军事两条线都没能守住最后的窗口。" % [legitimacy, victories])
+		"political_collapse":
+			lines.append("你在第 %d 天提前出局，说明巴黎内部先于战场给出了否决。" % current_day)
+		"military_annihilation":
+			lines.append("你在第 %d 天把兵力打到只剩 %d，前线先于首都承受不住损耗。" % [current_day, total_troops])
+
+	if outcome != "napoleon_victory" and victories < 3:
+		lines.append("有效胜场只有 %d 场，军事窗口没有被扩大成决定性优势。" % victories)
+	if legitimacy < 35.0:
+		lines.append("终局合法性只剩 %.0f，政治支持已经不足以继续承担战争。" % legitimacy)
+	if total_troops < 20000:
+		lines.append("终局兵力只剩 %d，人力储备已经不够继续换时间。" % total_troops)
+	if avg_morale < 45.0:
+		lines.append("终局士气 %.0f，说明连续损耗和疲劳没有被及时修复。" % avg_morale)
+
+	return "\n".join(lines)
+
+
+## 允许结局文案按终局状态选择不同变体；未提供 variants 时回退到单条文案。
+func _select_outcome_copy(
+	outcome: String,
+	game_over_state: Dictionary,
+	info: Dictionary,
+	variants_key: String,
+	fallback_key: String
+) -> String:
+	var variants: Array = Array(info.get(variants_key, []))
+	if variants.is_empty():
+		return String(info.get(fallback_key, "")).strip_edges()
+
+	var variant_index := _select_outcome_variant_index(outcome, game_over_state, variants.size())
+	return String(variants[variant_index]).strip_edges()
+
+
+func _select_outcome_variant_index(outcome: String, game_over_state: Dictionary, variant_count: int) -> int:
+	if variant_count <= 1:
+		return 0
+
+	var current_day := _display_game_over_day(int(game_over_state[STATE_KEY_CURRENT_DAY]))
+	var legitimacy := float(game_over_state[STATE_KEY_LEGITIMACY])
+	var victories := int(game_over_state[STATE_KEY_VICTORIES])
+	var total_troops := int(game_over_state[STATE_KEY_TOTAL_TROOPS])
+	var avg_morale := float(game_over_state[STATE_KEY_AVG_MORALE])
+
+	var selected_index := 0
+	match outcome:
+		"napoleon_victory":
+			selected_index = 1 if victories >= 4 or legitimacy >= 65.0 else 0
+		"waterloo_historical":
+			selected_index = 1 if legitimacy >= 45.0 else 0
+		"waterloo_defeat":
+			selected_index = 1 if total_troops < 15000 or legitimacy < 20.0 else 0
+		"political_collapse":
+			selected_index = 1 if current_day < 60 else 0
+		"military_annihilation":
+			selected_index = 1 if avg_morale < 30.0 else 0
+		_:
+			selected_index = 1 if current_day >= 80 else 0
+	return clampi(selected_index, 0, variant_count - 1)
+
+
+func _append_game_over_section(
+	container: VBoxContainer,
+	title: String,
+	body: String,
+	title_color: Color,
+	body_color: Color
+) -> void:
+	var trimmed_body := body.strip_edges()
+	if trimmed_body == "":
+		return
+
+	var title_label := Label.new()
+	title_label.text = "\n%s" % title
+	title_label.add_theme_font_size_override("font_size", 15)
+	title_label.add_theme_color_override("font_color", title_color)
+	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	container.add_child(title_label)
+
+	var body_label := Label.new()
+	body_label.text = trimmed_body
+	body_label.add_theme_color_override("font_color", body_color)
+	body_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	body_label.autowrap_mode = TextServer.AUTOWRAP_WORD
+	container.add_child(body_label)
+
+
+func _display_game_over_day(day: int) -> int:
+	return min(day, 100)
 
 
 func show_battle_popup(state: Dictionary = {}) -> void:

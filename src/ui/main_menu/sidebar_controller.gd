@@ -14,6 +14,21 @@ const SPECIAL_POLICY_PREVIEW_TEXTS := {
 	"boost_loyalty": "亲自接见将领\n\n消耗 5 合法性，目标将领忠诚度 +8。需合法性 >= 10。"
 }
 const FACTION_ORDER := ["military", "populace", "liberals", "nobility"]
+const EVENT_TIER_LABELS := {
+	"major": "重大史事",
+	"normal": "历史事件",
+	"minor": "历史片段"
+}
+const ACTION_EVENT_LABELS := {
+	"policy": "政策结算",
+	"policy_failed": "政策受阻",
+	"battle": "战役结算",
+	"march": "行军结算",
+	"march_failed": "行军受阻",
+	"boost_loyalty": "将领关系",
+	"boost_failed": "关系经营受阻",
+	"rest": "休整结算"
+}
 const LOYALTY_VALUE_WIDTH := 126.0
 const LOYALTY_MIN_NAME_WIDTH := 96.0
 const LOYALTY_MIN_ROW_WIDTH := 228.0
@@ -26,6 +41,9 @@ var _narrative_body: Label = null
 var _loyalty_visible_limit: int = DEFAULT_VISIBLE_LOYALTY_COUNT
 var _loyalty_overflow_template: String = "…another %d officers"
 var _narrative_log: Array[String] = []
+var _narrative_preview_text: String = ""
+var _narrative_preview_color: Color = CentJoursTheme.COLOR["text_secondary"]
+var _narrative_log_color: Color = CentJoursTheme.COLOR["text_primary"]
 
 func bind(situation_body: Label, loyalty_list: VBoxContainer, narrative_body: Label) -> void:
 	_situation_body = situation_body
@@ -37,6 +55,7 @@ func unbind() -> void:
 	_loyalty_list = null
 	_narrative_body = null
 	_narrative_log.clear()
+	_narrative_preview_text = ""
 
 func set_loyalty_visible_limit(value: int) -> void:
 	_loyalty_visible_limit = max(1, value)
@@ -47,17 +66,15 @@ func set_loyalty_overflow_template(template: String) -> void:
 
 func reset_narrative(initial_text: String = DEFAULT_NARRATIVE_TEXT, color: Color = CentJoursTheme.COLOR["text_secondary"]) -> void:
 	_narrative_log.clear()
-	if _narrative_body == null:
-		return
-	_narrative_body.text = initial_text
-	_narrative_body.add_theme_color_override("font_color", color)
+	_narrative_preview_text = initial_text
+	_narrative_preview_color = color
+	_narrative_log_color = CentJoursTheme.COLOR["text_primary"]
+	_render_narrative()
 
 func set_narrative_text(text: String, color: Color = CentJoursTheme.COLOR["text_secondary"]) -> void:
-	_narrative_log.clear()
-	if _narrative_body == null:
-		return
-	_narrative_body.text = text
-	_narrative_body.add_theme_color_override("font_color", color)
+	_narrative_preview_text = text
+	_narrative_preview_color = color
+	_render_narrative()
 
 func set_policy_preview(policy_id: String, policy_meta: Dictionary = {}, color: Color = POLICY_PREVIEW_COLOR) -> void:
 	set_narrative_text(build_policy_preview_text(policy_id, policy_meta), color)
@@ -72,13 +89,48 @@ func build_policy_preview_text(policy_id: String, policy_meta: Dictionary = {}) 
 	return "▷ %s\n\n%s" % [policy_name, policy_summary]
 
 func append_narrative(entry: String, color: Color = CentJoursTheme.COLOR["text_primary"]) -> void:
+	_narrative_preview_text = ""
+	_narrative_log_color = color
 	_narrative_log.push_front(entry)
 	if _narrative_log.size() > MainMenuConfigData.NARRATIVE_MAX_ENTRIES:
 		_narrative_log.pop_back()
-	if _narrative_body == null:
-		return
-	_narrative_body.text = NARRATIVE_SEPARATOR.join(_narrative_log)
-	_narrative_body.add_theme_color_override("font_color", color)
+	_render_narrative()
+
+## 历史事件日志同时保留随机叙事和史注，帮助玩家区分氛围文本与史实说明。
+func build_historical_event_entry(event_id: String, event_data: Dictionary = {}) -> String:
+	var label := String(event_data.get("label", event_id))
+	var tier := String(event_data.get("tier", "normal"))
+	var narrative := String(event_data.get("narrative", "")).strip_edges()
+	var historical_note := String(event_data.get("historical_note", "")).strip_edges()
+	var header := "◆ [%s] %s" % [EVENT_TIER_LABELS.get(tier, "历史事件"), label]
+
+	var sections: Array[String] = [header]
+	if narrative != "":
+		sections.append(narrative)
+	if historical_note != "":
+		sections.append("史注\n%s" % historical_note)
+	return "\n\n".join(sections)
+
+func build_action_resolution_entry(
+	event_type: String,
+	description: String,
+	effects: Array = []
+) -> String:
+	var header := "● [%s]" % ACTION_EVENT_LABELS.get(event_type, "行动结算")
+	var sections: Array[String] = [header]
+	var normalized_description := description.strip_edges()
+	if normalized_description != "":
+		sections.append(normalized_description)
+
+	var effect_lines: Array[String] = []
+	for effect_variant in effects:
+		var effect_text := String(effect_variant).strip_edges()
+		if effect_text != "":
+			effect_lines.append("- %s" % effect_text)
+	if not effect_lines.is_empty():
+		sections.append("影响\n%s" % "\n".join(effect_lines))
+
+	return "\n\n".join(sections)
 
 func refresh_situation(
 	phase_id: String,
@@ -184,6 +236,25 @@ func _resolve_loyalty_row_width(content_width: float) -> float:
 func _clear_container(container: Node) -> void:
 	for child in container.get_children():
 		child.queue_free()
+
+func _render_narrative() -> void:
+	if _narrative_body == null:
+		return
+
+	var sections: Array[String] = []
+	if _narrative_preview_text.strip_edges() != "":
+		sections.append(_narrative_preview_text)
+	if not _narrative_log.is_empty():
+		sections.append(NARRATIVE_SEPARATOR.join(_narrative_log))
+
+	if sections.is_empty():
+		_narrative_body.text = DEFAULT_NARRATIVE_TEXT
+		_narrative_body.add_theme_color_override("font_color", CentJoursTheme.COLOR["text_secondary"])
+		return
+
+	_narrative_body.text = NARRATIVE_SEPARATOR.join(sections)
+	var color := _narrative_preview_color if _narrative_log.is_empty() else _narrative_log_color
+	_narrative_body.add_theme_color_override("font_color", color)
 
 func _trend_arrow(delta: float) -> String:
 	if delta > 1.0:

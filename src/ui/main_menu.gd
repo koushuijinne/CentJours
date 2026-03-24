@@ -33,10 +33,10 @@ const MainMenuTrayControllerScript = preload("res://src/ui/main_menu/tray_contro
 @onready var _map_subtitle: Label = $RootLayout/MainArea/LeftColumn/MapArea/MapMargin/MapContent/MapSubtitle
 @onready var _map_canvas: Control = $RootLayout/MainArea/LeftColumn/MapArea/MapMargin/MapContent/MapCanvas
 @onready var _map_inspector_panel: PanelContainer = $RootLayout/MainArea/LeftColumn/MapArea/MapMargin/MapContent/MapInspectorPanel
-@onready var _map_inspector_title: Label = $RootLayout/MainArea/LeftColumn/MapArea/MapMargin/MapContent/MapInspectorPanel/MapInspectorMargin/MapInspectorBox/MapInspectorTitle
-@onready var _map_inspector_meta: Label = $RootLayout/MainArea/LeftColumn/MapArea/MapMargin/MapContent/MapInspectorPanel/MapInspectorMargin/MapInspectorBox/MapInspectorMeta
-@onready var _map_inspector_stats: Label = $RootLayout/MainArea/LeftColumn/MapArea/MapMargin/MapContent/MapInspectorPanel/MapInspectorMargin/MapInspectorBox/MapInspectorStats
-@onready var _map_inspector_history: Label = $RootLayout/MainArea/LeftColumn/MapArea/MapMargin/MapContent/MapInspectorPanel/MapInspectorMargin/MapInspectorBox/MapInspectorHistory
+@onready var _map_inspector_title: Label = $RootLayout/MainArea/LeftColumn/MapArea/MapMargin/MapContent/MapInspectorPanel/MapInspectorMargin/MapInspectorScroll/MapInspectorBox/MapInspectorTitle
+@onready var _map_inspector_meta: Label = $RootLayout/MainArea/LeftColumn/MapArea/MapMargin/MapContent/MapInspectorPanel/MapInspectorMargin/MapInspectorScroll/MapInspectorBox/MapInspectorMeta
+@onready var _map_inspector_stats: Label = $RootLayout/MainArea/LeftColumn/MapArea/MapMargin/MapContent/MapInspectorPanel/MapInspectorMargin/MapInspectorScroll/MapInspectorBox/MapInspectorStats
+@onready var _map_inspector_history: Label = $RootLayout/MainArea/LeftColumn/MapArea/MapMargin/MapContent/MapInspectorPanel/MapInspectorMargin/MapInspectorScroll/MapInspectorBox/MapInspectorHistory
 @onready var _sidebar: PanelContainer = $RootLayout/MainArea/Sidebar
 @onready var _sidebar_margin: MarginContainer = $RootLayout/MainArea/Sidebar/SidebarMargin
 @onready var _sidebar_content: VBoxContainer = $RootLayout/MainArea/Sidebar/SidebarMargin/SidebarContent
@@ -294,6 +294,7 @@ func _connect_signals() -> void:
 	# 接叙事信号：司汤达日记与行动后果文本
 	EventBus.stendhal_diary_entry.connect(_on_stendhal_entry)
 	EventBus.micro_narrative_shown.connect(_on_micro_narrative)
+	EventBus.action_resolution_logged.connect(_on_action_resolution_logged)
 	# 接回合结束信号：驱动下一回合
 	EventBus.turn_ended.connect(_on_turn_ended)
 	EventBus.game_over.connect(_on_game_over)
@@ -448,7 +449,15 @@ func _on_stendhal_entry(day: int, text: String) -> void:
 
 ## 行动后果微叙事：进入滚动日志（ADR-004）
 func _on_micro_narrative(action_type: String, consequence: String) -> void:
-	_append_narrative("▸ [%s]\n%s" % [action_type, consequence], CentJoursTheme.COLOR["text_primary"])
+	var category_label := MainMenuConfigData.narrative_category_label(action_type)
+	_append_narrative("▸ [%s]\n%s" % [category_label, consequence], CentJoursTheme.COLOR["text_primary"])
+
+## 玩家行动的结构化结算日志：显示主描述 + 影响摘要。
+func _on_action_resolution_logged(event_type: String, description: String, effects: Array) -> void:
+	_append_narrative(
+		_sidebar_controller.build_action_resolution_entry(event_type, description, effects),
+		_action_resolution_color(event_type)
+	)
 
 func _on_game_over(outcome: String) -> void:
 	_dialogs_controller.show_game_over(outcome, _dialog_stats_snapshot())
@@ -486,8 +495,22 @@ func _on_legitimacy_changed(_old_value: float, _new_value: float) -> void:
 func _on_loyalty_changed(_character_id: String, _old_value: float, _new_value: float) -> void:
 	_refresh_ui()
 
-func _on_history_changed(_event_id: String) -> void:
+## 历史事件到达时，直接写入叙事日志，让正文和史注在同一时间出现。
+func _on_history_changed(event_id: String, event_data: Dictionary) -> void:
+	_append_narrative(
+		_sidebar_controller.build_historical_event_entry(event_id, event_data),
+		CentJoursTheme.COLOR["gold"]
+	)
 	_refresh_ui()
+
+func _action_resolution_color(event_type: String) -> Color:
+	if event_type.ends_with("_failed"):
+		return CentJoursTheme.COLOR["warning"]
+	if event_type == "policy":
+		return CentJoursTheme.COLOR["gold_dim"]
+	if event_type == "battle":
+		return CentJoursTheme.COLOR["text_heading"]
+	return CentJoursTheme.COLOR["text_primary"]
 
 func _phase_display_name(phase_id: String) -> String:
 	return MainMenuFormattersLib.phase_display_name(phase_id)

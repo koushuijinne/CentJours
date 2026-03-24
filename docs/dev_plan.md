@@ -1,10 +1,36 @@
 # Cent Jours — 开发优先级计划
 
-> **更新**: 2026-03-24 v51
+> **更新**: 2026-03-24 v65
 > **通用原则**: 项目长期稳定原则详见 `docs/development_principles.md`
-> **快速接手**: 当前状态见 `docs/codex_handoff.md`，新会话首条 prompt 模板见 `docs/codex_session_prompts.md`
+> **快速接手**: 当前状态见 `docs/codex_handoff.md`
+> **自动推进**: 全自动开发循环见 `docs/codex_autonomous_workflow.md`
 
 ---
+
+## 当前状态摘要
+
+- 主循环已打通：Godot `main_menu.tscn` 是正式入口，`TurnManager -> CentJoursEngine -> GameState -> UI` 链路可跑。
+- Rust 规则层在 2026-03-24 复核通过 `168/168` 测试；当前数据基线为 `15` 名角色、`41` 个地图节点、`58` 条分级历史事件。
+- 本轮已把 `claude/review-project-status-05vxD` 升级为后续主开发分支，整合目标是把 `codex/0323-auto` 的现状并入其上，再保留 Claude 分支独有的有效事件修订。
+- 行军、战斗、政治、命令偏差、联军动态化、叙事池、单槽存档/读档都已接入，不再是纯原型骨架。
+- 存档兼容本轮继续补强：`tuileries_eve` 已成为正式事件 ID，读档路径会把旧存档里的旧事件 ID 自动迁移到新 ID。
+- `historical_note` 已从 Rust 事件池接入 UI 滚动日志，历史事件会在当回合结算后即时显示正文与史注。
+- 事件池已继续向终盘扩容：本轮新增 `6` 条联军协同 / 战场余波事件，补入布吕歇尔承诺支援威灵顿、利尼伤兵车队、格鲁希听见滑铁卢炮声、拉艾圣农庄拿下得太晚、普军压向普朗斯努瓦、齐滕军团接上威灵顿左翼，并新增“Day 85+ 至少 1 条 minor”质量护栏测试。
+- 事件池又补入 `3` 条政治 / 联军协同条目：`ghent_bourbon_court`、`royalist_pamphlets_from_ghent`、`brussels_allied_staff_conference`，把波旁流亡宫廷、保皇派舆论战和布鲁塞尔联军参谋协调正式接入百日主线。
+- 旧事件文本 QA 继续推进：本轮又修 `tuileries_eve`、`diplomatic_offer_rejected`、`chamber_opposition_grows`、`waterloo_eve`、`murat_naples_betrayal` 五条事件，补强外交 / 议会 / 战役因果，压低过度文学化表达。
+- `historical_note` 风格统一继续推进：本轮再修 `elba_veterans_rally`、`allies_mobilization`、`davout_paris_assignment`、`fouche_conspiracy`、`imperial_guard_rebuilt`、`royalist_uprising_vendee`、`paris_bourse_silence`、`war_ministry_night_shift`、`national_guard_callup`、`horse_requisition_resentment`、`federes_paris_drills` 共 `11` 条史注，收紧日期锚点并补齐事实 → 后果链。
+- 自动推进规则已回收为会话内执行：不再依赖外部监督器，默认直接按 `docs/codex_autonomous_workflow.md` 的零阻塞循环规则在当前会话内连续开发。
+- 自动推进规则已进一步收紧：`final` 风格总结、解释停机原因、handoff 压缩都不再视为停机点；若仍有无阻塞高价值任务，必须直接进入下一轮。
+- Codex 工作边界已调整：**允许修改文案**，但必须遵守 `ADR-008` 的写作原则。后续若涉及 `narratives`、`historical_note`、结局文本或营销文案，默认采用直接、清楚、可考据的写法，禁止使用“不是……而是……”等 reframing 句式。
+- 本轮已按 `ADR-008` 对旧事件文案做第一批直写化修订：清掉 `historical.json` 中 `19` 段 reframing / 填充句式，并同步收紧 `grouchy_assignment`、`fouche_conspiracy`、`british_subsidies_coalition` 等条目的信息表达。
+- `events::pool` 本轮新增文案护栏测试，禁止历史事件再次出现“不是……而是……”“真正的问题是……”等 reframing 句式；本轮又补了终盘时间线与存档兼容迁移回归，`cargo test` 当前已提升到 `168` 项。
+- 本轮已清掉 `cargo test` 里的主要源码级测试警告：给 `characters/network.rs` 补回遗漏测试，并将本地化测试名告警收敛到模块级允许；当前剩余提示仅为当前文件系统不支持 hard link 的增量编译缓存警告。
+- 本轮已对 `DecisionTray` 做结构性滚动收口：锁为仅横向滚动，并把卡片行高度 / hover 余量写入布局计算，减少竖向滚动误触发。
+- 本轮已对 `Map Inspector` 做结构性松绑：加入内部滚动层，并改成响应式宽高，长文本不再只能硬塞进固定小面板。
+- 结局弹窗现已实际显示 `OUTCOME_TEXT` 中的 `epilogue / review_hint`，行动后果微叙事也已改为中文类别标签，不再直接暴露裸 `action_type` key。
+- 行动结算日志链已打通：`GameEngine.last_action_events -> GDExt get_last_action_events() -> TurnManager/EventBus -> MainMenu`，政策 / 战役 / 行军 / 强化忠诚结果都已有结构化摘要；角色显示名也已回收到 `characters.json.display_name`，行动日志与主菜单角色列表统一改用中文短称。
+- 前端已经拆出 `map / layout / tray / sidebar / dialogs` 控制器，但主菜单相关文件仍然偏大，UI 收口还没完成。
+- 当前离 Steam 发布仍有明显缺口：内容量不足、事件文案 QA 未收口、前端发布级 polish 不足、Windows 发布链路未成型、商店与资产交付尚未建立。
 
 ## 开发原则
 
@@ -18,31 +44,33 @@
 - `先骨架后润色`：优先完成信息架构与交互流向，再做视觉打磨
 - `组件复用优先`：优先复用 `rn_slider.gd`、`decision_card.gd`、主题系统
 - `视觉以真机收口`：Windows Godot `1280x720` 是前端布局的默认收口标准
+- `零阻塞默认`：除硬阻塞外不暂停，完成一轮后自动扫描并重排下一轮最高价值任务
 
 ### 文档与提交流程
 
-- `活文档`：完成任务后立即更新本文档状态（✅/🔶）和进度快照
+- `活文档`：完成任务后立即更新本文档状态（`✅/🔶`）和进度快照
 - `交接同步`：完成一轮后同步更新 `docs/codex_handoff.md`
+- `压缩入交接`：每完成一轮任务后，必须把 5-10 行压缩摘要写入 `docs/codex_handoff.md`
+- `自动开发文档`：若默认验证方式、阻塞处理或自动决策规则变化，同步更新 `docs/codex_autonomous_workflow.md`
 - `同提交同步`：文档更新与代码变更放在同一次 commit
 - `小步提交`：每完成一个独立功能立即 commit + push
+- `提交闭环`：每完成一轮任务后默认执行 `git add -A`、按本轮范围 commit、push 到当前分支，再写压缩摘要供下一轮接手
 - `ADR`：跨层接口、状态流、重要架构选型沉淀到 `docs/decisions/ADR-XXX.md`
 - `边界契约`：Rust ↔ GDScript 的 `Dictionary` / `Array` 返回结构要写清键名和语义
+  `get_last_action_events()` 当前返回 `day / event_type / description / effects`，且只表示“最近一次玩家行动”的缓存，不包含 Dawn 历史事件
 
-### 提交前强制检查
+### 默认验证方式
 
-> ⚠️ 前两步是**阻塞条件**——不完成就不能 commit。
+- Rust 改动：`cd cent-jours-core && cargo test`
+- Rust + GDExt API 改动：先跑本地 Rust 测试，再到 Windows 侧执行 `cargo build --features godot-extension`
+- GDScript / 场景 / UI 改动：只用 Windows 原生 Godot 真机或 Windows 无头验证，不以 Linux / WSL 无头替代
+- 默认 Windows 无头命令：
 
-1. **🔴 清理已完成内容**：删除 Tier 路线图中已完成的任务明细、已解决的阻塞点、过时的上下文（git log 追溯）；新完成的模块在"已完成模块清单"添加一行摘要
-2. **🔴 制定下一轮优先级**：扫描代码库后写出下一轮待办，每个待办项必须附一句话决策理由
-3. 更新进度快照（Rust 层 + 前端层）和 `docs/codex_handoff.md`
-4. 重新扫描代码库，记录新出现的技术债
-5. 文档更新与代码放入同一次 commit
+```bash
+E:\software\godot\Godot_v4.6.1-stable_win64_console.exe --headless --path E:\projects\CentJours --quit
+```
 
-### 验证规则
-
-- Rust 改动：`cargo test` 全部通过才能提交
-- GDScript 改动：无 Godot 环境时肉眼检查语法
-- commit message 格式：`feat/fix/refactor/docs(模块): 描述`
+- 前端视觉、布局和字体收口以 Windows 真机截图 / 肉眼为最终准绳
 
 ---
 
@@ -50,30 +78,39 @@
 
 ### Rust/架构层
 
-```
-M0–M4  ████████████ 100% ✅  Tier 0–3 全部完成
-M5  美术音乐   ░░░░░░░░░░░░   0%
-M6  打磨发布   ░░░░░░░░░░░░   0%
+```text
+M0-M4  ████████████ 100% ✅  基础规则、事件、叙事、存档最小闭环已完成
+M5  资产收口   ░░░░░░░░░░░░   0%
+M6  发布收口   ░░░░░░░░░░░░   0%
 ```
 
-**143 单元测试全部通过** | **平衡**: Military 24.2% | Political 21.2% | Balanced 22.4%
+**168 单元测试全部通过** | **事件池**: 58 条（major 16 / normal 35 / minor 7）
 
 ### 前端层
 
+```text
+F0-F4  ████████████ 95-100% ✅  主场景、地图、托盘、侧栏、弹窗已联调
+F5     ████████░░░░ 55% 🔶      视觉统一、文本统一、发布级 polish 未收口
 ```
-F0–F4  ████████████  95-100% ✅
-F5     ████████░░░░  55% 🔶  视觉统一与动效
-```
 
-### 当前阻塞点
+---
 
-- `main_menu.gd` 543 行，仍混有回合流 + HUD 刷新 + 弹窗状态组装（第五波解耦候选）
-- F5 视觉：托盘双滚动未修复、中英混排未统一、动效无框架（ad-hoc flash）
+## 当前阻塞点
 
-### 技术债
+- `内容量仍不足`：历史事件已增至 `58` 条，但距离 `ADR-008` 的 `100+` 目标仍差 `42` 条，百日长局的重玩性还不够。
+- `文本 QA 未收口`：已累计修订 `24` 条旧事件，并补入 `9` 条终盘 / 联军 / 保皇派新事件，但全量 `58` 条仍未逐条统一史实、句式和注释风格。
+- `结局/全局文案仍未完全收口`：角色短名与行动结算已统一，但主菜单其余 UI 仍有中英法混排，结局文本也仍缺更丰富的变体层次。
+- `前端发布级 polish 不足`：`DecisionTray` 双滚动与 `Map Inspector` 紧凑都已补结构性修复，但仍需 Windows 真机截图验收；中英混排、弹窗与信息层级也仍需收口。
+- `产品化能力缺口`：仍缺设置/选项页、发布导出配置、商店与宣传资产、教程/前 10 天引导。
+- `发布链路缺失`：仓库里还没有 `export_presets.cfg`、Windows 发布脚本、Steam 提审清单等上线所需资产。
 
-- Rust 全局 53 处 `unwrap()`/`expect()`/`panic!()`（集中在 `events/pool.rs` 24 处、`state.rs` 9 处）
-- 嵌套 Dictionary 子键缺 per-key 文档（如 `factions` 子结构）
+## 技术债
+
+- Rust 全局 `54` 处 `unwrap()` / `expect()` / `panic!()`，集中在 `events/pool.rs` 与 `engine/state.rs`
+- `main_menu.gd` `566` 行，`map_controller.gd` `658` 行，控制器拆分后仍有继续收口空间
+- `tests/monte_carlo_balance.py` 已与 Rust 核心基线漂移，不应再作为平衡主依据
+- `cargo test` 的主要源码级测试警告已收敛；当前剩余提示主要是该磁盘文件系统不支持 Rust 增量缓存 hard link，属于环境噪音而非代码语义问题
+- 当前存档仍是单槽 `user://cent_jours_save.json`，更适合开发态而非发布态
 
 ---
 
@@ -83,31 +120,48 @@ F5     ████████░░░░  55% 🔶  视觉统一与动效
 |------|------|--------|
 | 战斗解算 | `battle/resolver.rs` | 12 |
 | 行军系统 | `battle/march.rs` | 10 |
-| 政治系统 | `politics/system.rs` | 8 |
-| 命令偏差 | `characters/order_deviation.rs` | 6 |
-| 将领关系网络 | `characters/network.rs` | 27+4 |
-| 三系统状态机 | `engine/state.rs` | 24 |
-| 历史事件池 | `events/pool.rs` + `EventTier` 枚举 | 16 |
+| 政治系统 | `politics/system.rs` | 9 |
+| 命令偏差 | `characters/order_deviation.rs` | 7 |
+| 将领关系网络 | `characters/network.rs` | 32 |
+| 三系统状态机 | `engine/state.rs` | 42 |
+| 历史事件池 | `events/pool.rs` + `EventTier` 枚举 | 38 |
 | 蒙特卡洛模拟 | `simulation/monte_carlo.rs` | 8 |
-| 叙事引擎 | `narratives/mod.rs` | 10 |
+| 叙事引擎 | `narratives/mod.rs` | 9 |
 | GDExtension | `lib.rs` | — |
-| Save/Load | `engine/state.rs` + `main_menu.gd` | — |
+| Save/Load | `engine/state.rs` + `save_manager.gd` + `main_menu.gd` | — |
+| 历史事件展示闭环 | `events/pool.rs` + `engine/state.rs` + `lib.rs` + `turn_manager.gd` + `sidebar_controller.gd` + `main_menu.gd` | 并入上方统计 |
 
-**合计**: 143 tests
+**合计**: 168 tests
 
 ---
 
-## 下一轮优先级（Tier 4 — 内容与打磨）
+## Steam 上线前优先级
 
 | 优先级 | 项目 | 规模 | 决策理由 |
 |--------|------|------|---------|
-| **P1** | **历史事件扩充 31→100+** | L | 31 条事件密度不足（minor 仅 1 条），Day 50–85 近空白；按 ADR-009 分四批扩写，每条过 ADR-008 §2 Checklist |
-| **P2** | **F5 视觉统一** | M | 托盘双滚动 + 中英混排是用户可感知的最直接问题；ADR-009 §P2 定义了三步方案（滚动修复/字体统一/动效框架） |
-| **P3** | **main_menu.gd 第五波解耦** | M | 543→<300 行目标；提取 turn_flow_controller + hud_controller；详见 ADR-009 §P3 |
-| **P4** | **Rust unwrap 清理** | S | 生产代码 53 处→<10 处；逐文件 Result 传播，穿插完成；详见 ADR-009 §P4 |
+| **P0** | **历史事件扩充 58 → 100+，并完成文本 QA** | L | 这是百日长局成立的前提；没有足够事件量和文风/史实校正，Steam 首发会直接暴露内容重复与可信度问题。 |
+| **P0** | **补齐行动后果文本与结局文本** | M | 历史事件、政策结算与终局尾声都已接通，但战役/行军/失败归因仍需继续文本化，结局层次也还不够丰富。 |
+| **P0** | **前 10 天引导 + 失败归因 + UI 文案统一** | M | 当前系统复杂度已经够高，没有嵌入式教学和统一文案会显著抬高 Steam 新玩家流失率。 |
+| **P1** | **F5 视觉与布局收口** | M | 托盘双滚动与 `Map Inspector` 紧凑已补结构性修复，但仍需 Windows 真机验收；混合语言与弹窗层级问题依然是最直接的第一印象缺陷。 |
+| **P1** | **基础产品化能力：设置/选项、存档 UX、错误提示** | M | 目前更像开发态主场景；Steam 首发至少需要窗口/显示/音量类设置入口和更稳健的存档交互。 |
+| **P1** | **Windows 发布链路成型：`export_presets.cfg`、构建脚本、验证清单** | M | 仓库尚无可重复的发布导出路径，必须先把“如何稳定产出 Windows 包”固化下来，才能谈提审。 |
+| **P1** | **资产替换：地图底图、肖像、卡片插图、BGM、SFX、结局画面** | L | 当前仍大量依赖占位内容；不上资产就无法达到 `plan.md` 定义的 Steam 商业化呈现标准。 |
+| **P1** | **Steam 商店与提审资料：胶囊图、截图、描述、trailer、提审清单** | L | 即使游戏本体可玩，没有商店素材与提审流程文件，也无法进入 wishlist 与发售节奏。 |
+| **P2** | **发布前 QA / 平衡 / 性能回归** | M | 包含长局试玩、Windows 真机 UI 回归、存档回归、蒙特卡洛复核；这是上线前的稳定性闸门。 |
+| **P2** | **工程收口：大文件继续解耦、`unwrap` 清理、构建警告清理** | M | 这些问题会放大发布期返工成本，但不应压过用户可感知的内容与发布链路任务。 |
+| **P3** | **Steam 增值项：成就、多语言、多存档槽** | M | 有价值，但相比“先稳定上线”不是首发阻塞项，除非市场策略明确要求。 |
 
-### 不在本轮范围
+### 默认连续推进顺序
 
-- M5 美术资源替换（emoji → 真实纹理）
-- M6 BGM/音效
-- 多语言 / 多存档槽 / Steam 集成 / 教程
+1. 历史事件扩充与文本 QA
+2. 教学/失败归因/文案统一
+3. 前端发布级 polish 真机验收与设置页
+4. Windows 发布链路与 Steam 资料
+5. 资产替换与发布前 QA
+
+### 不在首发阻塞范围
+
+- 移动端移植
+- DLC/额外战役
+- 高级 Steam 集成（云存档、排行榜等）
+- 主机/手柄专项适配

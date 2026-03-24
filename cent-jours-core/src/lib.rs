@@ -22,9 +22,9 @@ mod gdext_bindings {
 
     use godot::prelude::VarDictionary as Dictionary;
 
-    use crate::battle::resolver::{ForceData, Terrain, resolve_battle};
-    use crate::politics::system::{PoliticsState, default_policies};
-    use crate::characters::order_deviation::{GeneralData, Temperament, calculate_deviation};
+    use crate::battle::resolver::{resolve_battle, ForceData, Terrain};
+    use crate::characters::order_deviation::{calculate_deviation, GeneralData, Temperament};
+    use crate::politics::system::{default_policies, PoliticsState};
 
     struct CentJoursExtension;
 
@@ -64,21 +64,26 @@ mod gdext_bindings {
         /// terrain 为字符串：plains / hills / mountains / forest / urban /
         ///         river_crossing / river_junction / coastal / fortress / ridgeline
         #[func]
-        pub fn resolve(&self, attacker: Dictionary, defender: Dictionary, terrain: GString) -> Dictionary {
+        pub fn resolve(
+            &self,
+            attacker: Dictionary,
+            defender: Dictionary,
+            terrain: GString,
+        ) -> Dictionary {
             let mut rng = rand::thread_rng();
 
             let attacker_force = dict_to_force(&attacker);
             let defender_force = dict_to_force(&defender);
-            let terrain_val    = str_to_terrain(terrain.to_string().as_str());
+            let terrain_val = str_to_terrain(terrain.to_string().as_str());
 
             let outcome = resolve_battle(&attacker_force, &defender_force, terrain_val, &mut rng);
 
             let mut result = Dictionary::new();
-            let _ = result.insert("result",               outcome.result.as_str());
-            let _ = result.insert("ratio",                outcome.ratio);
-            let _ = result.insert("attacker_casualties",  outcome.attacker_casualties as i64);
-            let _ = result.insert("defender_casualties",  outcome.defender_casualties as i64);
-            let _ = result.insert("random_factor",        outcome.random_factor);
+            let _ = result.insert("result", outcome.result.as_str());
+            let _ = result.insert("ratio", outcome.ratio);
+            let _ = result.insert("attacker_casualties", outcome.attacker_casualties as i64);
+            let _ = result.insert("defender_casualties", outcome.defender_casualties as i64);
+            let _ = result.insert("random_factor", outcome.random_factor);
 
             let (atk_cas, def_cas) = outcome.result.casualty_rates();
             let _ = result.insert("attacker_casualty_rate", atk_cas);
@@ -94,26 +99,32 @@ mod gdext_bindings {
 
     fn dict_to_force(d: &Dictionary) -> ForceData {
         ForceData {
-            troops:        d.get("troops").map(|v| v.to::<i64>() as u32).unwrap_or(1000),
-            morale:        d.get("morale").map(|v| v.to::<f64>()).unwrap_or(70.0),
-            fatigue:       d.get("fatigue").map(|v| v.to::<f64>()).unwrap_or(20.0),
-            general_skill: d.get("general_skill").map(|v| v.to::<f64>()).unwrap_or(60.0),
-            supply_ok:     d.get("supply_ok").map(|v| v.to::<bool>()).unwrap_or(true),
+            troops: d
+                .get("troops")
+                .map(|v| v.to::<i64>() as u32)
+                .unwrap_or(1000),
+            morale: d.get("morale").map(|v| v.to::<f64>()).unwrap_or(70.0),
+            fatigue: d.get("fatigue").map(|v| v.to::<f64>()).unwrap_or(20.0),
+            general_skill: d
+                .get("general_skill")
+                .map(|v| v.to::<f64>())
+                .unwrap_or(60.0),
+            supply_ok: d.get("supply_ok").map(|v| v.to::<bool>()).unwrap_or(true),
         }
     }
 
     fn str_to_terrain(s: &str) -> Terrain {
         match s {
-            "hills"          => Terrain::Hills,
-            "mountains"      => Terrain::Mountains,
-            "forest"         => Terrain::Forest,
-            "urban"          => Terrain::Urban,
+            "hills" => Terrain::Hills,
+            "mountains" => Terrain::Mountains,
+            "forest" => Terrain::Forest,
+            "urban" => Terrain::Urban,
             "river_crossing" => Terrain::RiverJunction,
             "river_junction" => Terrain::RiverJunction,
-            "coastal"        => Terrain::Coastal,
-            "fortress"       => Terrain::Fortress,
-            "ridgeline"      => Terrain::Ridgeline,
-            _                => Terrain::Plains,
+            "coastal" => Terrain::Coastal,
+            "fortress" => Terrain::Fortress,
+            "ridgeline" => Terrain::Ridgeline,
+            _ => Terrain::Plains,
         }
     }
 
@@ -123,14 +134,17 @@ mod gdext_bindings {
     #[derive(GodotClass)]
     #[class(base = RefCounted)]
     pub struct PoliticsEngine {
-        base:  Base<RefCounted>,
+        base: Base<RefCounted>,
         state: PoliticsState,
     }
 
     #[godot_api]
     impl IRefCounted for PoliticsEngine {
         fn init(base: Base<RefCounted>) -> Self {
-            Self { base, state: PoliticsState::default() }
+            Self {
+                base,
+                state: PoliticsState::default(),
+            }
         }
     }
 
@@ -148,13 +162,16 @@ mod gdext_bindings {
             let policies = default_policies();
             let mut out = Dictionary::new();
 
-            if let Some(p) = policies.iter().find(|p| p.id == policy_id.to_string().as_str()) {
+            if let Some(p) = policies
+                .iter()
+                .find(|p| p.id == policy_id.to_string().as_str())
+            {
                 match self.state.enact_policy(p) {
-                    Ok(())  => {
+                    Ok(()) => {
                         let _ = out.insert("ok", true);
                         let _ = out.insert("error", "");
                     }
-                    Err(e)  => {
+                    Err(e) => {
                         let _ = out.insert("ok", false);
                         let _ = out.insert("error", e);
                     }
@@ -170,11 +187,11 @@ mod gdext_bindings {
         #[func]
         pub fn get_state(&self) -> Dictionary {
             let mut d = Dictionary::new();
-            let _ = d.insert("rouge_noir_index",  self.state.rouge_noir_index);
-            let _ = d.insert("legitimacy",        self.state.legitimacy);
-            let _ = d.insert("economic_index",    self.state.economic_index);
+            let _ = d.insert("rouge_noir_index", self.state.rouge_noir_index);
+            let _ = d.insert("legitimacy", self.state.legitimacy);
+            let _ = d.insert("economic_index", self.state.economic_index);
             let _ = d.insert("actions_remaining", self.state.actions_remaining as i64);
-            let _ = d.insert("is_collapsed",      self.state.is_collapsed());
+            let _ = d.insert("is_collapsed", self.state.is_collapsed());
 
             let mut factions = Dictionary::new();
             for (k, v) in &self.state.faction_support {
@@ -187,7 +204,8 @@ mod gdext_bindings {
         /// 修改派系支持度（战斗胜负等外部事件触发）
         #[func]
         pub fn modify_faction(&mut self, faction_id: GString, delta: f64) {
-            self.state.modify_faction(faction_id.to_string().as_str(), delta);
+            self.state
+                .modify_faction(faction_id.to_string().as_str(), delta);
         }
     }
 
@@ -219,16 +237,29 @@ mod gdext_bindings {
         ) -> Dictionary {
             let mut rng = rand::thread_rng();
 
-            let temperament_str = general.get("temperament")
+            let temperament_str = general
+                .get("temperament")
                 .map(|v| v.to::<GString>().to_string())
                 .unwrap_or_default();
 
             let general_data = GeneralData {
-                id:             general.get("id").map(|v| v.to::<GString>().to_string()).unwrap_or_default(),
-                name:           general.get("name").map(|v| v.to::<GString>().to_string()).unwrap_or_default(),
-                loyalty:        general.get("loyalty").map(|v| v.to::<f64>()).unwrap_or(50.0),
-                temperament:    Temperament::from_str(&temperament_str),
-                military_skill: general.get("military_skill").map(|v| v.to::<f64>()).unwrap_or(60.0),
+                id: general
+                    .get("id")
+                    .map(|v| v.to::<GString>().to_string())
+                    .unwrap_or_default(),
+                name: general
+                    .get("name")
+                    .map(|v| v.to::<GString>().to_string())
+                    .unwrap_or_default(),
+                loyalty: general
+                    .get("loyalty")
+                    .map(|v| v.to::<f64>())
+                    .unwrap_or(50.0),
+                temperament: Temperament::from_str(&temperament_str),
+                military_skill: general
+                    .get("military_skill")
+                    .map(|v| v.to::<f64>())
+                    .unwrap_or(60.0),
             };
 
             let result = calculate_deviation(
@@ -239,14 +270,14 @@ mod gdext_bindings {
             );
 
             let mut d = Dictionary::new();
-            let _ = d.insert("general_id",       result.general_id.as_str());
-            let _ = d.insert("general_name",     result.general_name.as_str());
+            let _ = d.insert("general_id", result.general_id.as_str());
+            let _ = d.insert("general_name", result.general_name.as_str());
             let _ = d.insert("timing_deviation", result.timing_deviation);
-            let _ = d.insert("force_deviation",  result.force_deviation);
-            let _ = d.insert("order_followed",   result.order_followed);
+            let _ = d.insert("force_deviation", result.force_deviation);
+            let _ = d.insert("order_followed", result.order_followed);
             let _ = d.insert("base_reliability", result.base_reliability);
             let _ = d.insert("distance_penalty", result.distance_penalty);
-            let _ = d.insert("narrative",        result.narrative().as_str());
+            let _ = d.insert("narrative", result.narrative().as_str());
             d
         }
     }
@@ -265,9 +296,9 @@ mod gdext_bindings {
     #[derive(GodotClass)]
     #[class(base = RefCounted)]
     pub struct CentJoursEngine {
-        base:   Base<RefCounted>,
+        base: Base<RefCounted>,
         engine: crate::engine::GameEngine,
-        rng:    rand::rngs::StdRng,
+        rng: rand::rngs::StdRng,
     }
 
     #[godot_api]
@@ -277,7 +308,7 @@ mod gdext_bindings {
             Self {
                 base,
                 engine: crate::engine::GameEngine::new(),
-                rng:    rand::rngs::StdRng::from_entropy(),
+                rng: rand::rngs::StdRng::from_entropy(),
             }
         }
     }
@@ -297,25 +328,28 @@ mod gdext_bindings {
         /// general_id: 将领ID字符串，troops: 投入兵力，terrain: 地形字符串
         #[func]
         pub fn process_day_battle(&mut self, general_id: GString, troops: i64, terrain: GString) {
-            use crate::engine::PlayerAction;
             use crate::battle::resolver::Terrain as T;
+            use crate::engine::PlayerAction;
             let t = match terrain.to_string().as_str() {
-                "hills"          => T::Hills,
-                "mountains"      => T::Mountains,
-                "forest"         => T::Forest,
-                "urban"          => T::Urban,
+                "hills" => T::Hills,
+                "mountains" => T::Mountains,
+                "forest" => T::Forest,
+                "urban" => T::Urban,
                 "river_crossing" => T::RiverJunction,
                 "river_junction" => T::RiverJunction,
-                "coastal"        => T::Coastal,
-                "fortress"       => T::Fortress,
-                "ridgeline"      => T::Ridgeline,
-                _                => T::Plains,
+                "coastal" => T::Coastal,
+                "fortress" => T::Fortress,
+                "ridgeline" => T::Ridgeline,
+                _ => T::Plains,
             };
-            self.engine.process_day(PlayerAction::LaunchBattle {
-                general_id: general_id.to_string(),
-                troops:     troops.max(0) as u32,
-                terrain:    t,
-            }, &mut self.rng);
+            self.engine.process_day(
+                PlayerAction::LaunchBattle {
+                    general_id: general_id.to_string(),
+                    troops: troops.max(0) as u32,
+                    terrain: t,
+                },
+                &mut self.rng,
+            );
         }
 
         /// 推进一天：执行行军
@@ -323,9 +357,12 @@ mod gdext_bindings {
         #[func]
         pub fn process_day_march(&mut self, target_node: GString) {
             use crate::engine::PlayerAction;
-            self.engine.process_day(PlayerAction::March {
-                target_node: target_node.to_string(),
-            }, &mut self.rng);
+            self.engine.process_day(
+                PlayerAction::March {
+                    target_node: target_node.to_string(),
+                },
+                &mut self.rng,
+            );
         }
 
         /// 推进一天：颁布政策
@@ -336,15 +373,31 @@ mod gdext_bindings {
             // GDScript传来的是String，需要转为&'static str
             // 通过内联匹配实现（避免生命周期问题）
             let action = match policy_id.to_string().as_str() {
-                "conscription"             => PlayerAction::EnactPolicy { policy_id: "conscription" },
-                "constitutional_promise"   => PlayerAction::EnactPolicy { policy_id: "constitutional_promise" },
-                "public_speech"            => PlayerAction::EnactPolicy { policy_id: "public_speech" },
-                "reduce_taxes"             => PlayerAction::EnactPolicy { policy_id: "reduce_taxes" },
-                "increase_military_budget" => PlayerAction::EnactPolicy { policy_id: "increase_military_budget" },
+                "conscription" => PlayerAction::EnactPolicy {
+                    policy_id: "conscription",
+                },
+                "constitutional_promise" => PlayerAction::EnactPolicy {
+                    policy_id: "constitutional_promise",
+                },
+                "public_speech" => PlayerAction::EnactPolicy {
+                    policy_id: "public_speech",
+                },
+                "reduce_taxes" => PlayerAction::EnactPolicy {
+                    policy_id: "reduce_taxes",
+                },
+                "increase_military_budget" => PlayerAction::EnactPolicy {
+                    policy_id: "increase_military_budget",
+                },
                 // 补全缺失的 3 条政策（之前静默退化为 Rest）
-                "grant_titles"             => PlayerAction::EnactPolicy { policy_id: "grant_titles" },
-                "secret_diplomacy"         => PlayerAction::EnactPolicy { policy_id: "secret_diplomacy" },
-                "print_money"              => PlayerAction::EnactPolicy { policy_id: "print_money" },
+                "grant_titles" => PlayerAction::EnactPolicy {
+                    policy_id: "grant_titles",
+                },
+                "secret_diplomacy" => PlayerAction::EnactPolicy {
+                    policy_id: "secret_diplomacy",
+                },
+                "print_money" => PlayerAction::EnactPolicy {
+                    policy_id: "print_money",
+                },
                 _ => PlayerAction::Rest,
             };
             self.engine.process_day(action, &mut self.rng);
@@ -354,9 +407,12 @@ mod gdext_bindings {
         #[func]
         pub fn process_day_boost_loyalty(&mut self, general_id: GString) {
             use crate::engine::PlayerAction;
-            self.engine.process_day(PlayerAction::BoostLoyalty {
-                general_id: general_id.to_string(),
-            }, &mut self.rng);
+            self.engine.process_day(
+                PlayerAction::BoostLoyalty {
+                    general_id: general_id.to_string(),
+                },
+                &mut self.rng,
+            );
         }
 
         // ── 状态查询 ─────────────────────────────────────
@@ -368,18 +424,19 @@ mod gdext_bindings {
         pub fn get_state(&self) -> Dictionary {
             let e = &self.engine;
             let mut d = Dictionary::new();
-            let _ = d.insert("day",         e.day as i64);
-            let _ = d.insert("legitimacy",  e.politics.legitimacy);
-            let _ = d.insert("rouge_noir",  e.politics.rouge_noir_index);
-            let _ = d.insert("troops",      e.army.total_troops as i64);
-            let _ = d.insert("morale",      e.army.avg_morale);
-            let _ = d.insert("fatigue",     e.army.avg_fatigue);
-            let _ = d.insert("victories",   e.army.victories as i64);
+            let _ = d.insert("day", e.day as i64);
+            let _ = d.insert("legitimacy", e.politics.legitimacy);
+            let _ = d.insert("rouge_noir", e.politics.rouge_noir_index);
+            let _ = d.insert("troops", e.army.total_troops as i64);
+            let _ = d.insert("morale", e.army.avg_morale);
+            let _ = d.insert("fatigue", e.army.avg_fatigue);
+            let _ = d.insert("victories", e.army.victories as i64);
             let _ = d.insert("napoleon_location", e.napoleon_location.as_str());
-            let _ = d.insert("is_over",     e.is_over());
-            let _ = d.insert("outcome",     e.outcome()
-                .map(|o| o.as_str())
-                .unwrap_or("in_progress"));
+            let _ = d.insert("is_over", e.is_over());
+            let _ = d.insert(
+                "outcome",
+                e.outcome().map(|o| o.as_str()).unwrap_or("in_progress"),
+            );
 
             let mut factions = Dictionary::new();
             for (k, v) in &e.politics.faction_support {
@@ -400,7 +457,8 @@ mod gdext_bindings {
         /// 获取当前可直接行军到的相邻节点列表
         #[func]
         pub fn get_adjacent_nodes(&self) -> Array<GString> {
-            self.engine.adjacent_nodes()
+            self.engine
+                .adjacent_nodes()
                 .into_iter()
                 .map(|node_id| GString::from(node_id.as_str()))
                 .collect()
@@ -413,27 +471,72 @@ mod gdext_bindings {
             let mut d = Dictionary::new();
             match self.engine.last_report() {
                 Some(r) => {
-                    let _ = d.insert("day",         r.day as i64);
-                    let _ = d.insert("stendhal",    r.stendhal.as_deref().unwrap_or(""));
+                    let _ = d.insert("day", r.day as i64);
+                    let _ = d.insert("stendhal", r.stendhal.as_deref().unwrap_or(""));
                     let _ = d.insert("consequence", r.consequence.as_deref().unwrap_or(""));
                     let _ = d.insert("has_narrative", r.stendhal.is_some());
                 }
                 None => {
-                    let _ = d.insert("day",           0i64);
-                    let _ = d.insert("stendhal",      "");
-                    let _ = d.insert("consequence",   "");
+                    let _ = d.insert("day", 0i64);
+                    let _ = d.insert("stendhal", "");
+                    let _ = d.insert("consequence", "");
                     let _ = d.insert("has_narrative", false);
                 }
             }
             d
         }
 
+        /// 获取最近一次玩家行动的结算记录。
+        /// 返回 Array[Dictionary]，每项键：
+        ///   day / event_type / description / effects(Array[String])
+        #[func]
+        pub fn get_last_action_events(&self) -> Array<Dictionary> {
+            self.engine
+                .last_action_events()
+                .iter()
+                .map(|event| {
+                    let mut d = Dictionary::new();
+                    let effects: Array<GString> = event
+                        .effects
+                        .iter()
+                        .map(|effect| GString::from(effect.as_str()))
+                        .collect();
+                    let _ = d.insert("day", event.day as i64);
+                    let _ = d.insert("event_type", event.event_type);
+                    let _ = d.insert("description", event.description.as_str());
+                    let _ = d.insert("effects", effects);
+                    d
+                })
+                .collect()
+        }
+
         /// 获取已触发的历史事件 ID 列表（Array of String）
         #[func]
         pub fn get_triggered_events(&self) -> Array<GString> {
-            self.engine.triggered_events()
+            self.engine
+                .triggered_events()
                 .iter()
                 .map(|s| GString::from(s.as_str()))
+                .collect()
+        }
+
+        /// 获取最近一次触发的历史事件详情。
+        /// 返回 Array[Dictionary]，每项键：
+        ///   id / label / tier / narrative / historical_note
+        #[func]
+        pub fn get_last_triggered_events(&self) -> Array<Dictionary> {
+            self.engine
+                .last_triggered_events()
+                .iter()
+                .map(|event| {
+                    let mut d = Dictionary::new();
+                    let _ = d.insert("id", event.id.as_str());
+                    let _ = d.insert("label", event.label.as_str());
+                    let _ = d.insert("tier", event.tier.as_str());
+                    let _ = d.insert("narrative", event.narrative.as_str());
+                    let _ = d.insert("historical_note", event.historical_note.as_str());
+                    d
+                })
                 .collect()
         }
 
@@ -471,7 +574,10 @@ mod gdext_bindings {
         #[func]
         pub fn load_from_json(&mut self, json: GString) -> bool {
             match crate::engine::GameEngine::from_json(json.to_string().as_str()) {
-                Ok(engine) => { self.engine = engine; true }
+                Ok(engine) => {
+                    self.engine = engine;
+                    true
+                }
                 Err(_) => false,
             }
         }

@@ -5,6 +5,7 @@ class_name MainMenuMapController
 
 const MainMenuConfigData = preload("res://src/ui/main_menu/main_menu_config.gd")
 const MainMenuFormattersLib = preload("res://src/ui/main_menu/ui_formatters.gd")
+const MAP_RENDER_CONTROLLER_PATH := "res://src/ui/main_menu/map_render_controller.gd"
 
 const DEFAULT_MAP_NODES_PATH := "res://src/data/map_nodes.json"
 const DEFAULT_MAP_TITLE := "THEATRE OF OPERATIONS"
@@ -77,7 +78,8 @@ var _march_mode_active: bool = false
 var _pending_march_target: String = ""
 
 # ── 渲染器 ────────────────────────────────────────────────────
-var _renderer := MainMenuMapRenderController.new()
+# 运行时加载渲染脚本，规避 preload 在当前解析链上的脚本类型报错。
+var _renderer = load(MAP_RENDER_CONTROLLER_PATH).new()
 
 
 # ── 初始化 / 生命周期 ────────────────────────────────────────
@@ -436,7 +438,7 @@ func _rebuild_map_nodes() -> void:
 	}
 
 	# 委托渲染器执行全量重绘
-	var result := _renderer.rebuild(context)
+	var result: Dictionary = _renderer.rebuild(context)
 	_map_points_by_id = result.get("points_by_id", {})
 	_map_node_controls_by_id = result.get("node_controls_by_id", {})
 	_map_edge_lines_by_node = result.get("edge_lines_by_node", {})

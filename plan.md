@@ -3,8 +3,8 @@
 > **工作标题**: *Cent Jours*（法语”百日”）
 > **一句话**: 你是拿破仑，从厄尔巴岛出逃到滑铁卢，100天内重建帝国或永远流放。每一天都是决策点。
 > **Author**: Julien
-> **Version**: v0.30 — 2026-03-24
-> **Status**: Draft — M0-M4 完成，GATE 2 通过，测试143个；历史事件修正6项（地点/id/时间线/文风/叙事/historical_note），Tier 4 修改方案 ADR-009 已制定
+> **Version**: v0.39 — 2026-03-24
+> **Status**: Draft — M0-M4 完成，GATE 2 通过，测试168个；事件池按 ADR-008 分级（major 16 / normal 35 / minor 7），`historical_note` 与行动结算日志闭环已接通，政策 / 战役 / 行军 / 强化忠诚结算已玩家化，角色显示名已统一为数据驱动中文短称，累计 24 条旧事件完成 QA 修订，并累计新增 27 条中盘 / 联军 / 小人物 / 指挥 / 政治事件；`claude/review-project-status-05vxD` 已接手后续主开发，`tuileries_eve` 已成为正式事件 ID，Save / Load 进入兼容迁移收口阶段；零阻塞自动循环已收口到 `docs/codex_autonomous_workflow.md`，不再依赖外部监督器，且 Codex 可按 ADR-008 直接修文案，但禁止使用 reframing 句式
 
 -----
 
@@ -688,7 +688,7 @@ W1──W2──W3────W7────W11────W14────W19─
 - [x] **Rust：`characters::order_deviation` 命令偏差模型（6个单元测试，含Ney/Grouchy历史场景）**
 - [x] **Rust：`characters::network` 将领关系网络（23个单元测试）** — 含 `from_json()` 从 characters.json 动态加载
 - [x] **Rust：`engine::state` 三系统耦合状态机（13个单元测试）** — battle+politics+characters联动，Dawn→Action→Dusk
-- [x] **Rust：`events::pool` JSON驱动历史事件池（13个单元测试）** — 30个历史事件（+6新增），触发条件+叙事文本
+- [x] **Rust：`events::pool` JSON驱动历史事件池（29个单元测试）** — 49个历史事件，含 tier / 史注 / JSON质量护栏 / 无效负 bonus 护栏
 - [x] **Rust：`simulation::run_engine_simulation()` 三系统+EventPool 耦合蒙特卡洛（8个单元测试）** — 1000局 < 2s
 - [x] **characters.json → CharacterNetwork** 数据集成，历史关系数据（-30敌对/正值友好）已修正
 - [x] **数据驱动化重构**（2026-03-19）：将领技能值 `general_skill()` 改为从 `CharacterNetwork.skills` 读取（修复 davout 82→92、soult 72→80 数据错误）；`EventEffects` / `EventTrigger` 改为通用 HashMap（`loyalty_deltas` / `loyalty_min` / `loyalty_max`）；`coalition_not_defeated` 触发条件 Bug 修复；**113/113 单元测试通过**
@@ -703,20 +703,20 @@ W1──W2──W3────W7────W11────W14────W19─
 **内容同步**: 历史科普视频 —「拿破仑百日的真实决策：Ney为什么倒戈？」
 
 ### Tier 3: 深度与沉浸 ✅ 完成（2026-03-23）
-> 叛逃/倒戈每日检查（Ney/Grouchy dusk_settlement 接入）+5测试，联军动态化（战败/胜利影响联军兵力）+3测试，存档/读档UI（顶栏按钮+确认对话框）。**143 tests 全通过。**
+> 叛逃/倒戈每日检查（Ney/Grouchy dusk_settlement 接入）+5测试，联军动态化（战败/胜利影响联军兵力）+3测试，存档/读档UI（顶栏按钮+确认对话框）；随后补齐 `historical_note` 展示闭环、事件扩容与 JSON 质量护栏。**150 tests 全通过。**
 
-### M4: 内容填充（W15-W19）🔶 进行中 85%
+### M4: 内容填充（W15-W19）🔶 进行中 90%
 
 **目标**: 用LLM批量生成所有文本内容，填充100天的完整事件池
 
 **交付物**:
 
-- [x] 历史事件池 31 条（ADR-008 分级：major 13 / normal 17 / minor 1）`src/data/events/historical.json`
+- [x] 历史事件池（当前58条，按 ADR-008 分级）`src/data/events/historical.json` ← 已补齐中盘 / 联军 / 小人物 / 指挥 / 根特-布鲁塞尔政治协同批次，仍需扩充至100+ 条
 - [x] 司汤达日记文本池（8类决策 × 5变体）`src/data/narratives/stendhal_diary.json`
 - [x] 微叙事后果片段池（6类 × 5条）`src/data/narratives/consequences.json`
 - [x] **叙事引擎**：`NarrativePool` 接入 `GameEngine`，`process_day()` 后提供 `DayReport`
-- [x] **Tier 4 修改方案**：ADR-009 制定四优先级路线图（事件扩充/视觉统一/解耦/unwrap 清理）
-- [ ] 事件池扩充至 100+ 条（按 ADR-009 P1 分四批实施）
+- [x] **历史事件展示闭环**：`historical_note` 已进入前端滚动日志，事件在结算当回合即时可见
+- [x] **文本 QA 持续推进**：累计 24 条旧事件完成史实/文风修订，减少过度文学化并补足说明性；累计新增 27 条事件按新标准直接入库
 - [ ] 政策描述 + 后果文本
 - [ ] 结局文本（4-6个主要结局路径 × 2-3个变体）
 - [ ] 文本质量审核（人工检查LLM输出的历史准确性和文风一致性）
