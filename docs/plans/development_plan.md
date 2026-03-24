@@ -1,6 +1,6 @@
 # Cent Jours — 开发优先级计划
 
-> **更新**: 2026-03-24 v69
+> **更新**: 2026-03-24 v70
 > **通用原则**: [docs/rules/development_principles.md](/mnt/e/projects/CentJours/docs/rules/development_principles.md)
 > **快速接手**: [docs/history/agent_handoff.md](/mnt/e/projects/CentJours/docs/history/agent_handoff.md)
 > **开发历史**: [docs/history/development_logs/development_log_001.md](/mnt/e/projects/CentJours/docs/history/development_logs/development_log_001.md)
@@ -18,7 +18,7 @@
 - 历史事件正文与 `historical_note` 已接入 UI 日志链路，玩家行动结算日志也已通过 GDExt 回传到主菜单侧栏。
 - 动态补给已经进入核心循环：补给值会进入存档、`get_state()`、主菜单顶栏、休整恢复、战斗补给惩罚和每日行动结算日志。
 - 首个玩家可控补给政策 `requisition_supplies / 征用沿线仓储` 已接入政策表、叙事池、模拟策略和 UI 元数据，补给玩法不再只有被动承压。
-- 行军预览现在优先读取 Rust 引擎返回的权威预测值，玩家在确认前就能看到预计补给 / 疲劳 / 士气变化；只有接口不可用时才退回前端近似提示。
+- 行军预览现在优先读取 Rust 引擎返回的权威预测值，玩家在确认前就能看到预计补给 / 疲劳 / 士气变化，以及仓储容量、补给线效率、预计可得量与需求拆解；只有接口不可用时才退回前端近似提示。
 - 前端已拆出 `map / layout / tray / sidebar / dialogs` 控制器，但主菜单相关文件仍偏大，发布级 polish 尚未完成。
 - 默认 Godot 验证路径仍是 Windows 原生运行和 Windows 无头，不以 Linux / WSL Godot 无头替代。
 - 当前 WSL 环境未安装 `x86_64-pc-windows-gnu` target；从这里执行 `cargo build --features godot-extension` 只会更新 Linux `.so`，不能替代 Windows `cent_jours_core.dll` 验证。
@@ -27,7 +27,7 @@
 
 | 优先级 | 项目 | 规模 | 决策理由 |
 |--------|------|------|----------|
-| **P0** | **把补给系统继续产品化：补给来源、前线压力、玩家可控补给手段、失败解释与教学** | L | `agent_chat_history` 已明确指出后勤是当前最有价值的玩法增深方向；现在已有首张补给政策和 Rust 权威预判，下一步该补的是第二层玩法杠杆、失败解释和教学。 |
+| **P0** | **把补给系统继续产品化：补给来源、前线压力、玩家可控补给手段、失败解释与教学** | L | `agent_chat_history` 已明确指出后勤是当前最有价值的玩法增深方向；现在已有首张补给政策、Rust 权威预判和风险拆解，下一步该补的是第二层玩法杠杆与前 10 天教学。 |
 | **P0** | **历史事件从 `58` 条扩到 `100+`，并继续做逐条文本 QA** | L | 这是百日长局成立的内容底座；当前事件量仍不足以支撑长局重玩性。 |
 | **P0** | **补前 10 天引导、失败归因、结局文本和关键 UI 文案统一** | M | 新玩家当前仍缺完整解释链，失败后归因和目标感还不够清楚。 |
 | **P1** | **收口 F5：`DecisionTray` / `Map Inspector` / 中英混排 / 设置入口** | M | 结构性问题已缓解，但仍需要 Windows 真机视角下的最终收口。 |
@@ -62,11 +62,12 @@ E:\software\godot\Godot_v4.6.1-stable_win64_console.exe --headless --path E:\pro
 
 - `内容量仍不足`：事件池虽然扩到 `58` 条，但离 `100+` 仍差 `42` 条。
 - `补给玩法还没完全产品化`：当前已经有补给压力，但玩家可控杠杆还不够多，仍需把它扩成清晰的策略层。
-- `补给反馈还不够可操作`：玩家现在能在行军前看到 Rust 权威预测，但为何会断补给、如何扭转局面、何时该停下整补，还缺更明确的解释和教学。
+- `补给玩法还缺第二层杠杆`：当前已有补给压力、玩家可前置看到风险，也已有一张补给政策，但还不足以形成更完整的补给策略树。
+- `补给教学还没收口`：玩家现在能在行军前看到仓储容量、补给线效率、可得量与需求拆解，但前 10 天还缺更系统的教学与失败归因串联。
 - `文本 QA 未收口`：已做多轮事件修订，但全量事件还没完成统一史实锚点、信息密度与句式清理。
 - `前端发布级 polish 仍未收口`：`DecisionTray` 和 `Map Inspector` 已做结构修复，但仍需持续用 Windows 真机确认。
 - `产品化能力缺口`：仍缺设置/选项页、稳定发布导出链路、Steam 商店与宣传资产。
-- `Windows DLL 验证链有缺口`：当前环境能跑 Windows Godot 无头，但没有重新产出新的 `cent_jours_core.dll`，所以本轮 Windows smoke 不能当作新 GDExt 行为已验证。
+- `Windows DLL 验证链有缺口`：当前环境能跑 Windows Godot 无头，但从 WSL 调 Windows `cargo build` 仍会报 `UtilBindVsockAnyPort`；本轮只能确认 Windows 主项目能启动，不能确认新的 GDExt 字段已经通过新 DLL 进入运行时。
 - `最终资产仍是占位`：地图底图、角色肖像、卡片插图、BGM、SFX、结局画面都还没完成。
 
 ## 当前技术债

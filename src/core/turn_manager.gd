@@ -74,6 +74,10 @@ func submit_action(action_type: String, params: Dictionary = {}) -> void:
 ##   projected_fatigue(float)
 ##   projected_morale(float)
 ##   projected_supply(float)
+##   supply_capacity(int)
+##   supply_demand(float)
+##   supply_available(float)
+##   line_efficiency(float)
 func get_march_preview(target_node: String) -> Dictionary:
 	_ensure_engine()
 	if target_node.strip_edges() == "":
@@ -86,7 +90,11 @@ func get_march_preview(target_node: String) -> Dictionary:
 			"supply_delta": 0.0,
 			"projected_fatigue": GameState.avg_fatigue,
 			"projected_morale": GameState.avg_morale,
-			"projected_supply": GameState.supply
+			"projected_supply": GameState.supply,
+			"supply_capacity": 0,
+			"supply_demand": 0.0,
+			"supply_available": 0.0,
+			"line_efficiency": 0.0
 		}
 	return Dictionary(engine.preview_march(target_node))
 

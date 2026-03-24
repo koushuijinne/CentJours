@@ -183,3 +183,22 @@
 - 本轮将以“权威行军预判”单独提交并推送到 `auto/gameplay_update`。
 下一步:
 - 继续把补给玩法从“能看见风险”推进到“能理解风险、能主动反制风险”，优先补失败解释、教学提示和第二层玩家杠杆。
+
+## 2026-03-24 第 12 轮
+分支: `auto/gameplay_update`
+范围: 把补给风险从“结果提示”推进到“原因拆解”
+变更:
+- Rust 行军预览新增了仓储容量、补给线效率、预计可得量和需求字段，让 UI 不再只给结果分级，而是能解释风险来源。
+- 地图行军反馈现在会同时显示“原因”和“建议”，明确告诉玩家是低容量前线、补给线过长，还是可得量低于部队需求。
+- 这轮没有再加新状态机，而是把现有补给系统、已有的 `requisition_supplies` 政策和权威预判串成更可读的决策提示。
+- 计划文档与交接文档已同步到新口径：当前主缺口不再是“看不见风险”，而是“第二层补给杠杆”和“前 10 天教学”。
+验证:
+- `cd cent-jours-core && cargo fmt` 通过。
+- `cd cent-jours-core && cargo test` 通过，基线保持 `175/175`。
+- `cd cent-jours-core && cargo build --features godot-extension` 通过，但当前环境只更新了 Linux `.so`。
+- Windows Godot 无头主项目启动通过，说明新增预览字段没有打断主项目加载。
+- 从 WSL 调 Windows `cargo build --features godot-extension` 仍报 `UtilBindVsockAnyPort`，`engine_smoke_test_scene.tscn` 也被同一类宿主互操作错误卡住；因此本轮仍不能宣称新的 Windows DLL 已完成运行时验证。
+提交/推送:
+- 本轮将以“补给风险解释增强”单独提交并推送到 `auto/gameplay_update`。
+下一步:
+- 继续补第二层补给杠杆，优先做能和现有补给线效率直接耦合的玩家可控政策，再回头补前 10 天教学。

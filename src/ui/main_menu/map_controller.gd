@@ -658,15 +658,28 @@ func _update_march_target(node_id: String) -> void:
 		var fatigue_delta := float(march_preview.get("fatigue_delta", 0.0))
 		var morale_delta := float(march_preview.get("morale_delta", 0.0))
 		var projected_supply := float(march_preview.get("projected_supply", GameState.supply))
+		var supply_capacity := int(march_preview.get("supply_capacity", int(target_info.get("supply_capacity", 0))))
+		var line_efficiency := float(march_preview.get("line_efficiency", 0.0))
+		var supply_available := float(march_preview.get("supply_available", 0.0))
+		var supply_demand := float(march_preview.get("supply_demand", 0.0))
 		var pressure_label := _march_pressure_label(projected_supply, int(target_info.get("supply_capacity", 0)))
-		preview_text = "预计补给：%s（%.0f，%+.1f）\n预计疲劳：%.0f（%+.1f）\n预计士气：%.0f（%+.1f）" % [
+		preview_text = "预计补给：%s（%.0f，%+.1f）\n预计疲劳：%.0f（%+.1f）\n预计士气：%.0f（%+.1f）\n原因：%s\n建议：%s" % [
 			pressure_label,
 			projected_supply,
 			supply_delta,
 			float(march_preview.get("projected_fatigue", GameState.avg_fatigue)),
 			fatigue_delta,
 			float(march_preview.get("projected_morale", GameState.avg_morale)),
-			morale_delta
+			morale_delta,
+			_build_supply_reason_text(supply_capacity, line_efficiency, supply_available, supply_demand),
+			_build_supply_recommendation(
+				projected_supply,
+				supply_delta,
+				supply_capacity,
+				line_efficiency,
+				supply_available,
+				supply_demand
+			)
 		]
 		if projected_supply < SUPPLY_WARNING_THRESHOLD or supply_delta < -4.0:
 			feedback_color = CentJoursTheme.COLOR["warning"]
@@ -729,3 +742,36 @@ func _march_pressure_label(projected_supply: float, supply_capacity: int) -> Str
 	if projected_supply >= 75.0 and supply_capacity >= 8:
 		return "补给有望回升"
 	return "补给大致可维持"
+
+
+func _build_supply_reason_text(
+	supply_capacity: int,
+	line_efficiency: float,
+	supply_available: float,
+	supply_demand: float
+) -> String:
+	return "目标仓储容量 %d，补给线效率 %.0f%%，预计可得 %.1f，对应需求 %.1f。" % [
+		supply_capacity,
+		line_efficiency * 100.0,
+		supply_available,
+		supply_demand
+	]
+
+
+func _build_supply_recommendation(
+	projected_supply: float,
+	supply_delta: float,
+	supply_capacity: int,
+	line_efficiency: float,
+	supply_available: float,
+	supply_demand: float
+) -> String:
+	if projected_supply < SUPPLY_WARNING_THRESHOLD or supply_delta <= -6.0:
+		if supply_capacity <= 2 or line_efficiency < 0.55:
+			return "这是低容量前线节点。更稳的是先停在高容量节点整补；若必须前推，下一回合优先征用沿线仓储。"
+		return "这一步会继续掉补给。若没有决定性战机，优先休整或回到高容量节点，再考虑推进。"
+	if supply_available + 0.5 < supply_demand:
+		return "沿线可得量低于部队需求，连续推进会把风险越积越高，下一步应优先补给而不是继续赶路。"
+	if projected_supply >= 75.0 and supply_capacity >= 8:
+		return "这里适合作为短暂整补落点，可以在下一步推进前先把疲劳和补给拉回安全区间。"
+	return "当前推进还能维持，但不适合连续硬顶前线；继续东进前先确认下一站也有足够仓储。"

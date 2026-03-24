@@ -105,6 +105,10 @@ pub struct MarchPreview {
     pub projected_fatigue: f64,
     pub projected_morale: f64,
     pub projected_supply: f64,
+    pub supply_capacity: u32,
+    pub supply_demand: f64,
+    pub supply_available: f64,
+    pub line_efficiency: f64,
 }
 
 // ── 全局游戏状态 ──────────────────────────────────────
@@ -404,9 +408,14 @@ impl GameEngine {
                 projected_fatigue: self.army.avg_fatigue,
                 projected_morale: self.army.avg_morale,
                 projected_supply: self.army.supply,
+                supply_capacity: 0,
+                supply_demand: 0.0,
+                supply_available: 0.0,
+                line_efficiency: 0.0,
             };
         }
 
+        let line_efficiency = self.supply_line_efficiency_for(&move_result.new_location);
         let projected_army = MarchArmyState {
             id: current.id,
             location: move_result.new_location.clone(),
@@ -415,11 +424,7 @@ impl GameEngine {
             fatigue: move_result.new_fatigue,
             supply: self.army.supply,
         };
-        let supply_result = update_supply(
-            &projected_army,
-            self.supply_line_efficiency_for(&move_result.new_location),
-            &self.map_graph,
-        );
+        let supply_result = update_supply(&projected_army, line_efficiency, &self.map_graph);
 
         MarchPreview {
             valid: true,
@@ -431,6 +436,10 @@ impl GameEngine {
             projected_fatigue: move_result.new_fatigue,
             projected_morale: move_result.new_morale,
             projected_supply: supply_result.new_supply,
+            supply_capacity: self.map_graph.supply_capacity_of(&projected_army.location),
+            supply_demand: supply_result.demand,
+            supply_available: supply_result.available,
+            line_efficiency: supply_result.line_efficiency,
         }
     }
 
@@ -1676,6 +1685,10 @@ mod tests {
         assert_eq!(preview.target_node, "grasse");
         assert!(preview.fatigue_delta.abs() > 0.0);
         assert!(preview.projected_supply >= 0.0 && preview.projected_supply <= 100.0);
+        assert!(preview.supply_capacity > 0);
+        assert!(preview.supply_demand > 0.0);
+        assert!(preview.supply_available > 0.0);
+        assert!(preview.line_efficiency > 0.0);
     }
 
     #[test]

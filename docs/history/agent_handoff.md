@@ -18,11 +18,11 @@
 - 历史事件正文、`historical_note` 与玩家行动结算日志都已接入侧栏日志链路。
 - 动态补给已接进核心循环：补给值会进入存档、`get_state()`、主菜单顶栏、休整恢复、战斗补给惩罚和每日行动结算日志。
 - 首个玩家可控补给政策 `requisition_supplies / 征用沿线仓储` 已接入政策表、叙事池、模拟策略和 UI 元数据。
-- 行军预览现在会优先读取 Rust 引擎返回的权威预测值，能在确认前直接显示预计补给 / 疲劳 / 士气变化；只有接口不可用时才退回前端轻量提示。
+- 行军预览现在会优先读取 Rust 引擎返回的权威预测值，能在确认前直接显示预计补给 / 疲劳 / 士气变化，并拆开显示仓储容量、补给线效率、预计可得量和需求；只有接口不可用时才退回前端轻量提示。
 - 文档目录已重构为 `docs/plans`、`docs/rules`、`docs/history`、`docs/decisions`，开发历史已从 live 计划文档中抽离到 `docs/history/development_logs/`。
 - 前端已拆出 `map / layout / tray / sidebar / dialogs` 控制器，但发布级视觉和交互收口仍未完成。
 - Windows 原生 Godot 与 Windows 无头仍是默认验证路径；不要把 Linux / WSL Godot 无头结果当成默认结论。
-- 当前环境未安装 `x86_64-pc-windows-gnu` target，本轮 `cargo build --features godot-extension` 只更新了 Linux `.so`；Windows Godot 无头能启动，但加载的仍是旧 `cent_jours_core.dll`。
+- 当前环境未安装 `x86_64-pc-windows-gnu` target，且从 WSL 调 Windows `cargo build` 仍会报 `UtilBindVsockAnyPort`；本轮只能确认 Windows 主项目能启动，不能确认新的 `cent_jours_core.dll` 已进入运行时。
 
 ## 当前最高优先级
 
@@ -36,11 +36,12 @@
 
 - `内容量仍不足`：事件池距离 `100+` 目标还差 `42` 条
 - `补给玩法还不够显式`：底层压力已经接通，但玩家还缺少明确的补给操作、反制手段和教学提示
-- `补给反馈还不够可操作`：玩家现在能在行军前看到 Rust 权威预测，但为何会断补给、如何补救、什么时候该停下整补，还缺更明确的解释与教学
+- `补给玩法还缺第二层杠杆`：当前已有补给压力、风险拆解和一张补给政策，但还不足以形成更完整的补给策略树
+- `补给教学还没收口`：玩家现在能在行军前看到仓储容量、补给线效率、可得量与需求拆解，但前 10 天还缺更系统的教学与失败归因串联
 - `文本 QA 未收口`：剩余事件仍需统一史实锚点、信息密度和句式风格
 - `前端发布级 polish 未完成`：结构问题已缓解，但仍需 Windows 真机持续验收
 - `产品化能力仍缺`：设置/选项页、导出配置、Steam 商店素材、教程引导都未完成
-- `Windows GDExt 验证仍有缺口`：本轮 Windows Godot 无头只能证明项目能起，不能证明新的 Rust 扩展逻辑已随 DLL 更新进入运行时
+- `Windows GDExt 验证仍有缺口`：本轮 Windows Godot 无头只能证明项目能起；Windows DLL 重编与 smoke scene 仍被 WSL 宿主互操作错误卡住
 - `最终资产仍是占位`：地图底图、肖像、插图、BGM、SFX、结局画面还没替换
 
 ## 当前写入边界

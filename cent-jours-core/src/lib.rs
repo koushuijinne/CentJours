@@ -432,6 +432,10 @@ mod gdext_bindings {
             let _ = d.insert("projected_fatigue", preview.projected_fatigue);
             let _ = d.insert("projected_morale", preview.projected_morale);
             let _ = d.insert("projected_supply", preview.projected_supply);
+            let _ = d.insert("supply_capacity", preview.supply_capacity as i64);
+            let _ = d.insert("supply_demand", preview.supply_demand);
+            let _ = d.insert("supply_available", preview.supply_available);
+            let _ = d.insert("line_efficiency", preview.line_efficiency);
             d
         }
 
