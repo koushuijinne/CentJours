@@ -1,10 +1,10 @@
-# Cent Jours — 开发计划
+# Cent Jours — 产品计划
 
 > **工作标题**: *Cent Jours*（法语”百日”）
 > **一句话**: 你是拿破仑，从厄尔巴岛出逃到滑铁卢，100天内重建帝国或永远流放。每一天都是决策点。
-> **Author**: Julien
-> **Version**: v0.39 — 2026-03-24
-> **Status**: Draft — M0-M4 完成，GATE 2 通过，测试168个；事件池按 ADR-008 分级（major 16 / normal 35 / minor 7），`historical_note` 与行动结算日志闭环已接通，政策 / 战役 / 行军 / 强化忠诚结算已玩家化，角色显示名已统一为数据驱动中文短称，累计 24 条旧事件完成 QA 修订，并累计新增 27 条中盘 / 联军 / 小人物 / 指挥 / 政治事件；`claude/review-project-status-05vxD` 已接手后续主开发，`tuileries_eve` 已成为正式事件 ID，Save / Load 进入兼容迁移收口阶段；零阻塞自动循环已收口到 `docs/codex_autonomous_workflow.md`，不再依赖外部监督器，且 Codex 可按 ADR-008 直接修文案，但禁止使用 reframing 句式
+> **作者**: Julien
+> **版本**: v0.39 — 2026-03-24
+> **状态**: 草案 — M0-M4 完成，GATE 2 通过，测试 `168` 个；事件池按 ADR-008 分级（major 16 / normal 35 / minor 7），`historical_note` 与行动结算日志闭环已接通，政策 / 战役 / 行军 / 强化忠诚结算已玩家化，角色显示名已统一为数据驱动中文短称，累计 `24` 条旧事件完成 QA 修订，并累计新增 `27` 条中盘 / 联军 / 小人物 / 指挥 / 政治事件；`claude/review-project-status-05vxD` 已承接后续主开发，`tuileries_eve` 已成为正式事件 ID，Save / Load 进入兼容迁移收口阶段；自动工作流已迁入可选规则目录，仅在用户明确要求时启用；agent 可按 ADR-008 直接修文案，但必须避免 reframing 句式
 
 -----
 
@@ -612,7 +612,7 @@ W1──W2──W3────W7────W11────W14────W19─
 - [x] **`cent-jours-core` crate骨架：全模块结构 + 33个单元测试通过（`cargo test`）**
 - [x] 核心系统数学建模文档（附录A.1战斗模型/A.2命令偏差已Rust实现）
 - [x] 法国地图节点设计（`src/data/map_nodes.json`：42节点 + 41条边）
-- [x] 美术风格参考板：§3.7视觉指南 + `docs/ai_prompts.md`（15人物肖像+地图提示词）
+- [x] 美术风格参考板：§3.7视觉指南 + `docs/rules/asset_prompt_templates.md`（15人物肖像+地图提示词）
 - [x] 人物数据初稿（`src/data/characters.json`：15个历史人物完整数据）
 
 **内容同步**: devlog #1 —「一个光伏算法工程师为什么要做拿破仑游戏」
@@ -623,12 +623,12 @@ W1──W2──W3────W7────W11────W14────W19─
 
 **交付物**:
 
-- [x] 高保真UI概念图：`docs/ui_prototype.html`（自包含HTML/CSS，可直接浏览器打开）
+- [x] 高保真UI概念图：`docs/history/ui_prototype.html`（自包含HTML/CSS，可直接浏览器打开）
 - [x] 核心调色板确认（`src/data/design_tokens.json`：颜色/字体/间距/动画完整设计令牌系统）
 - [x] 字体选型确认（Playfair Display / Cormorant Garamond / 思源宋体 已纳入设计令牌）
 - [x] Godot UI组件模板（GDScript）：`cent_jours_theme.gd` / `rn_slider.gd` / `decision_card.gd`
-- [x] 人物肖像风格测试提示词：`docs/ai_prompts.md`（15角色 David/Ingres 油画风SD/MJ提示词）
-- [x] 地图底图风格测试提示词：深色地形底图方向已锁定（docs/ai_prompts.md 第6节）
+- [x] 人物肖像风格测试提示词：`docs/rules/asset_prompt_templates.md`（15角色 David/Ingres 油画风 SD / MJ 提示词）
+- [x] 地图底图风格测试提示词：深色地形底图方向已锁定（`docs/rules/asset_prompt_templates.md` 第 6 节）
 
 **原则**: 此阶段产出的UI组件模板将贯穿M1-M4全部开发阶段。即使是占位符UI，也必须使用正确的配色、字体和面板风格，确保最终美术填充时只需替换纹理和细节，不需重构布局。
 

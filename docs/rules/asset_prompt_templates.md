@@ -1,9 +1,9 @@
-# Cent Jours — AI 生成美术 Prompt 模板库
-**对应 plan.md §3.7.6 + §3.7.7**
+# Cent Jours — AI 生成美术提示词模板库
+**对应 docs/plans/product_plan.md §3.7.6 + §3.7.7**
 
 ---
 
-## 1. 人物肖像 Prompt 模板
+## 1. 人物肖像提示词模板
 
 ### 1.1 基础模板（所有人物通用）
 
@@ -20,7 +20,7 @@ rich deep shadows, painterly brushwork,
 --ar 1:1 --style raw --v 6
 ```
 
-**负向提示（Negative Prompt）**:
+**负向提示词**:
 ```
 anime, cartoon, flat colors, photorealistic, 3d render,
 modern clothing, bright backgrounds, white background,
@@ -29,7 +29,7 @@ low quality, blurry, watermark, signature
 
 ---
 
-### 1.2 各人物专用 Prompt
+### 1.2 各人物专用提示词
 
 #### 拿破仑 · 波拿巴
 ```
@@ -129,7 +129,7 @@ dark background with soft warm candlelight,
 
 ---
 
-## 2. 地图底图 Prompt 模板
+## 2. 地图底图提示词模板
 
 ### 2.1 主地图底图（法国 + 比利时）
 
@@ -151,7 +151,7 @@ birds eye view orthographic projection,
 
 **Stable Diffusion (SDXL)**:
 ```
-Prompt: (topographic map:1.3), France Belgium, dark navy background,
+提示词: (topographic map:1.3), France Belgium, dark navy background,
 (dark green land:1.2), (silver rivers:1.1), terrain elevation shading,
 mediterranean coastline, no text, no labels, aerial view,
 painterly style, antique map aesthetic, dark moody colors,
@@ -176,7 +176,7 @@ dramatic stormy atmosphere, dark overcast sky implied,
 
 ---
 
-## 3. 决策卡片缩略图 Prompt 模板
+## 3. 决策卡片缩略图提示词模板
 
 每种政策类型各1张，64×64px 后缩放，深色调与卡片背景融合。
 

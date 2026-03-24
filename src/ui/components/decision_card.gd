@@ -1,5 +1,5 @@
 ## DecisionCard — 决策卡片 UI 组件
-## 对应 plan.md §3.7.4 "决策托盘"的单张卡片
+## 对应 docs/plans/product_plan.md §3.7.4 "决策托盘"的单张卡片
 ## 展示政策名称、效果数值、状态（可选/冷却/选中）
 
 class_name DecisionCard
