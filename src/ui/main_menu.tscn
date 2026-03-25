@@ -188,7 +188,44 @@ offset_right = 320.0
 offset_bottom = 42.0
 text = "Northward march to Paris and the Belgian frontier"
 
-[node name="MapCanvas" type="Control" parent="RootLayout/MainArea/LeftColumn/MapArea/MapMargin/MapContent"]
+[node name="MapHoverPanel" type="PanelContainer" parent="RootLayout/MainArea/LeftColumn/MapArea/MapMargin/MapContent"]
+visible = false
+layout_mode = 0
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -268.0
+offset_top = 0.0
+offset_right = -4.0
+offset_bottom = 72.0
+grow_horizontal = 0
+mouse_filter = 2
+
+[node name="MapHoverMargin" type="MarginContainer" parent="RootLayout/MainArea/LeftColumn/MapArea/MapMargin/MapContent/MapHoverPanel"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 8
+
+[node name="MapHoverBox" type="VBoxContainer" parent="RootLayout/MainArea/LeftColumn/MapArea/MapMargin/MapContent/MapHoverPanel/MapHoverMargin"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 4
+
+[node name="MapHoverTitle" type="Label" parent="RootLayout/MainArea/LeftColumn/MapArea/MapMargin/MapContent/MapHoverPanel/MapHoverMargin/MapHoverBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = ""
+
+[node name="MapHoverMeta" type="Label" parent="RootLayout/MainArea/LeftColumn/MapArea/MapMargin/MapContent/MapHoverPanel/MapHoverMargin/MapHoverBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+autowrap_mode = 3
+text = ""
+
+[node name="MapScroll" type="ScrollContainer" parent="RootLayout/MainArea/LeftColumn/MapArea/MapMargin/MapContent"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -196,6 +233,13 @@ anchor_bottom = 1.0
 offset_top = 52.0
 grow_horizontal = 2
 grow_vertical = 2
+horizontal_scroll_mode = 1
+vertical_scroll_mode = 1
+
+[node name="MapCanvas" type="Control" parent="RootLayout/MainArea/LeftColumn/MapArea/MapMargin/MapContent/MapScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
 mouse_filter = 1
 
 [node name="MapInspectorPanel" type="PanelContainer" parent="RootLayout/MainArea/LeftColumn/MapArea/MapMargin/MapContent"]
@@ -211,6 +255,8 @@ grow_horizontal = 0
 
 [node name="MapInspectorMargin" type="MarginContainer" parent="RootLayout/MainArea/LeftColumn/MapArea/MapMargin/MapContent/MapInspectorPanel"]
 layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
 theme_override_constants/margin_left = 12
 theme_override_constants/margin_top = 10
 theme_override_constants/margin_right = 12
@@ -224,24 +270,30 @@ horizontal_scroll_mode = 0
 
 [node name="MapInspectorBox" type="VBoxContainer" parent="RootLayout/MainArea/LeftColumn/MapArea/MapMargin/MapContent/MapInspectorPanel/MapInspectorMargin/MapInspectorScroll"]
 layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(260, 0)
 theme_override_constants/separation = 6
 
 [node name="MapInspectorTitle" type="Label" parent="RootLayout/MainArea/LeftColumn/MapArea/MapMargin/MapContent/MapInspectorPanel/MapInspectorMargin/MapInspectorScroll/MapInspectorBox"]
 layout_mode = 2
+size_flags_horizontal = 3
 text = "Map Inspector"
 
 [node name="MapInspectorMeta" type="Label" parent="RootLayout/MainArea/LeftColumn/MapArea/MapMargin/MapContent/MapInspectorPanel/MapInspectorMargin/MapInspectorScroll/MapInspectorBox"]
 layout_mode = 2
+size_flags_horizontal = 3
 autowrap_mode = 3
 text = "悬停查看节点，点击后锁定详情。"
 
 [node name="MapInspectorStats" type="Label" parent="RootLayout/MainArea/LeftColumn/MapArea/MapMargin/MapContent/MapInspectorPanel/MapInspectorMargin/MapInspectorScroll/MapInspectorBox"]
 layout_mode = 2
+size_flags_horizontal = 3
 autowrap_mode = 3
 text = ""
 
 [node name="MapInspectorHistory" type="Label" parent="RootLayout/MainArea/LeftColumn/MapArea/MapMargin/MapContent/MapInspectorPanel/MapInspectorMargin/MapInspectorScroll/MapInspectorBox"]
 layout_mode = 2
+size_flags_horizontal = 3
 autowrap_mode = 3
 text = ""
 
@@ -320,14 +372,20 @@ theme_override_constants/margin_bottom = 10
 
 [node name="SituationBox" type="VBoxContainer" parent="RootLayout/MainArea/Sidebar/SidebarMargin/SidebarContent/SituationPanel/SituationMargin"]
 layout_mode = 2
+size_flags_vertical = 3
 theme_override_constants/separation = 6
 
 [node name="SituationHeading" type="Label" parent="RootLayout/MainArea/Sidebar/SidebarMargin/SidebarContent/SituationPanel/SituationMargin/SituationBox"]
 layout_mode = 2
 text = "Current Situation"
 
-[node name="SituationBody" type="Label" parent="RootLayout/MainArea/Sidebar/SidebarMargin/SidebarContent/SituationPanel/SituationMargin/SituationBox"]
+[node name="SituationScroll" type="ScrollContainer" parent="RootLayout/MainArea/Sidebar/SidebarMargin/SidebarContent/SituationPanel/SituationMargin/SituationBox"]
 layout_mode = 2
+size_flags_vertical = 3
+
+[node name="SituationBody" type="Label" parent="RootLayout/MainArea/Sidebar/SidebarMargin/SidebarContent/SituationPanel/SituationMargin/SituationBox/SituationScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
 text = "Loading..."
 
 [node name="LoyaltyPanel" type="PanelContainer" parent="RootLayout/MainArea/Sidebar/SidebarMargin/SidebarContent"]

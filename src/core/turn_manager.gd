@@ -57,11 +57,13 @@ func begin_action_phase() -> void:
 ##   policy        → { policy_id(String) }
 ##   boost_loyalty → { general_id(String) }
 ##   rest          → {}
-func submit_action(action_type: String, params: Dictionary = {}) -> void:
+## 返回 true 表示已接受提交并进入结算；false 表示当前阶段不允许提交。
+func submit_action(action_type: String, params: Dictionary = {}) -> bool:
 	if current_phase != Phase.ACTION:
 		push_warning("[TurnManager] 不在 Action Phase，无法提交行动")
-		return
+		return false
 	_run_dusk_phase(action_type, params)
+	return true
 
 ## 只读预览一次普通行军，不修改真实状态。
 ## 返回值契约（来自 lib.rs CentJoursEngine::preview_march）:
@@ -246,6 +248,13 @@ func _run_dusk_phase(action_type: String, params: Dictionary) -> void:
 ##   logistics_regional_pressure_title(String)
 ##   logistics_regional_pressure_detail(String)
 ##   logistics_regional_pressure_short(String)
+##   logistics_regional_task_id(String)
+##   logistics_regional_task_label(String)
+##   logistics_regional_task_title(String)
+##   logistics_regional_task_detail(String)
+##   logistics_regional_task_short(String)
+##   logistics_regional_task_progress_label(String)
+##   logistics_regional_task_reward_label(String)
 ##   logistics_runway_days(int)
 ##   logistics_runway_label(String)
 ##   is_over(bool)    — 游戏是否结束
@@ -306,6 +315,13 @@ func _sync_state_from_engine() -> void:
 	GameState.logistics_regional_pressure_title = String(state.get("logistics_regional_pressure_title", ""))
 	GameState.logistics_regional_pressure_detail = String(state.get("logistics_regional_pressure_detail", ""))
 	GameState.logistics_regional_pressure_short = String(state.get("logistics_regional_pressure_short", ""))
+	GameState.logistics_regional_task_id = String(state.get("logistics_regional_task_id", ""))
+	GameState.logistics_regional_task_label = String(state.get("logistics_regional_task_label", ""))
+	GameState.logistics_regional_task_title = String(state.get("logistics_regional_task_title", ""))
+	GameState.logistics_regional_task_detail = String(state.get("logistics_regional_task_detail", ""))
+	GameState.logistics_regional_task_short = String(state.get("logistics_regional_task_short", ""))
+	GameState.logistics_regional_task_progress_label = String(state.get("logistics_regional_task_progress_label", ""))
+	GameState.logistics_regional_task_reward_label = String(state.get("logistics_regional_task_reward_label", ""))
 	GameState.logistics_runway_days = int(state.get("logistics_runway_days", -1))
 	GameState.logistics_runway_label = String(state.get("logistics_runway_label", ""))
 	GameState.available_march_targets.clear()
@@ -400,22 +416,24 @@ func _resolve_report_category(
 
 ## 从存档加载引擎状态（供 Save/Load UI 调用）
 ## 成功返回 true，失败返回 false
-func load_from_save() -> bool:
+func load_from_save(slot_id: int = 1) -> bool:
 	_ensure_engine()
-	if not SaveManager.load_game(engine):
+	if not SaveManager.load_game(engine, slot_id):
 		return false
-	current_phase = Phase.DAWN
+	current_phase = Phase.ACTION
+	GameState.current_phase = PHASE_NAMES[Phase.ACTION]
 	GameState.triggered_events.clear()
 	# 从引擎读取已触发事件列表
 	for event_id in Array(engine.get_triggered_events()):
 		GameState.triggered_events.append(String(event_id))
 	_sync_state_from_engine()
+	EventBus.phase_changed.emit("action")
 	return true
 
 ## 保存当前引擎状态到存档
-func save_to_file() -> bool:
+func save_to_file(slot_id: int = 1) -> bool:
 	_ensure_engine()
-	return SaveManager.save_game(engine)
+	return SaveManager.save_game(engine, slot_id)
 
 ## 重置引擎，用于重新开始游戏
 func reset_engine() -> void:

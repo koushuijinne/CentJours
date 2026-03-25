@@ -17,7 +17,11 @@ var _rn_block: VBoxContainer = null
 var _rn_slot: Control = null
 var _legitimacy_bar: ProgressBar = null
 var _situation_body: Label = null
+var _situation_scroll: ScrollContainer = null
 var _narrative_body: Label = null
+var _map_hover_panel: PanelContainer = null
+var _map_hover_title: Label = null
+var _map_hover_meta: Label = null
 var _map_inspector_title: Label = null
 var _map_inspector_meta: Label = null
 var _map_inspector_stats: Label = null
@@ -59,7 +63,11 @@ func bind_nodes(nodes: Dictionary, tray_controller: MainMenuTrayController = nul
 	_rn_slot = nodes.get("rn_slot", _rn_slot)
 	_legitimacy_bar = nodes.get("legitimacy_bar", _legitimacy_bar)
 	_situation_body = nodes.get("situation_body", _situation_body)
+	_situation_scroll = nodes.get("situation_scroll", _situation_scroll)
 	_narrative_body = nodes.get("narrative_body", _narrative_body)
+	_map_hover_panel = nodes.get("map_hover_panel", _map_hover_panel)
+	_map_hover_title = nodes.get("map_hover_title", _map_hover_title)
+	_map_hover_meta = nodes.get("map_hover_meta", _map_hover_meta)
 	_map_inspector_title = nodes.get("map_inspector_title", _map_inspector_title)
 	_map_inspector_meta = nodes.get("map_inspector_meta", _map_inspector_meta)
 	_map_inspector_stats = nodes.get("map_inspector_stats", _map_inspector_stats)
@@ -91,6 +99,7 @@ func set_tray_controller(tray_controller: MainMenuTrayController) -> void:
 func configure_static_ui() -> void:
 	_style_heading(_day_label, 24, CentJoursTheme.COLOR["text_heading"])
 	_style_heading(_phase_label, 11, CentJoursTheme.COLOR["gold_dim"])
+	_style_heading(_map_hover_title, 11, CentJoursTheme.COLOR["text_heading"])
 	_style_heading(_map_inspector_title, 12, CentJoursTheme.COLOR["text_heading"])
 	if _legitimacy_bar != null:
 		_legitimacy_bar.show_percentage = false
@@ -98,7 +107,10 @@ func configure_static_ui() -> void:
 	if _decision_scroll != null:
 		_decision_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_ALWAYS
 		_decision_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	for label in [_situation_body, _narrative_body, _map_inspector_meta, _map_inspector_stats, _map_inspector_history]:
+	if _situation_scroll != null:
+		_situation_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+		_situation_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	for label in [_situation_body, _narrative_body, _map_hover_meta, _map_inspector_meta, _map_inspector_stats, _map_inspector_history]:
 		if label != null:
 			label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 
@@ -118,6 +130,11 @@ func apply_panel_styles() -> void:
 		_map_area.add_theme_stylebox_override(
 			"panel",
 			_make_panel_style(Color("#111821"), CentJoursTheme.COLOR["gold_dim"], 0.34)
+		)
+	if _map_hover_panel != null:
+		_map_hover_panel.add_theme_stylebox_override(
+			"panel",
+			_make_panel_style(Color(0.08, 0.09, 0.14, 0.96), CentJoursTheme.COLOR["border_panel"], 0.18)
 		)
 	if _map_inspector_panel != null:
 		_map_inspector_panel.add_theme_stylebox_override(
@@ -228,15 +245,28 @@ func apply_responsive_layout(viewport_size: Vector2 = Vector2.ZERO) -> void:
 	var sidebar_width := clampf(viewport.x * 0.27, 332.0, 372.0)
 	if _sidebar != null:
 		_sidebar.custom_minimum_size.x = sidebar_width
+	if _map_hover_panel != null:
+		var hover_width := clampf(viewport.x * 0.20, 232.0, 284.0)
+		var hover_height := clampf(viewport.y * 0.11, 72.0, 88.0)
+		_map_hover_panel.custom_minimum_size = Vector2(hover_width, hover_height)
+		_map_hover_panel.offset_left = -hover_width - 4.0
+		_map_hover_panel.offset_top = 0.0
+		_map_hover_panel.offset_right = -4.0
+		_map_hover_panel.offset_bottom = hover_height
+		if _map_hover_meta != null:
+			_map_hover_meta.custom_minimum_size.x = hover_width - 28.0
 	if _map_inspector_panel != null:
-		var inspector_width := clampf(viewport.x * 0.235, 272.0, 320.0)
-		var inspector_height := clampf(viewport.y * 0.295, 188.0, 236.0)
-		var inspector_top := clampf(viewport.y * 0.074, 48.0, 60.0)
+		var inspector_width := clampf(viewport.x * 0.29, 340.0, 430.0)
+		var inspector_height := clampf(viewport.y * 0.40, 252.0, 360.0)
+		var inspector_top := clampf(viewport.y * 0.11, 78.0, 100.0)
 		_map_inspector_panel.custom_minimum_size = Vector2(inspector_width, inspector_height)
 		_map_inspector_panel.offset_left = -inspector_width - 4.0
 		_map_inspector_panel.offset_top = inspector_top
 		_map_inspector_panel.offset_right = -4.0
 		_map_inspector_panel.offset_bottom = inspector_top + inspector_height
+		for label in [_map_inspector_meta, _map_inspector_stats, _map_inspector_history]:
+			if label != null:
+				label.custom_minimum_size.x = inspector_width - 28.0
 
 	var card_size := Vector2(
 		clampf(viewport.x * 0.102, 124.0, 140.0),
@@ -260,8 +290,12 @@ func apply_responsive_layout(viewport_size: Vector2 = Vector2.ZERO) -> void:
 		_decision_tray.size_flags_vertical = 0
 		_decision_tray.custom_minimum_size.y = _compute_tray_min_height(scroll_height, tray_margin)
 
-	if _situation_panel != null and _situation_box != null:
-		_situation_panel.custom_minimum_size.y = _panel_min_height(_situation_box, 20.0, 100.0)
+	if _situation_panel != null:
+		_situation_panel.custom_minimum_size.y = clampf(viewport.y * 0.34, 208.0, 312.0)
+	if _situation_scroll != null:
+		_situation_scroll.custom_minimum_size = Vector2(0.0, clampf(viewport.y * 0.26, 136.0, 228.0))
+		_situation_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		_situation_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	if _narrative_panel != null and _narrative_box != null:
 		_narrative_panel.custom_minimum_size.y = _panel_min_height(_narrative_box, 24.0, 148.0)
 	if _loyalty_panel != null:

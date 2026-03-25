@@ -19,6 +19,7 @@
 
 ## 最新开发日志
 
+- [docs/history/development_logs/development_log_002.md](/mnt/e/projects/CentJours/docs/history/development_logs/development_log_002.md)
 - [docs/history/development_logs/development_log_001.md](/mnt/e/projects/CentJours/docs/history/development_logs/development_log_001.md)
 
 ## 维护规则

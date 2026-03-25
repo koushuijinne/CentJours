@@ -32,7 +32,11 @@ const MainMenuTrayControllerScript = preload("res://src/ui/main_menu/tray_contro
 @onready var _map_content: Control = $RootLayout/MainArea/LeftColumn/MapArea/MapMargin/MapContent
 @onready var _map_title: Label = $RootLayout/MainArea/LeftColumn/MapArea/MapMargin/MapContent/MapTitle
 @onready var _map_subtitle: Label = $RootLayout/MainArea/LeftColumn/MapArea/MapMargin/MapContent/MapSubtitle
-@onready var _map_canvas: Control = $RootLayout/MainArea/LeftColumn/MapArea/MapMargin/MapContent/MapCanvas
+@onready var _map_hover_panel: PanelContainer = $RootLayout/MainArea/LeftColumn/MapArea/MapMargin/MapContent/MapHoverPanel
+@onready var _map_hover_title: Label = $RootLayout/MainArea/LeftColumn/MapArea/MapMargin/MapContent/MapHoverPanel/MapHoverMargin/MapHoverBox/MapHoverTitle
+@onready var _map_hover_meta: Label = $RootLayout/MainArea/LeftColumn/MapArea/MapMargin/MapContent/MapHoverPanel/MapHoverMargin/MapHoverBox/MapHoverMeta
+@onready var _map_scroll: ScrollContainer = $RootLayout/MainArea/LeftColumn/MapArea/MapMargin/MapContent/MapScroll
+@onready var _map_canvas: Control = $RootLayout/MainArea/LeftColumn/MapArea/MapMargin/MapContent/MapScroll/MapCanvas
 @onready var _map_inspector_panel: PanelContainer = $RootLayout/MainArea/LeftColumn/MapArea/MapMargin/MapContent/MapInspectorPanel
 @onready var _map_inspector_title: Label = $RootLayout/MainArea/LeftColumn/MapArea/MapMargin/MapContent/MapInspectorPanel/MapInspectorMargin/MapInspectorScroll/MapInspectorBox/MapInspectorTitle
 @onready var _map_inspector_meta: Label = $RootLayout/MainArea/LeftColumn/MapArea/MapMargin/MapContent/MapInspectorPanel/MapInspectorMargin/MapInspectorScroll/MapInspectorBox/MapInspectorMeta
@@ -43,7 +47,8 @@ const MainMenuTrayControllerScript = preload("res://src/ui/main_menu/tray_contro
 @onready var _sidebar_content: VBoxContainer = $RootLayout/MainArea/Sidebar/SidebarMargin/SidebarContent
 @onready var _situation_panel: PanelContainer = $RootLayout/MainArea/Sidebar/SidebarMargin/SidebarContent/SituationPanel
 @onready var _situation_box: VBoxContainer = $RootLayout/MainArea/Sidebar/SidebarMargin/SidebarContent/SituationPanel/SituationMargin/SituationBox
-@onready var _situation_body: Label = $RootLayout/MainArea/Sidebar/SidebarMargin/SidebarContent/SituationPanel/SituationMargin/SituationBox/SituationBody
+@onready var _situation_scroll: ScrollContainer = $RootLayout/MainArea/Sidebar/SidebarMargin/SidebarContent/SituationPanel/SituationMargin/SituationBox/SituationScroll
+@onready var _situation_body: Label = $RootLayout/MainArea/Sidebar/SidebarMargin/SidebarContent/SituationPanel/SituationMargin/SituationBox/SituationScroll/SituationBody
 @onready var _loyalty_panel: PanelContainer = $RootLayout/MainArea/Sidebar/SidebarMargin/SidebarContent/LoyaltyPanel
 @onready var _loyalty_scroll: ScrollContainer = $RootLayout/MainArea/Sidebar/SidebarMargin/SidebarContent/LoyaltyPanel/LoyaltyMargin/LoyaltyBox/LoyaltyScroll
 @onready var _loyalty_list: VBoxContainer = $RootLayout/MainArea/Sidebar/SidebarMargin/SidebarContent/LoyaltyPanel/LoyaltyMargin/LoyaltyBox/LoyaltyScroll/LoyaltyList
@@ -60,6 +65,7 @@ const MainMenuTrayControllerScript = preload("res://src/ui/main_menu/tray_contro
 @onready var _decision_row: HBoxContainer = $RootLayout/MainArea/LeftColumn/DecisionTray/TrayMargin/TrayContent/DecisionScroll/DecisionScrollContent/DecisionRow
 
 var _confirm_button: Button       # 执行行动确认按钮（动态创建）
+var _new_game_btn: Button         # 顶栏新局按钮（动态创建）
 var _save_btn: Button             # 顶栏存档按钮（动态创建）
 var _load_btn: Button             # 顶栏读档按钮（动态创建）
 var _awaiting_action: bool = false  # 是否处于等待玩家操作的 Action Phase
@@ -115,16 +121,20 @@ func _configure_layout_controller() -> void:
 		"rn_slot": _rn_slot,
 		"legitimacy_bar": _legitimacy_bar,
 		"situation_body": _situation_body,
-		"narrative_body": _narrative_body,
-		"map_inspector_title": _map_inspector_title,
-		"map_inspector_meta": _map_inspector_meta,
-		"map_inspector_stats": _map_inspector_stats,
-		"map_inspector_history": _map_inspector_history,
+			"narrative_body": _narrative_body,
+			"map_hover_panel": _map_hover_panel,
+			"map_hover_title": _map_hover_title,
+			"map_hover_meta": _map_hover_meta,
+			"map_inspector_title": _map_inspector_title,
+			"map_inspector_meta": _map_inspector_meta,
+			"map_inspector_stats": _map_inspector_stats,
+			"map_inspector_history": _map_inspector_history,
 		"sidebar": _sidebar,
 		"map_area": _map_area,
 		"map_inspector_panel": _map_inspector_panel,
 		"situation_panel": _situation_panel,
 		"situation_box": _situation_box,
+		"situation_scroll": _situation_scroll,
 		"loyalty_panel": _loyalty_panel,
 		"loyalty_scroll": _loyalty_scroll,
 		"loyalty_list": _loyalty_list,
@@ -141,14 +151,18 @@ func _configure_layout_controller() -> void:
 	}, _tray_controller)
 
 func _configure_map_controller() -> void:
-	_map_controller.configure(
-		_map_canvas,
-		_map_title,
-		_map_subtitle,
-		_map_inspector_panel,
-		_map_inspector_title,
-		_map_inspector_meta,
-		_map_inspector_stats,
+		_map_controller.configure(
+			_map_canvas,
+			_map_scroll,
+			_map_title,
+			_map_subtitle,
+			_map_hover_panel,
+			_map_hover_title,
+			_map_hover_meta,
+			_map_inspector_panel,
+			_map_inspector_title,
+			_map_inspector_meta,
+			_map_inspector_stats,
 		_map_inspector_history,
 		"res://src/data/map_nodes.json",
 		GameState.napoleon_location
@@ -181,8 +195,8 @@ func _configure_sidebar_controller() -> void:
 
 func _configure_tray_controller() -> void:
 	_tray_controller.bind_nodes(_decision_row, _tray_hint, _confirm_button)
-	_tray_controller.set_tray_hint_texts("选择一项政策或直接休整", "结算中…")
-	_tray_controller.set_confirm_button_text("执行行动 →")
+	_tray_controller.set_tray_hint_texts("选择一项政策或直接休整", "正在结算并进入次日…")
+	_tray_controller.set_confirm_button_text("执行今日行动 → 次日")
 	if not _tray_controller.policy_selected.is_connected(_on_policy_selected):
 		_tray_controller.policy_selected.connect(_on_policy_selected)
 	if not _tray_controller.confirm_requested.is_connected(_on_confirm_requested):
@@ -226,10 +240,16 @@ func _append_narrative(entry: String, color: Color) -> void:
 
 ## 在 TrayHeader 右侧动态创建"执行行动"确认按钮
 func _build_confirm_button() -> void:
-	_confirm_button = _tray_controller.create_confirm_button(_tray_header, "执行行动 →")
+	_confirm_button = _tray_controller.create_confirm_button(_tray_header, "执行今日行动 → 次日")
 
 ## 在 TopBarRow 右侧动态创建存档/读档按钮
 func _build_save_load_buttons() -> void:
+	var new_game_btn := Button.new()
+	new_game_btn.text = "新局"
+	new_game_btn.custom_minimum_size = Vector2(60, 0)
+	new_game_btn.pressed.connect(_on_new_game_pressed)
+	_top_bar_row.add_child(new_game_btn)
+
 	var save_btn := Button.new()
 	save_btn.text = "存档"
 	save_btn.custom_minimum_size = Vector2(60, 0)
@@ -240,39 +260,108 @@ func _build_save_load_buttons() -> void:
 	load_btn.text = "读档"
 	load_btn.custom_minimum_size = Vector2(60, 0)
 	load_btn.pressed.connect(_on_load_pressed)
-	# 仅在存档存在时可用
-	load_btn.disabled = not SaveManager.has_save()
 	_top_bar_row.add_child(load_btn)
 	# 缓存按钮引用，读档后刷新可用状态
+	_new_game_btn = new_game_btn
 	_save_btn = save_btn
 	_load_btn = load_btn
+	_refresh_save_load_buttons()
 
 ## 存档按钮回调
 func _on_save_pressed() -> void:
-	if TurnManager.save_to_file():
-		_load_btn.disabled = false
-		# 短暂闪烁按钮文字作为反馈
+	_show_slot_picker("save")
+
+## 读档按钮回调
+func _on_load_pressed() -> void:
+	_show_slot_picker("load")
+
+func _on_new_game_pressed() -> void:
+	var confirm := ConfirmationDialog.new()
+	confirm.dialog_text = "重新开始将丢失当前未保存进度，确定吗？"
+	confirm.ok_button_text = "确认新开一局"
+	confirm.cancel_button_text = "取消"
+	confirm.confirmed.connect(_restart_game)
+	add_child(confirm)
+	confirm.popup_centered()
+
+func _show_slot_picker(mode: String) -> void:
+	var popup := PopupPanel.new()
+	var content := VBoxContainer.new()
+	content.custom_minimum_size = Vector2(320, 0)
+	content.theme_override_constants.separation = 8
+
+	var title := Label.new()
+	title.text = "选择存档槽位" if mode == "save" else "选择要读取的存档"
+	title.add_theme_font_size_override("font_size", 16)
+	content.add_child(title)
+
+	for slot in SaveManager.list_save_slots():
+		var slot_id := int(slot.get("slot_id", 0))
+		var exists := bool(slot.get("exists", false))
+		var button := Button.new()
+		button.text = String(slot.get("label", "槽位 %d" % slot_id))
+		button.disabled = mode == "load" and not exists
+		if mode == "save":
+			button.pressed.connect(_save_to_slot.bind(slot_id, popup))
+		else:
+			button.pressed.connect(_load_from_slot.bind(slot_id, popup))
+		content.add_child(button)
+
+	var cancel_btn := Button.new()
+	cancel_btn.text = "取消"
+	cancel_btn.pressed.connect(func(): popup.queue_free())
+	content.add_child(cancel_btn)
+
+	popup.add_child(content)
+	add_child(popup)
+	popup.popup_centered()
+
+func _save_to_slot(slot_id: int, popup: PopupPanel) -> void:
+	if popup != null:
+		popup.queue_free()
+	if TurnManager.save_to_file(slot_id):
+		_refresh_save_load_buttons()
 		_save_btn.text = "已存档 ✓"
-		get_tree().create_timer(1.0).timeout.connect(func(): _save_btn.text = "存档")
+		get_tree().create_timer(1.0).timeout.connect(func():
+			if is_instance_valid(_save_btn):
+				_save_btn.text = "存档"
+		)
 	else:
 		_save_btn.text = "存档失败"
-		get_tree().create_timer(1.5).timeout.connect(func(): _save_btn.text = "存档")
+		get_tree().create_timer(1.5).timeout.connect(func():
+			if is_instance_valid(_save_btn):
+				_save_btn.text = "存档"
+		)
 
-## 读档按钮回调（带确认）
-func _on_load_pressed() -> void:
+func _load_from_slot(slot_id: int, popup: PopupPanel) -> void:
+	if popup != null:
+		popup.queue_free()
 	var confirm := ConfirmationDialog.new()
-	confirm.dialog_text = "读档将丢失当前进度，确定吗？"
+	confirm.dialog_text = "读档将覆盖当前进度，确定读取槽位 %d 吗？" % slot_id
 	confirm.ok_button_text = "确认读档"
 	confirm.cancel_button_text = "取消"
 	confirm.confirmed.connect(func():
-		if TurnManager.load_from_save():
+		if TurnManager.load_from_save(slot_id):
+			_map_controller.clear_interaction_state()
 			_build_decision_cards()
 			_refresh_ui()
-			_awaiting_action = true
 			_set_tray_interactive(true)
+			_refresh_save_load_buttons()
 	)
 	add_child(confirm)
 	confirm.popup_centered()
+
+func _restart_game() -> void:
+	TurnManager.reset_engine()
+	_map_controller.clear_interaction_state()
+	_build_decision_cards()
+	_start_game()
+	_refresh_ui()
+	_refresh_save_load_buttons()
+
+func _refresh_save_load_buttons() -> void:
+	if _load_btn != null:
+		_load_btn.disabled = not SaveManager.has_any_save()
 
 ## 引导第一回合：Dawn Phase 同步引擎真实状态，然后进入 Action Phase 等待玩家
 func _start_game() -> void:
@@ -300,6 +389,7 @@ func _connect_signals() -> void:
 	# 接回合结束信号：驱动下一回合
 	EventBus.turn_ended.connect(_on_turn_ended)
 	EventBus.game_over.connect(_on_game_over)
+	_map_scroll.resized.connect(_map_controller.rebuild_map_nodes)
 	_map_canvas.resized.connect(_map_controller.rebuild_map_nodes)
 	_map_canvas.gui_input.connect(_map_controller.on_map_canvas_gui_input)
 	_map_controller.selected_node_changed.connect(_on_map_selected_node_changed)
@@ -381,7 +471,7 @@ func _refresh_loyalty_panel() -> void:
 ## Rouge/Noir 氛围叠加：把 get_rn_tint() 的 bg_tint 写入全屏覆盖层（ADR-004）
 func _apply_rn_atmosphere() -> void:
 	var tint := CentJoursTheme.get_rn_tint(GameState.rouge_noir_index)
-	var overlay := _layout_controller.build_rn_overlay(self)
+	var overlay: ColorRect = _layout_controller.build_rn_overlay(self)
 	if overlay != null:
 		overlay.color = tint["bg_tint"]
 
@@ -405,9 +495,25 @@ func _refresh_logistics_guidance() -> void:
 			hint_text = GameState.logistics_objective_short
 		elif GameState.logistics_focus_short.strip_edges() != "":
 			hint_text = GameState.logistics_focus_short
-	_tray_controller.set_tray_hint_texts(hint_text, "结算中…")
-	_map_controller.set_context_subtitle(hint_text)
+	var map_subtitle_text := _build_map_context_subtitle(hint_text)
+	_tray_controller.set_tray_hint_texts(hint_text, "正在结算并进入次日…")
+	_map_controller.set_context_subtitle(map_subtitle_text)
 
+func _build_map_context_subtitle(hint_text: String) -> String:
+	var candidates := [
+		GameState.logistics_route_chain_short,
+		GameState.logistics_objective_short,
+		GameState.logistics_regional_pressure_short,
+		GameState.logistics_tempo_plan_short,
+		GameState.logistics_focus_short
+	]
+	for candidate_variant in candidates:
+		var candidate := String(candidate_variant).strip_edges()
+		if candidate != "" and candidate != hint_text:
+			return candidate
+	if hint_text.begins_with("前10天教程："):
+		return "提示：点击城市锁定详情，滚轮缩放地图，右键复位。"
+	return hint_text
 
 func _build_tutorial_hint_text() -> String:
 	if GameState.current_day > 10:
@@ -475,10 +581,14 @@ func _on_confirm_pressed() -> void:
 		return
 	_set_tray_interactive(false)
 	# "rest" policy_id 和空选均映射到 rest 行动（ADR-004）
+	var submitted := false
 	if selected_policy_id != "" and selected_policy_id != "rest":
-		TurnManager.submit_action("policy", {"policy_id": selected_policy_id})
+		submitted = TurnManager.submit_action("policy", {"policy_id": selected_policy_id})
 	else:
-		TurnManager.submit_action("rest", {})
+		submitted = TurnManager.submit_action("rest", {})
+	if not submitted:
+		_set_tray_interactive(true)
+		return
 	_clear_tray_selection()
 
 ## 从 GameState.policy_cooldowns 刷新所有卡片的冷却状态（Rust 引擎权威数据）
@@ -492,8 +602,8 @@ func _refresh_card_cooldowns() -> void:
 ## 回合结束：保存旧数值快照 → 刷新 UI → 启动下一回合
 func _on_turn_ended(_new_day: int) -> void:
 	_snapshot_prev_values()
-	_refresh_ui()
 	call_deferred("_begin_next_turn")
+	_refresh_ui()
 
 ## 保存当前数值作为下回合趋势对比基准
 func _snapshot_prev_values() -> void:
@@ -506,7 +616,6 @@ func _snapshot_prev_values() -> void:
 func _begin_next_turn() -> void:
 	TurnManager.start_new_turn()
 	TurnManager.begin_action_phase()
-	_set_tray_interactive(true)
 
 ## 司汤达日记：进入滚动日志，金色调以区分于普通后果文本（ADR-004）
 func _on_stendhal_entry(day: int, text: String) -> void:
@@ -534,13 +643,17 @@ func _show_boost_popup() -> void:
 	_dialogs_controller.show_boost_popup(_boost_popup_state())
 
 func _submit_modal_action(action_name: String, payload: Dictionary) -> void:
-	TurnManager.submit_action(action_name, payload)
+	if not TurnManager.submit_action(action_name, payload):
+		_set_tray_interactive(true)
+		return
 	_clear_tray_selection()
 
 ## map_controller 行军确认回调：向 TurnManager 提交行军行动
 func _on_march_confirmed(target_node: String) -> void:
 	_set_tray_interactive(false)
-	TurnManager.submit_action("march", {"target_node": target_node})
+	if not TurnManager.submit_action("march", {"target_node": target_node}):
+		_set_tray_interactive(true)
+		return
 	_clear_tray_selection()
 
 ## map_controller 行军反馈回调：更新侧边栏文本
@@ -552,6 +665,7 @@ func _on_march_feedback(text: String, color: Color) -> void:
 	_sidebar_controller.set_narrative_text(text, color)
 
 func _on_phase_changed(_phase: String) -> void:
+	_set_tray_interactive(_phase == "action")
 	_refresh_ui()
 
 func _on_legitimacy_changed(_old_value: float, _new_value: float) -> void:

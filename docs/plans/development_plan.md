@@ -1,6 +1,6 @@
 # Cent Jours — 开发优先级计划
 
-> **更新**: 2026-03-24 v84
+> **更新**: 2026-03-24 v85
 > **通用原则**: [docs/rules/development_principles.md](/mnt/e/projects/CentJours/docs/rules/development_principles.md)
 > **快速接手**: [docs/history/agent_handoff.md](/mnt/e/projects/CentJours/docs/history/agent_handoff.md)
 > **开发历史**: [docs/history/development_logs/development_log_001.md](/mnt/e/projects/CentJours/docs/history/development_logs/development_log_001.md)
@@ -37,6 +37,8 @@
 - 终局复盘现在会带上终盘补给、最后位置、后勤态势、阶段运营目标、当日行动计划和补给窗口，失败归因开始从纯政治/军事统计扩展到后勤节奏。
 - 三张补给牌的侧栏预览现在会直接给出“优先 / 可考虑 / 暂缓”的即时建议，开始把政策选择和当前后勤态势真正绑在一起。
 - 终局复盘现在会把失败归因进一步落到具体补给牌和节奏错误，例如补给牌打晚、没及时保线、没把中继节点铺成跳板。
+- 主菜单 bug sweep 已完成第一轮闭环：前 10 天教程重复、hover 面板挡图、地图详情极窄换行、读档阶段错位、单槽读档、缺少新局入口、执行行动语义不清等问题已在 UI 侧收口。
+- 地图现在支持 `MapScroll + 滚轮缩放 + 右键复位`，并拆成“hover 小预览 + click 锁定详情”两层；读档 / 新局也改成常驻顶栏入口。
 - 前端已拆出 `map / layout / tray / sidebar / dialogs` 控制器，但主菜单相关文件仍偏大，发布级 polish 尚未完成。
 - 默认验证路径只接受 Windows 原生运行、Windows 无头和 Windows 原生 `cargo build --features godot-extension`。
 - 当前这条补给玩法切片已经完成 Windows `cargo test`、Windows DLL 重编、Windows 主项目无头启动和 Windows smoke scene；smoke 输出已确认新 `logistics_route_chain_*`、`logistics_regional_pressure_*` 字段和 `secure_regional_corridor` 建议进入 Windows 运行时。后续自动工作流不再回退到 Linux / WSL 侧测试补位。
@@ -94,7 +96,7 @@ E:\software\godot\Godot_v4.6.1-stable_win64_console.exe --headless --path E:\pro
 - `main_menu.gd` 约 `566` 行，`map_controller.gd` 约 `658` 行，控制器仍有进一步收口空间
 - `tests/monte_carlo_balance.py` 与 Rust 核心基线已漂移，不应继续作为平衡主依据
 - 当前剩余 `cargo test` 提示主要是文件系统不支持 Rust 增量缓存 hard link，属于环境噪音
-- 当前存档仍是单槽 `user://cent_jours_save.json`，更适合开发态而非发布态
+- 多槽存档 UI 已接入，但缺少更完整的存档元信息、覆盖确认细节和删除入口
 
 ## 已完成模块清单
 

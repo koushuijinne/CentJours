@@ -10,9 +10,12 @@ const MAP_RENDER_CONTROLLER_PATH := "res://src/ui/main_menu/map_render_controlle
 const DEFAULT_MAP_NODES_PATH := "res://src/data/map_nodes.json"
 const DEFAULT_MAP_TITLE := "THEATRE OF OPERATIONS"
 const DEFAULT_INSPECTOR_TITLE := "Map Inspector"
-const DEFAULT_INSPECTOR_HINT := "悬停查看节点，点击后锁定详情。"
+const DEFAULT_INSPECTOR_HINT := "悬停查看预览，点击后锁定详情。滚轮缩放，右键复位。"
 const SUPPLY_WARNING_THRESHOLD := 45.0
 const SUPPLY_HUB_IDS := ["golfe_juan", "grenoble", "lyon", "paris", "lille", "maubeuge"]
+const MAP_ZOOM_MIN := 1.0
+const MAP_ZOOM_MAX := 2.4
+const MAP_ZOOM_STEP := 0.2
 
 signal map_data_loaded(success: bool)
 signal map_rebuilt
@@ -49,10 +52,14 @@ var _map_node_index: Dictionary = {}
 var _map_adjacency_by_node: Dictionary = {}
 
 # ── UI 节点引用 ───────────────────────────────────────────────
+var _map_scroll: ScrollContainer = null
 var _map_canvas: Control = null
 var _map_title: Label = null
 var _map_subtitle: Label = null
 var _context_subtitle: String = ""
+var _map_hover_panel: PanelContainer = null
+var _map_hover_title: Label = null
+var _map_hover_meta: Label = null
 var _map_inspector_panel: PanelContainer = null
 var _map_inspector_title: Label = null
 var _map_inspector_meta: Label = null
@@ -79,6 +86,8 @@ var _march_target_node_ids: Array[String] = []
 var _march_mode_active: bool = false
 # 行军交互状态：玩家当前选中的待确认目标节点 ID
 var _pending_march_target: String = ""
+var _map_zoom: float = 1.0
+var _pending_focus_node_id: String = ""
 
 # ── 渲染器 ────────────────────────────────────────────────────
 # 运行时加载渲染脚本，规避 preload 在当前解析链上的脚本类型报错。
@@ -89,8 +98,12 @@ var _renderer = load(MAP_RENDER_CONTROLLER_PATH).new()
 
 func configure(
 	map_canvas: Control,
+	map_scroll: ScrollContainer = null,
 	map_title: Label = null,
 	map_subtitle: Label = null,
+	map_hover_panel: PanelContainer = null,
+	map_hover_title: Label = null,
+	map_hover_meta: Label = null,
 	map_inspector_panel: PanelContainer = null,
 	map_inspector_title: Label = null,
 	map_inspector_meta: Label = null,
@@ -99,7 +112,20 @@ func configure(
 	map_nodes_path: String = DEFAULT_MAP_NODES_PATH,
 	napoleon_location_id: String = ""
 ) -> void:
-	bind_nodes(map_canvas, map_title, map_subtitle, map_inspector_panel, map_inspector_title, map_inspector_meta, map_inspector_stats, map_inspector_history)
+	bind_nodes(
+		map_canvas,
+		map_scroll,
+		map_title,
+		map_subtitle,
+		map_hover_panel,
+		map_hover_title,
+		map_hover_meta,
+		map_inspector_panel,
+		map_inspector_title,
+		map_inspector_meta,
+		map_inspector_stats,
+		map_inspector_history
+	)
 	set_map_nodes_path(map_nodes_path)
 	set_napoleon_location(napoleon_location_id)
 	load_map_data()
@@ -107,24 +133,39 @@ func configure(
 
 func bind_nodes(
 	map_canvas: Control,
+	map_scroll: ScrollContainer = null,
 	map_title: Label = null,
 	map_subtitle: Label = null,
+	map_hover_panel: PanelContainer = null,
+	map_hover_title: Label = null,
+	map_hover_meta: Label = null,
 	map_inspector_panel: PanelContainer = null,
 	map_inspector_title: Label = null,
 	map_inspector_meta: Label = null,
 	map_inspector_stats: Label = null,
 	map_inspector_history: Label = null
 ) -> void:
+	_map_scroll = map_scroll
 	_map_canvas = map_canvas
 	_map_title = map_title
 	_map_subtitle = map_subtitle
+	_map_hover_panel = map_hover_panel
+	_map_hover_title = map_hover_title
+	_map_hover_meta = map_hover_meta
 	_map_inspector_panel = map_inspector_panel
 	_map_inspector_title = map_inspector_title
 	_map_inspector_meta = map_inspector_meta
 	_map_inspector_stats = map_inspector_stats
 	_map_inspector_history = map_inspector_history
+	if _map_hover_panel != null:
+		_map_hover_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if _map_inspector_panel != null:
+		_map_inspector_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	if _map_canvas != null:
 		_map_canvas.mouse_filter = Control.MOUSE_FILTER_STOP
+	if _map_scroll != null and not _map_scroll.resized.is_connected(_on_map_scroll_resized):
+		_map_scroll.resized.connect(_on_map_scroll_resized)
+	_apply_map_canvas_size()
 	refresh_map_header()
 	refresh_map_inspector()
 	if has_map_data():
@@ -132,9 +173,13 @@ func bind_nodes(
 
 
 func unbind_nodes() -> void:
+	_map_scroll = null
 	_map_canvas = null
 	_map_title = null
 	_map_subtitle = null
+	_map_hover_panel = null
+	_map_hover_title = null
+	_map_hover_meta = null
 	_map_inspector_panel = null
 	_map_inspector_title = null
 	_map_inspector_meta = null
@@ -275,6 +320,8 @@ func set_napoleon_location(node_id: String) -> void:
 	if _napoleon_location_id == node_id:
 		return
 	_napoleon_location_id = node_id
+	if _map_zoom > MAP_ZOOM_MIN:
+		_queue_focus_node(node_id)
 	refresh_map_inspector()
 	request_map_rebuild()
 
@@ -337,6 +384,20 @@ func get_map_node_index() -> Dictionary:
 	return _map_node_index.duplicate(true)
 
 
+func get_map_zoom() -> float:
+	return _map_zoom
+
+
+func set_map_zoom(zoom: float) -> void:
+	var clamped_zoom := clampf(zoom, MAP_ZOOM_MIN, MAP_ZOOM_MAX)
+	if is_equal_approx(clamped_zoom, _map_zoom):
+		return
+	_map_zoom = clamped_zoom
+	_apply_map_canvas_size()
+	_queue_focus_node(_focus_target_node_id())
+	request_map_rebuild()
+
+
 func get_map_points_by_id() -> Dictionary:
 	return _map_points_by_id.duplicate(true)
 
@@ -395,6 +456,8 @@ func set_selected_node_id(node_id: String) -> void:
 	if _selected_map_node_id == node_id:
 		return
 	_selected_map_node_id = node_id
+	if _map_zoom > MAP_ZOOM_MIN:
+		_queue_focus_node(node_id)
 	selected_node_changed.emit(node_id)
 	refresh_map_inspector()
 	request_map_rebuild()
@@ -405,6 +468,8 @@ func select_node(node_id: String) -> void:
 		return
 	_selected_map_node_id = node_id
 	_hovered_map_node_id = node_id
+	if _map_zoom > MAP_ZOOM_MIN:
+		_queue_focus_node(node_id)
 	hovered_node_changed.emit(node_id)
 	selected_node_changed.emit(node_id)
 	refresh_map_inspector()
@@ -416,6 +481,7 @@ func select_node(node_id: String) -> void:
 func request_map_rebuild() -> void:
 	if _map_rebuild_pending:
 		return
+	_apply_map_canvas_size()
 	_map_rebuild_pending = true
 	call_deferred("_rebuild_map_nodes")
 
@@ -472,6 +538,7 @@ func _rebuild_map_nodes() -> void:
 
 func _finish_map_rebuild() -> void:
 	_map_rebuild_in_progress = false
+	_apply_pending_focus()
 	map_rebuilt.emit()
 
 
@@ -506,42 +573,104 @@ func on_map_node_gui_input(event: InputEvent, node_id: String, hotspot: Control)
 func on_map_canvas_gui_input(event: InputEvent) -> void:
 	if not (event is InputEventMouseButton):
 		return
-	if event.pressed and event.button_index == MOUSE_BUTTON_LEFT and (_selected_map_node_id != "" or _hovered_map_node_id != ""):
+	var mouse_event := event as InputEventMouseButton
+	if mouse_event == null or not mouse_event.pressed:
+		return
+	if mouse_event.button_index == MOUSE_BUTTON_WHEEL_UP:
+		set_map_zoom(_map_zoom + MAP_ZOOM_STEP)
+		get_viewport().set_input_as_handled()
+		return
+	if mouse_event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+		set_map_zoom(_map_zoom - MAP_ZOOM_STEP)
+		get_viewport().set_input_as_handled()
+		return
+	if mouse_event.button_index == MOUSE_BUTTON_RIGHT:
+		set_map_zoom(MAP_ZOOM_MIN)
+		_queue_focus_node(_focus_target_node_id())
+		get_viewport().set_input_as_handled()
+		return
+	if mouse_event.button_index == MOUSE_BUTTON_LEFT and (_selected_map_node_id != "" or _hovered_map_node_id != ""):
 		clear_interaction_state()
 
 
 # ── Inspector 面板 ────────────────────────────────────────────
 
 func refresh_map_inspector() -> void:
-	var inspector_node_id := _selected_map_node_id if _selected_map_node_id != "" else _hovered_map_node_id
-	var is_hover_preview := _selected_map_node_id == "" and inspector_node_id != ""
-	if inspector_node_id == "" or not _map_node_index.has(inspector_node_id):
-		if _map_inspector_title != null:
-			_map_inspector_title.text = DEFAULT_INSPECTOR_TITLE
-			_map_inspector_title.add_theme_color_override("font_color", CentJoursTheme.COLOR["text_heading"])
-		if _map_inspector_meta != null:
-			_map_inspector_meta.text = DEFAULT_INSPECTOR_HINT
-			_map_inspector_meta.add_theme_color_override("font_color", CentJoursTheme.COLOR["text_secondary"])
-		if _map_inspector_stats != null:
-			_map_inspector_stats.text = ""
-			_map_inspector_stats.add_theme_color_override("font_color", CentJoursTheme.COLOR["text_secondary"])
-		if _map_inspector_history != null:
-			_map_inspector_history.text = ""
-			_map_inspector_history.add_theme_color_override("font_color", CentJoursTheme.COLOR["text_secondary"])
-		return
+	var selected_node_id := _selected_map_node_id
+	var hover_node_id := ""
+	if selected_node_id == "":
+		hover_node_id = _hovered_map_node_id
+	if selected_node_id == "" or not _map_node_index.has(selected_node_id):
+		_reset_map_inspector()
+	else:
+		_populate_map_inspector(selected_node_id)
+	if hover_node_id == "" or not _map_node_index.has(hover_node_id):
+		_reset_map_hover_preview()
+	else:
+		_populate_map_hover_preview(hover_node_id)
 
-	var node_info: Dictionary = _map_node_index.get(inspector_node_id, {})
+
+func _reset_map_hover_preview() -> void:
+	if _map_hover_panel != null:
+		_map_hover_panel.visible = false
+	if _map_hover_title != null:
+		_map_hover_title.text = ""
+	if _map_hover_meta != null:
+		_map_hover_meta.text = ""
+
+
+func _populate_map_hover_preview(node_id: String) -> void:
+	var node_info: Dictionary = _map_node_index.get(node_id, {})
 	var fr_name := _node_label_text(node_info)
 	var cn_name := String(node_info.get("name", fr_name))
+	var base_capacity := int(node_info.get("supply_capacity", 0))
+	if _map_hover_panel != null:
+		_map_hover_panel.visible = true
+	if _map_hover_title != null:
+		_map_hover_title.text = "%s · %s" % [fr_name, cn_name]
+		_map_hover_title.add_theme_color_override("font_color", CentJoursTheme.COLOR["text_heading"])
+	if _map_hover_meta != null:
+		_map_hover_meta.text = "类型：%s · 地形：%s\n区域：%s · 容量：%d · %s" % [
+			MainMenuFormattersLib.humanize_token(String(node_info.get("type", "unknown"))),
+			MainMenuFormattersLib.humanize_token(String(node_info.get("terrain", "unknown"))),
+			MainMenuFormattersLib.humanize_token(String(node_info.get("region", "unknown"))),
+			base_capacity,
+			MainMenuFormattersLib.supply_role_label_for_capacity(base_capacity)
+		]
+		_map_hover_meta.add_theme_color_override("font_color", CentJoursTheme.COLOR["text_primary"])
+
+
+func _reset_map_inspector() -> void:
+	if _map_inspector_panel != null:
+		_map_inspector_panel.visible = false
+	if _map_inspector_title != null:
+		_map_inspector_title.text = DEFAULT_INSPECTOR_TITLE
+		_map_inspector_title.add_theme_color_override("font_color", CentJoursTheme.COLOR["text_heading"])
+	if _map_inspector_meta != null:
+		_map_inspector_meta.text = DEFAULT_INSPECTOR_HINT
+		_map_inspector_meta.add_theme_color_override("font_color", CentJoursTheme.COLOR["text_secondary"])
+	if _map_inspector_stats != null:
+		_map_inspector_stats.text = ""
+		_map_inspector_stats.add_theme_color_override("font_color", CentJoursTheme.COLOR["text_secondary"])
+	if _map_inspector_history != null:
+		_map_inspector_history.text = ""
+		_map_inspector_history.add_theme_color_override("font_color", CentJoursTheme.COLOR["text_secondary"])
+
+
+func _populate_map_inspector(node_id: String) -> void:
+	var node_info: Dictionary = _map_node_index.get(node_id, {})
+	var fr_name := _node_label_text(node_info)
+	var cn_name := String(node_info.get("name", fr_name))
+	if _map_inspector_panel != null:
+		_map_inspector_panel.visible = true
 	if _map_inspector_title != null:
 		_map_inspector_title.text = fr_name
 		_map_inspector_title.add_theme_color_override(
 			"font_color",
-			CentJoursTheme.COLOR["gold_bright"] if inspector_node_id == _napoleon_location_id else CentJoursTheme.COLOR["text_heading"]
+			CentJoursTheme.COLOR["gold_bright"] if node_id == _napoleon_location_id else CentJoursTheme.COLOR["text_heading"]
 		)
 	if _map_inspector_meta != null:
-		_map_inspector_meta.text = "%s%s\n类型：%s\n区域：%s · 地形：%s" % [
-			"悬停预览\n" if is_hover_preview else "",
+		_map_inspector_meta.text = "%s\n类型：%s\n区域：%s · 地形：%s" % [
 			cn_name,
 			MainMenuFormattersLib.humanize_token(String(node_info.get("type", "unknown"))),
 			MainMenuFormattersLib.humanize_token(String(node_info.get("region", "unknown"))),
@@ -549,11 +678,11 @@ func refresh_map_inspector() -> void:
 		]
 		_map_inspector_meta.add_theme_color_override("font_color", CentJoursTheme.COLOR["text_primary"])
 	if _map_inspector_stats != null:
-		var marker := "Napoléon 当前所在\n" if inspector_node_id == _napoleon_location_id else ""
+		var marker := "Napoléon 当前所在\n" if node_id == _napoleon_location_id else ""
 		var base_capacity := int(node_info.get("supply_capacity", 0))
-		var capacity_bonus := _forward_depot_bonus_for_node(inspector_node_id)
+		var capacity_bonus := _forward_depot_bonus_for_node(node_id)
 		var effective_capacity := base_capacity + capacity_bonus
-		var hub_info := _nearest_supply_hub(inspector_node_id)
+		var hub_info := _nearest_supply_hub(node_id)
 		var capacity_suffix := ""
 		if capacity_bonus > 0:
 			capacity_suffix = " + 前沿粮秣站 %d" % capacity_bonus
@@ -566,7 +695,7 @@ func refresh_map_inspector() -> void:
 		if int(hub_info.get("distance", -1)) >= 0:
 			hub_line += "（%d 跳）" % int(hub_info.get("distance", 0))
 		var runway_line := ""
-		if inspector_node_id == _napoleon_location_id and GameState.logistics_runway_label.strip_edges() != "":
+		if node_id == _napoleon_location_id and GameState.logistics_runway_label.strip_edges() != "":
 			runway_line = "%s\n" % GameState.logistics_runway_label
 		_map_inspector_stats.text = "%s补给角色：%s\n%s\n%s\n%s防御加成：%.1f\n驻军：%d" % [
 			marker,
@@ -581,6 +710,58 @@ func refresh_map_inspector() -> void:
 	if _map_inspector_history != null:
 		_map_inspector_history.text = String(node_info.get("historical_significance", "暂无补充史实。"))
 		_map_inspector_history.add_theme_color_override("font_color", CentJoursTheme.COLOR["gold_dim"])
+
+
+func _on_map_scroll_resized() -> void:
+	_apply_map_canvas_size()
+	request_map_rebuild()
+
+
+func _apply_map_canvas_size() -> void:
+	if _map_canvas == null:
+		return
+	var viewport_size := Vector2.ZERO
+	if _map_scroll != null:
+		viewport_size = _map_scroll.size
+	if viewport_size.x <= 0.0 or viewport_size.y <= 0.0:
+		viewport_size = _map_canvas.size
+	if viewport_size.x <= 0.0 or viewport_size.y <= 0.0:
+		return
+	var scaled_size := Vector2(
+		maxf(viewport_size.x, viewport_size.x * _map_zoom),
+		maxf(viewport_size.y, viewport_size.y * _map_zoom)
+	)
+	_map_canvas.custom_minimum_size = scaled_size
+	_map_canvas.size = scaled_size
+
+
+func _focus_target_node_id() -> String:
+	if _selected_map_node_id != "":
+		return _selected_map_node_id
+	if _hovered_map_node_id != "":
+		return _hovered_map_node_id
+	return _napoleon_location_id
+
+
+func _queue_focus_node(node_id: String) -> void:
+	_pending_focus_node_id = node_id
+
+
+func _apply_pending_focus() -> void:
+	if _map_scroll == null or _pending_focus_node_id == "":
+		return
+	if not _map_points_by_id.has(_pending_focus_node_id):
+		_pending_focus_node_id = ""
+		return
+	var viewport_size := _map_scroll.size
+	if viewport_size.x <= 0.0 or viewport_size.y <= 0.0:
+		return
+	var point: Vector2 = _map_points_by_id.get(_pending_focus_node_id, Vector2.ZERO)
+	var max_x := maxf(_map_canvas.size.x - viewport_size.x, 0.0)
+	var max_y := maxf(_map_canvas.size.y - viewport_size.y, 0.0)
+	_map_scroll.scroll_horizontal = int(clampf(point.x - viewport_size.x * 0.5, 0.0, max_x))
+	_map_scroll.scroll_vertical = int(clampf(point.y - viewport_size.y * 0.5, 0.0, max_y))
+	_pending_focus_node_id = ""
 
 
 # ── 辅助函数 ─────────────────────────────────────────────────

@@ -327,7 +327,7 @@ func _build_reserved_label_rects() -> Array:
 	var reserved: Array = []
 	reserved.append(Rect2(Vector2.ZERO, MainMenuConfigData.MAP_RESERVED_TOP_LEFT))
 	if _inspector_panel != null and _canvas != null:
-		var inspector_origin := _inspector_panel.position - _canvas.position
+		var inspector_origin := _inspector_panel.get_global_rect().position - _canvas.get_global_rect().position
 		var inspector_size := _inspector_panel.size
 		if inspector_size.x > 0.0 and inspector_size.y > 0.0:
 			reserved.append(Rect2(inspector_origin - Vector2(8, 8), inspector_size + Vector2(16, 16)))
