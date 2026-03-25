@@ -59,6 +59,11 @@ var logistics_tempo_plan_short: String = ""
 var logistics_route_chain_title: String = ""
 var logistics_route_chain_detail: String = ""
 var logistics_route_chain_short: String = ""
+var logistics_regional_pressure_id: String = ""
+var logistics_regional_pressure_label: String = ""
+var logistics_regional_pressure_title: String = ""
+var logistics_regional_pressure_detail: String = ""
+var logistics_regional_pressure_short: String = ""
 var logistics_runway_days: int = -1
 var logistics_runway_label: String = ""
 

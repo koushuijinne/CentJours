@@ -156,6 +156,11 @@ pub struct LogisticsBrief {
     pub route_chain_title: String,
     pub route_chain_detail: String,
     pub route_chain_short: String,
+    pub regional_pressure_id: String,
+    pub regional_pressure_label: String,
+    pub regional_pressure_title: String,
+    pub regional_pressure_detail: String,
+    pub regional_pressure_short: String,
 }
 
 #[derive(Debug, Clone)]
@@ -221,6 +226,15 @@ struct TempoPlan {
 
 #[derive(Debug, Clone)]
 struct RouteChain {
+    title: String,
+    detail: String,
+    short: String,
+}
+
+#[derive(Debug, Clone)]
+struct RegionalPressure {
+    id: String,
+    label: String,
     title: String,
     detail: String,
     short: String,
@@ -613,6 +627,12 @@ impl GameEngine {
             &primary_action,
             &secondary_action,
         );
+        let regional_pressure = self.logistics_regional_pressure_for(
+            location,
+            posture_id,
+            objective_target_role,
+            &primary_action,
+        );
         let focus_title = self.campaign_focus_title().to_string();
         let focus_detail = match posture_id {
             "critical_recovery" => format!(
@@ -693,6 +713,11 @@ impl GameEngine {
             route_chain_title: route_chain.title,
             route_chain_detail: route_chain.detail,
             route_chain_short: route_chain.short,
+            regional_pressure_id: regional_pressure.id,
+            regional_pressure_label: regional_pressure.label,
+            regional_pressure_title: regional_pressure.title,
+            regional_pressure_detail: regional_pressure.detail,
+            regional_pressure_short: regional_pressure.short,
         }
     }
 
@@ -970,10 +995,10 @@ impl GameEngine {
             ),
             "overextended_line" => (
                 self.policy_recommendation(
-                    "stabilize_supply_lines",
-                    "整顿驿站运输",
-                    "当前输在运输线而不是单次库存；先保线，才能把后面两三步走成连续推进。",
-                    "先整顿驿站运输，别让补给线继续掉速。",
+                    "secure_regional_corridor",
+                    "巩固区域走廊",
+                    "当前不只是运输线掉速，整段中继也在变脆。先把当前区域走廊一起加固，再谈后面两三步。",
+                    "先巩固区域走廊，别让中继线继续发散。",
                 ),
                 march_target
                     .as_ref()
@@ -989,10 +1014,10 @@ impl GameEngine {
                     })
                     .unwrap_or_else(|| {
                         self.policy_recommendation(
-                            "establish_forward_depot",
-                            "建立前沿粮秣站",
-                            "若暂时离不开当前节点，先把这里变成临时跳板，避免继续裸奔在长运输线上。",
-                            "若走不开，先在这里铺前沿粮秣站。",
+                            "stabilize_supply_lines",
+                            "整顿驿站运输",
+                            "若暂时还走不开，至少先把线效率顶住，别让整条走廊继续掉速。",
+                            "若走不开，先整顿驿站运输。",
                         )
                     }),
             ),
@@ -1009,19 +1034,19 @@ impl GameEngine {
                             format!("先转到 {}，别连续站在前线消耗点。", target.target_label),
                         ),
                         self.policy_recommendation(
-                            "establish_forward_depot",
-                            "建立前沿粮秣站",
-                            "如果必须在这里停两到三天，就先把当前节点变成临时整补跳板。",
-                            "若必须停留，再铺前沿粮秣站。",
+                            "secure_regional_corridor",
+                            "巩固区域走廊",
+                            "如果准备把这段线真正站稳，而不是只从这里路过一次，就先把当前节点和沿线运输一起加固。",
+                            "若要把这里做成中继，就先巩固区域走廊。",
                         ),
                     )
                 } else {
                     (
                         self.policy_recommendation(
-                            "establish_forward_depot",
-                            "建立前沿粮秣站",
-                            "当前附近没有更稳的落点可立刻接上，只能先用本地仓储把这口气续住。",
-                            "先铺前沿粮秣站，别在裸前线硬顶。",
+                            "secure_regional_corridor",
+                            "巩固区域走廊",
+                            "当前附近没有更稳的落点可立刻接上，先把这段区域走廊加固，至少别让补给线和本地仓储一起继续变差。",
+                            "先巩固区域走廊，别在裸前线硬顶。",
                         ),
                         self.policy_recommendation(
                             "requisition_supplies",
@@ -1291,6 +1316,26 @@ impl GameEngine {
                 ),
                 "先铺前沿粮秣站，接着吃满两天整补窗口。".to_string(),
             ),
+            "secure_regional_corridor" => {
+                if let Some(target) =
+                    self.best_adjacent_target_for_objective(location, objective_target_role)
+                {
+                    (
+                        format!("明天：走廊稳住后，优先接到 {}。", target.target_label),
+                        format!(
+                            "后天：以 {} 为中继，把路线继续压向{}。",
+                            target.target_label, objective_label
+                        ),
+                        format!("先巩固区域走廊，明天再接到{}。", target.target_label),
+                    )
+                } else {
+                    (
+                        "明天：吃满走廊加固窗口，优先恢复补给和疲劳。".to_string(),
+                        format!("后天：窗口还在时，再按阶段目标接向{}。", objective_label),
+                        "先巩固区域走廊，再利用窗口恢复。".to_string(),
+                    )
+                }
+            }
             _ => (
                 format!("明天：执行“{}”。", secondary_action.action_label),
                 format!("后天：继续按阶段目标接向{}。", objective_label),
@@ -1407,6 +1452,121 @@ impl GameEngine {
         };
 
         RouteChain {
+            title,
+            detail,
+            short,
+        }
+    }
+
+    fn logistics_regional_pressure_for(
+        &self,
+        location: &str,
+        posture_id: &str,
+        objective_target_role: &str,
+        primary_action: &ActionRecommendation,
+    ) -> RegionalPressure {
+        let title = "区域运营压力".to_string();
+        let current_label = self.map_graph.node_name(location);
+        let objective_label = supply_role_label(objective_target_role);
+        let capacity = self.effective_supply_capacity_for(location);
+        let (_, hub_distance) = self.nearest_supply_hub(location);
+        let active_depot_here =
+            self.forward_depot_days > 0 && self.forward_depot_location == location;
+        let active_line_bonus = self.supply_line_bonus_days > 0;
+        let preview =
+            if primary_action.action_id == "march" && !primary_action.target_node.is_empty() {
+                let candidate = self.preview_march(&primary_action.target_node);
+                candidate.valid.then_some(candidate)
+            } else {
+                None
+            };
+
+        let (id, label, detail, short) = match posture_id {
+            "critical_recovery" => (
+                "corridor_breaking",
+                "区域走廊承压",
+                format!(
+                    "{} 这段区域走廊已经压到临界线。当前更需要先止血、保线，再谈是否继续压向{}。",
+                    current_label, objective_label
+                ),
+                "区域走廊承压：先固线或止血，再谈继续前推。".to_string(),
+            ),
+            "overextended_line"
+                if preview
+                    .as_ref()
+                    .map(|candidate| candidate.follow_up_safe_options <= 1)
+                    .unwrap_or(true) =>
+            (
+                "corridor_fragile",
+                "区域走廊脆弱",
+                format!(
+                    "{} 到下一段只剩很窄的安全承接。若不先补位，整条走廊会在第二跳处断开；更稳的做法是先用“巩固区域走廊”把中继线补强。",
+                    current_label
+                ),
+                "区域走廊脆弱：先补位，再把整条线接完整。".to_string(),
+            ),
+            "frontline_strain"
+                if preview
+                    .as_ref()
+                    .map(|candidate| candidate.follow_up_safe_options == 0)
+                    .unwrap_or(true) =>
+            (
+                "corridor_fragile",
+                "区域走廊脆弱",
+                format!(
+                    "{} 现在更像裸前线而不是稳定走廊。若还要继续向{}推进，先把这一段补成可持续中继再说。",
+                    current_label, objective_label
+                ),
+                "区域走廊脆弱：别把裸前线当成长线中继。".to_string(),
+            ),
+            _ if active_depot_here || active_line_bonus => {
+                let mut active_parts: Vec<String> = Vec::new();
+                if active_line_bonus {
+                    active_parts.push(format!("运输线加成还剩 {} 天", self.supply_line_bonus_days));
+                }
+                if active_depot_here {
+                    active_parts.push(format!("当前驻地容量加成还剩 {} 天", self.forward_depot_days));
+                }
+                (
+                    "corridor_stabilizing",
+                    "区域走廊稳固中",
+                    format!(
+                        "{} 这段区域走廊正在被稳住：{}。窗口还在时，应把下一跳和中继一起接完整。",
+                        current_label,
+                        active_parts.join("，")
+                    ),
+                    "区域走廊稳固中：趁窗口把下一跳和中继一起接上。".to_string(),
+                )
+            }
+            _ if hub_distance <= 1
+                && capacity >= 6
+                && preview
+                    .as_ref()
+                    .map(|candidate| candidate.follow_up_safe_options >= 2)
+                    .unwrap_or(false) =>
+            (
+                "corridor_secure",
+                "区域走廊可持续",
+                format!(
+                    "{} 周边还有多条稳妥承接线，最近枢纽也足够近。这段区域暂时可持续，适合把补给窗口换成位置优势。",
+                    current_label
+                ),
+                "区域走廊可持续：可以把补给窗口换成位置优势。".to_string(),
+            ),
+            _ => (
+                "corridor_contested",
+                "区域走廊未站稳",
+                format!(
+                    "{} 这段线路还能走，但缓冲并不宽。若要继续靠近{}，最好先补强当前中继，再把第二跳接稳。",
+                    current_label, objective_label
+                ),
+                "区域走廊未站稳：先补强中继，再继续北上。".to_string(),
+            ),
+        };
+
+        RegionalPressure {
+            id: id.to_string(),
+            label: label.to_string(),
             title,
             detail,
             short,
@@ -1935,15 +2095,27 @@ impl GameEngine {
                             (self.army.supply + policy.supply_delta).clamp(0.0, 100.0);
                     }
                     if policy.supply_line_bonus_days > 0 && policy.supply_line_bonus.abs() > 0.01 {
-                        self.supply_line_bonus = policy.supply_line_bonus;
-                        self.supply_line_bonus_days = policy.supply_line_bonus_days;
+                        self.supply_line_bonus =
+                            self.supply_line_bonus.max(policy.supply_line_bonus);
+                        self.supply_line_bonus_days = self
+                            .supply_line_bonus_days
+                            .max(policy.supply_line_bonus_days);
                     }
                     if policy.local_supply_capacity_bonus_days > 0
                         && policy.local_supply_capacity_bonus > 0
                     {
-                        self.forward_depot_location = self.napoleon_location.clone();
-                        self.forward_depot_capacity_bonus = policy.local_supply_capacity_bonus;
-                        self.forward_depot_days = policy.local_supply_capacity_bonus_days;
+                        if self.forward_depot_location == self.napoleon_location {
+                            self.forward_depot_capacity_bonus = self
+                                .forward_depot_capacity_bonus
+                                .max(policy.local_supply_capacity_bonus);
+                            self.forward_depot_days = self
+                                .forward_depot_days
+                                .max(policy.local_supply_capacity_bonus_days);
+                        } else {
+                            self.forward_depot_location = self.napoleon_location.clone();
+                            self.forward_depot_capacity_bonus = policy.local_supply_capacity_bonus;
+                            self.forward_depot_days = policy.local_supply_capacity_bonus_days;
+                        }
                     }
                     vec![DayEvent {
                         day: self.day,
@@ -3075,6 +3247,67 @@ mod tests {
     }
 
     #[test]
+    fn 巩固区域走廊会同时提高补给线效率和当前驻地容量() {
+        let mut engine = GameEngine::new();
+        engine.napoleon_location = "autun".to_string();
+        let preview_target = engine
+            .adjacent_nodes()
+            .into_iter()
+            .next()
+            .expect("应至少存在一个相邻节点");
+        let base_preview = engine.preview_march(&preview_target);
+        let mut rng = seeded_rng();
+
+        engine.process_day(
+            PlayerAction::EnactPolicy {
+                policy_id: "secure_regional_corridor",
+            },
+            &mut rng,
+        );
+
+        let policy_event = engine
+            .last_action_events()
+            .iter()
+            .find(|event| event.event_type == "policy")
+            .expect("应包含政策结算");
+        assert!(
+            policy_event
+                .effects
+                .iter()
+                .any(|effect| effect.contains("补给线效率")),
+            "区域走廊政策应显式展示补给线效率加成"
+        );
+        assert!(
+            policy_event
+                .effects
+                .iter()
+                .any(|effect| effect.contains("当前驻地容量 +3")),
+            "区域走廊政策应显式展示当前驻地容量加成"
+        );
+        assert_eq!(engine.forward_depot_location, "autun");
+        assert_eq!(engine.forward_depot_capacity_bonus, 3);
+        assert_eq!(engine.forward_depot_days, 3, "当天结算后应剩余3天容量加成");
+        assert_eq!(
+            engine.supply_line_bonus_days, 3,
+            "当天结算后应剩余3天运输线加成"
+        );
+
+        let boosted_preview = engine.preview_march(&preview_target);
+        assert!(
+            base_preview.valid && boosted_preview.valid,
+            "预览应保持可用"
+        );
+        assert!(
+            boosted_preview.line_efficiency > base_preview.line_efficiency,
+            "区域走廊政策执行后预览中的补给线效率应更高"
+        );
+        assert!(
+            engine.effective_supply_capacity_for("autun") > 3,
+            "区域走廊政策执行后当前驻地容量应高于基础值"
+        );
+    }
+
+    #[test]
     fn 低补给时后勤态势会转为止血整补() {
         let mut engine = GameEngine::new();
         engine.army.supply = 34.0;
@@ -3123,7 +3356,7 @@ mod tests {
     }
 
     #[test]
-    fn 运输线拉长时当日行动计划会优先整顿运输() {
+    fn 运输线拉长时当日行动计划会优先巩固区域走廊() {
         let engine = GameEngine::new();
 
         let (primary, secondary) = engine.logistics_action_plan_for(
@@ -3136,10 +3369,10 @@ mod tests {
             3,
         );
 
-        assert_eq!(primary.action_id, "stabilize_supply_lines");
+        assert_eq!(primary.action_id, "secure_regional_corridor");
         assert!(
-            secondary.action_id == "march" || secondary.action_id == "establish_forward_depot",
-            "运输线拉长时备选应是换位接仓或铺前沿粮秣站"
+            secondary.action_id == "march" || secondary.action_id == "stabilize_supply_lines",
+            "运输线拉长时备选应是换位接仓或先保线"
         );
     }
 
@@ -3226,6 +3459,25 @@ mod tests {
         assert!(
             brief.route_chain_short.contains("->"),
             "区域运营链路短摘要应带节点承接方向"
+        );
+    }
+
+    #[test]
+    fn 区域运营压力会提示先固线再推进() {
+        let engine = GameEngine::new();
+        let brief = engine.logistics_brief();
+
+        assert!(
+            !brief.regional_pressure_id.is_empty(),
+            "区域运营压力应给出稳定的状态 ID"
+        );
+        assert!(
+            brief.regional_pressure_title.contains("区域运营压力"),
+            "区域运营压力应给出可复用标题"
+        );
+        assert!(
+            brief.regional_pressure_detail.contains("走廊"),
+            "区域运营压力应显式解释当前走廊状态"
         );
     }
 

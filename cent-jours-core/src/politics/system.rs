@@ -201,6 +201,23 @@ pub fn default_policies() -> Vec<PolicyEffect> {
             cooldown_days: 6,
         },
         PolicyEffect {
+            id: "secure_regional_corridor",
+            name: "巩固区域走廊",
+            cost_actions: 1,
+            rouge_noir_delta: -1.0,
+            faction_deltas: [("military", 5.0), ("populace", -4.0), ("liberals", -2.0)]
+                .iter()
+                .cloned()
+                .collect(),
+            economic_delta: -4.0,
+            supply_delta: 8.0,
+            supply_line_bonus: 0.12,
+            supply_line_bonus_days: 4,
+            local_supply_capacity_bonus: 3,
+            local_supply_capacity_bonus_days: 4,
+            cooldown_days: 7,
+        },
+        PolicyEffect {
             id: "secret_diplomacy",
             name: "秘密外交",
             cost_actions: 2,
@@ -477,6 +494,19 @@ mod tests {
         assert_eq!(p.local_supply_capacity_bonus, 4);
         assert_eq!(p.local_supply_capacity_bonus_days, 4);
         assert_eq!(p.cooldown_days, 6);
+        assert!(p.faction_deltas["military"] > 0.0);
+        assert!(p.faction_deltas["populace"] < 0.0);
+    }
+
+    #[test]
+    fn 巩固区域走廊定义为复合补给政策() {
+        let p = policy("secure_regional_corridor");
+        assert_eq!(p.supply_delta, 8.0);
+        assert_eq!(p.supply_line_bonus, 0.12);
+        assert_eq!(p.supply_line_bonus_days, 4);
+        assert_eq!(p.local_supply_capacity_bonus, 3);
+        assert_eq!(p.local_supply_capacity_bonus_days, 4);
+        assert_eq!(p.cooldown_days, 7);
         assert!(p.faction_deltas["military"] > 0.0);
         assert!(p.faction_deltas["populace"] < 0.0);
     }

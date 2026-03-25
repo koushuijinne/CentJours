@@ -92,6 +92,8 @@ func build_policy_preview_text(policy_id: String, policy_meta: Dictionary = {}) 
 		return _build_supply_line_preview_text(policy_meta)
 	if normalized_policy_id == "establish_forward_depot":
 		return _build_forward_depot_preview_text(policy_meta)
+	if normalized_policy_id == "secure_regional_corridor":
+		return _build_regional_corridor_preview_text(policy_meta)
 
 	var policy_name := String(policy_meta.get("name", normalized_policy_id))
 	var policy_summary := String(policy_meta.get("summary", "等待结算…"))
@@ -169,6 +171,27 @@ func _build_forward_depot_preview_text(policy_meta: Dictionary) -> String:
 	]
 
 
+func _build_regional_corridor_preview_text(policy_meta: Dictionary) -> String:
+	var policy_name := String(policy_meta.get("name", "巩固区域走廊"))
+	var summary := String(policy_meta.get("summary", "同步保线并加固当前驻地，把一段脆弱路线先稳成可持续走廊"))
+	var guidance := "适用：当前区域走廊开始承压时，用一张牌同时保线、补位和加固当前中继节点。"
+	if GameState.logistics_regional_pressure_id == "corridor_breaking":
+		guidance = "适用：当前走廊已经压到临界线。这张牌比单纯保线或单点铺站更适合先把整段线路救回来。"
+	elif GameState.logistics_regional_pressure_id == "corridor_fragile":
+		guidance = "适用：当前只剩很窄的安全承接。先补强这一段，再把后续两跳接完整。"
+	elif GameState.logistics_regional_pressure_id == "corridor_stabilizing":
+		guidance = "适用：当前走廊已经在稳住中，用它能把现有窗口拉得更长，避免下一跳又重新断开。"
+	elif GameState.logistics_regional_pressure_id == "corridor_secure":
+		guidance = "当前走廊已经够稳，这张牌可以留到下一次线路变脆时再打。"
+	return "▷ %s\n\n%s\n\n当前补给 %.0f。\n%s\n%s" % [
+		policy_name,
+		summary,
+		GameState.supply,
+		guidance,
+		_build_policy_recommendation_line("secure_regional_corridor")
+	]
+
+
 func _build_policy_recommendation_line(policy_id: String) -> String:
 	var recommendation := _policy_recommendation(policy_id)
 	var label := String(recommendation.get("label", "可考虑"))
@@ -206,6 +229,14 @@ func _policy_recommendation(policy_id: String) -> Dictionary:
 			if GameState.supply < 45.0:
 				return {"label": "可考虑", "reason": "它能帮下一两天，但立刻止血仍更依赖征用仓储。"}
 			return {"label": "可考虑", "reason": "当你准备在当前节点停两三天时，它比单纯赶路更稳。"}
+		"secure_regional_corridor":
+			if GameState.logistics_regional_pressure_id == "corridor_breaking":
+				return {"label": "优先", "reason": "当前整段走廊都在承压，这张牌最适合先把中继线救回来。"}
+			if GameState.logistics_regional_pressure_id == "corridor_fragile":
+				return {"label": "优先", "reason": "现在输在整段线路太脆，不只是某一个节点缺补给。"}
+			if GameState.logistics_regional_pressure_id == "corridor_stabilizing":
+				return {"label": "可考虑", "reason": "当前已经在稳线，用它可以把窗口再拉长一截。"}
+			return {"label": "暂缓", "reason": "当前区域走廊还顶得住，这张牌更适合留到线路变脆时再打。"}
 		_:
 			return {"label": "可考虑", "reason": "当前没有额外提示。"}
 
@@ -271,6 +302,8 @@ func refresh_situation(
 	logistics_tempo_plan_detail: String,
 	logistics_route_chain_title: String,
 	logistics_route_chain_detail: String,
+	logistics_regional_pressure_title: String,
+	logistics_regional_pressure_detail: String,
 	faction_support: Dictionary,
 	prev_faction_support: Dictionary
 ) -> void:
@@ -314,6 +347,10 @@ func refresh_situation(
 		logistics_lines.append(logistics_route_chain_title)
 	if logistics_route_chain_detail.strip_edges() != "":
 		logistics_lines.append(logistics_route_chain_detail)
+	if logistics_regional_pressure_title.strip_edges() != "":
+		logistics_lines.append(logistics_regional_pressure_title)
+	if logistics_regional_pressure_detail.strip_edges() != "":
+		logistics_lines.append(logistics_regional_pressure_detail)
 
 	_situation_body.text = "%s\n%s · Legitimacy %.1f\n补给 %.0f · 疲劳 %.0f\n\n%s\n\n%s" % [
 		MainMenuFormattersLib.phase_display_name(phase_id),
@@ -393,6 +430,8 @@ func refresh_all(
 	logistics_tempo_plan_detail: String,
 	logistics_route_chain_title: String,
 	logistics_route_chain_detail: String,
+	logistics_regional_pressure_title: String,
+	logistics_regional_pressure_detail: String,
 	faction_support: Dictionary,
 	prev_faction_support: Dictionary,
 	characters: Dictionary,
@@ -417,6 +456,8 @@ func refresh_all(
 		logistics_tempo_plan_detail,
 		logistics_route_chain_title,
 		logistics_route_chain_detail,
+		logistics_regional_pressure_title,
+		logistics_regional_pressure_detail,
 		faction_support,
 		prev_faction_support
 	)

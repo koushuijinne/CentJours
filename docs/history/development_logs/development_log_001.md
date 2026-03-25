@@ -472,3 +472,22 @@
 - 本轮将与功能代码和当前态文档一起提交并推送到 `auto/gameplay_update`。
 下一步:
 - 继续把补给系统从“能看出一条运营线”推进到“能管理一片运营区”，优先补更强的区域压力、阶段任务和中期运营反馈。
+
+## 2026-03-24 第 28 轮
+分支: `auto/gameplay_update`
+范围: 把“区域运营链路”扩成“区域运营压力 + 区域走廊政策”
+变更:
+- `engine/state.rs` 新增区域运营压力推导：会判断当前这片线路是承压、脆弱、稳固中还是可持续，并把这层反馈接进状态机、行军预判、侧栏和终局复盘。
+- 新增补给政策 `secure_regional_corridor / 巩固区域走廊`：它会同时提高补给线效率并加固当前驻地容量，把脆弱中继线先稳成可持续走廊。
+- `politics/system.rs`、`narratives/mod.rs`、`stendhal_diary.json`、`consequences.json`、`lib.rs`、`game_state.gd`、`turn_manager.gd`、`main_menu.gd`、`sidebar_controller.gd`、`map_controller.gd`、`dialogs_controller.gd`、`main_menu_config.gd`、`political_system.gd` 已同步接通；政策预览、教程提示、地图副标题、终局复盘和 smoke 输出都能看到这层新反馈。
+- 本轮还顺手修了一个仓储叠加边界：同地重铺时取更高容量，不会把旧粮秣站强度错误带到新地点。
+验证:
+- `cargo fmt --manifest-path cent-jours-core/Cargo.toml` 已通过。
+- Windows `cargo test` 已通过，基线提升到 `201/201`。
+- Windows `cargo build --features godot-extension` 已通过。
+- Windows Godot 无头主项目和 Windows Godot smoke scene 已通过；smoke 输出已确认新 `logistics_regional_pressure_*` 字段与 `secure_regional_corridor` 建议进入 Windows 运行时。
+- 本轮未运行 Linux / WSL 侧测试。
+提交/推送:
+- 本轮将与功能代码和当前态文档一起提交并推送到 `auto/gameplay_update`。
+下一步:
+- 继续把补给系统从“知道这片区域稳不稳”推进到“能经营这片区域的阶段任务和中期反馈”，优先补区域任务、局部收益和失败复盘深化。

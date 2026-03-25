@@ -9,6 +9,7 @@ const PRIORITY_POLICY_IDS := [
 	"requisition_supplies",
 	"stabilize_supply_lines",
 	"establish_forward_depot",
+	"secure_regional_corridor",
 	"grant_titles",
 	"reduce_taxes",
 	"secret_diplomacy",
@@ -23,6 +24,7 @@ const POLICY_EMOJIS := {
 	"requisition_supplies": "🚚",
 	"stabilize_supply_lines": "🛤️",
 	"establish_forward_depot": "📦",
+	"secure_regional_corridor": "🧱",
 	"grant_titles": "👑",
 	"reduce_taxes": "🪙",
 	"secret_diplomacy": "🕵️",
@@ -68,6 +70,14 @@ const POLICY_EFFECTS := {
 		{"label": "Depot", "value": 4, "type": "positive"},
 		{"label": "Military", "value": 4, "type": "positive"},
 		{"label": "Populace", "value": -2, "type": "negative"},
+		{"label": "Noir", "value": -1, "type": "rn"}
+	],
+	"secure_regional_corridor": [
+		{"label": "Supply", "value": 8, "type": "positive"},
+		{"label": "Line", "value": 12, "type": "positive"},
+		{"label": "Depot", "value": 3, "type": "positive"},
+		{"label": "Military", "value": 5, "type": "positive"},
+		{"label": "Populace", "value": -4, "type": "negative"},
 		{"label": "Noir", "value": -1, "type": "rn"}
 	],
 	"grant_titles": [
@@ -136,6 +146,7 @@ const NARRATIVE_CATEGORY_LABELS := {
 	"requisition_supplies": "征用仓储余波",
 	"stabilize_supply_lines": "驿站整顿余波",
 	"establish_forward_depot": "粮秣站余波",
+	"secure_regional_corridor": "区域走廊余波",
 	"secret_diplomacy": "秘密外交余波",
 	"diplomatic_secret": "秘密外交余波",
 	"print_money": "印钞令余波"

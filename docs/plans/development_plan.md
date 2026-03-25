@@ -1,6 +1,6 @@
 # Cent Jours — 开发优先级计划
 
-> **更新**: 2026-03-24 v83
+> **更新**: 2026-03-24 v84
 > **通用原则**: [docs/rules/development_principles.md](/mnt/e/projects/CentJours/docs/rules/development_principles.md)
 > **快速接手**: [docs/history/agent_handoff.md](/mnt/e/projects/CentJours/docs/history/agent_handoff.md)
 > **开发历史**: [docs/history/development_logs/development_log_001.md](/mnt/e/projects/CentJours/docs/history/development_logs/development_log_001.md)
@@ -11,7 +11,7 @@
 ## 当前技术基线
 
 - 正式入口为 `src/ui/main_menu.tscn`，主链路 `TurnManager -> CentJoursEngine -> GameState -> UI` 已跑通。
-- Rust 规则层最近一次完整回归基线为 Windows `198/198`；自动工作流后续不再把 Linux / WSL `cargo test` 当成默认验证路径。
+- Rust 规则层最近一次完整回归基线为 Windows `201/201`；自动工作流后续不再把 Linux / WSL `cargo test` 当成默认验证路径。
 - 当前数据基线为 `15` 名角色、`41` 个地图节点、`58` 条历史事件，其中 `major 16 / normal 35 / minor 7`。
 - 当前活跃开发分支为 `auto/gameplay_update`；`claude/review-project-status-05vxD` 作为稳定参考基线保留。
 - Save / Load 已进入 `v3` 兼容阶段，旧存档中的 `fontainebleau_eve` 会在读档时迁移到正式 ID `tuileries_eve`，新增前沿粮秣站状态也会随存档读写。
@@ -20,6 +20,7 @@
 - 首个玩家可控补给政策 `requisition_supplies / 征用沿线仓储` 已接入政策表、叙事池、模拟策略和 UI 元数据，补给玩法不再只有被动承压。
 - 第二个玩家可控补给政策 `stabilize_supply_lines / 整顿驿站运输` 已接入：它会短期提高补给线效率，并进存档、预判、结算日志和叙事链。
 - 第三个玩家可控补给政策 `establish_forward_depot / 建立前沿粮秣站` 已接入：它会在当前驻地留下短期容量加成，直接影响行军预判、行动后补给结算、地图检查器和地图可视化。
+- 第四个玩家可控补给政策 `secure_regional_corridor / 巩固区域走廊` 已接入：它会同时保线并加固当前驻地，把脆弱中继线先稳成可持续走廊，已接入政策表、叙事池、预判、UI 元数据和测试护栏。
 - 侧栏政策预览现在会根据当前补给值和前 10 天阶段给出情境化建议，开始把“哪张补给牌该什么时候打”嵌进 UI 教学里。
 - 行军预览现在优先读取 Rust 引擎返回的权威预测值，玩家在确认前就能看到预计补给 / 疲劳 / 士气变化，以及仓储容量、补给线效率、预计可得量与需求拆解；只有接口不可用时才退回前端近似提示。
 - 每次行动后的补给结算现在会显式写出节点容量、需求 / 可得量与下一步建议，失败归因已经从“看结果”推进到“告诉玩家为何缺补给、该怎么补救”。
@@ -31,19 +32,20 @@
 - 引擎状态现在还会给出“当日行动计划”：当前优先动作、备选动作和推荐行军目标；侧栏、`DecisionTray` 提示、地图副标题、行军预判和终局复盘都会复用这层建议。
 - 引擎状态现在还会给出“三日后勤节奏”：今天、明天、后天该怎么排动作和节点承接；侧栏、`DecisionTray` 提示、行军预判和终局复盘都会复用这层节奏建议。
 - 引擎状态现在还会给出“区域运营链路”：从当前节点到下一跳、再到后续承接点的推荐节点线；侧栏、地图副标题、行军预判和终局复盘都会复用这层线路建议。
+- 引擎状态现在还会给出“区域运营压力”：当前这片线路到底是承压、脆弱、稳固中还是可持续；侧栏、地图副标题、行军预判、政策预览和终局复盘都会复用这层反馈。
 - `DecisionTray` 提示现在会在前 10 天主动输出后勤教程链，根据补给窗口和阶段目标告诉玩家何时该先补给、何时该先抢整补节点。
 - 终局复盘现在会带上终盘补给、最后位置、后勤态势、阶段运营目标、当日行动计划和补给窗口，失败归因开始从纯政治/军事统计扩展到后勤节奏。
 - 三张补给牌的侧栏预览现在会直接给出“优先 / 可考虑 / 暂缓”的即时建议，开始把政策选择和当前后勤态势真正绑在一起。
 - 终局复盘现在会把失败归因进一步落到具体补给牌和节奏错误，例如补给牌打晚、没及时保线、没把中继节点铺成跳板。
 - 前端已拆出 `map / layout / tray / sidebar / dialogs` 控制器，但主菜单相关文件仍偏大，发布级 polish 尚未完成。
 - 默认验证路径只接受 Windows 原生运行、Windows 无头和 Windows 原生 `cargo build --features godot-extension`。
-- 当前这条补给玩法切片已经完成 Windows `cargo test`、Windows DLL 重编、Windows 主项目无头启动和 Windows smoke scene；smoke 输出已确认新 `logistics_route_chain_*` 字段进入 Windows 运行时。后续自动工作流不再回退到 Linux / WSL 侧测试补位。
+- 当前这条补给玩法切片已经完成 Windows `cargo test`、Windows DLL 重编、Windows 主项目无头启动和 Windows smoke scene；smoke 输出已确认新 `logistics_route_chain_*`、`logistics_regional_pressure_*` 字段和 `secure_regional_corridor` 建议进入 Windows 运行时。后续自动工作流不再回退到 Linux / WSL 侧测试补位。
 
 ## 当前技术优先级
 
 | 优先级 | 项目 | 规模 | 决策理由 |
 |--------|------|------|----------|
-| **P0** | **把补给系统继续产品化：补给来源、前线压力、玩家可控补给手段、失败解释与教学** | L | `agent_chat_history` 已明确指出后勤是当前最有价值的玩法增深方向；现在已有三张补给政策、Rust 权威预判、补给角色 / 枢纽可视化、后勤态势 / 阶段目标提示、补给窗口提示、第二跳推进风险预判、阶段运营目标、当日行动计划、三日后勤节奏、区域运营链路、风险拆解和行动后补救建议，下一步该补的是更强的区域运营感、前 10 天教学串联和失败归因闭环。 |
+| **P0** | **把补给系统继续产品化：补给来源、前线压力、玩家可控补给手段、失败解释与教学** | L | `agent_chat_history` 已明确指出后勤是当前最有价值的玩法增深方向；现在已有四张补给政策、Rust 权威预判、补给角色 / 枢纽可视化、后勤态势 / 阶段目标提示、补给窗口提示、第二跳推进风险预判、阶段运营目标、当日行动计划、三日后勤节奏、区域运营链路、区域运营压力、风险拆解和行动后补救建议，下一步该补的是更强的区域运营感、前 10 天教学串联和失败归因闭环。 |
 | **P0** | **历史事件从 `58` 条扩到 `100+`，并继续做逐条文本 QA** | L | 这是百日长局成立的内容底座；当前事件量仍不足以支撑长局重玩性。 |
 | **P0** | **补前 10 天引导、失败归因、结局文本和关键 UI 文案统一** | M | 新玩家当前仍缺完整解释链，失败后归因和目标感还不够清楚。 |
 | **P1** | **收口 F5：`DecisionTray` / `Map Inspector` / 中英混排 / 设置入口** | M | 结构性问题已缓解，但仍需要 Windows 真机视角下的最终收口。 |
@@ -78,7 +80,7 @@ E:\software\godot\Godot_v4.6.1-stable_win64_console.exe --headless --path E:\pro
 ## 当前阻塞与风险
 
 - `内容量仍不足`：事件池虽然扩到 `58` 条，但离 `100+` 仍差 `42` 条。
-- `补给玩法还没完全产品化`：当前已经有三层玩家杠杆、补给角色与枢纽可视化，以及后勤态势 / 阶段目标 / 当日行动计划 / 三日后勤节奏 / 区域运营链路 / 补给窗口 / 第二跳风险提示，但长线运营感和区域节奏仍不够完整。
+- `补给玩法还没完全产品化`：当前已经有四层玩家杠杆、补给角色与枢纽可视化，以及后勤态势 / 阶段目标 / 当日行动计划 / 三日后勤节奏 / 区域运营链路 / 区域运营压力 / 补给窗口 / 第二跳风险提示，但长线运营感和区域节奏仍不够完整。
 - `补给教学还没收口`：玩家现在能在行军前和行动后看到仓储容量、补给线效率、可得量与需求拆解，也能在侧栏、地图副标题和决策区看到后勤态势 / 阶段目标 / 当日行动计划 / 三日后勤节奏；前 10 天教程链、政策即时建议和终局后勤复盘已经接通，但还缺更完整的失败归因串联。
 - `文本 QA 未收口`：已做多轮事件修订，但全量事件还没完成统一史实锚点、信息密度与句式清理。
 - `前端发布级 polish 仍未收口`：`DecisionTray` 和 `Map Inspector` 已做结构修复，但仍需持续用 Windows 真机确认。
@@ -100,10 +102,10 @@ E:\software\godot\Godot_v4.6.1-stable_win64_console.exe --headless --path E:\pro
 |------|------|--------|
 | 战斗解算 | `battle/resolver.rs` | 12 |
 | 行军系统 | `battle/march.rs` | 14 |
-| 政治系统 | `politics/system.rs` | 12 |
+| 政治系统 | `politics/system.rs` | 13 |
 | 命令偏差 | `characters/order_deviation.rs` | 7 |
 | 将领关系网络 | `characters/network.rs` | 32 |
-| 三系统状态机 | `engine/state.rs` | 65 |
+| 三系统状态机 | `engine/state.rs` | 67 |
 | 历史事件池 | `events/pool.rs` + `EventTier` 枚举 | 39 |
 | 蒙特卡洛模拟 | `simulation/monte_carlo.rs` | 8 |
 | 叙事引擎 | `narratives/mod.rs` | 9 |
@@ -111,7 +113,7 @@ E:\software\godot\Godot_v4.6.1-stable_win64_console.exe --headless --path E:\pro
 | Save / Load | `engine/state.rs` + `save_manager.gd` + `main_menu.gd` | — |
 | 历史事件展示闭环 | `events/pool.rs` + `engine/state.rs` + `lib.rs` + `turn_manager.gd` + `sidebar_controller.gd` + `main_menu.gd` | 并入上方统计 |
 
-**合计**: `198` tests
+**合计**: `201` tests
 
 ## 文档边界
 

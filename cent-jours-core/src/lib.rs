@@ -397,6 +397,9 @@ mod gdext_bindings {
                 "establish_forward_depot" => PlayerAction::EnactPolicy {
                     policy_id: "establish_forward_depot",
                 },
+                "secure_regional_corridor" => PlayerAction::EnactPolicy {
+                    policy_id: "secure_regional_corridor",
+                },
                 // 补全缺失的 3 条政策（之前静默退化为 Rest）
                 "grant_titles" => PlayerAction::EnactPolicy {
                     policy_id: "grant_titles",
@@ -612,6 +615,26 @@ mod gdext_bindings {
             let _ = d.insert(
                 "logistics_route_chain_short",
                 logistics.route_chain_short.as_str(),
+            );
+            let _ = d.insert(
+                "logistics_regional_pressure_id",
+                logistics.regional_pressure_id.as_str(),
+            );
+            let _ = d.insert(
+                "logistics_regional_pressure_label",
+                logistics.regional_pressure_label.as_str(),
+            );
+            let _ = d.insert(
+                "logistics_regional_pressure_title",
+                logistics.regional_pressure_title.as_str(),
+            );
+            let _ = d.insert(
+                "logistics_regional_pressure_detail",
+                logistics.regional_pressure_detail.as_str(),
+            );
+            let _ = d.insert(
+                "logistics_regional_pressure_short",
+                logistics.regional_pressure_short.as_str(),
             );
             let _ = d.insert(
                 "logistics_runway_days",

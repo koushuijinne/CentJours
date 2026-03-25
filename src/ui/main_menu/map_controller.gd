@@ -714,7 +714,7 @@ func _update_march_target(node_id: String) -> void:
 		var follow_up_best_runway_days := int(march_preview.get("follow_up_best_runway_days", -1))
 		var runway_label := _supply_runway_label(supply_runway_days)
 		var pressure_label := _march_pressure_label(projected_supply, supply_capacity)
-		preview_text = "预计补给：%s（%.0f，%+.1f）\n预计疲劳：%.0f（%+.1f）\n预计士气：%.0f（%+.1f）\n%s\n%s\n%s\n%s\n%s\n%s\n节点角色：%s\n原因：%s\n建议：%s" % [
+		preview_text = "预计补给：%s（%.0f，%+.1f）\n预计疲劳：%.0f（%+.1f）\n预计士气：%.0f（%+.1f）\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n节点角色：%s\n原因：%s\n建议：%s" % [
 			pressure_label,
 			projected_supply,
 			supply_delta,
@@ -735,6 +735,7 @@ func _update_march_target(node_id: String) -> void:
 			_build_action_plan_alignment_text(node_id),
 			_build_tempo_plan_alignment_text(node_id, follow_up_best_target_label),
 			_build_route_chain_alignment_text(node_id, follow_up_best_target_label),
+			_build_regional_pressure_alignment_text(node_id, follow_up_safe_options),
 			supply_role_label,
 			_build_supply_reason_text(
 				base_supply_capacity,
@@ -995,6 +996,21 @@ func _build_route_chain_alignment_text(target_node: String, follow_up_best_targe
 			]
 		return "区域运营链路：%s" % route_short
 	return "区域运营链路：当前主线先去 %s；若改走这里，整条承接线都会变。" % GameState.logistics_primary_action_target_label
+
+
+func _build_regional_pressure_alignment_text(target_node: String, follow_up_safe_options: int) -> String:
+	var pressure_short := GameState.logistics_regional_pressure_short.strip_edges()
+	if pressure_short == "":
+		return "区域运营压力：当前没有额外压力提示。"
+	var primary_action_id := GameState.logistics_primary_action_id.strip_edges()
+	var primary_target := GameState.logistics_primary_action_target.strip_edges()
+	if primary_action_id != "march" or primary_target == "":
+		return "区域运营压力：%s" % pressure_short
+	if primary_target == target_node:
+		if follow_up_safe_options == 0:
+			return "区域运营压力：这一步虽然还在主线上，但第二跳已经很窄。%s" % pressure_short
+		return "区域运营压力：这一步仍在当前主走廊上。%s" % pressure_short
+	return "区域运营压力：若改走这里，当前走廊压力和承接节奏都要重算。"
 
 
 func _forward_depot_bonus_for_node(node_id: String) -> int:

@@ -35,6 +35,7 @@ const STATE_KEY_LOGISTICS_PRIMARY_ACTION_LABEL := "logistics_primary_action_labe
 const STATE_KEY_LOGISTICS_PRIMARY_ACTION_REASON := "logistics_primary_action_reason"
 const STATE_KEY_LOGISTICS_TEMPO_PLAN_DETAIL := "logistics_tempo_plan_detail"
 const STATE_KEY_LOGISTICS_ROUTE_CHAIN_DETAIL := "logistics_route_chain_detail"
+const STATE_KEY_LOGISTICS_REGIONAL_PRESSURE_DETAIL := "logistics_regional_pressure_detail"
 const STATE_KEY_LOGISTICS_RUNWAY_LABEL := "logistics_runway_label"
 
 const DEFAULT_GAME_OVER_STATE := {
@@ -51,6 +52,7 @@ const DEFAULT_GAME_OVER_STATE := {
 	STATE_KEY_LOGISTICS_PRIMARY_ACTION_REASON: "",
 	STATE_KEY_LOGISTICS_TEMPO_PLAN_DETAIL: "",
 	STATE_KEY_LOGISTICS_ROUTE_CHAIN_DETAIL: "",
+	STATE_KEY_LOGISTICS_REGIONAL_PRESSURE_DETAIL: "",
 	STATE_KEY_LOGISTICS_RUNWAY_LABEL: "",
 }
 
@@ -96,6 +98,7 @@ func build_game_over_state(stats: Dictionary = {}) -> Dictionary:
 	normalized[STATE_KEY_LOGISTICS_PRIMARY_ACTION_REASON] = String(stats.get(STATE_KEY_LOGISTICS_PRIMARY_ACTION_REASON, DEFAULT_GAME_OVER_STATE[STATE_KEY_LOGISTICS_PRIMARY_ACTION_REASON]))
 	normalized[STATE_KEY_LOGISTICS_TEMPO_PLAN_DETAIL] = String(stats.get(STATE_KEY_LOGISTICS_TEMPO_PLAN_DETAIL, DEFAULT_GAME_OVER_STATE[STATE_KEY_LOGISTICS_TEMPO_PLAN_DETAIL]))
 	normalized[STATE_KEY_LOGISTICS_ROUTE_CHAIN_DETAIL] = String(stats.get(STATE_KEY_LOGISTICS_ROUTE_CHAIN_DETAIL, DEFAULT_GAME_OVER_STATE[STATE_KEY_LOGISTICS_ROUTE_CHAIN_DETAIL]))
+	normalized[STATE_KEY_LOGISTICS_REGIONAL_PRESSURE_DETAIL] = String(stats.get(STATE_KEY_LOGISTICS_REGIONAL_PRESSURE_DETAIL, DEFAULT_GAME_OVER_STATE[STATE_KEY_LOGISTICS_REGIONAL_PRESSURE_DETAIL]))
 	normalized[STATE_KEY_LOGISTICS_RUNWAY_LABEL] = String(stats.get(STATE_KEY_LOGISTICS_RUNWAY_LABEL, DEFAULT_GAME_OVER_STATE[STATE_KEY_LOGISTICS_RUNWAY_LABEL]))
 	return normalized
 
@@ -219,6 +222,7 @@ func _build_game_over_review(outcome: String, game_over_state: Dictionary, info:
 	var logistics_primary_action_reason := String(game_over_state.get(STATE_KEY_LOGISTICS_PRIMARY_ACTION_REASON, "")).strip_edges()
 	var logistics_tempo_plan_detail := String(game_over_state.get(STATE_KEY_LOGISTICS_TEMPO_PLAN_DETAIL, "")).strip_edges()
 	var logistics_route_chain_detail := String(game_over_state.get(STATE_KEY_LOGISTICS_ROUTE_CHAIN_DETAIL, "")).strip_edges()
+	var logistics_regional_pressure_detail := String(game_over_state.get(STATE_KEY_LOGISTICS_REGIONAL_PRESSURE_DETAIL, "")).strip_edges()
 	var logistics_runway_label := String(game_over_state.get(STATE_KEY_LOGISTICS_RUNWAY_LABEL, "")).strip_edges()
 
 	match outcome:
@@ -255,6 +259,8 @@ func _build_game_over_review(outcome: String, game_over_state: Dictionary, info:
 		lines.append("若提前两三天开始修正节奏，更稳的顺序通常是：\n%s" % logistics_tempo_plan_detail)
 	if logistics_route_chain_detail != "":
 		lines.append("若要把这几天走成一条更稳的运营线，可以参考：\n%s" % logistics_route_chain_detail)
+	if logistics_regional_pressure_detail != "":
+		lines.append("若想先把当前区域站稳，再考虑继续前推，可参考：\n%s" % logistics_regional_pressure_detail)
 	if logistics_runway_label != "":
 		lines.append(logistics_runway_label)
 	if location_label != "":
