@@ -416,3 +416,22 @@
 - 本轮将与 GDScript 改动和当前态文档一起提交并推送到 `auto/gameplay_update`。
 下一步:
 - 继续把后勤产品化从“会告诉你该打哪张牌”推进到“会告诉你为什么这一步输、下一局该如何修正”，优先补更强的失败复盘结构和日内步骤教学。
+
+## 2026-03-24 第 25 轮
+分支: `auto/gameplay_update`
+范围: 把后勤目标升级成“当日行动计划”，并接进侧栏、行军预判和终局复盘
+变更:
+- `engine/state.rs` 新增当日行动计划推导：根据后勤态势、阶段目标、相邻节点和当前库存，直接生成“优先动作 / 备选动作 / 推荐行军目标”。
+- `lib.rs`、`game_state.gd`、`turn_manager.gd`、`main_menu.gd`、`sidebar_controller.gd`、`map_controller.gd`、`dialogs_controller.gd` 已接通新字段；侧栏会显示完整行动计划，`DecisionTray` 提示和地图副标题会优先复用短建议，行军预判会额外判断这一步是否符合当前主建议，终局复盘也会直接给出“若再多一步，更稳的操作会是什么”。
+- 新增三条 Rust 回归，分别钉住“低补给时优先征用仓储”“运输线拉长时优先整顿运输”“前10天开局会直接给出可执行行军目标”。
+- `agent_autonomous_workflow.md` 已进一步精简最高优先级规则，并把“自动循环默认不停、每轮结束后都必须立即进入下一轮”写死；`agent_handoff.md` 也同步收口为同一口径。
+验证:
+- `cargo fmt --manifest-path cent-jours-core/Cargo.toml` 已通过。
+- Windows `cargo test` 已通过，基线提升到 `194/194`。
+- Windows `cargo build --features godot-extension` 已通过。
+- Windows Godot 无头主项目和 Windows Godot smoke scene 已通过；smoke 输出已确认新 `logistics_action_plan_*` 字段进入运行时。
+- 本轮未运行 Linux / WSL 侧测试。
+提交/推送:
+- 本轮将与功能代码、规则文档和当前态文档一起提交并推送到 `auto/gameplay_update`。
+下一步:
+- 继续把后勤产品化从“知道今天该怎么做”推进到“知道未来两三天怎么排动作和节点节奏”，优先补更强的区域运营节拍和连续多日补给计划。

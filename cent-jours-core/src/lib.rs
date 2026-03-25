@@ -546,6 +546,50 @@ mod gdext_bindings {
                 logistics.objective_short.as_str(),
             );
             let _ = d.insert(
+                "logistics_action_plan_title",
+                logistics.action_plan_title.as_str(),
+            );
+            let _ = d.insert(
+                "logistics_action_plan_detail",
+                logistics.action_plan_detail.as_str(),
+            );
+            let _ = d.insert(
+                "logistics_action_plan_short",
+                logistics.action_plan_short.as_str(),
+            );
+            let _ = d.insert(
+                "logistics_primary_action_id",
+                logistics.primary_action_id.as_str(),
+            );
+            let _ = d.insert(
+                "logistics_primary_action_label",
+                logistics.primary_action_label.as_str(),
+            );
+            let _ = d.insert(
+                "logistics_primary_action_reason",
+                logistics.primary_action_reason.as_str(),
+            );
+            let _ = d.insert(
+                "logistics_primary_action_target",
+                logistics.primary_action_target.as_str(),
+            );
+            let _ = d.insert(
+                "logistics_primary_action_target_label",
+                logistics.primary_action_target_label.as_str(),
+            );
+            let _ = d.insert(
+                "logistics_secondary_action_id",
+                logistics.secondary_action_id.as_str(),
+            );
+            let _ = d.insert(
+                "logistics_secondary_action_label",
+                logistics.secondary_action_label.as_str(),
+            );
+            let _ = d.insert(
+                "logistics_secondary_action_reason",
+                logistics.secondary_action_reason.as_str(),
+            );
+            let _ = d.insert(
                 "logistics_runway_days",
                 e.current_supply_runway_days()
                     .map(|days| days as i64)

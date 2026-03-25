@@ -139,6 +139,17 @@ pub struct LogisticsBrief {
     pub objective_target_role_label: String,
     pub objective_detail: String,
     pub objective_short: String,
+    pub action_plan_title: String,
+    pub action_plan_detail: String,
+    pub action_plan_short: String,
+    pub primary_action_id: String,
+    pub primary_action_label: String,
+    pub primary_action_reason: String,
+    pub primary_action_target: String,
+    pub primary_action_target_label: String,
+    pub secondary_action_id: String,
+    pub secondary_action_label: String,
+    pub secondary_action_reason: String,
 }
 
 #[derive(Debug, Clone)]
@@ -174,6 +185,25 @@ struct FollowUpAssessment {
     best_target: String,
     best_target_label: String,
     best_runway_days: i32,
+}
+
+#[derive(Debug, Clone)]
+struct MarchTargetAdvice {
+    target_node: String,
+    target_label: String,
+    projected_supply: f64,
+    supply_capacity: u32,
+    score: i32,
+}
+
+#[derive(Debug, Clone)]
+struct ActionRecommendation {
+    action_id: &'static str,
+    action_label: String,
+    action_reason: String,
+    action_short: String,
+    target_node: String,
+    target_label: String,
 }
 
 // ── 全局游戏状态 ──────────────────────────────────────
@@ -540,6 +570,15 @@ impl GameEngine {
             capacity,
             hub_distance,
         );
+        let (primary_action, secondary_action) = self.logistics_action_plan_for(
+            location,
+            posture_id,
+            objective_target_role,
+            supply,
+            fatigue,
+            capacity,
+            hub_distance,
+        );
         let focus_title = self.campaign_focus_title().to_string();
         let focus_detail = match posture_id {
             "critical_recovery" => format!(
@@ -582,6 +621,14 @@ impl GameEngine {
             "advance_ready" => "推进窗口已开：可以前推，但别连续走进低容量节点。".to_string(),
             _ => "整补筹备窗口：先把补给和疲劳拉回安全线。".to_string(),
         };
+        let action_plan_title = "当日行动计划".to_string();
+        let action_plan_detail = format!(
+            "优先：{}。{}\n备选：{}。{}",
+            primary_action.action_label,
+            primary_action.action_reason,
+            secondary_action.action_label,
+            secondary_action.action_reason
+        );
 
         LogisticsBrief {
             posture_id: posture_id.to_string(),
@@ -595,6 +642,17 @@ impl GameEngine {
             objective_target_role_label: supply_role_label(objective_target_role).to_string(),
             objective_detail,
             objective_short,
+            action_plan_title,
+            action_plan_detail,
+            action_plan_short: primary_action.action_short,
+            primary_action_id: primary_action.action_id.to_string(),
+            primary_action_label: primary_action.action_label,
+            primary_action_reason: primary_action.action_reason,
+            primary_action_target: primary_action.target_node,
+            primary_action_target_label: primary_action.target_label,
+            secondary_action_id: secondary_action.action_id.to_string(),
+            secondary_action_label: secondary_action.action_label,
+            secondary_action_reason: secondary_action.action_reason,
         }
     }
 
@@ -817,6 +875,353 @@ impl GameEngine {
             best_target,
             best_target_label,
             best_runway_days,
+        }
+    }
+
+    fn logistics_action_plan_for(
+        &self,
+        location: &str,
+        posture_id: &str,
+        objective_target_role: &str,
+        supply: f64,
+        fatigue: f64,
+        capacity: u32,
+        hub_distance: u32,
+    ) -> (ActionRecommendation, ActionRecommendation) {
+        let march_target = self.best_adjacent_target_for_objective(location, objective_target_role);
+        match posture_id {
+            "critical_recovery" if supply < SUPPLY_OK_THRESHOLD => (
+                self.policy_recommendation(
+                    "requisition_supplies",
+                    "征用沿线仓储",
+                    "库存已经跌进战斗惩罚区，先把补给拉回安全线，再谈下一步位置和战役。",
+                    "先征用沿线仓储止血，再决定后续节奏。",
+                ),
+                self.rest_recommendation(
+                    "止血后下一步优先休整，把疲劳和士气一起拉回安全区。",
+                    "随后休整，别在危险区继续硬顶。",
+                ),
+            ),
+            "critical_recovery" => (
+                self.rest_recommendation(
+                    "疲劳已经过高，当前更需要先恢复体力和士气，而不是继续追位置。",
+                    "先休整，把体力和士气拉回安全线。",
+                ),
+                march_target
+                    .as_ref()
+                    .map(|target| {
+                        self.march_recommendation(
+                            target,
+                            format!(
+                                "休整后若要换位，优先转到 {}，那里更适合接回补给节奏。",
+                                target.target_label
+                            ),
+                            format!("整补后再转到 {}。", target.target_label),
+                        )
+                    })
+                    .unwrap_or_else(|| {
+                        self.policy_recommendation(
+                            "stabilize_supply_lines",
+                            "整顿驿站运输",
+                            "若不准备停留太久，至少先把运输线效率拉起来，避免恢复完又立刻掉回危险区。",
+                            "若要很快再动，先整顿驿站运输。",
+                        )
+                    }),
+            ),
+            "overextended_line" => (
+                self.policy_recommendation(
+                    "stabilize_supply_lines",
+                    "整顿驿站运输",
+                    "当前输在运输线而不是单次库存；先保线，才能把后面两三步走成连续推进。",
+                    "先整顿驿站运输，别让补给线继续掉速。",
+                ),
+                march_target
+                    .as_ref()
+                    .map(|target| {
+                        self.march_recommendation(
+                            target,
+                            format!(
+                                "若不想原地等待，下一步优先接到 {}，先把中继仓储重新串起来。",
+                                target.target_label
+                            ),
+                            format!("若继续移动，先接到 {}。", target.target_label),
+                        )
+                    })
+                    .unwrap_or_else(|| {
+                        self.policy_recommendation(
+                            "establish_forward_depot",
+                            "建立前沿粮秣站",
+                            "若暂时离不开当前节点，先把这里变成临时跳板，避免继续裸奔在长运输线上。",
+                            "若走不开，先在这里铺前沿粮秣站。",
+                        )
+                    }),
+            ),
+            "frontline_strain" => {
+                if let Some(target) = march_target.as_ref() {
+                    (
+                        self.march_recommendation(
+                            target,
+                            format!(
+                                "{} 属于前线消耗区。下一步优先转到 {}，先把路线接出低容量节点。",
+                                self.map_graph.node_name(location),
+                                target.target_label
+                            ),
+                            format!("先转到 {}，别连续站在前线消耗点。", target.target_label),
+                        ),
+                        self.policy_recommendation(
+                            "establish_forward_depot",
+                            "建立前沿粮秣站",
+                            "如果必须在这里停两到三天，就先把当前节点变成临时整补跳板。",
+                            "若必须停留，再铺前沿粮秣站。",
+                        ),
+                    )
+                } else {
+                    (
+                        self.policy_recommendation(
+                            "establish_forward_depot",
+                            "建立前沿粮秣站",
+                            "当前附近没有更稳的落点可立刻接上，只能先用本地仓储把这口气续住。",
+                            "先铺前沿粮秣站，别在裸前线硬顶。",
+                        ),
+                        self.policy_recommendation(
+                            "requisition_supplies",
+                            "征用沿线仓储",
+                            "若库存已经快见底，征用仓储会比继续赶路更直接。",
+                            "库存再掉就先征用沿线仓储。",
+                        ),
+                    )
+                }
+            }
+            "forward_staging" if supply < 65.0 || fatigue > 35.0 => (
+                self.rest_recommendation(
+                    "前沿粮秣站窗口已经打开，当前更该利用这两三天把补给和疲劳拉回安全线。",
+                    "先休整，吃满粮秣站窗口。",
+                ),
+                march_target
+                    .as_ref()
+                    .map(|target| {
+                        self.march_recommendation(
+                            target,
+                            format!("补满后若继续推进，优先去 {}。", target.target_label),
+                            format!("补满后再去 {}。", target.target_label),
+                        )
+                    })
+                    .unwrap_or_else(|| {
+                        self.policy_recommendation(
+                            "stabilize_supply_lines",
+                            "整顿驿站运输",
+                            "若想把这座跳板再延长两三天的价值，先把运输线也一起稳住。",
+                            "若要继续北上，再整顿驿站运输。",
+                        )
+                    }),
+            ),
+            "advance_ready" => (
+                march_target
+                    .as_ref()
+                    .map(|target| {
+                        self.march_recommendation(
+                            target,
+                            format!(
+                                "当前补给和疲劳都允许继续推进。下一步优先去 {}，把这段窗口兑现成位置优势。",
+                                target.target_label
+                            ),
+                            format!("先去 {}，把推进窗口兑现掉。", target.target_label),
+                        )
+                    })
+                    .unwrap_or_else(|| {
+                        self.rest_recommendation(
+                            "当前虽然能动，但附近没有更好的承接点，先稳住再看下一回合。",
+                            "先稳住，再等更好的推进窗口。",
+                        )
+                    }),
+                if hub_distance >= 3 {
+                    self.policy_recommendation(
+                        "stabilize_supply_lines",
+                        "整顿驿站运输",
+                        "若打算连续两三步都往前压，先把运输线效率顶上去会更稳。",
+                        "若准备连走两三步，先整顿驿站运输。",
+                    )
+                } else {
+                    self.policy_recommendation(
+                        "establish_forward_depot",
+                        "建立前沿粮秣站",
+                        "若想把当前位置做成前线跳板，先铺站能让后续选择更宽。",
+                        "若想把这里做跳板，就先铺前沿粮秣站。",
+                    )
+                },
+            ),
+            _ => (
+                march_target
+                    .as_ref()
+                    .map(|target| {
+                        self.march_recommendation(
+                            target,
+                            format!(
+                                "当前更需要把路线接向 {}，让后面的补给节奏先稳下来。",
+                                target.target_label
+                            ),
+                            format!("先把路线接到 {}。", target.target_label),
+                        )
+                    })
+                    .unwrap_or_else(|| {
+                        self.rest_recommendation(
+                            "当前没有更稳的相邻落点，先整补比盲目前推更值。",
+                            "先休整，再找下一段落点。",
+                        )
+                    }),
+                if capacity <= 3 || fatigue > 45.0 {
+                    self.rest_recommendation(
+                        "库存或疲劳还没稳住前，不要把当前位置当成长期前线。",
+                        "备选是先休整。",
+                    )
+                } else {
+                    self.policy_recommendation(
+                        "stabilize_supply_lines",
+                        "整顿驿站运输",
+                        "如果准备马上接第二步，这张牌能把当前窗口拉得更长。",
+                        "备选是先整顿驿站运输。",
+                    )
+                },
+            ),
+        }
+    }
+
+    fn best_adjacent_target_for_objective(
+        &self,
+        location: &str,
+        objective_target_role: &str,
+    ) -> Option<MarchTargetAdvice> {
+        let current = self.current_march_army_state();
+        let objective_tier = Self::supply_role_tier(objective_target_role);
+        let mut best_target: Option<MarchTargetAdvice> = None;
+
+        for neighbor in self.map_graph.neighbors_of(location) {
+            let Some(step) = self.project_march_step(&current, &neighbor) else {
+                continue;
+            };
+            let target_role = self.map_graph.supply_role_of(&step.target_node);
+            let target_tier = Self::supply_role_tier(target_role);
+            let runway_score = if step.supply_runway_days < 0 {
+                18
+            } else {
+                step.supply_runway_days.min(5) * 4
+            };
+            let role_score = Self::objective_alignment_score(target_tier, objective_tier);
+            let safety_score = if step.projected_supply >= SUPPLY_OK_THRESHOLD {
+                24
+            } else {
+                -40
+            };
+            let score = role_score
+                + runway_score
+                + safety_score
+                + step.supply_capacity as i32
+                + step.supply_delta.round() as i32;
+
+            let advice = MarchTargetAdvice {
+                target_node: step.target_node.clone(),
+                target_label: self.map_graph.node_name(&step.target_node),
+                projected_supply: step.projected_supply,
+                supply_capacity: step.supply_capacity,
+                score,
+            };
+
+            let is_better = best_target
+                .as_ref()
+                .map(|best| {
+                    advice.score > best.score
+                        || (advice.score == best.score
+                            && advice.projected_supply > best.projected_supply)
+                        || (advice.score == best.score
+                            && (advice.projected_supply - best.projected_supply).abs() < 0.1
+                            && advice.supply_capacity > best.supply_capacity)
+                })
+                .unwrap_or(true);
+            if is_better {
+                best_target = Some(advice);
+            }
+        }
+
+        best_target
+    }
+
+    fn supply_role_tier(role: &str) -> i32 {
+        match role {
+            "frontline_outpost" => 0,
+            "transit_stop" => 1,
+            "regional_depot" => 2,
+            "strategic_depot" => 3,
+            _ => 0,
+        }
+    }
+
+    fn objective_alignment_score(target_tier: i32, objective_tier: i32) -> i32 {
+        if objective_tier <= 0 {
+            return if target_tier == 0 {
+                42
+            } else {
+                16 - target_tier * 4
+            };
+        }
+        if target_tier >= objective_tier {
+            52 + (target_tier - objective_tier) * 6
+        } else {
+            12 + target_tier * 14
+        }
+    }
+
+    fn policy_recommendation(
+        &self,
+        action_id: &'static str,
+        action_label: &'static str,
+        reason: impl Into<String>,
+        short: impl Into<String>,
+    ) -> ActionRecommendation {
+        let mut action_reason = reason.into();
+        if let Some(days) = self.politics.cooldowns().get(action_id).copied() {
+            action_reason.push_str(&format!(
+                " 但这张牌当前还在冷却 {} 天，若眼下就要处理，先按备选方案执行。",
+                days
+            ));
+        }
+        ActionRecommendation {
+            action_id,
+            action_label: action_label.to_string(),
+            action_reason,
+            action_short: short.into(),
+            target_node: String::new(),
+            target_label: String::new(),
+        }
+    }
+
+    fn rest_recommendation(
+        &self,
+        reason: impl Into<String>,
+        short: impl Into<String>,
+    ) -> ActionRecommendation {
+        ActionRecommendation {
+            action_id: "rest",
+            action_label: "休整".to_string(),
+            action_reason: reason.into(),
+            action_short: short.into(),
+            target_node: String::new(),
+            target_label: String::new(),
+        }
+    }
+
+    fn march_recommendation(
+        &self,
+        target: &MarchTargetAdvice,
+        reason: impl Into<String>,
+        short: impl Into<String>,
+    ) -> ActionRecommendation {
+        ActionRecommendation {
+            action_id: "march",
+            action_label: format!("行军到 {}", target.target_label),
+            action_reason: reason.into(),
+            action_short: short.into(),
+            target_node: target.target_node.clone(),
+            target_label: target.target_label.clone(),
         }
     }
 
@@ -2358,6 +2763,21 @@ mod tests {
     }
 
     #[test]
+    fn 低补给时当日行动计划会优先征用仓储() {
+        let mut engine = GameEngine::new();
+        engine.army.supply = 34.0;
+
+        let brief = engine.logistics_brief();
+
+        assert_eq!(brief.primary_action_id, "requisition_supplies");
+        assert_eq!(brief.secondary_action_id, "rest");
+        assert!(
+            brief.action_plan_detail.contains("征用沿线仓储"),
+            "止血场景下应把征用仓储写进当日行动计划"
+        );
+    }
+
+    #[test]
     fn 前沿粮秣站激活时后勤态势会转为前沿整补跳板() {
         let mut engine = GameEngine::new();
         engine.napoleon_location = "grasse".to_string();
@@ -2372,6 +2792,27 @@ mod tests {
         assert!(
             brief.focus_short.contains("粮秣站"),
             "前沿粮秣站激活时应强调窗口期"
+        );
+    }
+
+    #[test]
+    fn 运输线拉长时当日行动计划会优先整顿运输() {
+        let engine = GameEngine::new();
+
+        let (primary, secondary) = engine.logistics_action_plan_for(
+            "autun",
+            "overextended_line",
+            "regional_depot",
+            58.0,
+            24.0,
+            3,
+            3,
+        );
+
+        assert_eq!(primary.action_id, "stabilize_supply_lines");
+        assert!(
+            secondary.action_id == "march" || secondary.action_id == "establish_forward_depot",
+            "运输线拉长时备选应是换位接仓或铺前沿粮秣站"
         );
     }
 
@@ -2413,6 +2854,22 @@ mod tests {
         assert!(
             brief.objective_label.contains("区域整补点"),
             "前期前线消耗区应优先接区域整补点"
+        );
+    }
+
+    #[test]
+    fn 前10天当日行动计划会给出明确行军目标() {
+        let engine = GameEngine::new();
+        let brief = engine.logistics_brief();
+
+        assert_eq!(brief.primary_action_id, "march");
+        assert!(
+            !brief.primary_action_target.is_empty(),
+            "前10天开局应直接给出一个可执行的行军目标"
+        );
+        assert!(
+            !brief.primary_action_target_label.is_empty(),
+            "行军建议应带可读节点名"
         );
     }
 

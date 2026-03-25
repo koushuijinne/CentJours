@@ -31,6 +31,8 @@ const STATE_KEY_LOCATION_LABEL := "location_label"
 const STATE_KEY_LOCATION_TERRAIN := "location_terrain"
 const STATE_KEY_LOGISTICS_POSTURE_LABEL := "logistics_posture_label"
 const STATE_KEY_LOGISTICS_OBJECTIVE_LABEL := "logistics_objective_label"
+const STATE_KEY_LOGISTICS_PRIMARY_ACTION_LABEL := "logistics_primary_action_label"
+const STATE_KEY_LOGISTICS_PRIMARY_ACTION_REASON := "logistics_primary_action_reason"
 const STATE_KEY_LOGISTICS_RUNWAY_LABEL := "logistics_runway_label"
 
 const DEFAULT_GAME_OVER_STATE := {
@@ -43,6 +45,8 @@ const DEFAULT_GAME_OVER_STATE := {
 	STATE_KEY_LOCATION_LABEL: "",
 	STATE_KEY_LOGISTICS_POSTURE_LABEL: "",
 	STATE_KEY_LOGISTICS_OBJECTIVE_LABEL: "",
+	STATE_KEY_LOGISTICS_PRIMARY_ACTION_LABEL: "",
+	STATE_KEY_LOGISTICS_PRIMARY_ACTION_REASON: "",
 	STATE_KEY_LOGISTICS_RUNWAY_LABEL: "",
 }
 
@@ -84,6 +88,8 @@ func build_game_over_state(stats: Dictionary = {}) -> Dictionary:
 	normalized[STATE_KEY_LOCATION_LABEL] = String(stats.get(STATE_KEY_LOCATION_LABEL, DEFAULT_GAME_OVER_STATE[STATE_KEY_LOCATION_LABEL]))
 	normalized[STATE_KEY_LOGISTICS_POSTURE_LABEL] = String(stats.get(STATE_KEY_LOGISTICS_POSTURE_LABEL, DEFAULT_GAME_OVER_STATE[STATE_KEY_LOGISTICS_POSTURE_LABEL]))
 	normalized[STATE_KEY_LOGISTICS_OBJECTIVE_LABEL] = String(stats.get(STATE_KEY_LOGISTICS_OBJECTIVE_LABEL, DEFAULT_GAME_OVER_STATE[STATE_KEY_LOGISTICS_OBJECTIVE_LABEL]))
+	normalized[STATE_KEY_LOGISTICS_PRIMARY_ACTION_LABEL] = String(stats.get(STATE_KEY_LOGISTICS_PRIMARY_ACTION_LABEL, DEFAULT_GAME_OVER_STATE[STATE_KEY_LOGISTICS_PRIMARY_ACTION_LABEL]))
+	normalized[STATE_KEY_LOGISTICS_PRIMARY_ACTION_REASON] = String(stats.get(STATE_KEY_LOGISTICS_PRIMARY_ACTION_REASON, DEFAULT_GAME_OVER_STATE[STATE_KEY_LOGISTICS_PRIMARY_ACTION_REASON]))
 	normalized[STATE_KEY_LOGISTICS_RUNWAY_LABEL] = String(stats.get(STATE_KEY_LOGISTICS_RUNWAY_LABEL, DEFAULT_GAME_OVER_STATE[STATE_KEY_LOGISTICS_RUNWAY_LABEL]))
 	return normalized
 
@@ -203,6 +209,8 @@ func _build_game_over_review(outcome: String, game_over_state: Dictionary, info:
 	var location_label := String(game_over_state.get(STATE_KEY_LOCATION_LABEL, "")).strip_edges()
 	var logistics_posture_label := String(game_over_state.get(STATE_KEY_LOGISTICS_POSTURE_LABEL, "")).strip_edges()
 	var logistics_objective_label := String(game_over_state.get(STATE_KEY_LOGISTICS_OBJECTIVE_LABEL, "")).strip_edges()
+	var logistics_primary_action_label := String(game_over_state.get(STATE_KEY_LOGISTICS_PRIMARY_ACTION_LABEL, "")).strip_edges()
+	var logistics_primary_action_reason := String(game_over_state.get(STATE_KEY_LOGISTICS_PRIMARY_ACTION_REASON, "")).strip_edges()
 	var logistics_runway_label := String(game_over_state.get(STATE_KEY_LOGISTICS_RUNWAY_LABEL, "")).strip_edges()
 
 	match outcome:
@@ -231,6 +239,10 @@ func _build_game_over_review(outcome: String, game_over_state: Dictionary, info:
 		lines.append("最后的后勤态势是“%s”。" % logistics_posture_label)
 	if logistics_objective_label != "":
 		lines.append("最后阶段的运营目标仍是“%s”，说明你还没把节奏切到更安全的位置。" % logistics_objective_label)
+	if logistics_primary_action_label != "":
+		lines.append("若终局前还能再做一步，更稳的操作应是“%s”。" % logistics_primary_action_label)
+	if logistics_primary_action_reason != "":
+		lines.append(logistics_primary_action_reason)
 	if logistics_runway_label != "":
 		lines.append(logistics_runway_label)
 	if location_label != "":
