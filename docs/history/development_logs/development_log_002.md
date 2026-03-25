@@ -20,3 +20,22 @@
 - 本轮将以主菜单 bug sweep 独立提交并推送到 `auto/gameplay_update`。
 下一步:
 - 回到玩法主线，继续把区域运营从“知道哪里承压”推进到“知道这一段区域该怎么经营和回收收益”。
+
+## 2026-03-24 第 30 轮
+分支: `auto/gameplay_update`
+范围: 吸收 `docs/bugs` 第二轮问题，并把 bug 修复纪律写成 ADR
+变更:
+- `NarrativePanel` 改成固定边界 + 内部滚动，动作后历史日志不再把整个页面撑出窗口。
+- `MapHoverPanel` 和 `MapInspectorPanel` 重新对齐到同一块右上区域；hover 预览补了内部滚动和更高的默认高度，锁定详情保留可滚动完整内容。
+- 存读档槽位弹窗修掉了 `theme_override_constants` 运行时报错，改成标准的 `add_theme_constant_override()`。
+- 新增 [ADR-010-bug-sweep-and-validation-discipline.md](/mnt/e/projects/CentJours/docs/decisions/ADR-010-bug-sweep-and-validation-discipline.md)，明确采纳“禁止 speculative implementation / implicit assumptions / missing error handling”，同时把 Windows 最小验证、长文本面板边界、入口真实交互验证和提交隔离规则正式写进决策层。
+- `development_plan`、`agent_handoff`、`bug_audit_2026-03-24` 已同步到新的 bug 修复与规则优化计划。
+验证:
+- Windows Godot 无头主项目通过。
+- Windows Godot GUI 启动冒烟通过。
+- Windows Godot smoke scene 通过。
+- 本轮未运行 Linux / WSL 侧测试。
+提交/推送:
+- 本轮将与代码和文档一起提交并推送到 `auto/gameplay_update`。
+下一步:
+- 继续沿 ADR-010 收口高风险入口，优先补真实交互验证和主菜单剩余耦合点。

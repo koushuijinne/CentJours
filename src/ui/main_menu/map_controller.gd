@@ -160,7 +160,7 @@ func bind_nodes(
 	if _map_hover_panel != null:
 		_map_hover_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	if _map_inspector_panel != null:
-		_map_inspector_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_map_inspector_panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	if _map_canvas != null:
 		_map_canvas.mouse_filter = Control.MOUSE_FILTER_STOP
 	if _map_scroll != null and not _map_scroll.resized.is_connected(_on_map_scroll_resized):

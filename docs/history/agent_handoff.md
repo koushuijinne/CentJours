@@ -39,6 +39,7 @@
 - 终局复盘现在还会把失败归因落到具体补给牌和节奏错误，例如补给牌打晚、没及时保线、没把中继节点铺成跳板。
 - 主菜单 bug sweep 已完成第一轮闭环：前 10 天教程重复、地图 hover 面板挡图、城市详情窄列换行、读档阶段错位、单槽读档、缺少新局入口和“执行行动”语义不清等问题已收口。
 - 地图现在支持 `MapScroll + 滚轮缩放 + 右键复位`，并拆成“hover 小预览 + click 锁定详情”两层；多槽存读档与顶栏 `新局` 入口也已接通。
+- `docs/bugs/bugs_check.md` 的第二轮问题已进入收口：叙事面板超屏、hover 与锁定详情位置跳变、存读档弹窗报错，均按 ADR-010 的规则继续处理。
 - 文档目录已重构为 `docs/plans`、`docs/rules`、`docs/history`、`docs/decisions`，开发历史已从 live 计划文档中抽离到 `docs/history/development_logs/`。
 - 前端已拆出 `map / layout / tray / sidebar / dialogs` 控制器，但发布级视觉和交互收口仍未完成。
 - Windows 原生 Godot 与 Windows 无头仍是默认验证路径；不要把 Linux / WSL Godot 无头结果当成默认结论。
@@ -123,6 +124,7 @@ E:\software\godot\Godot_v4.6.1-stable_win64_console.exe --headless --path E:\pro
 - [docs/rules/development_principles.md](/mnt/e/projects/CentJours/docs/rules/development_principles.md)
 - [docs/plans/development_plan.md](/mnt/e/projects/CentJours/docs/plans/development_plan.md)
 - [docs/history/agent_handoff.md](/mnt/e/projects/CentJours/docs/history/agent_handoff.md)
+- [docs/decisions/ADR-010-bug-sweep-and-validation-discipline.md](/mnt/e/projects/CentJours/docs/decisions/ADR-010-bug-sweep-and-validation-discipline.md)
 - [docs/decisions/ADR-008-historical-events-expansion.md](/mnt/e/projects/CentJours/docs/decisions/ADR-008-historical-events-expansion.md)
 - [docs/history/historical_event_review.md](/mnt/e/projects/CentJours/docs/history/historical_event_review.md)
 

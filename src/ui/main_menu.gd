@@ -33,8 +33,8 @@ const MainMenuTrayControllerScript = preload("res://src/ui/main_menu/tray_contro
 @onready var _map_title: Label = $RootLayout/MainArea/LeftColumn/MapArea/MapMargin/MapContent/MapTitle
 @onready var _map_subtitle: Label = $RootLayout/MainArea/LeftColumn/MapArea/MapMargin/MapContent/MapSubtitle
 @onready var _map_hover_panel: PanelContainer = $RootLayout/MainArea/LeftColumn/MapArea/MapMargin/MapContent/MapHoverPanel
-@onready var _map_hover_title: Label = $RootLayout/MainArea/LeftColumn/MapArea/MapMargin/MapContent/MapHoverPanel/MapHoverMargin/MapHoverBox/MapHoverTitle
-@onready var _map_hover_meta: Label = $RootLayout/MainArea/LeftColumn/MapArea/MapMargin/MapContent/MapHoverPanel/MapHoverMargin/MapHoverBox/MapHoverMeta
+@onready var _map_hover_title: Label = $RootLayout/MainArea/LeftColumn/MapArea/MapMargin/MapContent/MapHoverPanel/MapHoverMargin/MapHoverScroll/MapHoverBox/MapHoverTitle
+@onready var _map_hover_meta: Label = $RootLayout/MainArea/LeftColumn/MapArea/MapMargin/MapContent/MapHoverPanel/MapHoverMargin/MapHoverScroll/MapHoverBox/MapHoverMeta
 @onready var _map_scroll: ScrollContainer = $RootLayout/MainArea/LeftColumn/MapArea/MapMargin/MapContent/MapScroll
 @onready var _map_canvas: Control = $RootLayout/MainArea/LeftColumn/MapArea/MapMargin/MapContent/MapScroll/MapCanvas
 @onready var _map_inspector_panel: PanelContainer = $RootLayout/MainArea/LeftColumn/MapArea/MapMargin/MapContent/MapInspectorPanel
@@ -54,7 +54,8 @@ const MainMenuTrayControllerScript = preload("res://src/ui/main_menu/tray_contro
 @onready var _loyalty_list: VBoxContainer = $RootLayout/MainArea/Sidebar/SidebarMargin/SidebarContent/LoyaltyPanel/LoyaltyMargin/LoyaltyBox/LoyaltyScroll/LoyaltyList
 @onready var _narrative_panel: PanelContainer = $RootLayout/MainArea/Sidebar/SidebarMargin/SidebarContent/NarrativePanel
 @onready var _narrative_box: VBoxContainer = $RootLayout/MainArea/Sidebar/SidebarMargin/SidebarContent/NarrativePanel/NarrativeMargin/NarrativeBox
-@onready var _narrative_body: Label = $RootLayout/MainArea/Sidebar/SidebarMargin/SidebarContent/NarrativePanel/NarrativeMargin/NarrativeBox/NarrativeBody
+@onready var _narrative_scroll: ScrollContainer = $RootLayout/MainArea/Sidebar/SidebarMargin/SidebarContent/NarrativePanel/NarrativeMargin/NarrativeBox/NarrativeScroll
+@onready var _narrative_body: Label = $RootLayout/MainArea/Sidebar/SidebarMargin/SidebarContent/NarrativePanel/NarrativeMargin/NarrativeBox/NarrativeScroll/NarrativeBody
 @onready var _decision_tray: PanelContainer = $RootLayout/MainArea/LeftColumn/DecisionTray
 @onready var _tray_margin: MarginContainer = $RootLayout/MainArea/LeftColumn/DecisionTray/TrayMargin
 @onready var _tray_content: VBoxContainer = $RootLayout/MainArea/LeftColumn/DecisionTray/TrayMargin/TrayContent
@@ -135,12 +136,13 @@ func _configure_layout_controller() -> void:
 		"situation_panel": _situation_panel,
 		"situation_box": _situation_box,
 		"situation_scroll": _situation_scroll,
-		"loyalty_panel": _loyalty_panel,
-		"loyalty_scroll": _loyalty_scroll,
-		"loyalty_list": _loyalty_list,
-		"narrative_panel": _narrative_panel,
-		"narrative_box": _narrative_box,
-		"decision_tray": _decision_tray,
+			"loyalty_panel": _loyalty_panel,
+			"loyalty_scroll": _loyalty_scroll,
+			"loyalty_list": _loyalty_list,
+			"narrative_panel": _narrative_panel,
+			"narrative_box": _narrative_box,
+			"narrative_scroll": _narrative_scroll,
+			"decision_tray": _decision_tray,
 		"tray_margin": _tray_margin,
 		"tray_content": _tray_content,
 		"tray_header": _tray_header,
@@ -288,7 +290,7 @@ func _show_slot_picker(mode: String) -> void:
 	var popup := PopupPanel.new()
 	var content := VBoxContainer.new()
 	content.custom_minimum_size = Vector2(320, 0)
-	content.theme_override_constants.separation = 8
+	content.add_theme_constant_override("separation", 8)
 
 	var title := Label.new()
 	title.text = "选择存档槽位" if mode == "save" else "选择要读取的存档"

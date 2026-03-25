@@ -64,6 +64,41 @@
 4. 前端发布级 polish 与设置页
 5. Windows 发布链路与 Steam 提审资料
 
+## Bug 修复与规则优化计划
+
+> 依据: [docs/bugs/bugs_check.md](/mnt/e/projects/CentJours/docs/bugs/bugs_check.md) 与 [docs/decisions/ADR-010-bug-sweep-and-validation-discipline.md](/mnt/e/projects/CentJours/docs/decisions/ADR-010-bug-sweep-and-validation-discipline.md)
+
+### 第 1 轮: 主菜单与地图交互稳定化
+
+- 目标:
+  - 清掉 hover / 锁定详情遮挡与跳位
+  - 修掉存读档入口报错
+  - 给长文本面板补固定边界和内部滚动
+  - 收口“执行行动 -> 次日”的语义
+- 当前状态:
+  - 已完成
+
+### 第 2 轮: 入口验证与场景契约硬化
+
+- 目标:
+  - 给存档 / 读档 / 新局 / 行动确认 / 地图选点补真实交互验证清单
+  - 给关键 UI 入口补最小可复现 smoke 脚本或检查表
+  - 补“提交失败后恢复交互”的统一护栏
+- 验收:
+  - Windows headless 主项目
+  - Windows smoke scene
+  - 至少一次 Windows GUI 启动冒烟
+
+### 第 3 轮: 主菜单耦合继续下沉
+
+- 目标:
+  - 继续把 `main_menu.gd` 中的弹窗、顶栏入口、地图态同步拆到更清晰的职责边界
+  - 避免后续 bug fix 再落回“大文件里顺手混改”
+  - 给多槽存档补更完整的元信息与删除/覆盖细节
+- 边界:
+  - 只做定向重构
+  - 不做脱离 bug / 入口稳定化目标的大重写
+
 ## 默认验证方式
 
 - 自动工作流开启时，不运行 Linux / WSL 侧测试，包括 Linux `cargo test`、Linux Godot 无头和任何 WSL 侧补位验证
