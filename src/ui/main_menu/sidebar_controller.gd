@@ -269,6 +269,8 @@ func refresh_situation(
 	logistics_action_plan_detail: String,
 	logistics_tempo_plan_title: String,
 	logistics_tempo_plan_detail: String,
+	logistics_route_chain_title: String,
+	logistics_route_chain_detail: String,
 	faction_support: Dictionary,
 	prev_faction_support: Dictionary
 ) -> void:
@@ -308,6 +310,10 @@ func refresh_situation(
 		logistics_lines.append(logistics_tempo_plan_title)
 	if logistics_tempo_plan_detail.strip_edges() != "":
 		logistics_lines.append(logistics_tempo_plan_detail)
+	if logistics_route_chain_title.strip_edges() != "":
+		logistics_lines.append(logistics_route_chain_title)
+	if logistics_route_chain_detail.strip_edges() != "":
+		logistics_lines.append(logistics_route_chain_detail)
 
 	_situation_body.text = "%s\n%s · Legitimacy %.1f\n补给 %.0f · 疲劳 %.0f\n\n%s\n\n%s" % [
 		MainMenuFormattersLib.phase_display_name(phase_id),
@@ -385,6 +391,8 @@ func refresh_all(
 	logistics_action_plan_detail: String,
 	logistics_tempo_plan_title: String,
 	logistics_tempo_plan_detail: String,
+	logistics_route_chain_title: String,
+	logistics_route_chain_detail: String,
 	faction_support: Dictionary,
 	prev_faction_support: Dictionary,
 	characters: Dictionary,
@@ -407,6 +415,8 @@ func refresh_all(
 		logistics_action_plan_detail,
 		logistics_tempo_plan_title,
 		logistics_tempo_plan_detail,
+		logistics_route_chain_title,
+		logistics_route_chain_detail,
 		faction_support,
 		prev_faction_support
 	)

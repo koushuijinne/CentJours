@@ -153,6 +153,9 @@ pub struct LogisticsBrief {
     pub tempo_plan_title: String,
     pub tempo_plan_detail: String,
     pub tempo_plan_short: String,
+    pub route_chain_title: String,
+    pub route_chain_detail: String,
+    pub route_chain_short: String,
 }
 
 #[derive(Debug, Clone)]
@@ -211,6 +214,13 @@ struct ActionRecommendation {
 
 #[derive(Debug, Clone)]
 struct TempoPlan {
+    title: String,
+    detail: String,
+    short: String,
+}
+
+#[derive(Debug, Clone)]
+struct RouteChain {
     title: String,
     detail: String,
     short: String,
@@ -597,6 +607,12 @@ impl GameEngine {
             &primary_action,
             &secondary_action,
         );
+        let route_chain = self.logistics_route_chain_for(
+            location,
+            objective_target_role,
+            &primary_action,
+            &secondary_action,
+        );
         let focus_title = self.campaign_focus_title().to_string();
         let focus_detail = match posture_id {
             "critical_recovery" => format!(
@@ -674,6 +690,9 @@ impl GameEngine {
             tempo_plan_title: tempo_plan.title,
             tempo_plan_detail: tempo_plan.detail,
             tempo_plan_short: tempo_plan.short,
+            route_chain_title: route_chain.title,
+            route_chain_detail: route_chain.detail,
+            route_chain_short: route_chain.short,
         }
     }
 
@@ -1285,6 +1304,111 @@ impl GameEngine {
         TempoPlan {
             title,
             detail: format!("{}\n{}\n{}", today_line, tomorrow_line, day_three_line),
+            short,
+        }
+    }
+
+    fn logistics_route_chain_for(
+        &self,
+        location: &str,
+        objective_target_role: &str,
+        primary_action: &ActionRecommendation,
+        secondary_action: &ActionRecommendation,
+    ) -> RouteChain {
+        let title = "区域运营链路".to_string();
+        let current_label = self.map_graph.node_name(location);
+        let objective_label = supply_role_label(objective_target_role);
+
+        let (detail, short) = if primary_action.action_id == "march"
+            && !primary_action.target_node.is_empty()
+        {
+            let preview = self.preview_march(&primary_action.target_node);
+            if preview.valid && !preview.follow_up_best_target_label.is_empty() {
+                (
+                    format!(
+                        "推荐链路：{} -> {} -> {}。\n第 1 段先把当前位置接到更稳的承接点；第 2 段再以 {} 为跳板，继续靠近{}。",
+                        current_label,
+                        primary_action.target_label,
+                        preview.follow_up_best_target_label,
+                        preview.follow_up_best_target_label,
+                        objective_label
+                    ),
+                    format!(
+                        "推荐链路：{} -> {} -> {}。",
+                        current_label,
+                        primary_action.target_label,
+                        preview.follow_up_best_target_label
+                    ),
+                )
+            } else {
+                (
+                    format!(
+                        "推荐链路：{} -> {}。\n先把路线接到 {}，再按阶段目标继续寻找{}。",
+                        current_label,
+                        primary_action.target_label,
+                        primary_action.target_label,
+                        objective_label
+                    ),
+                    format!(
+                        "推荐链路：{} -> {}。",
+                        current_label, primary_action.target_label
+                    ),
+                )
+            }
+        } else if let Some(target) =
+            self.best_adjacent_target_for_objective(location, objective_target_role)
+        {
+            let preview = self.preview_march(&target.target_node);
+            if preview.valid && !preview.follow_up_best_target_label.is_empty() {
+                (
+                    format!(
+                        "推荐链路：{} -> {} -> {}。\n先执行“{}”，再把部队接到 {}，随后以 {} 为下一段跳板。",
+                        current_label,
+                        target.target_label,
+                        preview.follow_up_best_target_label,
+                        primary_action.action_label,
+                        target.target_label,
+                        preview.follow_up_best_target_label
+                    ),
+                    format!(
+                        "先{}，再走 {} -> {}。",
+                        primary_action.action_label,
+                        target.target_label,
+                        preview.follow_up_best_target_label
+                    ),
+                )
+            } else {
+                (
+                    format!(
+                        "推荐链路：{} -> {}。\n先执行“{}”，再把路线接到 {}，继续靠近{}。",
+                        current_label,
+                        target.target_label,
+                        primary_action.action_label,
+                        target.target_label,
+                        objective_label
+                    ),
+                    format!(
+                        "先{}，再走到{}。",
+                        primary_action.action_label, target.target_label
+                    ),
+                )
+            }
+        } else {
+            (
+                format!(
+                    "当前暂无稳定链路；先执行“{}”，再按阶段目标寻找{}。备选动作是“{}”。",
+                    primary_action.action_label, objective_label, secondary_action.action_label
+                ),
+                format!(
+                    "先{}，再寻找{}。",
+                    primary_action.action_label, objective_label
+                ),
+            )
+        };
+
+        RouteChain {
+            title,
+            detail,
             short,
         }
     }
@@ -3091,6 +3215,21 @@ mod tests {
     }
 
     #[test]
+    fn 区域运营链路会给出推荐节点线() {
+        let engine = GameEngine::new();
+        let brief = engine.logistics_brief();
+
+        assert!(
+            brief.route_chain_detail.contains("推荐链路"),
+            "区域运营链路应显式给出推荐链路"
+        );
+        assert!(
+            brief.route_chain_short.contains("->"),
+            "区域运营链路短摘要应带节点承接方向"
+        );
+    }
+
+    #[test]
     fn 低补给时三日节奏会先止血再整补() {
         let mut engine = GameEngine::new();
         engine.army.supply = 34.0;
@@ -3104,6 +3243,20 @@ mod tests {
         assert!(
             brief.tempo_plan_detail.contains("明天：休整"),
             "低补给节奏计划第2天应优先休整"
+        );
+    }
+
+    #[test]
+    fn 低补给时区域运营链路会先止血再接路线() {
+        let mut engine = GameEngine::new();
+        engine.army.supply = 34.0;
+
+        let brief = engine.logistics_brief();
+
+        assert!(
+            brief.route_chain_detail.contains("先执行“征用沿线仓储”")
+                || brief.route_chain_short.contains("先征用沿线仓储"),
+            "低补给链路应先止血，再谈节点承接"
         );
     }
 

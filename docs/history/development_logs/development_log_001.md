@@ -454,3 +454,21 @@
 - 本轮将与功能代码和当前态文档一起提交并推送到 `auto/gameplay_update`。
 下一步:
 - 继续把补给系统从“三日建议”推进到“区域运营节拍”，优先补更明确的连续多日节点链和阶段性前线推进模板。
+
+## 2026-03-24 第 27 轮
+分支: `auto/gameplay_update`
+范围: 把三日节奏继续扩成“区域运营链路”，给出连续节点承接线
+变更:
+- `engine/state.rs` 新增区域运营链路推导：会基于当前驻地、阶段目标、推荐主动作和后续承接点，直接生成“当前节点 -> 下一跳 -> 后续承接点”的推荐节点线；低补给时会先止血，再重新接回链路。
+- `lib.rs`、`game_state.gd`、`turn_manager.gd`、`main_menu.gd`、`sidebar_controller.gd`、`map_controller.gd`、`dialogs_controller.gd` 已接通新字段；侧栏会显示完整链路说明，`DecisionTray` 提示和地图副标题会优先复用短摘要，行军预判会判断当前落点是否仍在主运营线上，终局复盘也会给出“如果早几天按这条线铺开”的回看建议。
+- 新增两条 Rust 回归，分别钉住“区域运营链路会给出推荐节点线”和“低补给时会先止血再接路线”，把这层线路逻辑固定到状态机测试里。
+验证:
+- `cargo fmt --manifest-path cent-jours-core/Cargo.toml` 已通过。
+- Windows `cargo test` 已通过，基线提升到 `198/198`。
+- Windows `cargo build --features godot-extension` 已通过。
+- Windows Godot 无头主项目和 Windows Godot smoke scene 已通过；smoke 输出已确认新 `logistics_route_chain_*` 字段进入 Windows 运行时。
+- 本轮未运行 Linux / WSL 侧测试。
+提交/推送:
+- 本轮将与功能代码和当前态文档一起提交并推送到 `auto/gameplay_update`。
+下一步:
+- 继续把补给系统从“能看出一条运营线”推进到“能管理一片运营区”，优先补更强的区域压力、阶段任务和中期运营反馈。

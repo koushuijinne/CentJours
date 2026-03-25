@@ -602,6 +602,18 @@ mod gdext_bindings {
                 logistics.tempo_plan_short.as_str(),
             );
             let _ = d.insert(
+                "logistics_route_chain_title",
+                logistics.route_chain_title.as_str(),
+            );
+            let _ = d.insert(
+                "logistics_route_chain_detail",
+                logistics.route_chain_detail.as_str(),
+            );
+            let _ = d.insert(
+                "logistics_route_chain_short",
+                logistics.route_chain_short.as_str(),
+            );
+            let _ = d.insert(
                 "logistics_runway_days",
                 e.current_supply_runway_days()
                     .map(|days| days as i64)
