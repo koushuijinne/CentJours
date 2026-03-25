@@ -435,3 +435,22 @@
 - 本轮将与功能代码、规则文档和当前态文档一起提交并推送到 `auto/gameplay_update`。
 下一步:
 - 继续把后勤产品化从“知道今天该怎么做”推进到“知道未来两三天怎么排动作和节点节奏”，优先补更强的区域运营节拍和连续多日补给计划。
+
+## 2026-03-24 第 26 轮
+分支: `auto/gameplay_update`
+范围: 把单日建议扩成三日后勤节奏，并接进 UI 与终局复盘
+变更:
+- `engine/state.rs` 新增三日后勤节奏推导：会基于当前后勤态势、阶段目标、推荐行军目标和第二跳承接，直接生成“今天 / 明天 / 后天”的动作顺序。
+- `lib.rs`、`game_state.gd`、`turn_manager.gd`、`main_menu.gd`、`sidebar_controller.gd`、`map_controller.gd`、`dialogs_controller.gd` 已接通新字段；侧栏会显示完整三日节奏，`DecisionTray` 提示会优先复用短摘要，行军预判会判断当前选点是否符合这条三日主线，终局复盘也会把“若提前两三天开始修正节奏”写进失败解释。
+- 新增两条 Rust 回归，分别钉住“节奏计划会给出完整三日安排”和“低补给时三日节奏会先止血再整补”。
+- 本轮还顺手补全了终局弹窗快照，把主建议与三日节奏字段一起传入 `dialogs_controller`，避免运行时读到空值。
+验证:
+- `cargo fmt --manifest-path cent-jours-core/Cargo.toml` 已通过。
+- Windows `cargo test` 已通过，基线提升到 `196/196`。
+- Windows `cargo build --features godot-extension` 已通过。
+- Windows Godot 无头主项目和 Windows Godot smoke scene 已通过；smoke 输出已确认新 `logistics_tempo_plan_*` 字段进入运行时。
+- 本轮未运行 Linux / WSL 侧测试。
+提交/推送:
+- 本轮将与功能代码和当前态文档一起提交并推送到 `auto/gameplay_update`。
+下一步:
+- 继续把补给系统从“三日建议”推进到“区域运营节拍”，优先补更明确的连续多日节点链和阶段性前线推进模板。

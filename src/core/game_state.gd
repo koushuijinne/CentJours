@@ -53,6 +53,9 @@ var logistics_primary_action_target_label: String = ""
 var logistics_secondary_action_id: String = ""
 var logistics_secondary_action_label: String = ""
 var logistics_secondary_action_reason: String = ""
+var logistics_tempo_plan_title: String = ""
+var logistics_tempo_plan_detail: String = ""
+var logistics_tempo_plan_short: String = ""
 var logistics_runway_days: int = -1
 var logistics_runway_label: String = ""
 

@@ -714,7 +714,7 @@ func _update_march_target(node_id: String) -> void:
 		var follow_up_best_runway_days := int(march_preview.get("follow_up_best_runway_days", -1))
 		var runway_label := _supply_runway_label(supply_runway_days)
 		var pressure_label := _march_pressure_label(projected_supply, supply_capacity)
-		preview_text = "预计补给：%s（%.0f，%+.1f）\n预计疲劳：%.0f（%+.1f）\n预计士气：%.0f（%+.1f）\n%s\n%s\n%s\n%s\n节点角色：%s\n原因：%s\n建议：%s" % [
+		preview_text = "预计补给：%s（%.0f，%+.1f）\n预计疲劳：%.0f（%+.1f）\n预计士气：%.0f（%+.1f）\n%s\n%s\n%s\n%s\n%s\n节点角色：%s\n原因：%s\n建议：%s" % [
 			pressure_label,
 			projected_supply,
 			supply_delta,
@@ -733,6 +733,7 @@ func _update_march_target(node_id: String) -> void:
 			),
 			_build_objective_alignment_text(supply_role, supply_role_label),
 			_build_action_plan_alignment_text(node_id),
+			_build_tempo_plan_alignment_text(node_id, follow_up_best_target_label),
 			supply_role_label,
 			_build_supply_reason_text(
 				base_supply_capacity,
@@ -957,6 +958,24 @@ func _build_action_plan_alignment_text(target_node: String) -> String:
 	if primary_target == target_node:
 		return "当日行动计划：这一步正是当前推荐路线。"
 	return "当日行动计划：当前更稳的目标是 %s，这一步属于偏离主建议的换位。" % GameState.logistics_primary_action_target_label
+
+
+func _build_tempo_plan_alignment_text(target_node: String, follow_up_best_target_label: String) -> String:
+	var tempo_short := GameState.logistics_tempo_plan_short.strip_edges()
+	if tempo_short == "":
+		return "三日后勤节奏：当前没有额外节奏建议。"
+	var primary_action_id := GameState.logistics_primary_action_id.strip_edges()
+	var primary_target := GameState.logistics_primary_action_target.strip_edges()
+	if primary_action_id != "march" or primary_target == "":
+		return "三日后勤节奏：%s" % tempo_short
+	if primary_target == target_node:
+		if follow_up_best_target_label.strip_edges() != "":
+			return "三日后勤节奏：若今天走这条线，明天更稳的承接是 %s。%s" % [
+				follow_up_best_target_label,
+				tempo_short
+			]
+		return "三日后勤节奏：%s" % tempo_short
+	return "三日后勤节奏：当前主线是先去 %s；若今天改走这里，后两天节奏要重算。" % GameState.logistics_primary_action_target_label
 
 
 func _forward_depot_bonus_for_node(node_id: String) -> int:

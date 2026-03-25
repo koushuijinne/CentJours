@@ -362,6 +362,8 @@ func _refresh_situation_panel() -> void:
 		GameState.logistics_objective_detail,
 		GameState.logistics_action_plan_title,
 		GameState.logistics_action_plan_detail,
+		GameState.logistics_tempo_plan_title,
+		GameState.logistics_tempo_plan_detail,
 		GameState.faction_support,
 		_prev_faction_support
 	)
@@ -387,7 +389,9 @@ func _refresh_logistics_guidance() -> void:
 	var hint_text := _build_tutorial_hint_text()
 	if hint_text.strip_edges() == "":
 		hint_text = "选择一项政策或直接休整"
-		if GameState.logistics_action_plan_short.strip_edges() != "":
+		if GameState.logistics_tempo_plan_short.strip_edges() != "":
+			hint_text = GameState.logistics_tempo_plan_short
+		elif GameState.logistics_action_plan_short.strip_edges() != "":
 			hint_text = GameState.logistics_action_plan_short
 		elif GameState.logistics_objective_short.strip_edges() != "":
 			hint_text = GameState.logistics_objective_short
@@ -408,6 +412,8 @@ func _build_tutorial_hint_text() -> String:
 		return "前10天教程：补给开始见底时，先打补给牌或休整，不要连续站在低容量节点。"
 	if GameState.current_day <= 7 and GameState.logistics_objective_short.strip_edges() != "":
 		return "前10天教程：%s" % GameState.logistics_objective_short
+	if GameState.current_day <= 10 and GameState.logistics_tempo_plan_short.strip_edges() != "":
+		return "前10天教程：%s" % GameState.logistics_tempo_plan_short
 	if GameState.current_day <= 10 and GameState.logistics_action_plan_short.strip_edges() != "":
 		return "前10天教程：%s" % GameState.logistics_action_plan_short
 	if GameState.current_day <= 10 and GameState.logistics_objective_target_role_label.strip_edges() != "":
@@ -581,6 +587,9 @@ func _dialog_stats_snapshot() -> Dictionary:
 		MainMenuDialogsControllerScript.STATE_KEY_LOCATION_LABEL: _napoleon_location_label(),
 		MainMenuDialogsControllerScript.STATE_KEY_LOGISTICS_POSTURE_LABEL: GameState.logistics_posture_label,
 		MainMenuDialogsControllerScript.STATE_KEY_LOGISTICS_OBJECTIVE_LABEL: GameState.logistics_objective_label,
+		MainMenuDialogsControllerScript.STATE_KEY_LOGISTICS_PRIMARY_ACTION_LABEL: GameState.logistics_primary_action_label,
+		MainMenuDialogsControllerScript.STATE_KEY_LOGISTICS_PRIMARY_ACTION_REASON: GameState.logistics_primary_action_reason,
+		MainMenuDialogsControllerScript.STATE_KEY_LOGISTICS_TEMPO_PLAN_DETAIL: GameState.logistics_tempo_plan_detail,
 		MainMenuDialogsControllerScript.STATE_KEY_LOGISTICS_RUNWAY_LABEL: GameState.logistics_runway_label,
 	})
 

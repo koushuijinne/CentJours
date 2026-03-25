@@ -590,6 +590,18 @@ mod gdext_bindings {
                 logistics.secondary_action_reason.as_str(),
             );
             let _ = d.insert(
+                "logistics_tempo_plan_title",
+                logistics.tempo_plan_title.as_str(),
+            );
+            let _ = d.insert(
+                "logistics_tempo_plan_detail",
+                logistics.tempo_plan_detail.as_str(),
+            );
+            let _ = d.insert(
+                "logistics_tempo_plan_short",
+                logistics.tempo_plan_short.as_str(),
+            );
+            let _ = d.insert(
                 "logistics_runway_days",
                 e.current_supply_runway_days()
                     .map(|days| days as i64)

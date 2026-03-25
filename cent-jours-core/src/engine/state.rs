@@ -150,6 +150,9 @@ pub struct LogisticsBrief {
     pub secondary_action_id: String,
     pub secondary_action_label: String,
     pub secondary_action_reason: String,
+    pub tempo_plan_title: String,
+    pub tempo_plan_detail: String,
+    pub tempo_plan_short: String,
 }
 
 #[derive(Debug, Clone)]
@@ -204,6 +207,13 @@ struct ActionRecommendation {
     action_short: String,
     target_node: String,
     target_label: String,
+}
+
+#[derive(Debug, Clone)]
+struct TempoPlan {
+    title: String,
+    detail: String,
+    short: String,
 }
 
 // ── 全局游戏状态 ──────────────────────────────────────
@@ -579,6 +589,14 @@ impl GameEngine {
             capacity,
             hub_distance,
         );
+        let tempo_plan = self.logistics_tempo_plan_for(
+            location,
+            posture_id,
+            supply,
+            objective_target_role,
+            &primary_action,
+            &secondary_action,
+        );
         let focus_title = self.campaign_focus_title().to_string();
         let focus_detail = match posture_id {
             "critical_recovery" => format!(
@@ -653,6 +671,9 @@ impl GameEngine {
             secondary_action_id: secondary_action.action_id.to_string(),
             secondary_action_label: secondary_action.action_label,
             secondary_action_reason: secondary_action.action_reason,
+            tempo_plan_title: tempo_plan.title,
+            tempo_plan_detail: tempo_plan.detail,
+            tempo_plan_short: tempo_plan.short,
         }
     }
 
@@ -1083,6 +1104,188 @@ impl GameEngine {
                     )
                 },
             ),
+        }
+    }
+
+    fn logistics_tempo_plan_for(
+        &self,
+        location: &str,
+        posture_id: &str,
+        supply: f64,
+        objective_target_role: &str,
+        primary_action: &ActionRecommendation,
+        secondary_action: &ActionRecommendation,
+    ) -> TempoPlan {
+        let title = "三日后勤节奏".to_string();
+        let objective_label = supply_role_label(objective_target_role);
+        let today_line = format!("今天：{}", primary_action.action_label);
+
+        let (tomorrow_line, day_three_line, short) = match primary_action.action_id {
+            "march" if !primary_action.target_node.is_empty() => {
+                let preview = self.preview_march(&primary_action.target_node);
+                if !preview.valid {
+                    (
+                        format!("明天：{}。", secondary_action.action_label),
+                        format!("后天：再按阶段目标寻找{}。", objective_label),
+                        format!(
+                            "先{}，若途中受阻就改走“{}”。",
+                            primary_action.action_label, secondary_action.action_label
+                        ),
+                    )
+                } else if preview.follow_up_safe_options == 0 {
+                    (
+                        format!(
+                            "明天：{}，不要在 {} 后继续硬顶。",
+                            secondary_action.action_label, primary_action.target_label
+                        ),
+                        format!(
+                            "后天：库存回到安全线后，再按阶段目标接向{}。",
+                            objective_label
+                        ),
+                        format!(
+                            "先{}，次日立刻{}。",
+                            primary_action.action_label, secondary_action.action_label
+                        ),
+                    )
+                } else if !preview.follow_up_best_target_label.is_empty() {
+                    (
+                        format!(
+                            "明天：若补给仍在安全线，继续接到 {}。",
+                            preview.follow_up_best_target_label
+                        ),
+                        format!(
+                            "后天：以 {} 为跳板，评估是否继续压向{}。",
+                            preview.follow_up_best_target_label, objective_label
+                        ),
+                        format!(
+                            "先{}，次日再接{}。",
+                            primary_action.target_label, preview.follow_up_best_target_label
+                        ),
+                    )
+                } else {
+                    (
+                        format!(
+                            "明天：在 {} 先整补，不要急着连走。",
+                            primary_action.target_label
+                        ),
+                        format!("后天：整补完后，再按阶段目标接向{}。", objective_label),
+                        format!("先{}，次日优先整补。", primary_action.target_label),
+                    )
+                }
+            }
+            "rest" => {
+                if let Some(target) =
+                    self.best_adjacent_target_for_objective(location, objective_target_role)
+                {
+                    (
+                        format!("明天：恢复后优先转到 {}。", target.target_label),
+                        format!(
+                            "后天：以 {} 为跳板，继续把路线接向{}。",
+                            target.target_label, objective_label
+                        ),
+                        format!("先休整，明天再转到{}。", target.target_label),
+                    )
+                } else {
+                    (
+                        format!(
+                            "明天：若状态回稳，再执行“{}”。",
+                            secondary_action.action_label
+                        ),
+                        format!("后天：继续按阶段目标寻找{}。", objective_label),
+                        format!("先休整，再按“{}”推进。", secondary_action.action_label),
+                    )
+                }
+            }
+            "requisition_supplies" => {
+                if posture_id == "critical_recovery" || supply < SUPPLY_OK_THRESHOLD {
+                    if let Some(target) =
+                        self.best_adjacent_target_for_objective(location, objective_target_role)
+                    {
+                        (
+                            "明天：休整，把刚补回来的库存和体力一起拉回安全线。".to_string(),
+                            format!(
+                                "后天：恢复后再转到 {}，把路线接向{}。",
+                                target.target_label, objective_label
+                            ),
+                            format!(
+                                "先征用沿线仓储止血，次日先休整，再转到{}。",
+                                target.target_label
+                            ),
+                        )
+                    } else {
+                        (
+                            "明天：休整，把库存和体力拉回安全线。".to_string(),
+                            format!("后天：恢复后再按阶段目标寻找{}。", objective_label),
+                            "先征用沿线仓储止血，次日先休整。".to_string(),
+                        )
+                    }
+                } else if let Some(target) =
+                    self.best_adjacent_target_for_objective(location, objective_target_role)
+                {
+                    (
+                        format!(
+                            "明天：止血后优先转到 {}，把库存换成更稳的落点。",
+                            target.target_label
+                        ),
+                        format!(
+                            "后天：在 {} 恢复或继续向{}铺路。",
+                            target.target_label, objective_label
+                        ),
+                        format!("先征用沿线仓储止血，明天再转到{}。", target.target_label),
+                    )
+                } else {
+                    (
+                        "明天：补给回稳后优先休整，不要立刻继续硬顶。".to_string(),
+                        format!("后天：恢复后再按阶段目标寻找{}。", objective_label),
+                        "先征用沿线仓储止血，次日先休整。".to_string(),
+                    )
+                }
+            }
+            "stabilize_supply_lines" => {
+                if let Some(target) =
+                    self.best_adjacent_target_for_objective(location, objective_target_role)
+                {
+                    (
+                        format!("明天：运输线稳住后，优先接到 {}。", target.target_label),
+                        format!(
+                            "后天：若窗口还在，从 {} 继续把路线接向{}。",
+                            target.target_label, objective_label
+                        ),
+                        format!("先整顿驿站运输，明天接到{}。", target.target_label),
+                    )
+                } else {
+                    (
+                        format!("明天：保线后再执行“{}”。", secondary_action.action_label),
+                        format!("后天：继续按阶段目标接向{}。", objective_label),
+                        format!(
+                            "先整顿驿站运输，再按“{}”推进。",
+                            secondary_action.action_label
+                        ),
+                    )
+                }
+            }
+            "establish_forward_depot" => (
+                "明天：利用粮秣站窗口先恢复补给和疲劳，不要急着立刻连走。".to_string(),
+                format!(
+                    "后天：把当前节点当跳板，再决定是否压向{}。",
+                    objective_label
+                ),
+                "先铺前沿粮秣站，接着吃满两天整补窗口。".to_string(),
+            ),
+            _ => (
+                format!("明天：执行“{}”。", secondary_action.action_label),
+                format!("后天：继续按阶段目标接向{}。", objective_label),
+                format!(
+                    "先{}，再执行“{}”。",
+                    primary_action.action_label, secondary_action.action_label
+                ),
+            ),
+        };
+
+        TempoPlan {
+            title,
+            detail: format!("{}\n{}\n{}", today_line, tomorrow_line, day_three_line),
+            short,
         }
     }
 
@@ -2870,6 +3073,37 @@ mod tests {
         assert!(
             !brief.primary_action_target_label.is_empty(),
             "行军建议应带可读节点名"
+        );
+    }
+
+    #[test]
+    fn 三日后勤节奏会给出完整安排() {
+        let engine = GameEngine::new();
+        let brief = engine.logistics_brief();
+
+        assert!(brief.tempo_plan_detail.contains("今天："));
+        assert!(brief.tempo_plan_detail.contains("明天："));
+        assert!(brief.tempo_plan_detail.contains("后天："));
+        assert!(
+            !brief.tempo_plan_short.is_empty(),
+            "节奏计划应给出可复用的短摘要"
+        );
+    }
+
+    #[test]
+    fn 低补给时三日节奏会先止血再整补() {
+        let mut engine = GameEngine::new();
+        engine.army.supply = 34.0;
+
+        let brief = engine.logistics_brief();
+
+        assert!(
+            brief.tempo_plan_detail.contains("今天：征用沿线仓储"),
+            "低补给节奏计划第1天应先止血"
+        );
+        assert!(
+            brief.tempo_plan_detail.contains("明天：休整"),
+            "低补给节奏计划第2天应优先休整"
         );
     }
 
