@@ -397,3 +397,22 @@
 - 本轮将与 GDScript 改动和当前态文档一起提交并推送到 `auto/gameplay_update`。
 下一步:
 - 继续把后勤产品化从“会提示你怎么走”推进到“会提示你该打哪张牌、何时打、为什么输了”，优先补政策级失败复盘和更明确的日内教学步骤。
+
+## 2026-03-24 第 24 轮
+分支: `auto/gameplay_update`
+范围: 把补给三张牌的即时建议和政策级失败复盘接进现有 UI
+变更:
+- `sidebar_controller.gd` 现在会给 `requisition_supplies`、`stabilize_supply_lines`、`establish_forward_depot` 和 `rest` 输出“优先 / 可考虑 / 暂缓”的即时建议，不再只解释这张牌做什么，而是直接说明当前该不该打。
+- 这层建议会读取当前补给、补给窗口、后勤态势、阶段运营目标和已有粮秣站状态，把“止血”“保线”“铺跳板”拆成不同场景。
+- `dialogs_controller.gd` 的终局复盘现在会把失败归因落到具体补给牌和节奏错误，例如征用仓储打晚、运输线该保没保、该铺粮秣站时继续赌前线点。
+- 这一轮没有改 Rust 规则层，而是把已有的后勤状态真正翻译成玩家可执行的政策判断。
+验证:
+- Windows Godot 无头主项目已通过。
+- Windows Godot smoke scene 已通过。
+- `git diff --check` 已通过。
+- 本轮没有改 Rust 代码，因此没有重跑 `cargo test`；当前最近一次 Rust 基线仍是 Windows `191/191`。
+- 本轮未运行 Linux / WSL 侧测试。
+提交/推送:
+- 本轮将与 GDScript 改动和当前态文档一起提交并推送到 `auto/gameplay_update`。
+下一步:
+- 继续把后勤产品化从“会告诉你该打哪张牌”推进到“会告诉你为什么这一步输、下一局该如何修正”，优先补更强的失败复盘结构和日内步骤教学。

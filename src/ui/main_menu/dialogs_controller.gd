@@ -235,8 +235,37 @@ func _build_game_over_review(outcome: String, game_over_state: Dictionary, info:
 		lines.append(logistics_runway_label)
 	if location_label != "":
 		lines.append("最后位置在 %s。" % location_label)
+	lines.append_array(_build_logistics_policy_review(game_over_state))
 
 	return "\n".join(lines)
+
+
+func _build_logistics_policy_review(game_over_state: Dictionary) -> Array[String]:
+	var lines: Array[String] = []
+	var supply := float(game_over_state[STATE_KEY_SUPPLY])
+	var logistics_posture_label := String(game_over_state.get(STATE_KEY_LOGISTICS_POSTURE_LABEL, "")).strip_edges()
+	var logistics_objective_label := String(game_over_state.get(STATE_KEY_LOGISTICS_OBJECTIVE_LABEL, "")).strip_edges()
+	var logistics_runway_label := String(game_over_state.get(STATE_KEY_LOGISTICS_RUNWAY_LABEL, "")).strip_edges()
+
+	if supply < 45.0:
+		lines.append("政策复盘：补给跌破 45 还在继续硬顶，通常说明「征用沿线仓储」打得太晚，或该先休整却继续赶路。")
+	elif supply < 60.0:
+		lines.append("政策复盘：补给已经开始承压时，更早打出「整顿驿站运输」能让后面两三天的推进稳很多。")
+
+	if logistics_posture_label == "运输线拉长":
+		lines.append("政策复盘：终局还处在“运输线拉长”，说明你没有及时用「整顿驿站运输」或在中继节点建立「前沿粮秣站」。")
+	elif logistics_posture_label == "前线消耗区":
+		lines.append("政策复盘：你把部队长期停在低容量前线点。更稳的打法是先接上整补点，再决定要不要为前线付补给代价。")
+
+	if logistics_objective_label.find("区域整补点") >= 0:
+		lines.append("政策复盘：阶段目标还停在“区域整补点”，说明路线没有尽早接上中继仓储；这时比继续赌前线更该优先铺站或整顿运输。")
+	elif logistics_objective_label.find("决定性前线点") >= 0 and supply < 55.0:
+		lines.append("政策复盘：终盘可以为决定性前线点付代价，但前提是先把库存和跳板备好；否则会在最后几步把补给压垮。")
+
+	if logistics_runway_label.find("惩罚区") >= 0:
+		lines.append("政策复盘：最后的补给窗口已经在惩罚区，这通常不是单回合失误，而是连续几步都没把补给牌和整补日排进节奏。 ")
+
+	return lines
 
 
 ## 允许结局文案按终局状态选择不同变体；未提供 variants 时回退到单条文案。

@@ -104,7 +104,10 @@ func _build_rest_preview_text() -> String:
 		guidance = "当前补给已经偏低，单纯休整的恢复会打折。若还要继续推进，先补补给更稳。"
 	elif GameState.current_day <= 10:
 		guidance = "前 10 天更适合把休整当作节奏控制，而不是长期停顿。看下一站仓储再决定是否继续赶路。"
-	return "休整 · 养精蓄锐\n\n让军队获得喘息之机，为下一步行动积蓄力量。\n%s" % guidance
+	return "休整 · 养精蓄锐\n\n让军队获得喘息之机，为下一步行动积蓄力量。\n%s\n%s" % [
+		guidance,
+		_build_policy_recommendation_line("rest")
+	]
 
 
 func _build_requisition_preview_text(policy_meta: Dictionary) -> String:
@@ -119,11 +122,12 @@ func _build_requisition_preview_text(policy_meta: Dictionary) -> String:
 		guidance = "当前补给还顶得住。更适合把它留到前线连续推进、库存跌到 45-60 之间时再用。"
 	if GameState.current_day <= 10:
 		guidance += "\n前 10 天不要太早把这张牌交掉，除非你已经决定连续北上。"
-	return "▷ %s\n\n%s\n\n当前补给 %.0f。\n%s" % [
+	return "▷ %s\n\n%s\n\n当前补给 %.0f。\n%s\n%s" % [
 		policy_name,
 		summary,
 		GameState.supply,
-		guidance
+		guidance,
+		_build_policy_recommendation_line("requisition_supplies")
 	]
 
 
@@ -137,11 +141,12 @@ func _build_supply_line_preview_text(policy_meta: Dictionary) -> String:
 		guidance = "适用：前 10 天连续北上前先把运输线整顿好。它更像是为了连续两三天推进提前铺路。"
 	else:
 		guidance = "适用：你准备连续推进、又不想每次都靠征用仓储硬撑时。它解决的是补给线效率，不是一次性大回补。"
-	return "▷ %s\n\n%s\n\n当前补给 %.0f。\n%s" % [
+	return "▷ %s\n\n%s\n\n当前补给 %.0f。\n%s\n%s" % [
 		policy_name,
 		summary,
 		GameState.supply,
-		guidance
+		guidance,
+		_build_policy_recommendation_line("stabilize_supply_lines")
 	]
 
 
@@ -155,12 +160,54 @@ func _build_forward_depot_preview_text(policy_meta: Dictionary) -> String:
 		guidance = "当前补给已进危险区。若马上就要断供，通常先用征用仓储止血；粮秣站更适合在还能站稳时提前铺设。"
 	elif GameState.current_day <= 10:
 		guidance = "前 10 天若准备连续北上，这张牌适合放在中等容量节点，把它变成临时整补跳板。"
-	return "▷ %s\n\n%s\n\n当前补给 %.0f。\n%s" % [
+	return "▷ %s\n\n%s\n\n当前补给 %.0f。\n%s\n%s" % [
 		policy_name,
 		summary,
 		GameState.supply,
-		guidance
+		guidance,
+		_build_policy_recommendation_line("establish_forward_depot")
 	]
+
+
+func _build_policy_recommendation_line(policy_id: String) -> String:
+	var recommendation := _policy_recommendation(policy_id)
+	var label := String(recommendation.get("label", "可考虑"))
+	var reason := String(recommendation.get("reason", "当前没有额外提示。"))
+	return "当前建议：%s。%s" % [label, reason]
+
+
+func _policy_recommendation(policy_id: String) -> Dictionary:
+	match policy_id:
+		"rest":
+			if GameState.supply < 45.0:
+				return {"label": "暂缓", "reason": "补给已跌进危险区，先止血再休整更稳。"}
+			if GameState.logistics_runway_days == 1 or GameState.avg_fatigue >= 55.0:
+				return {"label": "优先", "reason": "再硬顶一天就可能掉进惩罚区，先把疲劳和节奏拉回来。"}
+			return {"label": "可考虑", "reason": "它适合在跳板节点上重置节奏，但不该取代补给动作。 "}
+		"requisition_supplies":
+			if GameState.supply < 45.0 or GameState.logistics_runway_days == 0:
+				return {"label": "优先", "reason": "现在最缺的是立刻止血；再拖一回合，战斗和休整都会吃惩罚。"}
+			if GameState.supply < 60.0 and GameState.logistics_objective_target_role == "frontline_outpost":
+				return {"label": "优先", "reason": "你还要为前线点付补给代价，这张牌应该留给这种硬顶时刻。"}
+			return {"label": "暂缓", "reason": "库存还没逼到危险区，这张牌更适合留作止血按钮。"}
+		"stabilize_supply_lines":
+			if GameState.logistics_posture_label == "运输线拉长":
+				return {"label": "优先", "reason": "你现在输在运输线，不是单次库存不足；先把线效率提起来。"}
+			if GameState.current_day <= 10 and GameState.supply >= 45.0:
+				return {"label": "优先", "reason": "前 10 天若准备连续北上，先保线比事后补洞更稳。"}
+			if GameState.supply < 45.0:
+				return {"label": "暂缓", "reason": "已经跌进危险区时，它通常不如征用仓储直接。"}
+			return {"label": "可考虑", "reason": "它适合为接下来两三天连续推进提前铺路。"}
+		"establish_forward_depot":
+			if GameState.forward_depot_days > 0 and GameState.forward_depot_location == GameState.napoleon_location:
+				return {"label": "暂缓", "reason": "当前驻地已有粮秣站，重复铺站收益低。"}
+			if GameState.logistics_objective_target_role == "regional_depot" and GameState.current_day <= 10:
+				return {"label": "优先", "reason": "你正需要把中容量节点变成整补跳板，这张牌最契合当前目标。"}
+			if GameState.supply < 45.0:
+				return {"label": "可考虑", "reason": "它能帮下一两天，但立刻止血仍更依赖征用仓储。"}
+			return {"label": "可考虑", "reason": "当你准备在当前节点停两三天时，它比单纯赶路更稳。"}
+		_:
+			return {"label": "可考虑", "reason": "当前没有额外提示。"}
 
 func append_narrative(entry: String, color: Color = CentJoursTheme.COLOR["text_primary"]) -> void:
 	_narrative_preview_text = ""
