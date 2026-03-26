@@ -187,3 +187,19 @@
 - 本轮将与 workflow 和文档同步一起提交并推送到 `auto/gameplay_update`。
 下一步:
 - 继续按当前 `P0` 推进：观察这次 workflow 收紧后的下一条代码提交 run，并继续把弹窗失败恢复、结局和设置链路压进 `GdUnit4`。
+
+## 2026-03-27 第 40 轮
+分支: `auto/gameplay_update`
+范围: 收口存读档槽位标签 UX，并把这条边界继续压进 `GdUnit4`
+变更:
+- `save_manager.gd` 现已统一正规化存档元信息中的 `outcome`：`null` 或空值会按 `in_progress` 处理，槽位标签不再显示 `<null>`。
+- 槽位按钮文案现在会把进行中状态显示为“进行中”，并为常见结局提供玩家可读标签。
+- `tests/godot/main_menu_flow_test.gd` 新增槽位标签文案回归，Godot 前端 `GdUnit4` 基线从 `10/10` 提升到 `11/11`。
+验证:
+- Windows `tools\\run_gdunit_windows.cmd` 通过，`GdUnit4 11/11`。
+- Windows Godot 无头主项目通过。
+- 本轮未运行 Linux / WSL 侧测试。
+提交/推送:
+- 本轮将与存读档 UX 修复、回归测试和文档同步一起提交并推送到 `auto/gameplay_update`。
+下一步:
+- 继续按当前 `P0` 推进：观察 `cdcc8e6` 之后的新 CI run 是否按预期取消旧 run，并继续把弹窗失败恢复和更多主菜单边界状态压进 `GdUnit4`。

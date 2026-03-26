@@ -97,7 +97,7 @@ static func get_save_meta(slot_id: int = 1) -> Dictionary:
 	return {
 		"slot_id": slot_id,
 		"day":     data.get("day", 0),
-		"outcome": data.get("outcome", "in_progress")
+		"outcome": _normalize_outcome(data.get("outcome", "in_progress"))
 	}
 
 static func list_save_slots() -> Array[Dictionary]:
@@ -105,11 +105,13 @@ static func list_save_slots() -> Array[Dictionary]:
 	for slot_id in range(1, SLOT_COUNT + 1):
 		var meta := get_save_meta(slot_id)
 		var exists := not meta.is_empty()
+		var outcome := _normalize_outcome(meta.get("outcome", "in_progress"))
 		slots.append({
 			"slot_id": slot_id,
 			"exists": exists,
 			"day": int(meta.get("day", 0)),
-			"outcome": str(meta.get("outcome", "in_progress")),
+			"outcome": outcome,
+			"outcome_label": _outcome_label(outcome),
 			"label": _slot_label(slot_id, meta)
 		})
 	return slots
@@ -141,5 +143,28 @@ static func _slot_label(slot_id: int, meta: Dictionary) -> String:
 	return "槽位 %d · Day %d · %s" % [
 		slot_id,
 		int(meta.get("day", 0)),
-		str(meta.get("outcome", "in_progress"))
+		_outcome_label(_normalize_outcome(meta.get("outcome", "in_progress")))
 	]
+
+static func _outcome_label(outcome: String) -> String:
+	match outcome:
+		"in_progress":
+			return "进行中"
+		"napoleon_victory":
+			return "拿破仑胜利"
+		"waterloo_historical":
+			return "滑铁卢失败"
+		"political_collapse":
+			return "政治崩溃"
+		"military_annihilation":
+			return "军事崩溃"
+		_:
+			return outcome.replace("_", " ")
+
+static func _normalize_outcome(value: Variant) -> String:
+	if value == null:
+		return "in_progress"
+	var outcome := str(value).strip_edges()
+	if outcome == "" or outcome == "<null>":
+		return "in_progress"
+	return outcome

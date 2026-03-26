@@ -114,6 +114,24 @@ func test_load_slot_picker_reflects_slot_availability() -> void:
 	assert_bool((load_popup.find_child("LoadSlotButton3", true, false) as Button).disabled).is_true()
 
 
+func test_save_slot_labels_show_readable_outcome_text() -> void:
+	var runner := await _load_main_menu()
+	var scene := runner.scene()
+
+	scene.call("_save_to_slot", 2, null)
+	await await_idle_frame()
+	scene.call("_on_load_pressed")
+	await await_idle_frame()
+
+	var load_popup := scene.find_child("LoadSlotPickerPopup", true, false) as PopupPanel
+	var slot_button := load_popup.find_child("LoadSlotButton2", true, false) as Button
+	assert_object(load_popup).is_not_null()
+	assert_object(slot_button).is_not_null()
+	assert_str(slot_button.text).contains("Day 1")
+	assert_str(slot_button.text).contains("进行中")
+	assert_bool(slot_button.text.contains("in_progress")).is_false()
+
+
 func test_new_game_dialog_restarts_after_confirmation() -> void:
 	var runner := await _load_main_menu()
 	var scene := runner.scene()

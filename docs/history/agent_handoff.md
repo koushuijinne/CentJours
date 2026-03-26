@@ -15,7 +15,7 @@
 - Rust 规则层最近一次完整回归基线是 Windows `211/211`；自动工作流后续不再把 Linux / WSL `cargo test` 当成默认验证路径。
 - 当前核心数据基线：`15` 名角色、`41` 个地图节点、`58` 条历史事件，其中 `major 16 / normal 35 / minor 7`。
 - 当前活跃开发分支为 `auto/gameplay_update`。
-- Godot 前端自动回归已扩到 `GdUnit4 10/10`，当前 Windows 基线包含存读档槽位、叙事面板、区域任务显示、地图交互、Windows Godot 主项目无头和 Windows smoke scene；Windows CI workflow 与本地脚本入口也已写入仓库。
+- Godot 前端自动回归已扩到 `GdUnit4 11/11`，当前 Windows 基线包含存读档槽位、槽位标签文案、叙事面板、区域任务显示、地图交互、Windows Godot 主项目无头和 Windows smoke scene；Windows CI workflow 与本地脚本入口也已写入仓库。
 - Save / Load 已进入 `v3` 兼容路径，旧存档会把 `fontainebleau_eve` 迁移为正式 ID `tuileries_eve`，前沿粮秣站状态也会随存档读写。
 - 历史事件正文、`historical_note` 与玩家行动结算日志都已接入侧栏日志链路。
 - 动态补给已接进核心循环：补给值会进入存档、`get_state()`、主菜单顶栏、休整恢复、战斗补给惩罚和每日行动结算日志。
@@ -43,6 +43,7 @@
 - 地图现在支持 `MapScroll + 滚轮缩放 + 右键复位`，并拆成“hover 小预览 + click 锁定详情”两层；多槽存读档与顶栏 `新局` 入口也已接通。
 - `docs/bugs/bugs_check.md` 的第二轮问题已进入收口：叙事面板超屏、hover 与锁定详情位置跳变、存读档弹窗报错，均按 ADR-010 的规则继续处理。
 - 这轮又补了一层前端护栏：`Current Situation` 已开始显示区域任务；`GdUnit4` 已锁住多槽存读档可用性、叙事日志滚动链和区域任务文本展示；`save_manager.gd` 里槽位标签的字符串格式化 bug 已修掉。
+- 存读档槽位标签现在会把进行中的 `null / in_progress` 状态统一显示成玩家可读的“进行中”，并已由 `GdUnit4` 锁住。
 - 文档目录已重构为 `docs/plans`、`docs/rules`、`docs/history`、`docs/decisions`，开发历史已从 live 计划文档中抽离到 `docs/history/development_logs/`。
 - 前端已拆出 `map / layout / tray / sidebar / dialogs` 控制器，但发布级视觉和交互收口仍未完成。
 - Windows 原生 Godot 与 Windows 无头仍是默认验证路径；不要把 Linux / WSL Godot 无头结果当成默认结论。
