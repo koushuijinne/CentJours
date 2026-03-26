@@ -637,6 +637,34 @@ mod gdext_bindings {
                 logistics.regional_pressure_short.as_str(),
             );
             let _ = d.insert(
+                "logistics_regional_task_id",
+                logistics.regional_task_id.as_str(),
+            );
+            let _ = d.insert(
+                "logistics_regional_task_label",
+                logistics.regional_task_label.as_str(),
+            );
+            let _ = d.insert(
+                "logistics_regional_task_title",
+                logistics.regional_task_title.as_str(),
+            );
+            let _ = d.insert(
+                "logistics_regional_task_detail",
+                logistics.regional_task_detail.as_str(),
+            );
+            let _ = d.insert(
+                "logistics_regional_task_short",
+                logistics.regional_task_short.as_str(),
+            );
+            let _ = d.insert(
+                "logistics_regional_task_progress_label",
+                logistics.regional_task_progress_label.as_str(),
+            );
+            let _ = d.insert(
+                "logistics_regional_task_reward_label",
+                logistics.regional_task_reward_label.as_str(),
+            );
+            let _ = d.insert(
                 "logistics_runway_days",
                 e.current_supply_runway_days()
                     .map(|days| days as i64)

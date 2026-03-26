@@ -64,6 +64,13 @@ var logistics_regional_pressure_label: String = ""
 var logistics_regional_pressure_title: String = ""
 var logistics_regional_pressure_detail: String = ""
 var logistics_regional_pressure_short: String = ""
+var logistics_regional_task_id: String = ""
+var logistics_regional_task_label: String = ""
+var logistics_regional_task_title: String = ""
+var logistics_regional_task_detail: String = ""
+var logistics_regional_task_short: String = ""
+var logistics_regional_task_progress_label: String = ""
+var logistics_regional_task_reward_label: String = ""
 var logistics_runway_days: int = -1
 var logistics_runway_label: String = ""
 
