@@ -268,7 +268,6 @@ func _sync_state_from_engine() -> void:
 	var state := engine.get_state()
 
 	var old_legit: float = GameState.legitimacy
-	var old_rn: float    = GameState.rouge_noir_index
 
 	GameState.current_day      = engine.current_day()
 	GameState.legitimacy       = float(state.get("legitimacy", GameState.legitimacy))

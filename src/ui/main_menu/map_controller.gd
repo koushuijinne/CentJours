@@ -839,11 +839,11 @@ func _update_march_target(node_id: String) -> void:
 	# 当前位置不可作为目标
 	if node_id == GameState.napoleon_location:
 		_pending_march_target = ""
-		var location_label := MainMenuFormattersLib.napoleon_location_label(
+		var current_location_label := MainMenuFormattersLib.napoleon_location_label(
 			_map_nodes, GameState.napoleon_location
 		)
 		march_feedback.emit(
-			"行军部署\n\n当前已驻扎在 %s，请选择一个相邻节点。" % location_label,
+			"行军部署\n\n当前已驻扎在 %s，请选择一个相邻节点。" % current_location_label,
 			CentJoursTheme.COLOR["text_secondary"]
 		)
 		return
@@ -851,13 +851,13 @@ func _update_march_target(node_id: String) -> void:
 	if not GameState.available_march_targets.has(node_id):
 		_pending_march_target = ""
 		var node_info: Dictionary = get_map_node(node_id)
-		var location_label := MainMenuFormattersLib.napoleon_location_label(
+		var current_location_label := MainMenuFormattersLib.napoleon_location_label(
 			_map_nodes, GameState.napoleon_location
 		)
 		march_feedback.emit(
 			"行军部署\n\n%s 目前不与 %s 直接相邻，无法在一天内抵达。" % [
 				String(node_info.get("name_fr", node_id)),
-				location_label
+				current_location_label
 			],
 			CentJoursTheme.COLOR["text_secondary"]
 		)

@@ -237,3 +237,20 @@
 - 本轮将与结局弹窗测试锚点、`GdUnit4` 回归和文档同步一起提交并推送到 `auto/gameplay_update`。
 下一步:
 - 继续按当前 `P0` 推进：把设置链路和更多失败恢复边界继续压进 `GdUnit4`，并继续观察最新 Windows CI run。
+
+## 2026-03-27 第 43 轮
+分支: `auto/gameplay_update`
+范围: 清理 `GdUnit4` 验证噪音，提升 Windows 回归日志可读性
+变更:
+- `dialogs_controller.gd` 把战斗兵力默认值改成显式浮点计算，移除整数除法 warning。
+- `map_controller.gd` 修正两处局部变量遮蔽，`main_menu.gd`、`rn_slider.gd`、`turn_manager.gd` 移除几处无用变量，减少 GDScript 重载时的无效警告。
+- 本轮不改测试用例数量，目标是让现有 `GdUnit4` / smoke 输出更接近“只剩真正问题”。
+验证:
+- Windows `tools\\run_gdunit_windows.cmd` 通过，`GdUnit4 18/18`。
+- Windows Godot 无头主项目通过。
+- Windows Godot smoke scene 通过。
+- 本轮未运行 Linux / WSL 侧测试。
+提交/推送:
+- 本轮将与 warning 清理和文档同步一起提交并推送到 `auto/gameplay_update`。
+下一步:
+- 继续按当前 `P0` 推进：把设置链路和更多失败恢复边界继续压进 `GdUnit4`，并继续观察最新 Windows CI run。

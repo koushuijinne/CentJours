@@ -425,7 +425,7 @@ func show_battle_popup(state: Dictionary = {}) -> void:
 	troop_slider.min_value = 1000
 	troop_slider.max_value = max(total_troops, 1000)
 	troop_slider.step = 1000
-	troop_slider.value = total_troops / 2
+	troop_slider.value = max(float(total_troops) / 2.0, troop_slider.min_value)
 	vbox.add_child(troop_slider)
 
 	var troop_value := Label.new()

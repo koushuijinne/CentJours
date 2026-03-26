@@ -19,7 +19,6 @@ var _fill_right: ColorRect   # Noir 方向
 var _indicator:  ColorRect   # 中央指示点
 var _label_rouge: Label
 var _label_noir:  Label
-var _label_value: Label
 
 var _current_value: float = 0.0
 var _target_value: float = 0.0
