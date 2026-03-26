@@ -18,7 +18,7 @@
 - “进入下一轮”适用于每一轮。不是第一轮结束后切一次，而是每轮结束后都必须立刻进入下一轮。
 - 压缩摘要、阶段性汇报、提交 / 推送结果和一次回复都不是收尾。压缩摘要只用于防止上下文丢失，输出后必须继续。
 - 每轮先定义“完整功能包”，不要把一句文案、一个 tooltip、一个色值或一段孤立文档补丁当成一整轮。
-- 每轮至少要实质完成一个当前 `P0`；若一轮打包多个子任务，其中至少一个必须直接推进 `docs/plans/development_plan.md` 的当前 `P0`。
+- 每轮至少要实质完成一个当前 `P0`；若一轮打包多个子任务，其中至少一个必须直接推进 `docs/plans/dev_plan.md` 的当前 `P0`。
 - 除非在修主链路阻塞，否则一轮至少同时覆盖四层中的三层：玩法 / 数据，UI / 教学反馈，测试 / 验证，文档 / 交接 / 开发日志。
 - 如果候选任务过小，先把相邻子任务打包成更大的垂直切片，再开始这一轮。
 
@@ -56,13 +56,13 @@
 1. 读取最小必要上下文
    - 必读：
      - `docs/rules/development_principles.md`
-     - `docs/plans/development_plan.md`
+     - `docs/plans/dev_plan.md`
      - `docs/history/agent_handoff.md`
    - 按任务补读：相关 ADR、历史审阅、目标模块代码
 2. 建立真实基线
    - 看当前分支、工作区改动、测试基线、关键阻塞
 3. 选择本轮“完整功能包”
-   - 先看 `docs/plans/development_plan.md` 当前 `P0 / P1`
+   - 先看 `docs/plans/dev_plan.md` 当前 `P0 / P1`
    - 再看哪组相邻任务能在本轮形成可验证闭环
 4. 必要时拆分并行
    - 能明确拆边界时再开子 agent 或并行只读分析
@@ -73,7 +73,7 @@
    - 没有对应 Windows 验证手段时，明确记录“未验证”，不要回退去跑 Linux / WSL 测试补位
    - UI 改动走 Windows 原生验证
 7. 同步文档
-   - 更新 `docs/plans/development_plan.md`
+   - 更新 `docs/plans/dev_plan.md`
    - 更新 `docs/history/agent_handoff.md`
    - 追加轮次记录到 `docs/history/development_logs/`
    - 仅在规则本身变化时更新本文件
@@ -92,7 +92,7 @@
 ## 4. 默认优先级重排
 
 1. 阻塞主循环、编译、测试或验证链路的问题
-2. `docs/plans/development_plan.md` 当前 `P0` 项
+2. `docs/plans/dev_plan.md` 当前 `P0` 项
 3. 能把半成品推进成可演示状态的完整切片
 4. 玩家可直接感知的高收益 UI / 教学 / 体验问题
 5. 会明显放大返工成本的工程债

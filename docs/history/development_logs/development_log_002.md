@@ -39,3 +39,21 @@
 - 本轮将与代码和文档一起提交并推送到 `auto/gameplay_update`。
 下一步:
 - 继续沿 ADR-010 收口高风险入口，优先补真实交互验证和主菜单剩余耦合点。
+
+## 2026-03-24 第 31 轮
+分支: `auto/gameplay_update`
+范围: 完成测试底座第一轮，补齐 Rust 集成测试与属性测试
+变更:
+- `cent-jours-core/tests/` 已正式建立，新增 `save_load_flow.rs`、`action_resolution_flow.rs`、`march_preview_contract.rs` 三个集成测试入口。
+- `Cargo.toml` 新增 `proptest`，第一批属性测试已覆盖旧事件 ID 迁移去重、补给结果边界、合法相邻行军的士气 / 疲劳边界。
+- 存档迁移、政策失败、行军预判与结算一致性等跨模块行为，已从 `engine/state.rs` 内部单测外提到公开接口级测试。
+- 修复了一处现有回归：`整顿驿站运输会暂时提高补给线效率` 这条测试此前会被区域任务奖励串扰，现在已隔离到纯政策时长断言。
+- `dev_plan`、`agent_handoff`、`agent_session_rules` 已同步到新基线：Rust 第一批正式集成测试和属性测试已完成，当前 `P0` 转为 Godot `GdUnit4` 与 Windows CI。
+验证:
+- Windows `cargo test` 通过。
+- 当前 Windows Rust 测试基线提升到 `211/211`。
+- 本轮没有运行 Linux / WSL 侧测试。
+提交/推送:
+- 本轮将与文档同步一起提交并推送到 `auto/gameplay_update`。
+下一步:
+- 直接进入第 2 轮：接入 `GdUnit4`，建立主菜单、地图交互、存读档和弹窗状态流的第一批 Godot 自动回归。

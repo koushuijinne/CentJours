@@ -9,7 +9,7 @@
 ```text
 先接手这个项目。请先只阅读以下文件，再开始判断当前状态：
 - docs/rules/development_principles.md
-- docs/plans/development_plan.md
+- docs/plans/dev_plan.md
 - docs/history/agent_handoff.md
 - docs/decisions/ADR-008-historical-events-expansion.md
 - docs/history/historical_event_review.md
@@ -32,7 +32,7 @@
 ```text
 先接手这个项目，并显式启用自动工作流。请先只阅读以下文件：
 - docs/rules/development_principles.md
-- docs/plans/development_plan.md
+- docs/plans/dev_plan.md
 - docs/history/agent_handoff.md
 - docs/rules/optional/agent_autonomous_workflow.md
 - docs/decisions/ADR-008-historical-events-expansion.md
@@ -51,7 +51,7 @@
 ```text
 继续接手主菜单开发线。先阅读：
 - docs/rules/development_principles.md
-- docs/plans/development_plan.md
+- docs/plans/dev_plan.md
 - docs/history/agent_handoff.md
 - src/ui/main_menu.gd
 - src/ui/main_menu/layout_controller.gd
@@ -78,7 +78,7 @@
 - 当前分支
 - `src/ui/main_menu.gd` 当前行数
 - `docs/history/agent_handoff.md` 里的当前重点
-- `docs/plans/development_plan.md` 是否与代码状态一致
+- `docs/plans/dev_plan.md` 是否与代码状态一致
 
 然后输出：
 1. 当前代码状态是否与交接文档一致。

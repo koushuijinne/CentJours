@@ -276,7 +276,7 @@
 范围: 收紧自动工作流验证边界，禁止 Linux / WSL 侧测试补位
 变更:
 - `agent_autonomous_workflow.md` 新增最高优先级规则：自动工作流不再运行 Linux / WSL 侧测试，不再把 Linux `cargo test` 或 Linux Godot 无头当成默认验证手段。
-- `agent_handoff.md` 和 `development_plan.md` 的验证章节同步改口径：Windows 验证不完整时，要明确写“未验证”，不能再用 Linux 结果补位。
+- `agent_handoff.md` 和 `dev_plan.md` 的验证章节同步改口径：Windows 验证不完整时，要明确写“未验证”，不能再用 Linux 结果补位。
 - 这一轮把验证策略从“Windows 优先”收紧为“Windows 专用”，避免后续自动循环反复回到错误平台。
 验证:
 - 本轮是规则文档收紧，没有新增运行时代码变更。

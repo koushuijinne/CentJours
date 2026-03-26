@@ -14,7 +14,7 @@
 默认接手顺序：
 
 1. [docs/rules/development_principles.md](/mnt/e/projects/CentJours/docs/rules/development_principles.md)
-2. [docs/plans/development_plan.md](/mnt/e/projects/CentJours/docs/plans/development_plan.md)
+2. [docs/plans/dev_plan.md](/mnt/e/projects/CentJours/docs/plans/dev_plan.md)
 3. [docs/history/agent_handoff.md](/mnt/e/projects/CentJours/docs/history/agent_handoff.md)
 4. 相关 ADR 与任务相关代码
 

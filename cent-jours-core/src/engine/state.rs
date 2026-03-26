@@ -161,6 +161,13 @@ pub struct LogisticsBrief {
     pub regional_pressure_title: String,
     pub regional_pressure_detail: String,
     pub regional_pressure_short: String,
+    pub regional_task_id: String,
+    pub regional_task_label: String,
+    pub regional_task_title: String,
+    pub regional_task_detail: String,
+    pub regional_task_short: String,
+    pub regional_task_progress_label: String,
+    pub regional_task_reward_label: String,
 }
 
 #[derive(Debug, Clone)]
@@ -238,6 +245,31 @@ struct RegionalPressure {
     title: String,
     detail: String,
     short: String,
+}
+
+#[derive(Debug, Clone)]
+struct RegionalTask {
+    id: String,
+    label: String,
+    title: String,
+    detail: String,
+    short: String,
+    progress_label: String,
+    reward_label: String,
+}
+
+#[derive(Debug, Clone)]
+struct RegionalTaskPlan {
+    id: &'static str,
+    label: &'static str,
+    title: String,
+    detail: String,
+    short: String,
+    progress_target: u8,
+    reward_label: String,
+    condition_met: bool,
+    completion_note: String,
+    reset_note: String,
 }
 
 // ── 全局游戏状态 ──────────────────────────────────────
@@ -350,6 +382,12 @@ pub struct SaveState {
     pub forward_depot_capacity_bonus: u32,
     #[serde(default = "default_forward_depot_days")]
     pub forward_depot_days: u8,
+    #[serde(default = "default_regional_task_id")]
+    pub regional_task_id: String,
+    #[serde(default = "default_regional_task_progress")]
+    pub regional_task_progress: u8,
+    #[serde(default = "default_regional_task_completed")]
+    pub regional_task_completed: bool,
     // 将领网络（当前忠诚度 + 关系强度）
     pub loyalty: HashMap<String, f64>,
     pub relationships: Vec<(String, String, f64)>,
@@ -395,6 +433,18 @@ fn default_forward_depot_capacity_bonus() -> u32 {
 
 fn default_forward_depot_days() -> u8 {
     0
+}
+
+fn default_regional_task_id() -> String {
+    String::new()
+}
+
+fn default_regional_task_progress() -> u8 {
+    0
+}
+
+fn default_regional_task_completed() -> bool {
+    false
 }
 
 fn migrate_triggered_event_ids(ids: Vec<String>) -> Vec<String> {
@@ -490,6 +540,12 @@ pub struct GameEngine {
     forward_depot_capacity_bonus: u32,
     /// 前沿粮秣站剩余天数（包含当前结算）
     forward_depot_days: u8,
+    /// 当前区域任务 ID；空串表示尚未进入区域任务循环
+    regional_task_id: String,
+    /// 当前区域任务累计进度
+    regional_task_progress: u8,
+    /// 当前区域任务是否已在本阶段完成
+    regional_task_completed: bool,
     pub history: Vec<DayEvent>,
     /// 游戏结局（Some = 游戏已结束）
     outcome: Option<GameOutcome>,
@@ -527,6 +583,9 @@ impl Default for GameEngine {
             forward_depot_location: String::new(),
             forward_depot_capacity_bonus: 0,
             forward_depot_days: 0,
+            regional_task_id: String::new(),
+            regional_task_progress: 0,
+            regional_task_completed: false,
             history: Vec::new(),
             outcome: None,
             map_graph: default_campaign_map(),
@@ -633,6 +692,14 @@ impl GameEngine {
             objective_target_role,
             &primary_action,
         );
+        let regional_task = self.regional_task_for(
+            location,
+            posture_id,
+            objective_id,
+            objective_label,
+            objective_target_role,
+            &regional_pressure,
+        );
         let focus_title = self.campaign_focus_title().to_string();
         let focus_detail = match posture_id {
             "critical_recovery" => format!(
@@ -718,6 +785,13 @@ impl GameEngine {
             regional_pressure_title: regional_pressure.title,
             regional_pressure_detail: regional_pressure.detail,
             regional_pressure_short: regional_pressure.short,
+            regional_task_id: regional_task.id,
+            regional_task_label: regional_task.label,
+            regional_task_title: regional_task.title,
+            regional_task_detail: regional_task.detail,
+            regional_task_short: regional_task.short,
+            regional_task_progress_label: regional_task.progress_label,
+            regional_task_reward_label: regional_task.reward_label,
         }
     }
 
@@ -1573,6 +1647,184 @@ impl GameEngine {
         }
     }
 
+    fn regional_task_for(
+        &self,
+        location: &str,
+        posture_id: &str,
+        objective_id: &str,
+        objective_label: &str,
+        objective_target_role: &str,
+        regional_pressure: &RegionalPressure,
+    ) -> RegionalTask {
+        let plan = self.regional_task_plan_for(
+            location,
+            posture_id,
+            objective_id,
+            objective_label,
+            objective_target_role,
+            regional_pressure,
+        );
+        let current_progress = if self.regional_task_id == plan.id {
+            self.regional_task_progress.min(plan.progress_target)
+        } else {
+            0
+        };
+        let completed = self.regional_task_id == plan.id && self.regional_task_completed;
+        let progress_label = if completed {
+            format!(
+                "任务进度：已完成（{}/{}），等待阶段目标切换。",
+                plan.progress_target, plan.progress_target
+            )
+        } else if plan.condition_met {
+            format!(
+                "任务进度：{}/{}。{}",
+                current_progress, plan.progress_target, plan.completion_note
+            )
+        } else {
+            format!(
+                "任务进度：{}/{}。{}",
+                current_progress, plan.progress_target, plan.reset_note
+            )
+        };
+        let detail = format!("{}\n{}\n{}", plan.detail, progress_label, plan.reward_label);
+
+        RegionalTask {
+            id: plan.id.to_string(),
+            label: plan.label.to_string(),
+            title: plan.title,
+            detail,
+            short: if completed {
+                format!("{} 已完成，等待下一阶段切换。", plan.label)
+            } else {
+                plan.short
+            },
+            progress_label,
+            reward_label: plan.reward_label,
+        }
+    }
+
+    fn regional_task_plan_for(
+        &self,
+        location: &str,
+        posture_id: &str,
+        objective_id: &str,
+        objective_label: &str,
+        objective_target_role: &str,
+        regional_pressure: &RegionalPressure,
+    ) -> RegionalTaskPlan {
+        let location_name = self.map_graph.node_name(location);
+        let current_role = self.map_graph.supply_role_of(location);
+        let current_role_label = self.map_graph.supply_role_label_of(location);
+        let current_role_tier = Self::supply_role_tier(current_role);
+        let objective_tier = Self::supply_role_tier(objective_target_role);
+        let active_depot_here =
+            self.forward_depot_days > 0 && self.forward_depot_location == location;
+        let corridor_stable = matches!(
+            regional_pressure.id.as_str(),
+            "corridor_stabilizing" | "corridor_secure"
+        );
+
+        if self.day >= 61 || objective_target_role == "frontline_outpost" {
+            let condition_met = current_role_tier >= 2
+                && self.army.supply >= 68.0
+                && self.army.avg_fatigue <= 35.0
+                && corridor_stable;
+            return RegionalTaskPlan {
+                id: "stage_decisive_push",
+                label: "区域任务：准备终盘突击",
+                title: "区域任务".to_string(),
+                detail: format!(
+                    "终盘前推之前，先把 {} 站成真正的出击位：补给至少 68、疲劳不高于 35，且当前走廊要保持稳固。这样最后几步才不是拿库存硬赌。",
+                    location_name
+                ),
+                short: "区域任务：先把终盘出击位站稳，再压最后一段。".to_string(),
+                progress_target: 2,
+                reward_label: "完成奖励：士气 +6，军方支持 +3。".to_string(),
+                condition_met,
+                completion_note: "当前已经达到终盘前推条件；再稳住一天就能把突击奖励拿到手。"
+                    .to_string(),
+                reset_note:
+                    "终盘前推前要先把库存、疲劳和走廊都压回安全线。".to_string(),
+            };
+        }
+
+        if matches!(
+            posture_id,
+            "critical_recovery" | "overextended_line" | "frontline_strain"
+        ) || matches!(
+            regional_pressure.id.as_str(),
+            "corridor_breaking" | "corridor_fragile" | "corridor_contested"
+        ) {
+            let condition_met =
+                corridor_stable || self.supply_line_bonus_days > 0 || active_depot_here;
+            return RegionalTaskPlan {
+                id: "stabilize_regional_corridor",
+                label: "区域任务：稳住区域走廊",
+                title: "区域任务".to_string(),
+                detail: format!(
+                    "{} 这一段线还不算真正站稳。只打一张补给牌不够，得连续两天把走廊维持在“稳固中 / 可持续”状态，才算把区域运营链条补起来。",
+                    location_name
+                ),
+                short: "区域任务：连续两天把当前走廊稳住。".to_string(),
+                progress_target: 2,
+                reward_label: "完成奖励：补给线效率 +12%（2天）。".to_string(),
+                condition_met,
+                completion_note: "当前状态已算稳住一天；还得再连续维持一天，走廊才真正成型。"
+                    .to_string(),
+                reset_note: "只打一张牌不够，必须连续两天把这段走廊维持住。".to_string(),
+            };
+        }
+
+        if objective_tier >= 2
+            && current_role_tier < objective_tier
+            && matches!(
+                objective_id,
+                "secure_regional_depot"
+                    | "connect_strategic_depot"
+                    | "recover_at_regional_depot"
+                    | "repair_depot_chain"
+            )
+        {
+            let condition_met = current_role_tier >= objective_tier && self.army.supply >= 45.0;
+            return RegionalTaskPlan {
+                id: "capture_operational_anchor",
+                label: "区域任务：抢占整补锚点",
+                title: "区域任务".to_string(),
+                detail: format!(
+                    "当前阶段还没把路线真正接到 {}。先落到目标仓储层级，把这段推进锚在可回补的位置，再谈后面的两三步。",
+                    objective_label
+                ),
+                short: format!("区域任务：先把路线接到 {}。", objective_label),
+                progress_target: 1,
+                reward_label: "完成奖励：补给 +6，疲劳 -5。".to_string(),
+                condition_met,
+                completion_note: format!("当前已经把路线接到 {}。", objective_label),
+                reset_note: format!("当前还没真正站上 {}。", objective_label),
+            };
+        }
+
+        RegionalTaskPlan {
+            id: "build_jump_off_point",
+            label: "区域任务：搭好前推跳板",
+            title: "区域任务".to_string(),
+            detail: format!(
+                "{} 当前属于{}。接下来不是盲目前推，而是连续两天把这里站成稳定跳板：库存至少 60、疲劳不高于 45，确保下一段推进有余量可用。",
+                location_name, current_role_label
+            ),
+            short: "区域任务：连续两天把当前节点站成稳定跳板。".to_string(),
+            progress_target: 2,
+            reward_label: "完成奖励：补给 +4，士气 +4。".to_string(),
+            condition_met: current_role_tier >= 2
+                && self.army.supply >= 60.0
+                && self.army.avg_fatigue <= 45.0,
+            completion_note: "当前跳板条件已经满足；再稳住一天，就能换到下一段运营余量。".to_string(),
+            reset_note: format!(
+                "当前还没把 {} 站成可持续跳板，补给或疲劳还不够稳。",
+                current_role_label
+            ),
+        }
+    }
+
     fn best_adjacent_target_for_objective(
         &self,
         location: &str,
@@ -1779,6 +2031,9 @@ impl GameEngine {
             forward_depot_location: self.forward_depot_location.clone(),
             forward_depot_capacity_bonus: self.forward_depot_capacity_bonus,
             forward_depot_days: self.forward_depot_days,
+            regional_task_id: self.regional_task_id.clone(),
+            regional_task_progress: self.regional_task_progress,
+            regional_task_completed: self.regional_task_completed,
             loyalty: self.characters.loyalty.clone(),
             relationships,
             triggered_event_ids: self.triggered_event_ids.clone(),
@@ -1815,6 +2070,9 @@ impl GameEngine {
         engine.forward_depot_location = state.forward_depot_location;
         engine.forward_depot_capacity_bonus = state.forward_depot_capacity_bonus;
         engine.forward_depot_days = state.forward_depot_days;
+        engine.regional_task_id = state.regional_task_id;
+        engine.regional_task_progress = state.regional_task_progress;
+        engine.regional_task_completed = state.regional_task_completed;
         engine.characters.loyalty = state.loyalty;
         engine.characters.relationships = state
             .relationships
@@ -1875,12 +2133,13 @@ impl GameEngine {
         let (base_key, is_battle) = narrative_key_for_action(&action);
         let victories_before = self.army.victories;
         let defeats_before = self.army.defeats;
-        let events = self.execute_action(action, rng);
-        self.last_action_events = events.clone();
+        let mut events = self.execute_action(action, rng);
 
         // Dusk：系统结算
         self.phase = TurnPhase::Dusk;
-        self.dusk_settlement(rng);
+        let dusk_events = self.dusk_settlement(rng);
+        events.extend(dusk_events);
+        self.last_action_events = events.clone();
 
         // 记录当日事件
         for e in events {
@@ -2242,7 +2501,8 @@ impl GameEngine {
     }
 
     /// Dusk结算：政治每日tick、关系衰减、叛逃检查、连锁效果
-    fn dusk_settlement<R: Rng>(&mut self, rng: &mut R) {
+    fn dusk_settlement<R: Rng>(&mut self, rng: &mut R) -> Vec<DayEvent> {
+        let mut dusk_events = Vec::new();
         self.politics.daily_tick();
         self.characters.tick_day();
 
@@ -2275,6 +2535,7 @@ impl GameEngine {
                 self.forward_depot_location.clear();
             }
         }
+        dusk_events.extend(self.resolve_regional_task_progress());
 
         // ── 将领叛逃每日检查 ──────────────────────────────
         self.check_ney_defection(rng);
@@ -2288,6 +2549,149 @@ impl GameEngine {
         // 长期征战疲劳 → 民众不满
         if self.day > 60 && self.army.avg_fatigue > 70.0 {
             self.politics.modify_faction("populace", -2.0);
+        }
+
+        dusk_events
+    }
+
+    fn resolve_regional_task_progress(&mut self) -> Vec<DayEvent> {
+        let location = self.napoleon_location.clone();
+        let supply = self.army.supply;
+        let fatigue = self.army.avg_fatigue;
+        let capacity_bonus = self.forward_depot_capacity_bonus_for(&location);
+        let capacity = self.effective_supply_capacity_for(&location);
+        let (_, hub_distance) = self.nearest_supply_hub(&location);
+        let (posture_id, _) = self.logistics_posture_for(
+            &location,
+            supply,
+            fatigue,
+            capacity,
+            capacity_bonus,
+            hub_distance,
+        );
+        let (
+            objective_id,
+            objective_label,
+            objective_target_role,
+            _objective_detail,
+            _objective_short,
+        ) = self.operational_objective_for(
+            &location,
+            posture_id,
+            supply,
+            fatigue,
+            capacity,
+            hub_distance,
+        );
+        let (primary_action, _secondary_action) = self.logistics_action_plan_for(
+            &location,
+            posture_id,
+            objective_target_role,
+            supply,
+            fatigue,
+            capacity,
+            hub_distance,
+        );
+        let regional_pressure = self.logistics_regional_pressure_for(
+            &location,
+            posture_id,
+            objective_target_role,
+            &primary_action,
+        );
+        let plan = self.regional_task_plan_for(
+            &location,
+            posture_id,
+            objective_id,
+            objective_label,
+            objective_target_role,
+            &regional_pressure,
+        );
+        let mut events = Vec::new();
+
+        if self.regional_task_id != plan.id {
+            self.regional_task_id = plan.id.to_string();
+            self.regional_task_progress = 0;
+            self.regional_task_completed = false;
+        }
+
+        if self.regional_task_completed {
+            return events;
+        }
+
+        if plan.condition_met {
+            if self.regional_task_progress < plan.progress_target {
+                self.regional_task_progress = self.regional_task_progress.saturating_add(1);
+            }
+
+            if self.regional_task_progress >= plan.progress_target {
+                self.regional_task_progress = plan.progress_target;
+                self.regional_task_completed = true;
+                let reward_effects = self.apply_regional_task_reward(plan.id);
+                let mut effects = vec![
+                    format!("任务进度 {}/{}", plan.progress_target, plan.progress_target),
+                    plan.completion_note.clone(),
+                ];
+                effects.extend(reward_effects);
+                events.push(DayEvent {
+                    day: self.day,
+                    event_type: "regional_task_reward",
+                    description: format!("区域任务完成：{}", plan.label),
+                    effects,
+                });
+            } else {
+                events.push(DayEvent {
+                    day: self.day,
+                    event_type: "regional_task",
+                    description: format!("区域任务推进：{}", plan.label),
+                    effects: vec![
+                        format!(
+                            "任务进度 {}/{}",
+                            self.regional_task_progress, plan.progress_target
+                        ),
+                        plan.completion_note.clone(),
+                        plan.reward_label.clone(),
+                    ],
+                });
+            }
+        } else if self.regional_task_progress > 0 {
+            self.regional_task_progress = 0;
+            events.push(DayEvent {
+                day: self.day,
+                event_type: "regional_task_setback",
+                description: format!("区域任务中断：{}", plan.label),
+                effects: vec!["任务进度归零".to_string(), plan.reset_note.clone()],
+            });
+        }
+
+        events
+    }
+
+    fn apply_regional_task_reward(&mut self, task_id: &str) -> Vec<String> {
+        match task_id {
+            "capture_operational_anchor" => {
+                self.army.supply = (self.army.supply + 6.0).min(100.0);
+                self.army.avg_fatigue = (self.army.avg_fatigue - 5.0).max(0.0);
+                vec!["补给 +6".to_string(), "疲劳 -5".to_string()]
+            }
+            "stabilize_regional_corridor" => {
+                self.supply_line_bonus = self.supply_line_bonus.max(0.12);
+                self.supply_line_bonus_days = self.supply_line_bonus_days.max(2);
+                vec![
+                    "补给线效率 +12%".to_string(),
+                    "补给线窗口延长 2 天".to_string(),
+                ]
+            }
+            "stage_decisive_push" => {
+                self.army.avg_morale = (self.army.avg_morale + 6.0).min(100.0);
+                self.politics.modify_faction("military", 3.0);
+                vec!["士气 +6".to_string(), "军方支持 +3".to_string()]
+            }
+            "build_jump_off_point" => {
+                self.army.supply = (self.army.supply + 4.0).min(100.0);
+                self.army.avg_morale = (self.army.avg_morale + 4.0).min(100.0);
+                vec!["补给 +4".to_string(), "士气 +4".to_string()]
+            }
+            _ => Vec::new(),
         }
     }
 
@@ -3186,6 +3590,11 @@ mod tests {
             "政策执行后预览中的补给线效率应更高"
         );
         assert_eq!(engine.supply_line_bonus_days, 2, "当天结算后应剩余2天加成");
+
+        // 隔离纯政策时长，避免区域任务奖励把同一类加成续上后干扰断言。
+        engine.regional_task_id.clear();
+        engine.regional_task_progress = 0;
+        engine.regional_task_completed = false;
 
         engine.process_day(PlayerAction::Rest, &mut rng);
         engine.process_day(PlayerAction::Rest, &mut rng);

@@ -9,7 +9,7 @@
 
 | 文件 | 只记录什么 |
 |------|------------|
-| `docs/plans/development_plan.md` | 当前技术基线、当前技术优先级、默认验证方式、当前技术债 |
+| `docs/plans/dev_plan.md` | 当前技术基线、当前技术优先级、默认验证方式、当前技术债 |
 | `docs/plans/product_plan.md` | 产品里程碑、对外版本状态、里程碑通过条件 |
 | `docs/history/agent_handoff.md` | 当前状态、当前分支、当前优先级、当前验证要求、接手约束 |
 | `docs/history/development_logs/` | 多轮开发历史、每轮变更摘要、验证和下一步 |
@@ -27,7 +27,7 @@
 
 ### 1. 同步文档
 
-- 更新 `docs/plans/development_plan.md`
+- 更新 `docs/plans/dev_plan.md`
   - 只写当前技术基线、当前优先级、默认验证方式和当前技术债
 - 按需要更新 `docs/plans/product_plan.md`
   - 仅在本轮确实改变里程碑状态或对外版本描述时更新
@@ -47,8 +47,9 @@
 
 ### 3. 验证
 
-- Rust 修改：`cargo test`
+- Rust 修改：默认使用 Windows 侧 `cargo test`
 - Rust + GDExt API 改动：补 Windows 侧扩展构建
+- Godot 前端测试：采用 `GdUnit4 + smoke + Windows 真机`
 - GDScript / 场景 / UI 改动：使用 Windows Godot 验证
 - 不把 Linux / WSL Godot 无头结果当成默认结论
 
