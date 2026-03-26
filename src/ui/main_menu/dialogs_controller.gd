@@ -374,6 +374,7 @@ func _display_game_over_day(day: int) -> int:
 func show_battle_popup(state: Dictionary = {}) -> void:
 	_close_popup(_battle_popup)
 	_battle_popup = PopupPanel.new()
+	_battle_popup.name = "BattlePopup"
 
 	var vbox := VBoxContainer.new()
 	vbox.custom_minimum_size = Vector2(320, 300)
@@ -398,6 +399,7 @@ func show_battle_popup(state: Dictionary = {}) -> void:
 	vbox.add_child(gen_label)
 
 	var gen_option := OptionButton.new()
+	gen_option.name = "BattleGeneralOption"
 	for char_id in characters:
 		var c: Dictionary = characters[char_id]
 		if c.get("role", "") == "marshal":
@@ -413,6 +415,7 @@ func show_battle_popup(state: Dictionary = {}) -> void:
 
 	var total_troops := int(state.get(STATE_KEY_TOTAL_TROOPS, 1000))
 	var troop_slider := HSlider.new()
+	troop_slider.name = "BattleTroopSlider"
 	troop_slider.min_value = 1000
 	troop_slider.max_value = max(total_troops, 1000)
 	troop_slider.step = 1000
@@ -429,6 +432,7 @@ func show_battle_popup(state: Dictionary = {}) -> void:
 	vbox.add_child(terrain_label)
 
 	var terrain_option := OptionButton.new()
+	terrain_option.name = "BattleTerrainOption"
 	for tid in MainMenuConfigData.TERRAIN_OPTIONS:
 		terrain_option.add_item(String(MainMenuConfigData.TERRAIN_OPTIONS[tid]))
 		terrain_option.set_item_metadata(terrain_option.item_count - 1, tid)
@@ -438,11 +442,13 @@ func show_battle_popup(state: Dictionary = {}) -> void:
 
 	var btn_row := HBoxContainer.new()
 	var confirm_btn := Button.new()
+	confirm_btn.name = "BattleConfirmButton"
 	confirm_btn.text = "确认出战"
 	confirm_btn.pressed.connect(_confirm_battle.bind(gen_option, troop_slider, terrain_option))
 	btn_row.add_child(confirm_btn)
 
 	var cancel_btn := Button.new()
+	cancel_btn.name = "BattleCancelButton"
 	cancel_btn.text = "取消"
 	cancel_btn.pressed.connect(_close_battle_popup)
 	btn_row.add_child(cancel_btn)
@@ -456,6 +462,7 @@ func show_battle_popup(state: Dictionary = {}) -> void:
 func show_boost_popup(state: Dictionary = {}) -> void:
 	_close_popup(_boost_popup)
 	_boost_popup = PopupPanel.new()
+	_boost_popup.name = "BoostPopup"
 
 	var vbox := VBoxContainer.new()
 	vbox.custom_minimum_size = Vector2(300, 220)
@@ -474,6 +481,7 @@ func show_boost_popup(state: Dictionary = {}) -> void:
 
 	var characters: Dictionary = state.get(STATE_KEY_CHARACTERS, {})
 	var gen_option := OptionButton.new()
+	gen_option.name = "BoostGeneralOption"
 	for char_id in characters:
 		var c: Dictionary = characters[char_id]
 		var loyalty: float = float(c.get("loyalty", 50))
@@ -483,12 +491,14 @@ func show_boost_popup(state: Dictionary = {}) -> void:
 
 	var btn_row := HBoxContainer.new()
 	var confirm_btn := Button.new()
+	confirm_btn.name = "BoostConfirmButton"
 	confirm_btn.text = "确认接见"
 	confirm_btn.disabled = legitimacy < 10.0
 	confirm_btn.pressed.connect(_confirm_boost.bind(gen_option))
 	btn_row.add_child(confirm_btn)
 
 	var cancel_btn := Button.new()
+	cancel_btn.name = "BoostCancelButton"
 	cancel_btn.text = "取消"
 	cancel_btn.pressed.connect(_close_boost_popup)
 	btn_row.add_child(cancel_btn)

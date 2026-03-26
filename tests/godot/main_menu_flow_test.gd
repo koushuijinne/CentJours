@@ -152,6 +152,46 @@ func test_new_game_dialog_restarts_after_confirmation() -> void:
 	assert_str((scene.find_child("DayLabel", true, false) as Label).text).is_equal("Jour 1")
 
 
+func test_new_game_dialog_cancel_keeps_progress() -> void:
+	var runner := await _load_main_menu()
+	var scene := runner.scene()
+
+	runner.invoke("_on_confirm_pressed")
+	await runner.simulate_frames(8)
+	assert_int(GameState.current_day).is_equal(2)
+
+	scene.call("_on_new_game_pressed")
+	await await_idle_frame()
+	var confirm := scene.find_child("NewGameConfirmDialog", true, false) as ConfirmationDialog
+	assert_object(confirm).is_not_null()
+	_press_dialog_cancel(confirm)
+	await runner.simulate_frames(2)
+
+	assert_int(GameState.current_day).is_equal(2)
+	assert_str(GameState.current_phase).is_equal("action")
+
+
+func test_load_dialog_cancel_keeps_current_progress() -> void:
+	var runner := await _load_main_menu()
+	var scene := runner.scene()
+
+	scene.call("_save_to_slot", 1, null)
+	await await_idle_frame()
+	runner.invoke("_on_confirm_pressed")
+	await runner.simulate_frames(8)
+	assert_int(GameState.current_day).is_equal(2)
+
+	scene.call("_load_from_slot", 1, null)
+	await await_idle_frame()
+	var confirm := scene.find_child("LoadConfirmDialog", true, false) as ConfirmationDialog
+	assert_object(confirm).is_not_null()
+	_press_dialog_cancel(confirm)
+	await runner.simulate_frames(2)
+
+	assert_int(GameState.current_day).is_equal(2)
+	assert_str(GameState.current_phase).is_equal("action")
+
+
 func test_narrative_panel_keeps_scroll_container_and_appends_entries() -> void:
 	var runner := await _load_main_menu()
 	var scene := runner.scene()
@@ -185,10 +225,59 @@ func test_situation_panel_includes_regional_task_context() -> void:
 	assert_str(situation_body.text).contains(GameState.logistics_regional_task_progress_label)
 
 
+func test_battle_popup_cancel_keeps_action_phase() -> void:
+	var runner := await _load_main_menu()
+	var scene := runner.scene()
+
+	scene.call("_show_battle_popup")
+	await await_idle_frame()
+
+	var battle_popup := scene.find_child("BattlePopup", true, false) as PopupPanel
+	var cancel_button := scene.find_child("BattleCancelButton", true, false) as Button
+	var execute_button := scene.find_child("ExecuteActionButton", true, false) as Button
+	assert_object(battle_popup).is_not_null()
+	assert_object(cancel_button).is_not_null()
+	assert_object(execute_button).is_not_null()
+
+	cancel_button.pressed.emit()
+	await runner.simulate_frames(2)
+
+	assert_object(scene.find_child("BattlePopup", true, false)).is_null()
+	assert_str(GameState.current_phase).is_equal("action")
+	assert_bool(execute_button.disabled).is_false()
+
+
+func test_boost_popup_disables_confirm_when_legitimacy_too_low() -> void:
+	var runner := await _load_main_menu()
+	var scene := runner.scene()
+
+	GameState.legitimacy = 5.0
+	scene.call("_show_boost_popup")
+	await await_idle_frame()
+
+	var boost_popup := scene.find_child("BoostPopup", true, false) as PopupPanel
+	var confirm_button := scene.find_child("BoostConfirmButton", true, false) as Button
+	assert_object(boost_popup).is_not_null()
+	assert_object(confirm_button).is_not_null()
+	assert_bool(confirm_button.disabled).is_true()
+
+
 func _load_main_menu() -> GdUnitSceneRunner:
 	var runner := scene_runner(MAIN_MENU_SCENE)
 	await runner.simulate_frames(12)
 	return runner
+
+
+func _press_dialog_cancel(dialog: ConfirmationDialog) -> void:
+	if dialog == null:
+		return
+	if dialog.has_method("get_cancel_button"):
+		var cancel_button := dialog.get_cancel_button()
+		if cancel_button != null:
+			cancel_button.pressed.emit()
+			return
+	dialog.canceled.emit()
+	dialog.hide()
 
 
 func _cleanup_saves() -> void:

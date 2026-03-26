@@ -203,3 +203,20 @@
 - 本轮将与存读档 UX 修复、回归测试和文档同步一起提交并推送到 `auto/gameplay_update`。
 下一步:
 - 继续按当前 `P0` 推进：观察 `cdcc8e6` 之后的新 CI run 是否按预期取消旧 run，并继续把弹窗失败恢复和更多主菜单边界状态压进 `GdUnit4`。
+
+## 2026-03-27 第 41 轮
+分支: `auto/gameplay_update`
+范围: 扩主菜单弹窗状态机回归，把取消路径和禁用态压进 `GdUnit4`
+变更:
+- `dialogs_controller.gd` 为战斗 / 接见弹窗补了稳定节点名，测试不再依赖脆弱的匿名按钮顺序。
+- `tests/godot/main_menu_flow_test.gd` 新增 4 条回归：`新局` 取消保持进度、`读档` 取消保持当前天数、战斗弹窗取消后仍停留在 `action` 阶段、低合法性时接见按钮保持禁用。
+- Godot 前端 `GdUnit4` 基线从 `11/11` 提升到 `15/15`，主菜单关键取消路径现在进入自动回归。
+验证:
+- Windows `tools\\run_gdunit_windows.cmd` 通过，`GdUnit4 15/15`。
+- Windows Godot 无头主项目通过。
+- Windows Godot smoke scene 通过。
+- 本轮未运行 Linux / WSL 侧测试。
+提交/推送:
+- 本轮将与弹窗测试锚点、`GdUnit4` 回归和文档同步一起提交并推送到 `auto/gameplay_update`。
+下一步:
+- 继续按当前 `P0` 推进：把结局弹窗、设置链路和更多失败恢复边界继续压进 `GdUnit4`，同时观察最新 Windows CI run。
