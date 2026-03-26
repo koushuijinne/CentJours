@@ -87,6 +87,33 @@ func test_save_then_load_restores_day_one() -> void:
 	assert_str((scene.find_child("DayLabel", true, false) as Label).text).is_equal("Jour 1")
 
 
+func test_load_slot_picker_reflects_slot_availability() -> void:
+	var runner := await _load_main_menu()
+	var scene := runner.scene()
+
+	scene.call("_on_load_pressed")
+	await await_idle_frame()
+	var empty_popup := scene.find_child("LoadSlotPickerPopup", true, false) as PopupPanel
+	assert_object(empty_popup).is_not_null()
+	assert_bool((empty_popup.find_child("LoadSlotButton1", true, false) as Button).disabled).is_true()
+	assert_bool((empty_popup.find_child("LoadSlotButton2", true, false) as Button).disabled).is_true()
+	assert_bool((empty_popup.find_child("LoadSlotButton3", true, false) as Button).disabled).is_true()
+	empty_popup.queue_free()
+	await await_idle_frame()
+
+	scene.call("_save_to_slot", 2, null)
+	await await_idle_frame()
+	assert_bool(SaveManager.has_save(2)).is_true()
+
+	scene.call("_on_load_pressed")
+	await await_idle_frame()
+	var load_popup := scene.find_child("LoadSlotPickerPopup", true, false) as PopupPanel
+	assert_object(load_popup).is_not_null()
+	assert_bool((load_popup.find_child("LoadSlotButton1", true, false) as Button).disabled).is_true()
+	assert_bool((load_popup.find_child("LoadSlotButton2", true, false) as Button).disabled).is_false()
+	assert_bool((load_popup.find_child("LoadSlotButton3", true, false) as Button).disabled).is_true()
+
+
 func test_new_game_dialog_restarts_after_confirmation() -> void:
 	var runner := await _load_main_menu()
 	var scene := runner.scene()
@@ -105,6 +132,39 @@ func test_new_game_dialog_restarts_after_confirmation() -> void:
 	assert_int(GameState.current_day).is_equal(1)
 	assert_str(GameState.current_phase).is_equal("action")
 	assert_str((scene.find_child("DayLabel", true, false) as Label).text).is_equal("Jour 1")
+
+
+func test_narrative_panel_keeps_scroll_container_and_appends_entries() -> void:
+	var runner := await _load_main_menu()
+	var scene := runner.scene()
+	var narrative_scroll := scene.find_child("NarrativeScroll", true, false) as ScrollContainer
+	var narrative_body := scene.find_child("NarrativeBody", true, false) as Label
+
+	assert_object(narrative_scroll).is_not_null()
+	assert_object(narrative_body).is_not_null()
+	assert_str(narrative_body.text).contains("Jour 1")
+
+	scene.call("_on_action_resolution_logged", "policy", "测试结算描述", ["补给 +4", "士气 +2"])
+	await runner.simulate_frames(2)
+	scene.call("_on_micro_narrative", "policy", "测试微叙事")
+	await runner.simulate_frames(2)
+
+	assert_str(String(narrative_body.get_parent().name)).is_equal("NarrativeScroll")
+	assert_str(narrative_body.text).contains("测试结算描述")
+	assert_str(narrative_body.text).contains("测试微叙事")
+	assert_str(narrative_body.text).contains("-----")
+
+
+func test_situation_panel_includes_regional_task_context() -> void:
+	var runner := await _load_main_menu()
+	var scene := runner.scene()
+	var situation_body := scene.find_child("SituationBody", true, false) as Label
+
+	assert_object(situation_body).is_not_null()
+	assert_bool(GameState.logistics_regional_task_title.strip_edges() != "").is_true()
+	assert_bool(GameState.logistics_regional_task_progress_label.strip_edges() != "").is_true()
+	assert_str(situation_body.text).contains(GameState.logistics_regional_task_title)
+	assert_str(situation_body.text).contains(GameState.logistics_regional_task_progress_label)
 
 
 func _load_main_menu() -> GdUnitSceneRunner:

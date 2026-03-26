@@ -304,6 +304,10 @@ func refresh_situation(
 	logistics_route_chain_detail: String,
 	logistics_regional_pressure_title: String,
 	logistics_regional_pressure_detail: String,
+	logistics_regional_task_title: String,
+	logistics_regional_task_detail: String,
+	logistics_regional_task_progress_label: String,
+	logistics_regional_task_reward_label: String,
 	faction_support: Dictionary,
 	prev_faction_support: Dictionary
 ) -> void:
@@ -351,6 +355,15 @@ func refresh_situation(
 		logistics_lines.append(logistics_regional_pressure_title)
 	if logistics_regional_pressure_detail.strip_edges() != "":
 		logistics_lines.append(logistics_regional_pressure_detail)
+	if logistics_regional_task_title.strip_edges() != "":
+		logistics_lines.append(logistics_regional_task_title)
+	if logistics_regional_task_detail.strip_edges() != "":
+		logistics_lines.append(logistics_regional_task_detail)
+	elif logistics_regional_task_progress_label.strip_edges() != "" or logistics_regional_task_reward_label.strip_edges() != "":
+		if logistics_regional_task_progress_label.strip_edges() != "":
+			logistics_lines.append(logistics_regional_task_progress_label)
+		if logistics_regional_task_reward_label.strip_edges() != "":
+			logistics_lines.append(logistics_regional_task_reward_label)
 
 	_situation_body.text = "%s\n%s · Legitimacy %.1f\n补给 %.0f · 疲劳 %.0f\n\n%s\n\n%s" % [
 		MainMenuFormattersLib.phase_display_name(phase_id),
@@ -432,6 +445,10 @@ func refresh_all(
 	logistics_route_chain_detail: String,
 	logistics_regional_pressure_title: String,
 	logistics_regional_pressure_detail: String,
+	logistics_regional_task_title: String,
+	logistics_regional_task_detail: String,
+	logistics_regional_task_progress_label: String,
+	logistics_regional_task_reward_label: String,
 	faction_support: Dictionary,
 	prev_faction_support: Dictionary,
 	characters: Dictionary,
@@ -458,6 +475,10 @@ func refresh_all(
 		logistics_route_chain_detail,
 		logistics_regional_pressure_title,
 		logistics_regional_pressure_detail,
+		logistics_regional_task_title,
+		logistics_regional_task_detail,
+		logistics_regional_task_progress_label,
+		logistics_regional_task_reward_label,
 		faction_support,
 		prev_faction_support
 	)

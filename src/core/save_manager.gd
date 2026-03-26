@@ -109,7 +109,7 @@ static func list_save_slots() -> Array[Dictionary]:
 			"slot_id": slot_id,
 			"exists": exists,
 			"day": int(meta.get("day", 0)),
-			"outcome": String(meta.get("outcome", "in_progress")),
+			"outcome": str(meta.get("outcome", "in_progress")),
 			"label": _slot_label(slot_id, meta)
 		})
 	return slots
@@ -141,5 +141,5 @@ static func _slot_label(slot_id: int, meta: Dictionary) -> String:
 	return "槽位 %d · Day %d · %s" % [
 		slot_id,
 		int(meta.get("day", 0)),
-		String(meta.get("outcome", "in_progress"))
+		str(meta.get("outcome", "in_progress"))
 	]

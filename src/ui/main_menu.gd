@@ -472,6 +472,10 @@ func _refresh_situation_panel() -> void:
 		GameState.logistics_route_chain_detail,
 		GameState.logistics_regional_pressure_title,
 		GameState.logistics_regional_pressure_detail,
+		GameState.logistics_regional_task_title,
+		GameState.logistics_regional_task_detail,
+		GameState.logistics_regional_task_progress_label,
+		GameState.logistics_regional_task_reward_label,
 		GameState.faction_support,
 		_prev_faction_support
 	)

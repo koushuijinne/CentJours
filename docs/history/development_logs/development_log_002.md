@@ -154,3 +154,21 @@
 - 本轮将与前一轮尚未推送的 ADR-011 一起提交并推送到 `auto/gameplay_update`。
 下一步:
 - 继续按当前 `P0` 推进：先看 Windows GitHub Actions 最新云端结果，再把剩余高风险 UI / 状态流 bug 继续压进 `GdUnit4` 和 smoke。
+
+## 2026-03-27 第 38 轮
+分支: `auto/gameplay_update`
+范围: 扩大 Godot 前端回归，补存读档、叙事面板和区域任务显示护栏
+变更:
+- `sidebar_controller.gd` 与 `main_menu.gd` 已把 `logistics_regional_task_*` 接进 `Current Situation`，右侧态势面板现在会直接显示区域任务、进度和奖励文本。
+- `tests/godot/main_menu_flow_test.gd` 从 `4` 条扩到 `7` 条，新增覆盖多槽读档按钮可用性、叙事面板滚动日志追加、区域任务文本展示。
+- 新增回归在执行中抓出一个真实 bug：`save_manager.gd` 在拼槽位标签时对 `outcome` 错用了 `String(...)` 构造，遇到 `in_progress` 会直接报错；本轮已改成 `str(...)` 并纳入自动回归。
+- 本轮完成后，Godot 前端 `GdUnit4` 基线从 `7/7` 提升到 `10/10`。
+验证:
+- Windows `tools\\run_gdunit_windows.cmd` 通过，`GdUnit4 10/10`。
+- Windows Godot 无头主项目通过。
+- Windows Godot smoke scene 通过。
+- 本轮未运行 Linux / WSL 侧测试。
+提交/推送:
+- 本轮将与 GDScript 改动、回归测试和文档同步一起提交并推送到 `auto/gameplay_update`。
+下一步:
+- 继续按当前 `P0` 推进：先看 Windows GitHub Actions 云端结果，再把弹窗失败恢复和更多主菜单边界状态继续压进 `GdUnit4`。
