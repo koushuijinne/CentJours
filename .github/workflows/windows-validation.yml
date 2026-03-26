@@ -5,8 +5,20 @@ on:
     branches:
       - auto/gameplay_update
       - claude/review-project-status-05vxD
+    paths-ignore:
+      - docs/**
+      - bugs/**
+      - "*.md"
   pull_request:
+    paths-ignore:
+      - docs/**
+      - bugs/**
+      - "*.md"
   workflow_dispatch:
+
+concurrency:
+  group: windows-validation-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   windows-validation:

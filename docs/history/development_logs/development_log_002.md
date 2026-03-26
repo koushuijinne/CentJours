@@ -172,3 +172,18 @@
 - 本轮将与 GDScript 改动、回归测试和文档同步一起提交并推送到 `auto/gameplay_update`。
 下一步:
 - 继续按当前 `P0` 推进：先看 Windows GitHub Actions 云端结果，再把弹窗失败恢复和更多主菜单边界状态继续压进 `GdUnit4`。
+
+## 2026-03-27 第 39 轮
+分支: `auto/gameplay_update`
+范围: 收口 Windows CI 触发策略，减少 docs-only 无效占用
+变更:
+- `windows-validation.yml` 已新增 `concurrency`，同一分支新的 run 会自动取消旧 run，避免 Windows runner 被过期提交长期占用。
+- `windows-validation.yml` 已对 `push` / `pull_request` 增加 `paths-ignore`，纯 `docs/**`、`bugs/**` 和根目录 `*.md` 改动不再默认触发整套 Windows 验证。
+- 本轮同步把计划和交接里的 CI 状态改成新真值：首条成功 run 已出现，当前工作重点从“等首绿”切到“减少无效排队、继续观察代码提交 run”。
+验证:
+- 已通过 `gh run view 23606297120` 确认存在完整成功的 Windows validation run，包含 Rust tests、Windows GDExt build、`GdUnit4`、headless boot 和 smoke scene。
+- 本轮对 workflow 的本地结构调整未跑 Linux / WSL 侧测试。
+提交/推送:
+- 本轮将与 workflow 和文档同步一起提交并推送到 `auto/gameplay_update`。
+下一步:
+- 继续按当前 `P0` 推进：观察这次 workflow 收紧后的下一条代码提交 run，并继续把弹窗失败恢复、结局和设置链路压进 `GdUnit4`。
