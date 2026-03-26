@@ -13,7 +13,7 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 45
     env:
-      GODOT_ZIP_URL: https://github.com/godotengine/godot/releases/download/4.6.1-stable/Godot_v4.6.1-stable_win64_console.exe.zip
+      GODOT_ZIP_URL: https://github.com/godotengine/godot/releases/download/4.6.1-stable/Godot_v4.6.1-stable_win64.exe.zip
 
     steps:
       - name: Checkout
@@ -27,17 +27,17 @@ jobs:
         with:
           workspaces: cent-jours-core -> target
 
-      - name: Download Godot console binary
+      - name: Download Godot Windows binary
         shell: pwsh
         run: |
           $godotDir = Join-Path $env:RUNNER_TEMP "godot"
           New-Item -ItemType Directory -Force -Path $godotDir | Out-Null
-          $zipPath = Join-Path $godotDir "godot_win64_console.zip"
+          $zipPath = Join-Path $godotDir "godot_win64.zip"
           Invoke-WebRequest -Uri $env:GODOT_ZIP_URL -OutFile $zipPath
           Expand-Archive -Path $zipPath -DestinationPath $godotDir -Force
-          $exe = Get-ChildItem -Path $godotDir -Filter "Godot_v*_win64_console.exe" -Recurse | Select-Object -First 1 -ExpandProperty FullName
+          $exe = Get-ChildItem -Path $godotDir -Filter "Godot_v*_win64.exe" -Recurse | Select-Object -First 1 -ExpandProperty FullName
           if (-not $exe) {
-            throw "Godot console binary not found after extraction."
+            throw "Godot Windows binary not found after extraction."
           }
           "GODOT_BINARY=$exe" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           Write-Host "Using Godot binary: $exe"

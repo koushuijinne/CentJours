@@ -95,3 +95,19 @@
 - 本轮将与 workflow、仓库脚本和文档同步一起提交并推送到 `auto/gameplay_update`。
 下一步:
 - 观察 GitHub Actions 首轮云端结果；若云端稳定，再继续把 `docs/bugs` 剩余问题压进 `GdUnit4` 和 smoke。
+
+## 2026-03-26 第 34 轮
+分支: `auto/gameplay_update`
+范围: 修复 Windows CI 首轮云端失败
+变更:
+- 使用 `gh run view` 追到首轮 `windows-validation` 失败点，确认不是 Rust/Godot 逻辑错误，而是 workflow 写成了不存在的 `Godot_v4.6.1-stable_win64_console.exe.zip`。
+- `windows-validation.yml` 已改为下载官方存在的 `Godot_v4.6.1-stable_win64.exe.zip`，并同步更新解压后查找的 exe 名称。
+- `dev_plan` 与 `agent_handoff` 已同步到新状态：首轮云端失败原因明确，仓库修正已推入待验证队列。
+验证:
+- 本轮云端失败日志已通过 `gh run view 23580633754 --log-failed` 核实。
+- 本地 Windows 验证链不受该问题影响，上一轮的 `cargo test`、`cargo build --features godot-extension`、`tools\\run_gdunit_windows.cmd`、Godot headless 和 smoke 仍为通过状态。
+- 本轮未运行 Linux / WSL 侧测试。
+提交/推送:
+- 本轮将与 workflow 修正和文档同步一起提交并推送到 `auto/gameplay_update`。
+下一步:
+- 观察第二次 GitHub Actions 云端结果；若继续失败，就按失败步骤继续修 workflow，直到 Windows CI 首轮绿灯。

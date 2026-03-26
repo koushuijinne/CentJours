@@ -135,7 +135,7 @@ tools\run_gdunit_windows.cmd E:\software\godot\Godot_v4.6.1-stable_win64_console
 
 ## 当前阻塞与风险
 
-- `Windows CI 首轮云端结果仍未知`：workflow 已写入仓库，但这一轮还没有真实观察 GitHub Actions 首次跑完后的结果。
+- `Windows CI 仍待首轮绿灯`：首次云端运行已失败，原因是 workflow 误写了不存在的 `win64_console` 下载地址；该问题已在仓库修正，正等待下一次云端结果。
 - `主菜单状态流仍脆弱`：存读档、行动提交、地图 hover / 锁定和面板同步仍是高风险区。
 - `内容线仍未收口`：事件量、教学链、失败归因和最终资产都还不够完整。
 
