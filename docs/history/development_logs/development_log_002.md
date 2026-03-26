@@ -57,3 +57,23 @@
 - 本轮将与文档同步一起提交并推送到 `auto/gameplay_update`。
 下一步:
 - 直接进入第 2 轮：接入 `GdUnit4`，建立主菜单、地图交互、存读档和弹窗状态流的第一批 Godot 自动回归。
+
+## 2026-03-25 第 32 轮
+分支: `auto/gameplay_update`
+范围: 完成测试底座第二轮，接入 Godot `GdUnit4` 并固化执行顺序
+变更:
+- 项目已接入 `addons/gdUnit4/` 运行时最小集，并在 `project.godot` 启用插件。
+- `main_menu.gd` 为动态按钮和弹窗补了稳定节点名，降低 `GdUnit4` 夹具对场景树路径漂移的脆弱性。
+- 新增 `tests/godot/main_menu_flow_test.gd` 与 `tests/godot/map_controller_contract_test.gd`，覆盖主菜单初始化、`执行行动 -> 次日`、`存档 -> 读档`、`新局` 重开、地图 hover / click 分层、缩放与选点详情。
+- 已确认一条新的项目级执行约束：在新 checkout / 新环境上执行 `GdUnit4` CLI 前，必须先跑一次 Windows Godot `--headless --editor --quit` 刷新脚本类缓存，否则 CLI 可能找不到 `GdUnit4` 全局类。
+- `dev_plan`、`agent_handoff` 与 ADR-010 已同步到新基线：Godot 前端第一批 `GdUnit4` 自动回归已完成，当前 `P0` 转为 Windows GitHub Actions 和 `GdUnit4` 执行链脚本化。
+验证:
+- Windows Godot `--headless --editor --quit` 已通过，确认脚本类缓存刷新链有效。
+- Windows `GdUnit4` 已通过，当前基线 `7/7`。
+- Windows Godot 无头主项目通过。
+- Windows Godot smoke scene 通过。
+- 本轮未运行 Linux / WSL 侧测试。
+提交/推送:
+- 本轮将与 `GdUnit4` 接入和文档同步一起提交并推送到 `auto/gameplay_update`。
+下一步:
+- 直接进入第 3 轮：建立 Windows GitHub Actions、脚本化 `GdUnit4` 执行顺序，并把 bug 继续绑定到自动回归。

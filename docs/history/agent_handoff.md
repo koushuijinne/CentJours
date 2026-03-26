@@ -1,6 +1,6 @@
 # Agent 交接
 
-> **更新**: 2026-03-24
+> **更新**: 2026-03-25
 > **当前分支**: 以 `git branch --show-current` 为准
 > **目标读者**: 新开会话后需要快速接手项目的 agent / 协作者
 > **开发历史**: 见 [docs/history/development_logs/](/mnt/e/projects/CentJours/docs/history/development_logs/)
@@ -14,6 +14,7 @@
 - Rust 规则层最近一次完整回归基线是 Windows `211/211`；自动工作流后续不再把 Linux / WSL `cargo test` 当成默认验证路径。
 - 当前核心数据基线：`15` 名角色、`41` 个地图节点、`58` 条历史事件，其中 `major 16 / normal 35 / minor 7`。
 - 当前活跃开发分支为 `auto/gameplay_update`。
+- Godot 前端第一批 `GdUnit4` 自动回归已接入，当前 Windows 基线包含 `GdUnit4 7/7`、Windows Godot 主项目无头和 Windows smoke scene。
 - Save / Load 已进入 `v3` 兼容路径，旧存档会把 `fontainebleau_eve` 迁移为正式 ID `tuileries_eve`，前沿粮秣站状态也会随存档读写。
 - 历史事件正文、`historical_note` 与玩家行动结算日志都已接入侧栏日志链路。
 - 动态补给已接进核心循环：补给值会进入存档、`get_state()`、主菜单顶栏、休整恢复、战斗补给惩罚和每日行动结算日志。
@@ -48,9 +49,9 @@
 
 ## 当前最高优先级
 
-1. 补齐 Godot 前端 `GdUnit4` + smoke 回归入口
-2. 建立 Windows GitHub Actions 重测试跑道
-3. 把 `docs/bugs` 中的关键问题转成可重复验证
+1. 建立 Windows GitHub Actions 重测试跑道
+2. 把 `docs/bugs` 中的关键问题继续转成可重复验证
+3. 收口 `GdUnit4` 执行链的项目级约束与脚本化入口
 4. 在测试护栏稳定后继续推进补给玩法产品化
 5. 然后再扩历史事件、教学链和发布级 polish
 
@@ -61,8 +62,8 @@
 - `补给教学还没收口`：玩家现在已经能看到风险来源、阶段目标、当日行动计划和三日节奏，也能从终局复盘回看建议，但仍缺更系统的失败归因串联
 - `文本 QA 未收口`：剩余事件仍需统一史实锚点、信息密度和句式风格
 - `前端发布级 polish 未完成`：主菜单主要 bug 已清一轮，但仍需 Windows 真机继续看地图缩放、hover 预览和存读档弹窗的最终体验
-- `Godot 自动回归仍缺`：当前只有 smoke，没有 `GdUnit4` 契约测试和状态流测试
-- `Windows CI 仍缺`：Rust 集成测试和属性测试已经落地，但还没有上云
+- `Windows CI 仍缺`：Rust 集成测试、属性测试和 Godot `GdUnit4` 都已落地，但还没有上云
+- `GdUnit4` 执行链尚未脚本化：新 checkout 上需要先执行一次 Windows Godot `--headless --editor --quit` 刷新脚本类缓存，否则 CLI 可能找不到 `GdUnit4` 全局类
 - `产品化能力仍缺`：设置/选项页、导出配置、Steam 商店素材、教程引导都未完成
 - `Windows 真机体验验收仍未收口`：这轮已经补齐 Windows DLL 重编、Windows 无头与 smoke scene，但更长时的真机 UI / 体验验收还没补
 - `最终资产仍是占位`：地图底图、肖像、插图、BGM、SFX、结局画面还没替换
@@ -102,6 +103,7 @@
 - Rust + GDExt API 改动：Windows 侧执行 `cargo build --features godot-extension`
 - Godot 前端测试策略：`GdUnit4 + smoke + Windows 真机`
 - 没有 Windows 对应验证就写明缺口，不要把 Linux / WSL 结果写成当前轮验证结论
+- 在新 checkout / 新环境上执行 `GdUnit4` 前，先跑一次 Windows Godot `--headless --editor --quit`，刷新脚本类缓存
 
 ```bash
 cd /d E:\projects\CentJours\cent-jours-core
@@ -112,6 +114,19 @@ cargo build --features godot-extension
 
 ```bash
 E:\software\godot\Godot_v4.6.1-stable_win64_console.exe --headless --path E:\projects\CentJours --quit
+```
+
+- `GdUnit4` 前置缓存刷新命令：
+
+```bash
+E:\software\godot\Godot_v4.6.1-stable_win64_console.exe --headless --editor --path E:\projects\CentJours --quit
+```
+
+- `GdUnit4` 默认命令：
+
+```bash
+cd /d E:\projects\CentJours
+addons\gdUnit4\runtest.cmd --godot_binary E:\software\godot\Godot_v4.6.1-stable_win64_console.exe -a res://tests/godot -c
 ```
 
 - 若新增 GDExt 接口，再补一次 smoke scene：

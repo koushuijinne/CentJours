@@ -2,6 +2,7 @@
 
 # Godot editor/cache
 /.godot/
+/reports/
 
 # Rust build output
 /cent-jours-core/target/

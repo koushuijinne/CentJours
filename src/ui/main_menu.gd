@@ -243,22 +243,27 @@ func _append_narrative(entry: String, color: Color) -> void:
 ## 在 TrayHeader 右侧动态创建"执行行动"确认按钮
 func _build_confirm_button() -> void:
 	_confirm_button = _tray_controller.create_confirm_button(_tray_header, "执行今日行动 → 次日")
+	if _confirm_button != null:
+		_confirm_button.name = "ExecuteActionButton"
 
 ## 在 TopBarRow 右侧动态创建存档/读档按钮
 func _build_save_load_buttons() -> void:
 	var new_game_btn := Button.new()
+	new_game_btn.name = "NewGameButton"
 	new_game_btn.text = "新局"
 	new_game_btn.custom_minimum_size = Vector2(60, 0)
 	new_game_btn.pressed.connect(_on_new_game_pressed)
 	_top_bar_row.add_child(new_game_btn)
 
 	var save_btn := Button.new()
+	save_btn.name = "SaveGameButton"
 	save_btn.text = "存档"
 	save_btn.custom_minimum_size = Vector2(60, 0)
 	save_btn.pressed.connect(_on_save_pressed)
 	_top_bar_row.add_child(save_btn)
 
 	var load_btn := Button.new()
+	load_btn.name = "LoadGameButton"
 	load_btn.text = "读档"
 	load_btn.custom_minimum_size = Vector2(60, 0)
 	load_btn.pressed.connect(_on_load_pressed)
@@ -279,6 +284,7 @@ func _on_load_pressed() -> void:
 
 func _on_new_game_pressed() -> void:
 	var confirm := ConfirmationDialog.new()
+	confirm.name = "NewGameConfirmDialog"
 	confirm.dialog_text = "重新开始将丢失当前未保存进度，确定吗？"
 	confirm.ok_button_text = "确认新开一局"
 	confirm.cancel_button_text = "取消"
@@ -288,11 +294,14 @@ func _on_new_game_pressed() -> void:
 
 func _show_slot_picker(mode: String) -> void:
 	var popup := PopupPanel.new()
+	popup.name = "SaveSlotPickerPopup" if mode == "save" else "LoadSlotPickerPopup"
 	var content := VBoxContainer.new()
+	content.name = "SlotPickerContent"
 	content.custom_minimum_size = Vector2(320, 0)
 	content.add_theme_constant_override("separation", 8)
 
 	var title := Label.new()
+	title.name = "SlotPickerTitle"
 	title.text = "选择存档槽位" if mode == "save" else "选择要读取的存档"
 	title.add_theme_font_size_override("font_size", 16)
 	content.add_child(title)
@@ -301,6 +310,7 @@ func _show_slot_picker(mode: String) -> void:
 		var slot_id := int(slot.get("slot_id", 0))
 		var exists := bool(slot.get("exists", false))
 		var button := Button.new()
+		button.name = "%sSlotButton%d" % ["Save" if mode == "save" else "Load", slot_id]
 		button.text = String(slot.get("label", "槽位 %d" % slot_id))
 		button.disabled = mode == "load" and not exists
 		if mode == "save":
@@ -310,6 +320,7 @@ func _show_slot_picker(mode: String) -> void:
 		content.add_child(button)
 
 	var cancel_btn := Button.new()
+	cancel_btn.name = "SlotPickerCancelButton"
 	cancel_btn.text = "取消"
 	cancel_btn.pressed.connect(func(): popup.queue_free())
 	content.add_child(cancel_btn)
@@ -339,6 +350,7 @@ func _load_from_slot(slot_id: int, popup: PopupPanel) -> void:
 	if popup != null:
 		popup.queue_free()
 	var confirm := ConfirmationDialog.new()
+	confirm.name = "LoadConfirmDialog"
 	confirm.dialog_text = "读档将覆盖当前进度，确定读取槽位 %d 吗？" % slot_id
 	confirm.ok_button_text = "确认读档"
 	confirm.cancel_button_text = "取消"

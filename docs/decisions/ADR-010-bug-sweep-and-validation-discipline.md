@@ -44,6 +44,7 @@
   - Godot `GdUnit4` 测试
   - Windows `cargo build --features godot-extension`
   - Windows Godot 无头 smoke
+  - `GdUnit4` 前统一执行 Windows Godot `--headless --editor --quit`，刷新脚本类缓存
 - 本地默认保持“最小必要验证”：
   - Rust 纯规则改动：Windows `cargo test`
   - 主菜单 / 回合 / GDExt 改动：Windows headless + 必要 smoke + 对应 `GdUnit4`
@@ -64,6 +65,7 @@
   - `GdUnit4` 主菜单状态流测试
   - Windows 真机清单
 - `GdUnit4` 不是可选观察项，而是当前阶段的正式引入项。
+- 在新 checkout / 新环境上运行 `GdUnit4` CLI 前，必须先执行一次 Windows Godot `--headless --editor --quit`，否则 CLI 可能无法识别 `GdUnit4` 全局类。
 - `GdUnit4` 重点覆盖：
   - 主菜单初始化
   - `新局 -> 执行行动 -> 次日`
@@ -183,16 +185,17 @@
 1. 采用 Windows 分层验证：本地最小验证 + GitHub Actions Windows 重测试
 2. Godot 前端测试采用“`GdUnit4` + smoke + Windows 真机清单”
 3. Windows 关键路径验证保留，不接受“本地只跑单测”的降级方案
-4. 架构优化采用定向重构，不做脱离 bug 目标的大重写
-5. 明确禁止：
+4. `GdUnit4` 执行前必须先刷新 Windows Godot 脚本类缓存
+5. 架构优化采用定向重构，不做脱离 bug 目标的大重写
+6. 明确禁止：
    - speculative implementation
    - implicit assumptions
    - missing error handling
-6. 长文本 UI 一律使用“固定边界 + 内部滚动”
-7. hover 与 click 详情一律分层处理
-8. 新入口必须经过一次真实交互验证或明确标注未验证
-9. 提交必须隔离未完成工作线
-10. 玩法扩展前先补最小自动化护栏
+7. 长文本 UI 一律使用“固定边界 + 内部滚动”
+8. hover 与 click 详情一律分层处理
+9. 新入口必须经过一次真实交互验证或明确标注未验证
+10. 提交必须隔离未完成工作线
+11. 玩法扩展前先补最小自动化护栏
 
 ---
 
