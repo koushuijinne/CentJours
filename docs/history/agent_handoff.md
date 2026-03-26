@@ -159,6 +159,7 @@ E:\software\godot\Godot_v4.6.1-stable_win64_console.exe --headless --path E:\pro
 - 自动工作流开启时，必要时可开 `1-2` 个子 agent 加速只读审计或叶子模块实现，但主 agent 仍独占集成文件，并在提交前统一回收全部子 agent
 - `tuileries_eve` 现为正式事件 ID；旧 ID 只应出现在迁移代码和兼容性测试里
 - 允许直接修改文案，但必须遵守 ADR-008：直接、清楚、可考据，避免 reframing 句式
+- 拿破仑第一人称只用于教学、行动建议、阶段复盘、结局前独白等玩家直面文本；`historical_note`、联军情报、议会与外交动态默认保持第三人称或档案体
 - 若继续做 UI 线，优先解决玩家可感知问题，再做大文件工程收口
 - 若用户明确要求自动循环，再额外启用 [docs/rules/optional/agent_autonomous_workflow.md](/mnt/e/projects/CentJours/docs/rules/optional/agent_autonomous_workflow.md)
 
