@@ -45,6 +45,7 @@
   - Windows `cargo build --features godot-extension`
   - Windows Godot 无头 smoke
   - `GdUnit4` 前统一执行 Windows Godot `--headless --editor --quit`，刷新脚本类缓存
+- 这条顺序需要固化在仓库脚本与 workflow 中，而不是依赖每轮手写命令。
 - 本地默认保持“最小必要验证”：
   - Rust 纯规则改动：Windows `cargo test`
   - 主菜单 / 回合 / GDExt 改动：Windows headless + 必要 smoke + 对应 `GdUnit4`
@@ -196,6 +197,10 @@
 9. 新入口必须经过一次真实交互验证或明确标注未验证
 10. 提交必须隔离未完成工作线
 11. 玩法扩展前先补最小自动化护栏
+
+当前仓库落地形式：
+- 本地 Windows 执行入口：`tools/run_gdunit_windows.cmd`
+- 云端 Windows 执行入口：`.github/workflows/windows-validation.yml`
 
 ---
 

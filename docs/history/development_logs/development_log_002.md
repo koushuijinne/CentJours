@@ -77,3 +77,21 @@
 - 本轮将与 `GdUnit4` 接入和文档同步一起提交并推送到 `auto/gameplay_update`。
 下一步:
 - 直接进入第 3 轮：建立 Windows GitHub Actions、脚本化 `GdUnit4` 执行顺序，并把 bug 继续绑定到自动回归。
+
+## 2026-03-25 第 33 轮
+分支: `auto/gameplay_update`
+范围: 完成测试底座第三轮，建立 Windows CI 与仓库级验证脚本
+变更:
+- 新增 `tools/run_gdunit_windows.cmd`，把 `Windows Godot --headless --editor --quit -> GdUnit4 CLI` 固化成单一命令入口。
+- 新增 `.github/workflows/windows-validation.yml`，在 Windows runner 上执行 Rust tests、`cargo build --features godot-extension`、`GdUnit4`、Godot headless boot 和 smoke scene，并上传 `reports/` 产物。
+- `dev_plan`、`agent_handoff`、`ADR-010` 与 `agent_session_rules` 已同步到新基线：Windows CI 与本地 `GdUnit4` 执行链均已落地，当前 `P0` 改成观察并收口首轮云端结果，以及继续扩 Godot 回归覆盖。
+验证:
+- Windows `cargo test` 将按新的 CI 顺序重新验证。
+- Windows `cargo build --features godot-extension` 将按新的 CI 顺序重新验证。
+- Windows `tools\\run_gdunit_windows.cmd` 将按新的仓库脚本入口重新验证。
+- Windows Godot 无头主项目与 smoke scene 将按新的 CI 顺序重新验证。
+- 本轮未运行 Linux / WSL 侧测试。
+提交/推送:
+- 本轮将与 workflow、仓库脚本和文档同步一起提交并推送到 `auto/gameplay_update`。
+下一步:
+- 观察 GitHub Actions 首轮云端结果；若云端稳定，再继续把 `docs/bugs` 剩余问题压进 `GdUnit4` 和 smoke。

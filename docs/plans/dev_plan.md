@@ -1,6 +1,6 @@
 # Cent Jours — 开发优先级计划
 
-> **更新**: 2026-03-25 v89
+> **更新**: 2026-03-25 v90
 > **通用原则**: [docs/rules/development_principles.md](/mnt/e/projects/CentJours/docs/rules/development_principles.md)
 > **快速接手**: [docs/history/agent_handoff.md](/mnt/e/projects/CentJours/docs/history/agent_handoff.md)
 > **开发历史**: [docs/history/development_logs/](/mnt/e/projects/CentJours/docs/history/development_logs/)
@@ -13,15 +13,15 @@
 - 项目已经有可玩的纵向切片，正式入口仍是 `src/ui/main_menu.tscn`，主链路 `TurnManager -> CentJoursEngine -> GameState -> UI` 已跑通。
 - 当前内容规模为 `15` 名角色、`41` 个地图节点、`58` 条历史事件；补给、政治、历史日志、存档读档和主菜单主循环都已接通。
 - Save / Load 已进入 `v3` 兼容阶段；最近一次权威回归基线是 Windows `211/211` Rust tests、Windows `GdUnit4 7/7`、Windows Godot 主项目无头和 smoke scene。
-- Rust 规则层的第一批正式集成测试和属性测试已经落地；Godot 前端第一批 `GdUnit4` 回归也已接入，当前最大的工程缺口改成 Windows GitHub Actions 还没落地。
+- Rust 规则层的第一批正式集成测试和属性测试已经落地；Godot 前端第一批 `GdUnit4` 回归也已接入，Windows GitHub Actions 工作流与仓库脚本也已落地。
 
 ## 当前技术优先级
 
 | 优先级 | 项目 | 规模 | 决策理由 |
 |--------|------|------|----------|
-| **P0** | **建立 Windows GitHub Actions 重测试跑道** | M | 本地 Windows 验证链已经成型，当前最高价值是把 Rust、`GdUnit4`、smoke 和 GDExt 构建迁到云端。 |
+| **P0** | **观察并修正 Windows GitHub Actions 首轮云端结果** | M | 工作流已经写入仓库，当前最高优先级是把首轮云端失败收口成稳定绿灯。 |
 | **P0** | **把 `docs/bugs` 中的关键问题继续转成可重复验证** | M | 第一批主菜单与地图问题已经进入 `GdUnit4`，剩余 bug 仍要持续绑定自动化回归。 |
-| **P0** | **收口 `GdUnit4` 执行链的项目级约束** | M | `GdUnit4` 在新 checkout 上依赖先刷新 Godot 脚本类缓存，这条顺序需要脚本化并写进 CI。 |
+| **P0** | **继续扩 Godot `GdUnit4` 覆盖面** | M | 现在有了执行入口和 CI 跑道，下一步要把存读档、弹窗、叙事面板和更多边界状态纳入回归。 |
 | **P1** | **继续补强补给玩法的产品化表达与教学链** | L | 后勤已经是当前玩法主轴，但应建立在更稳的测试护栏之上。 |
 | **P1** | **历史事件扩到 `100+` 并继续文本 QA** | L | 内容量仍是长局重玩性的核心约束。 |
 | **P1** | **补前 10 天引导、失败归因、结局文本与关键 UI 文案统一** | M | 新玩家理解链仍不完整，需要结合玩法和日志一起收口。 |
@@ -63,14 +63,16 @@
 
 ### 第 3 轮: 把 bug 修复、回归验证和玩法推进绑在一起
 
+- 当前状态：已完成
 - 建立 `.github/workflows/` 的 Windows 流水线，默认顺序为：
   - Windows Rust `cargo test`
   - Windows `cargo build --features godot-extension`
   - Windows Godot `--headless --editor --quit`
   - Windows `GdUnit4`
   - Windows Godot smoke scene
-- 对照 [docs/bugs/bugs_check.md](/mnt/e/projects/CentJours/docs/bugs/bugs_check.md) 继续把剩余问题绑定到一条 smoke、`GdUnit4` 用例或清单。
-- 把 `GdUnit4` 运行命令、报告产物和失败日志固化进仓库脚本或 workflow，避免每轮手写命令。
+- 已新增仓库脚本 `tools/run_gdunit_windows.cmd`，把 `缓存刷新 -> GdUnit4` 顺序固化成单一入口。
+- 已新增 `.github/workflows/windows-validation.yml`，在 Windows runner 上执行 Rust tests、GDExt build、`GdUnit4`、headless boot 与 smoke scene，并上传 `reports/`。
+- 对照 [docs/bugs/bugs_check.md](/mnt/e/projects/CentJours/docs/bugs/bugs_check.md) 的继续收口，后续改成在这条 workflow 和本地脚本上迭代用例。
 
 ## Godot 部分怎么测试
 
@@ -126,15 +128,14 @@ E:\software\godot\Godot_v4.6.1-stable_win64_console.exe --headless --editor --pa
 
 ```bash
 cd /d E:\projects\CentJours
-addons\gdUnit4\runtest.cmd --godot_binary E:\software\godot\Godot_v4.6.1-stable_win64_console.exe -a res://tests/godot -c
+tools\run_gdunit_windows.cmd E:\software\godot\Godot_v4.6.1-stable_win64_console.exe res://tests/godot
 ```
 
 - 若本轮没有完成对应的 Windows 验证，就明确记录“未验证”；不要用 Linux / WSL 结果补位。
 
 ## 当前阻塞与风险
 
-- `Windows CI 还没落地`：当前重测试仍要本地跑，速度慢，也不利于稳定复现。
-- `GdUnit4` 执行链还没脚本化：缓存刷新与 CLI 顺序已经确认有效，但还没固化进仓库脚本和 GitHub Actions。
+- `Windows CI 首轮云端结果仍未知`：workflow 已写入仓库，但这一轮还没有真实观察 GitHub Actions 首次跑完后的结果。
 - `主菜单状态流仍脆弱`：存读档、行动提交、地图 hover / 锁定和面板同步仍是高风险区。
 - `内容线仍未收口`：事件量、教学链、失败归因和最终资产都还不够完整。
 
@@ -149,7 +150,7 @@ addons\gdUnit4\runtest.cmd --godot_binary E:\software\godot\Godot_v4.6.1-stable_
 
 - Rust 当前自动化包含模块内单元测试、`cent-jours-core/tests/` 集成测试和 `proptest` 属性测试，最近一次 Windows 基线合计 `211` tests。
 - Godot 前端当前已有 `GdUnit4` 第一批 `7/7` 回归，以及 `src/dev/engine_smoke_test_scene.tscn` smoke 入口。
-- 仓库里目前还没有 `.github/workflows/`，Windows CI 仍需从零搭起来。
+- 仓库里现在已有 `.github/workflows/windows-validation.yml` 和 `tools/run_gdunit_windows.cmd`，Windows CI 与本地执行入口已经落地。
 
 ## 文档边界
 

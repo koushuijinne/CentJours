@@ -51,6 +51,7 @@
 - Rust + GDExt API 改动：补 Windows 侧扩展构建
 - Godot 前端测试：采用 `GdUnit4 + smoke + Windows 真机`
 - GDScript / 场景 / UI 改动：使用 Windows Godot 验证
+- 本地运行 `GdUnit4` 时，默认走 `tools/run_gdunit_windows.cmd`
 - 不把 Linux / WSL Godot 无头结果当成默认结论
 
 ### 4. 提交闭环
