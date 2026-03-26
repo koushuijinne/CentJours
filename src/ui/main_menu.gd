@@ -85,6 +85,10 @@ var _tray_controller = MainMenuTrayControllerScript.new()
 func _ready() -> void:
 	# 统一入口主题，保证占位骨架先具备正式视觉语言。
 	theme = CentJoursTheme.create()
+	_layout_controller.name = "LayoutController"
+	_map_controller.name = "MapController"
+	_dialogs_controller.name = "DialogsController"
+	_tray_controller.name = "TrayController"
 	add_child(_layout_controller)
 	add_child(_map_controller)
 	add_child(_dialogs_controller)

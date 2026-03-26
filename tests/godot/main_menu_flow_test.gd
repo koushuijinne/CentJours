@@ -262,6 +262,71 @@ func test_boost_popup_disables_confirm_when_legitimacy_too_low() -> void:
 	assert_bool(confirm_button.disabled).is_true()
 
 
+func test_game_over_overlay_disables_action_and_shows_restart() -> void:
+	var runner := await _load_main_menu()
+	var scene := runner.scene()
+	var execute_button := scene.find_child("ExecuteActionButton", true, false) as Button
+	assert_object(execute_button).is_not_null()
+
+	scene.call("_on_game_over", "political_collapse")
+	await runner.simulate_frames(2)
+
+	var overlay := scene.find_child("GameOverOverlay", true, false) as ColorRect
+	var restart_button := scene.find_child("GameOverRestartButton", true, false) as Button
+	var title_label := scene.find_child("GameOverTitleLabel", true, false) as Label
+	assert_object(overlay).is_not_null()
+	assert_object(restart_button).is_not_null()
+	assert_object(title_label).is_not_null()
+	assert_bool(execute_button.disabled).is_true()
+	assert_str(title_label.text.strip_edges()).is_not_equal("")
+
+
+func test_game_over_restart_resets_day_and_clears_overlay() -> void:
+	var runner := await _load_main_menu()
+	var scene := runner.scene()
+
+	runner.invoke("_on_confirm_pressed")
+	await runner.simulate_frames(8)
+	assert_int(GameState.current_day).is_equal(2)
+
+	scene.call("_on_game_over", "political_collapse")
+	await runner.simulate_frames(2)
+	var restart_button := scene.find_child("GameOverRestartButton", true, false) as Button
+	assert_object(restart_button).is_not_null()
+
+	restart_button.pressed.emit()
+	await runner.simulate_frames(4)
+
+	assert_int(GameState.current_day).is_equal(1)
+	assert_str(GameState.current_phase).is_equal("action")
+	assert_object(scene.find_child("GameOverOverlay", true, false)).is_null()
+
+
+func test_game_over_stats_clamp_display_day_to_100() -> void:
+	var runner := await _load_main_menu()
+	var scene := runner.scene()
+	var dialogs_controller := scene.find_child("DialogsController", true, false)
+	assert_object(dialogs_controller).is_not_null()
+
+	dialogs_controller.call(
+		"show_game_over",
+		"waterloo_historical",
+		{
+			"current_day": 128,
+			"legitimacy": 12.0,
+			"victories": 4,
+			"total_troops": 21000,
+			"avg_morale": 44.0,
+			"supply": 21.0
+		}
+	)
+	await runner.simulate_frames(2)
+
+	var stats_label := scene.find_child("GameOverStatsLabel", true, false) as Label
+	assert_object(stats_label).is_not_null()
+	assert_str(stats_label.text).contains("天数: 100")
+
+
 func _load_main_menu() -> GdUnitSceneRunner:
 	var runner := scene_runner(MAIN_MENU_SCENE)
 	await runner.simulate_frames(12)

@@ -15,7 +15,7 @@
 - Rust 规则层最近一次完整回归基线是 Windows `211/211`；自动工作流后续不再把 Linux / WSL `cargo test` 当成默认验证路径。
 - 当前核心数据基线：`15` 名角色、`41` 个地图节点、`58` 条历史事件，其中 `major 16 / normal 35 / minor 7`。
 - 当前活跃开发分支为 `auto/gameplay_update`。
-- Godot 前端自动回归已扩到 `GdUnit4 15/15`，当前 Windows 基线包含存读档槽位、槽位标签文案、新局确认/取消、读档取消、叙事面板、区域任务显示、战斗弹窗取消、接见禁用态、地图交互、Windows Godot 主项目无头和 Windows smoke scene；Windows CI workflow 与本地脚本入口也已写入仓库。
+- Godot 前端自动回归已扩到 `GdUnit4 18/18`，当前 Windows 基线包含存读档槽位、槽位标签文案、新局确认/取消、读档取消、叙事面板、区域任务显示、战斗弹窗取消、接见禁用态、结局弹窗显示/重开/天数截断、地图交互、Windows Godot 主项目无头和 Windows smoke scene；Windows CI workflow 与本地脚本入口也已写入仓库。
 - Save / Load 已进入 `v3` 兼容路径，旧存档会把 `fontainebleau_eve` 迁移为正式 ID `tuileries_eve`，前沿粮秣站状态也会随存档读写。
 - 历史事件正文、`historical_note` 与玩家行动结算日志都已接入侧栏日志链路。
 - 动态补给已接进核心循环：补给值会进入存档、`get_state()`、主菜单顶栏、休整恢复、战斗补给惩罚和每日行动结算日志。
@@ -45,6 +45,7 @@
 - 这轮又补了一层前端护栏：`Current Situation` 已开始显示区域任务；`GdUnit4` 已锁住多槽存读档可用性、叙事日志滚动链和区域任务文本展示；`save_manager.gd` 里槽位标签的字符串格式化 bug 已修掉。
 - 存读档槽位标签现在会把进行中的 `null / in_progress` 状态统一显示成玩家可读的“进行中”，并已由 `GdUnit4` 锁住。
 - 主菜单弹窗状态机又补了一层：`新局` 取消、`读档` 取消、战斗弹窗取消和低合法性接见禁用都已进入 `GdUnit4`，后续回归不再只靠手点。
+- 结局弹窗本轮也纳入自动回归：覆盖弹窗出现、重开后回到 `Day 1 / action`、以及结局统计的天数上限截断。
 - 文档目录已重构为 `docs/plans`、`docs/rules`、`docs/history`、`docs/decisions`，开发历史已从 live 计划文档中抽离到 `docs/history/development_logs/`。
 - 前端已拆出 `map / layout / tray / sidebar / dialogs` 控制器，但发布级视觉和交互收口仍未完成。
 - Windows 原生 Godot 与 Windows 无头仍是默认验证路径；不要把 Linux / WSL Godot 无头结果当成默认结论。
@@ -67,7 +68,7 @@
 - `文本 QA 未收口`：剩余事件仍需统一史实锚点、信息密度和句式风格
 - `前端发布级 polish 未完成`：主菜单主要 bug 已清一轮，但仍需 Windows 真机继续看地图缩放、hover 预览和存读档弹窗的最终体验
 - `Windows CI 仍需继续收口`：`23606297120` 已成功，但旧的 docs-only push 仍会占用 runner；接下来要继续收紧触发策略和并发取消
-- `前端自动回归仍不够宽`：主菜单取消路径和禁用态已纳入 `GdUnit4`，但结局、设置、更多地图交互边界和失败恢复链路还没进回归
+- `前端自动回归仍不够宽`：结局弹窗已纳入 `GdUnit4`，但设置、更多地图交互边界和失败恢复链路还没进回归
 - `产品化能力仍缺`：设置/选项页、导出配置、Steam 商店素材、教程引导都未完成
 - `Windows 真机体验验收仍未收口`：这轮已经补齐 Windows DLL 重编、Windows 无头与 smoke scene，但更长时的真机 UI / 体验验收还没补
 - `最终资产仍是占位`：地图底图、肖像、插图、BGM、SFX、结局画面还没替换

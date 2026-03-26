@@ -220,3 +220,20 @@
 - 本轮将与弹窗测试锚点、`GdUnit4` 回归和文档同步一起提交并推送到 `auto/gameplay_update`。
 下一步:
 - 继续按当前 `P0` 推进：把结局弹窗、设置链路和更多失败恢复边界继续压进 `GdUnit4`，同时观察最新 Windows CI run。
+
+## 2026-03-27 第 42 轮
+分支: `auto/gameplay_update`
+范围: 把结局弹窗关键状态纳入 `GdUnit4`
+变更:
+- `main_menu.gd` 给控制器节点补了稳定名字，`dialogs_controller.gd` 给结局遮罩、标题、统计和重开按钮补了测试锚点。
+- `tests/godot/main_menu_flow_test.gd` 新增 3 条回归：结局弹窗出现时会锁动作、重开后回到 `Day 1 / action`、结局统计显示的天数会截断到 `100`。
+- Godot 前端 `GdUnit4` 基线从 `15/15` 提升到 `18/18`。
+验证:
+- Windows `tools\\run_gdunit_windows.cmd` 通过，`GdUnit4 18/18`。
+- Windows Godot 无头主项目通过。
+- Windows Godot smoke scene 通过。
+- 本轮未运行 Linux / WSL 侧测试。
+提交/推送:
+- 本轮将与结局弹窗测试锚点、`GdUnit4` 回归和文档同步一起提交并推送到 `auto/gameplay_update`。
+下一步:
+- 继续按当前 `P0` 推进：把设置链路和更多失败恢复边界继续压进 `GdUnit4`，并继续观察最新 Windows CI run。

@@ -118,12 +118,14 @@ func show_game_over(outcome: String, stats: Dictionary = {}) -> void:
 	_call_optional(CALLBACK_SET_TRAY_INTERACTIVE, [false])
 
 	_game_over_overlay = ColorRect.new()
+	_game_over_overlay.name = "GameOverOverlay"
 	_game_over_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_game_over_overlay.color = Color(0, 0, 0, 0.7)
 	_game_over_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
 	_host_or_self().add_child(_game_over_overlay)
 
 	var panel := PanelContainer.new()
+	panel.name = "GameOverPanel"
 	panel.custom_minimum_size = Vector2(500, 420)
 	panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
 	var style := StyleBoxFlat.new()
@@ -139,6 +141,7 @@ func show_game_over(outcome: String, stats: Dictionary = {}) -> void:
 
 	var info: Dictionary = MainMenuConfigData.OUTCOME_TEXT.get(outcome, {"title": "— Fin —", "desc": outcome})
 	var title_label := Label.new()
+	title_label.name = "GameOverTitleLabel"
 	title_label.text = String(info.get("title", "— Fin —"))
 	title_label.add_theme_font_size_override("font_size", 24)
 	title_label.add_theme_color_override("font_color", CentJoursTheme.COLOR["gold_bright"])
@@ -146,6 +149,7 @@ func show_game_over(outcome: String, stats: Dictionary = {}) -> void:
 	vbox.add_child(title_label)
 
 	var desc_label := Label.new()
+	desc_label.name = "GameOverDescLabel"
 	desc_label.text = String(info.get("desc", outcome))
 	desc_label.add_theme_color_override("font_color", CentJoursTheme.COLOR["text_secondary"])
 	desc_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -168,6 +172,7 @@ func show_game_over(outcome: String, stats: Dictionary = {}) -> void:
 	)
 
 	var stats_label := Label.new()
+	stats_label.name = "GameOverStatsLabel"
 	stats_label.text = "\n最终统计\n天数: %d  |  合法性: %.0f\n胜场: %d  |  兵力: %d  |  士气: %.0f  |  补给: %.0f" % [
 		current_day,
 		legitimacy,
@@ -189,6 +194,7 @@ func show_game_over(outcome: String, stats: Dictionary = {}) -> void:
 	)
 
 	var restart_btn := Button.new()
+	restart_btn.name = "GameOverRestartButton"
 	restart_btn.text = "重新开始"
 	restart_btn.custom_minimum_size = Vector2(140, 36)
 	restart_btn.pressed.connect(_on_restart_requested)
