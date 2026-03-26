@@ -14,6 +14,7 @@
 - 当前内容规模为 `15` 名角色、`41` 个地图节点、`58` 条历史事件；补给、政治、历史日志、存档读档和主菜单主循环都已接通。
 - Save / Load 已进入 `v3` 兼容阶段；最近一次权威回归基线是 Windows `211/211` Rust tests、Windows `GdUnit4 7/7`、Windows Godot 主项目无头和 smoke scene。
 - Rust 规则层的第一批正式集成测试和属性测试已经落地；Godot 前端第一批 `GdUnit4` 回归也已接入，Windows GitHub Actions 工作流与仓库脚本也已落地。
+- 当前总目标已按 [ADR-011](/mnt/e/projects/CentJours/docs/decisions/ADR-011-core-loop-systemization-and-historical-depth.md) 固定为：核心玩法优化完成，并达到 Steam 可上线级别。
 
 ## 当前技术优先级
 
@@ -27,6 +28,7 @@
 | **P1** | **补前 10 天引导、失败归因、结局文本与关键 UI 文案统一** | M | 新玩家理解链仍不完整，需要结合玩法和日志一起收口。 |
 | **P2** | **前端发布级 polish 与设置入口** | M | 地图、Tray、Sidebar 已基本可用，但还需要更稳的 Windows 真机收口。 |
 | **P2** | **Windows 发布链路、资产替换与 Steam 提审准备** | L | 这条线建立在玩法和测试稳定之后。 |
+| **P2** | **低优先级：大本营互动层表达** | L | 只记录为后续扩展方向，不进入当前 Steam 首发主线。 |
 
 ## 未来三轮计划
 

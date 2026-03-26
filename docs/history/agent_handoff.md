@@ -5,6 +5,7 @@
 > **目标读者**: 新开会话后需要快速接手项目的 agent / 协作者
 > **开发历史**: 见 [docs/history/development_logs/](/mnt/e/projects/CentJours/docs/history/development_logs/)
 > **可选自动工作流**: 仅在用户明确要求时使用 [docs/rules/optional/agent_autonomous_workflow.md](/mnt/e/projects/CentJours/docs/rules/optional/agent_autonomous_workflow.md)
+> **当前总目标**: 按 [ADR-011](/mnt/e/projects/CentJours/docs/decisions/ADR-011-core-loop-systemization-and-historical-depth.md) 收口核心玩法，达到 Steam 可上线级别
 
 ---
 
@@ -142,6 +143,7 @@ E:\software\godot\Godot_v4.6.1-stable_win64_console.exe --headless --path E:\pro
 - [docs/plans/dev_plan.md](/mnt/e/projects/CentJours/docs/plans/dev_plan.md)
 - [docs/history/agent_handoff.md](/mnt/e/projects/CentJours/docs/history/agent_handoff.md)
 - [docs/decisions/ADR-010-bug-sweep-and-validation-discipline.md](/mnt/e/projects/CentJours/docs/decisions/ADR-010-bug-sweep-and-validation-discipline.md)
+- [docs/decisions/ADR-011-core-loop-systemization-and-historical-depth.md](/mnt/e/projects/CentJours/docs/decisions/ADR-011-core-loop-systemization-and-historical-depth.md)
 - [docs/decisions/ADR-008-historical-events-expansion.md](/mnt/e/projects/CentJours/docs/decisions/ADR-008-historical-events-expansion.md)
 - [docs/history/historical_event_review.md](/mnt/e/projects/CentJours/docs/history/historical_event_review.md)
 
@@ -151,6 +153,7 @@ E:\software\godot\Godot_v4.6.1-stable_win64_console.exe --headless --path E:\pro
 - 不要默认回退工作区里的现有改动
 - 不要把 Linux / WSL Godot 无头测试当成默认步骤
 - 若继续做内容线，先按 `ADR-008` 和 `historical_event_review` 的修订意见推进
+- 若继续做产品方向判断，先以 `ADR-011` 为准：优先核心循环、历史逻辑与 Steam 首发完整度，不把低优先级扩展层提到主线前面
 - 若继续做玩法线，优先把补给压力扩成明确的玩家决策，而不是继续堆纯后台数值
 - 自动工作流开启时，每轮提交后都要先在对话里输出一份完整压缩摘要，再继续下一轮；这不是结束语
 - 自动工作流开启时，每轮结束前都要回看一次 [docs/rules/agent_session_rules.md](/mnt/e/projects/CentJours/docs/rules/agent_session_rules.md)，并输出覆盖整个上下文窗口的压缩摘要，防止后续压缩卡住
