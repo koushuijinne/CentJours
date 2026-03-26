@@ -150,6 +150,7 @@ E:\software\godot\Godot_v4.6.1-stable_win64_console.exe --headless --path E:\pro
 ## 接手注意点
 
 - 自动工作流开启时，默认不能停下来；除非 Steam 提审 / 发版收口、用户明确叫停或出现硬阻塞，否则每轮摘要后都必须直接进入下一轮
+- 测试三轮计划已经完成，但这只代表测试底座阶段收口；后续必须继续推进当前 `P0`，不能把“三轮已完成”当成停止理由
 - 不要默认回退工作区里的现有改动
 - 不要把 Linux / WSL Godot 无头测试当成默认步骤
 - 若继续做内容线，先按 `ADR-008` 和 `historical_event_review` 的修订意见推进
