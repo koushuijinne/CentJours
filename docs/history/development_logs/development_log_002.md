@@ -334,3 +334,22 @@
 - 本轮将与 CI 收口、弹窗交互修正和文档同步一起提交并推送到 `auto/gameplay_update`。
 下一步:
 - 继续把设置链路和更多失败恢复边界压进 `GdUnit4`，并观察新一轮 Windows CI 排队是否继续下降。
+
+## 2026-03-27 第 49 轮
+分支: `auto/gameplay_update`
+范围: 把地图详情层位置跳变与长文本滚动护栏转成正式回归
+变更:
+- `layout_controller.gd` 统一了 `MapHoverPanel` 与 `MapInspectorPanel` 的右上展示锚点、高度和尺寸来源，不再让 hover 预览与锁定详情各算一套几何。
+- `main_menu.tscn` 显式固定 `MapHoverScroll` 与 `MapInspectorScroll` 的纵向滚动模式，避免后续布局改动把长文本护栏悄悄打掉。
+- `tests/godot/map_controller_contract_test.gd` 新增地图详情层契约测试，锁住 hover / inspector 同一右上锚点、同一高度和滚动容器配置。
+- `docs/bugs/` 新增 `BUG-2026-03-27-MAP-DETAIL-ANCHOR` 条目，并把问题正式挂到 bug 索引；`dev_plan.md`、`agent_handoff.md` 已同步到 `GdUnit4 20/20` 基线。
+验证:
+- 本地 `python3 tools/check_doc_sync.py --files ...` 通过。
+- Windows `tools\\run_gdunit_windows.cmd` 通过，`GdUnit4 20/20`。
+- Windows Godot 无头主项目通过。
+- Windows Godot smoke scene 通过。
+- 本轮未运行 Linux / WSL 侧测试。
+提交/推送:
+- 本轮将与地图详情层布局收口、`GdUnit4` 回归和文档同步一起提交并推送到 `auto/gameplay_update`。
+下一步:
+- 继续按当前 `P0` 推进：把设置链路、更多失败恢复边界和剩余 `docs/bugs` 问题继续转成自动化验证。

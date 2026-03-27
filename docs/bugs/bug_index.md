@@ -24,6 +24,7 @@
 | ID | 标题 | 级别 | 状态 | 来源 | 回归 | 详情 |
 |----|------|------|------|------|------|------|
 | `BUG-2026-03-24-UI-SWEEP` | 主菜单与地图首轮 bug sweep | P0 | 已修复 | [docs/bugs/bugs_check.md](/mnt/e/projects/CentJours/docs/bugs/bugs_check.md) | Windows headless / smoke / `GdUnit4` | [docs/history/bug_audit_2026-03-24.md](/mnt/e/projects/CentJours/docs/history/bug_audit_2026-03-24.md) |
+| `BUG-2026-03-27-MAP-DETAIL-ANCHOR` | 地图 hover 预览与锁定详情位置跳变，长文本详情缺少稳定滚动护栏 | P1 | 已修复 | [docs/bugs/bugs_check.md](/mnt/e/projects/CentJours/docs/bugs/bugs_check.md) | Windows headless / smoke / `GdUnit4` | [docs/bugs/bug_map_detail_anchor_and_scroll.md](/mnt/e/projects/CentJours/docs/bugs/bug_map_detail_anchor_and_scroll.md) |
 | `BUG-2026-03-27-EVENTBUS-WARNINGS` | `EventBus` 声明型 signal 在 `GdUnit4` 中持续产生 warning 噪音 | P2 | 待处理 | 本轮 `GdUnit4` 日志审计 | 尚未建立专项回归 | [docs/bugs/bug_eventbus_signal_warnings.md](/mnt/e/projects/CentJours/docs/bugs/bug_eventbus_signal_warnings.md) |
 
 ## 维护规则

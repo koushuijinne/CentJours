@@ -250,29 +250,28 @@ func apply_responsive_layout(viewport_size: Vector2 = Vector2.ZERO) -> void:
 	var sidebar_width := clampf(viewport.x * 0.27, 332.0, 372.0)
 	if _sidebar != null:
 		_sidebar.custom_minimum_size.x = sidebar_width
+	var detail_panel_width := clampf(viewport.x * 0.29, 340.0, 420.0)
+	var detail_panel_height := clampf(viewport.y * 0.38, 240.0, 344.0)
+	var detail_panel_top := clampf(viewport.y * 0.11, 78.0, 100.0)
 	if _map_hover_panel != null:
-		var hover_width := clampf(viewport.x * 0.24, 300.0, 360.0)
-		var hover_height := clampf(viewport.y * 0.18, 116.0, 154.0)
-		var hover_top := clampf(viewport.y * 0.11, 78.0, 100.0)
-		_map_hover_panel.custom_minimum_size = Vector2(hover_width, hover_height)
-		_map_hover_panel.offset_left = -hover_width - 4.0
-		_map_hover_panel.offset_top = hover_top
+		# hover 预览与锁定详情共用一组几何锚点，避免两层面板来回跳位。
+		_map_hover_panel.custom_minimum_size = Vector2(detail_panel_width, detail_panel_height)
+		_map_hover_panel.offset_left = -detail_panel_width - 4.0
+		_map_hover_panel.offset_top = detail_panel_top
 		_map_hover_panel.offset_right = -4.0
-		_map_hover_panel.offset_bottom = hover_top + hover_height
+		_map_hover_panel.offset_bottom = detail_panel_top + detail_panel_height
 		if _map_hover_meta != null:
-			_map_hover_meta.custom_minimum_size.x = hover_width - 28.0
+			_map_hover_meta.custom_minimum_size.x = detail_panel_width - 28.0
 	if _map_inspector_panel != null:
-		var inspector_width := clampf(viewport.x * 0.29, 340.0, 430.0)
-		var inspector_height := clampf(viewport.y * 0.40, 252.0, 360.0)
-		var inspector_top := clampf(viewport.y * 0.11, 78.0, 100.0)
-		_map_inspector_panel.custom_minimum_size = Vector2(inspector_width, inspector_height)
-		_map_inspector_panel.offset_left = -inspector_width - 4.0
-		_map_inspector_panel.offset_top = inspector_top
+		_map_inspector_panel.custom_minimum_size = Vector2(detail_panel_width, detail_panel_height)
+		_map_inspector_panel.offset_left = -detail_panel_width - 4.0
+		_map_inspector_panel.offset_top = detail_panel_top
 		_map_inspector_panel.offset_right = -4.0
-		_map_inspector_panel.offset_bottom = inspector_top + inspector_height
+		_map_inspector_panel.offset_bottom = detail_panel_top + detail_panel_height
 		for label in [_map_inspector_meta, _map_inspector_stats, _map_inspector_history]:
 			if label != null:
-				label.custom_minimum_size.x = inspector_width - 28.0
+				label.custom_minimum_size.x = detail_panel_width - 28.0
+	_sync_map_detail_panel_anchor()
 
 	var card_size := Vector2(
 		clampf(viewport.x * 0.102, 124.0, 140.0),
@@ -387,6 +386,20 @@ func _compute_loyalty_content_width(sidebar_width: float) -> float:
 	if scroll_width <= 0.0:
 		scroll_width = sidebar_width - 52.0
 	return maxf(scroll_width - 6.0, 240.0)
+
+
+func _sync_map_detail_panel_anchor() -> void:
+	if _map_hover_panel == null or _map_inspector_panel == null:
+		return
+	_map_hover_panel.anchor_left = _map_inspector_panel.anchor_left
+	_map_hover_panel.anchor_top = _map_inspector_panel.anchor_top
+	_map_hover_panel.anchor_right = _map_inspector_panel.anchor_right
+	_map_hover_panel.anchor_bottom = _map_inspector_panel.anchor_bottom
+	_map_hover_panel.offset_left = _map_inspector_panel.offset_left
+	_map_hover_panel.offset_top = _map_inspector_panel.offset_top
+	_map_hover_panel.offset_right = _map_inspector_panel.offset_right
+	_map_hover_panel.offset_bottom = _map_inspector_panel.offset_bottom
+	_map_hover_panel.custom_minimum_size = _map_inspector_panel.custom_minimum_size
 
 
 func _style_heading(label: Label, font_size: int, font_color: Color) -> void:
