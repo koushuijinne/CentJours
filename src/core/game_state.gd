@@ -31,6 +31,8 @@ var available_march_targets: Array[String] = []
 var forward_depot_location: String = ""
 var forward_depot_capacity_bonus: int = 0
 var forward_depot_days: int = 0
+# 下面这组字段是 Rust `get_state()` 暴露给前端的扁平后勤摘要缓存。
+# 约束很明确：GameState 只缓存，不在 GDScript 侧二次推导，避免不同 UI 面板各自重算后漂移。
 var logistics_posture_id: String = ""
 var logistics_posture_label: String = ""
 var logistics_focus_title: String = ""
@@ -140,7 +142,7 @@ func _load_map() -> void:
 	if err != OK:
 		push_error("map_nodes.json 解析失败")
 		return
-	# 初始化地图控制权
+	# 初始化地图控制权。这里仍是前端默认值；正式局内控制权以后续引擎同步为准。
 	for node_data in json.data["nodes"]:
 		var nid: String = node_data["id"]
 		# 法国境内初始为拿破仑/中立，比利时境内为敌方

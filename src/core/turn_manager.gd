@@ -269,6 +269,8 @@ func _sync_state_from_engine() -> void:
 
 	var old_legit: float = GameState.legitimacy
 
+	# 这里保持“Rust Dictionary -> GameState 扁平缓存”的单向同步，不在 TurnManager 里再做业务推导。
+	# 目的有两点：一是让 UI 只消费一份权威快照；二是读档/新局后能用同一入口把所有面板一起复位。
 	GameState.current_day      = engine.current_day()
 	GameState.legitimacy       = float(state.get("legitimacy", GameState.legitimacy))
 	GameState.rouge_noir_index = float(state.get("rouge_noir", GameState.rouge_noir_index))

@@ -103,6 +103,7 @@ mod tests {
     use rand::rngs::StdRng;
     use rand::SeedableRng;
 
+    // 叙事测试名统一为英文，中文说明继续保留在断言文本和数据注释里。
     fn seeded_rng() -> StdRng {
         StdRng::seed_from_u64(42)
     }
@@ -110,7 +111,7 @@ mod tests {
     // ── 加载 ──────────────────────────────────────────
 
     #[test]
-    fn 叙事池加载成功() {
+    fn narrative_pool_loads_successfully() {
         let pool = NarrativePool::new();
         // 两个 JSON 都应有内容
         assert!(
@@ -124,7 +125,7 @@ mod tests {
     }
 
     #[test]
-    fn 司汤达15个行动类型全部有内容() {
+    fn all_fifteen_action_types_exist_in_stendhal_pool() {
         let pool = NarrativePool::new();
         for key in &[
             "conscription",
@@ -152,7 +153,7 @@ mod tests {
     }
 
     #[test]
-    fn 后果16个类型全部有内容() {
+    fn all_sixteen_types_exist_in_consequences_pool() {
         let pool = NarrativePool::new();
         for key in &[
             "conscription",
@@ -183,7 +184,7 @@ mod tests {
     // ── 抽取 ──────────────────────────────────────────
 
     #[test]
-    fn 已知类型返回非空文本() {
+    fn known_types_return_non_empty_text() {
         let pool = NarrativePool::new();
         let mut rng = seeded_rng();
         let text = pool.pick_stendhal("conscription", &mut rng);
@@ -192,7 +193,7 @@ mod tests {
     }
 
     #[test]
-    fn 未知类型返回None不崩溃() {
+    fn unknown_types_return_none_without_crashing() {
         let pool = NarrativePool::new();
         let mut rng = seeded_rng();
         assert!(pool.pick_stendhal("nonexistent_action", &mut rng).is_none());
@@ -202,7 +203,7 @@ mod tests {
     }
 
     #[test]
-    fn 多次抽取能取到不同文本() {
+    fn repeated_draws_can_return_different_text() {
         let pool = NarrativePool::new();
         let mut rng = StdRng::seed_from_u64(0);
         // 抽 20 次，应当出现多于 1 种结果（5 个变体）
@@ -219,7 +220,7 @@ mod tests {
     // ── policy_narrative_key 映射 ─────────────────────
 
     #[test]
-    fn 政策key映射正确() {
+    fn policy_key_mapping_is_correct() {
         assert_eq!(policy_narrative_key("conscription"), Some("conscription"));
         assert_eq!(policy_narrative_key("public_speech"), Some("public_speech"));
         assert_eq!(
@@ -257,7 +258,7 @@ mod tests {
     /// 其目标 key 必须在 stendhal_diary.json 中有对应条目。
     /// 防止：政策表改了 key 但 JSON 忘更新 → 运行时静默返回 None。
     #[test]
-    fn policy_narrative_key所有映射结果在stendhal中有条目() {
+    fn all_policy_narrative_keys_exist_in_stendhal() {
         let pool = NarrativePool::new();
         // 所有已注册的 policy_id
         let policy_ids = [
@@ -289,7 +290,7 @@ mod tests {
     /// 所有在 policy_narrative_key() 中声明的映射，
     /// 其目标 key 必须在 consequences.json 中有对应条目。
     #[test]
-    fn policy_narrative_key所有映射结果在consequences中有条目() {
+    fn all_policy_narrative_keys_exist_in_consequences() {
         let pool = NarrativePool::new();
         let policy_ids = [
             "conscription",

@@ -8,6 +8,7 @@ extends RefCounted
 const LEGACY_SAVE_PATH := "user://cent_jours_save.json"
 const SAVE_DIR := "user://saves"
 const SLOT_COUNT := 3
+# Save v3 之后，多槽 UI、事件迁移和前沿粮秣站状态都依赖统一版本口径。
 const SAVE_VERSION := 3
 
 ## 存档：序列化引擎状态并写入磁盘
@@ -36,6 +37,7 @@ static func save_game(engine: CentJoursEngine, slot_id: int = 1) -> bool:
 static func load_game(engine: CentJoursEngine, slot_id: int = 1) -> bool:
 	if not _is_valid_slot(slot_id):
 		return false
+	# 槽位 1 仍兼容旧单文件存档，便于老档无感迁移到多槽系统。
 	var save_path := _resolved_load_path(slot_id)
 	if save_path == "":
 		return false
@@ -101,6 +103,7 @@ static func get_save_meta(slot_id: int = 1) -> Dictionary:
 	}
 
 static func list_save_slots() -> Array[Dictionary]:
+	# UI 只读取这一层统一槽位契约，不直接窥探底层 JSON 结构。
 	var slots: Array[Dictionary] = []
 	for slot_id in range(1, SLOT_COUNT + 1):
 		var meta := get_save_meta(slot_id)

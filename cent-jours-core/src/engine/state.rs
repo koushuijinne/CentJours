@@ -94,6 +94,12 @@ pub struct DayReport {
     pub consequence: Option<String>,
 }
 
+/// Rust -> Godot 的扁平行军预判契约。
+///
+/// 这里故意保持扁平字段，而不是嵌套结构：
+/// - `lib.rs` 会把它直接展开成 Dictionary
+/// - `TurnManager` / `GameState` / 地图侧栏可以无损复用同一份字段
+/// - 存量 GDScript 不需要理解 Rust 内部结构即可消费预判结果
 #[derive(Debug, Clone)]
 pub struct MarchPreview {
     pub valid: bool,
@@ -126,6 +132,10 @@ pub struct MarchPreview {
     pub follow_up_best_runway_days: i32,
 }
 
+/// 当前回合给 UI 的后勤建议快照。
+///
+/// 它不是额外规则状态，而是由当前军情、补给线和阶段目标推导出的只读摘要。
+/// 设计上要求所有前端入口读取同一份结果，避免不同面板各自拼文案后再次漂移。
 #[derive(Debug, Clone)]
 pub struct LogisticsBrief {
     pub posture_id: String,
@@ -349,7 +359,11 @@ impl ArmyState {
 
 // ── 存档状态 ─────────────────────────────────────────
 
-/// 可序列化的完整游戏存档快照
+/// 可序列化的完整游戏存档快照。
+///
+/// `SaveState` 既是读写磁盘的格式，也是版本迁移的边界：
+/// - 新字段必须通过 `serde(default)` 或显式迁移保证旧档可读
+/// - UI 依赖的补给/区域运营状态也必须进存档，避免读档后前后端状态脱节
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SaveState {
     /// 存档格式版本（用于兼容性检查）
@@ -2079,6 +2093,7 @@ impl GameEngine {
             .into_iter()
             .map(|(a, b, v)| ((a, b), v))
             .collect();
+        // 事件 ID 的兼容迁移必须先于事件池 restore；否则旧存档会把废弃 ID 重新标记为已触发。
         let migrated_triggered_event_ids = migrate_triggered_event_ids(state.triggered_event_ids);
         engine.triggered_event_ids = migrated_triggered_event_ids.clone();
         engine
@@ -2104,8 +2119,12 @@ impl GameEngine {
 
     // ── 回合驱动 ──────────────────────────────────────
 
-    /// 处理一整天（Dawn → Action → Dusk）
-    /// 玩家行动由调用方提供
+    /// 处理一整天（Dawn → Action → Dusk）。
+    ///
+    /// 这里是整局规则的唯一日推进入口：
+    /// - Dawn 先结算历史事件，让事件效果参与当天决策和后续结算
+    /// - Action 执行玩家动作，并记录叙事分类所需的上下文
+    /// - Dusk 再统一落每日被动结算，保证 UI 只面对一份权威日结果
     pub fn process_day<R: Rng>(&mut self, action: PlayerAction, rng: &mut R) {
         if self.is_over() {
             return;
@@ -3358,6 +3377,7 @@ mod tests {
     use rand::SeedableRng;
     use serde_json::json;
 
+    // 测试函数名统一改成英文，中文语义继续保留在分组标题、断言文本和局部注释里。
     fn seeded_rng() -> StdRng {
         StdRng::seed_from_u64(42)
     }
@@ -3365,7 +3385,7 @@ mod tests {
     // ── 初始化 ────────────────────────────────────────
 
     #[test]
-    fn 引擎初始状态正确() {
+    fn engine_initial_state_is_correct() {
         let engine = GameEngine::new();
         assert_eq!(engine.current_day(), 1);
         assert!(!engine.is_over());
@@ -3376,7 +3396,7 @@ mod tests {
     // ── 战役耦合 ──────────────────────────────────────
 
     #[test]
-    fn 战胜同时提升军方支持和将领忠诚() {
+    fn victory_raises_military_support_and_loyalty() {
         let mut engine = GameEngine::new();
         // 给内伊设定初始忠诚65（历史初始值）
         let ney_initial = engine.characters.loyalty("ney");
@@ -3400,7 +3420,7 @@ mod tests {
     }
 
     #[test]
-    fn 战败降低军方支持度() {
+    fn defeat_lowers_military_support() {
         let mut engine = GameEngine::new();
 
         // 以极少兵力攻打大量敌军 → 必败
@@ -3425,7 +3445,7 @@ mod tests {
     // ── 政策耦合 ──────────────────────────────────────
 
     #[test]
-    fn 政策行动消耗行动点() {
+    fn policy_actions_consume_action_points() {
         let mut engine = GameEngine::new();
         let actions_before = engine.politics.actions_remaining;
         let mut rng = seeded_rng();
@@ -3445,7 +3465,7 @@ mod tests {
     }
 
     #[test]
-    fn 最近行动记录会缓存可读政策结算() {
+    fn recent_action_log_keeps_readable_policy_summary() {
         let mut engine = GameEngine::new();
         let mut rng = seeded_rng();
 
@@ -3485,7 +3505,7 @@ mod tests {
     }
 
     #[test]
-    fn 政策失败也会缓存失败原因() {
+    fn failed_policy_still_keeps_failure_reason() {
         let mut engine = GameEngine::new();
         engine.politics.actions_remaining = 0;
         let mut rng = seeded_rng();
@@ -3522,7 +3542,7 @@ mod tests {
     }
 
     #[test]
-    fn 征用沿线仓储会立刻补充补给() {
+    fn requisition_supplies_increases_supply_immediately() {
         let mut engine = GameEngine::new();
         engine.army.supply = 30.0;
         let mut rng = seeded_rng();
@@ -3554,7 +3574,7 @@ mod tests {
     }
 
     #[test]
-    fn 整顿驿站运输会暂时提高补给线效率() {
+    fn stabilize_supply_lines_temporarily_increases_line_efficiency() {
         let baseline = GameEngine::new();
         let base_preview = baseline.preview_march("grasse");
 
@@ -3606,7 +3626,7 @@ mod tests {
     }
 
     #[test]
-    fn 建立前沿粮秣站会暂时提高当前驻地容量() {
+    fn establish_forward_depot_temporarily_increases_local_capacity() {
         let mut engine = GameEngine::new();
         engine.napoleon_location = "grasse".to_string();
         let base_preview = engine.preview_march("digne");
@@ -3656,7 +3676,7 @@ mod tests {
     }
 
     #[test]
-    fn 巩固区域走廊会同时提高补给线效率和当前驻地容量() {
+    fn secure_regional_corridor_increases_line_efficiency_and_local_capacity() {
         let mut engine = GameEngine::new();
         engine.napoleon_location = "autun".to_string();
         let preview_target = engine
@@ -3717,7 +3737,7 @@ mod tests {
     }
 
     #[test]
-    fn 低补给时后勤态势会转为止血整补() {
+    fn low_supply_switches_logistics_posture_to_recovery() {
         let mut engine = GameEngine::new();
         engine.army.supply = 34.0;
 
@@ -3732,7 +3752,7 @@ mod tests {
     }
 
     #[test]
-    fn 低补给时当日行动计划会优先征用仓储() {
+    fn low_supply_action_plan_prioritizes_requisition() {
         let mut engine = GameEngine::new();
         engine.army.supply = 34.0;
 
@@ -3747,7 +3767,7 @@ mod tests {
     }
 
     #[test]
-    fn 前沿粮秣站激活时后勤态势会转为前沿整补跳板() {
+    fn forward_depot_posture_switches_to_forward_staging() {
         let mut engine = GameEngine::new();
         engine.napoleon_location = "grasse".to_string();
         engine.forward_depot_location = "grasse".to_string();
@@ -3765,7 +3785,7 @@ mod tests {
     }
 
     #[test]
-    fn 运输线拉长时当日行动计划会优先巩固区域走廊() {
+    fn long_supply_line_action_plan_prioritizes_regional_corridor() {
         let engine = GameEngine::new();
 
         let (primary, secondary) = engine.logistics_action_plan_for(
@@ -3786,7 +3806,7 @@ mod tests {
     }
 
     #[test]
-    fn 阶段目标会随日期切换() {
+    fn phase_objective_switches_with_day_ranges() {
         let mut engine = GameEngine::new();
         engine.day = 8;
         assert!(
@@ -3802,7 +3822,7 @@ mod tests {
     }
 
     #[test]
-    fn 高容量节点的补给窗口会显示为可持续维持() {
+    fn high_capacity_node_shows_sustainable_supply_window() {
         let mut engine = GameEngine::new();
         engine.napoleon_location = "paris".to_string();
         engine.army.supply = 68.0;
@@ -3815,7 +3835,7 @@ mod tests {
     }
 
     #[test]
-    fn 前10天前线消耗区会要求先抢区域整补点() {
+    fn first_ten_days_frontline_zone_requires_regional_staging_point() {
         let engine = GameEngine::new();
         let brief = engine.logistics_brief();
 
@@ -3827,7 +3847,7 @@ mod tests {
     }
 
     #[test]
-    fn 前10天当日行动计划会给出明确行军目标() {
+    fn first_ten_days_action_plan_returns_explicit_march_target() {
         let engine = GameEngine::new();
         let brief = engine.logistics_brief();
 
@@ -3843,7 +3863,7 @@ mod tests {
     }
 
     #[test]
-    fn 三日后勤节奏会给出完整安排() {
+    fn three_day_logistics_tempo_provides_full_schedule() {
         let engine = GameEngine::new();
         let brief = engine.logistics_brief();
 
@@ -3857,7 +3877,7 @@ mod tests {
     }
 
     #[test]
-    fn 区域运营链路会给出推荐节点线() {
+    fn regional_operations_chain_returns_recommended_route() {
         let engine = GameEngine::new();
         let brief = engine.logistics_brief();
 
@@ -3872,7 +3892,7 @@ mod tests {
     }
 
     #[test]
-    fn 区域运营压力会提示先固线再推进() {
+    fn regional_pressure_recommends_fortify_before_pushing() {
         let engine = GameEngine::new();
         let brief = engine.logistics_brief();
 
@@ -3891,7 +3911,7 @@ mod tests {
     }
 
     #[test]
-    fn 低补给时三日节奏会先止血再整补() {
+    fn low_supply_three_day_tempo_stops_losses_before_repairing() {
         let mut engine = GameEngine::new();
         engine.army.supply = 34.0;
 
@@ -3908,7 +3928,7 @@ mod tests {
     }
 
     #[test]
-    fn 低补给时区域运营链路会先止血再接路线() {
+    fn low_supply_regional_chain_stops_losses_before_reconnecting_route() {
         let mut engine = GameEngine::new();
         engine.army.supply = 34.0;
 
@@ -3922,7 +3942,7 @@ mod tests {
     }
 
     #[test]
-    fn 终盘推进窗口会把目标切到决定性前线点() {
+    fn late_campaign_push_window_targets_decisive_frontline_nodes() {
         let mut engine = GameEngine::new();
         engine.day = 92;
         engine.napoleon_location = "brussels".to_string();
@@ -3939,7 +3959,7 @@ mod tests {
     }
 
     #[test]
-    fn 行军预览会给出落点补给窗口() {
+    fn march_preview_reports_landing_supply_window() {
         let mut engine = GameEngine::new();
         engine.army.supply = 52.0;
 
@@ -3957,7 +3977,7 @@ mod tests {
     }
 
     #[test]
-    fn 高容量落点会保留第二跳机动余地() {
+    fn high_capacity_destination_keeps_second_hop_flexibility() {
         let mut engine = GameEngine::new();
         engine.napoleon_location = "grenoble".to_string();
         engine.army.supply = 78.0;
@@ -3974,7 +3994,7 @@ mod tests {
     }
 
     #[test]
-    fn 低容量前线落点会暴露第二跳陷阱() {
+    fn low_capacity_frontline_destination_exposes_second_hop_trap() {
         let mut engine = GameEngine::new();
         engine.army.supply = 52.0;
 
@@ -3988,7 +4008,7 @@ mod tests {
     // ── 忠诚度强化 ────────────────────────────────────
 
     #[test]
-    fn 强化忠诚消耗合法性() {
+    fn boost_loyalty_consumes_legitimacy() {
         let mut engine = GameEngine::new();
         let leg_before = engine.politics.legitimacy;
         let _ = engine.process_boost_loyalty("davout");
@@ -3999,7 +4019,7 @@ mod tests {
     }
 
     #[test]
-    fn 合法性不足时强化忠诚失败() {
+    fn boost_loyalty_fails_without_legitimacy() {
         let mut engine = GameEngine::new();
         engine.politics.legitimacy = 5.0; // 不足10
         let events = engine.process_boost_loyalty("davout");
@@ -4009,7 +4029,7 @@ mod tests {
     // ── 胜负判定 ──────────────────────────────────────
 
     #[test]
-    fn 政治崩溃触发游戏结束() {
+    fn political_collapse_ends_game() {
         let mut engine = GameEngine::new();
         // 强制两派系崩溃
         engine
@@ -4030,7 +4050,7 @@ mod tests {
     }
 
     #[test]
-    fn 军事崩溃触发游戏结束() {
+    fn military_annihilation_ends_game() {
         let mut engine = GameEngine::new();
         engine.army.total_troops = 3_000; // 低于阈值
         let mut rng = seeded_rng();
@@ -4039,7 +4059,7 @@ mod tests {
     }
 
     #[test]
-    fn 百日结束高分路径获胜() {
+    fn end_of_hundred_days_high_score_path_wins() {
         let mut engine = GameEngine::new();
         engine.day = 101;
         engine.politics.legitimacy = 75.0;
@@ -4049,7 +4069,7 @@ mod tests {
     }
 
     #[test]
-    fn 百日结束低分路径流放() {
+    fn end_of_hundred_days_low_score_path_exiles_napoleon() {
         let mut engine = GameEngine::new();
         engine.day = 101;
         engine.politics.legitimacy = 20.0;
@@ -4061,7 +4081,7 @@ mod tests {
     // ── 每日结算联动 ──────────────────────────────────
 
     #[test]
-    fn 休整恢复疲劳和士气() {
+    fn rest_recovers_fatigue_and_morale() {
         let mut engine = GameEngine::new();
         engine.army.avg_fatigue = 80.0;
         engine.army.avg_morale = 60.0;
@@ -4073,7 +4093,7 @@ mod tests {
     }
 
     #[test]
-    fn 低补给时休整恢复较弱() {
+    fn low_supply_rest_recovers_less() {
         let mut high_supply = GameEngine::new();
         high_supply.army.avg_fatigue = 80.0;
         high_supply.army.avg_morale = 60.0;
@@ -4100,7 +4120,7 @@ mod tests {
     }
 
     #[test]
-    fn 兵力极少时军方支持持续下降() {
+    fn military_support_declines_when_troops_are_too_low() {
         let mut engine = GameEngine::new();
         engine.army.total_troops = 15_000; // 低于20000阈值
         let mil_before = engine.politics.faction_support["military"];
@@ -4113,7 +4133,7 @@ mod tests {
     }
 
     #[test]
-    fn 行军到相邻节点会同步位置与状态() {
+    fn marching_to_adjacent_node_updates_position_and_state() {
         let mut engine = GameEngine::new();
         let mut rng = seeded_rng();
         let fatigue_before = engine.army.avg_fatigue;
@@ -4136,7 +4156,7 @@ mod tests {
     }
 
     #[test]
-    fn 行军预览会返回权威预测值() {
+    fn march_preview_returns_authoritative_projection() {
         let engine = GameEngine::new();
         let preview = engine.preview_march("grasse");
 
@@ -4154,7 +4174,7 @@ mod tests {
     }
 
     #[test]
-    fn 补给结算会给出风险归因和建议() {
+    fn supply_resolution_reports_risk_and_advice() {
         let mut engine = GameEngine::new();
         engine.napoleon_location = "waterloo".to_string();
         engine.army.supply = 32.0;
@@ -4184,7 +4204,7 @@ mod tests {
     }
 
     #[test]
-    fn 非相邻行军不会改变位置() {
+    fn non_adjacent_march_does_not_change_position() {
         let mut engine = GameEngine::new();
         let mut rng = seeded_rng();
         engine.process_day(
@@ -4207,7 +4227,7 @@ mod tests {
     }
 
     #[test]
-    fn 行军结算使用玩家可读地名() {
+    fn march_resolution_uses_readable_place_names() {
         let mut engine = GameEngine::new();
         let mut rng = seeded_rng();
         engine.process_day(
@@ -4227,7 +4247,7 @@ mod tests {
     }
 
     #[test]
-    fn 联军兵力加成会进入联军状态() {
+    fn coalition_bonus_feeds_into_coalition_state() {
         let mut engine = GameEngine::new();
         let baseline = engine.coalition_force().troops;
         let mut effects = EventEffects::default();
@@ -4243,7 +4263,7 @@ mod tests {
     }
 
     #[test]
-    fn 巴黎治安与政治稳定加成会影响每日结算() {
+    fn paris_security_and_political_stability_affect_daily_tick() {
         let mut engine = GameEngine::new();
         let mut control = GameEngine::new();
         let mut effects = EventEffects::default();
@@ -4274,7 +4294,7 @@ mod tests {
     // ── Save/Load 序列化 ──────────────────────────────
 
     #[test]
-    fn 存档后读档状态一致() {
+    fn save_and_load_round_trip_preserves_state() {
         let mut engine = GameEngine::new();
         let mut rng = seeded_rng();
         // 推进几天制造一些状态变化
@@ -4353,7 +4373,7 @@ mod tests {
     }
 
     #[test]
-    fn 读档后事件不重复触发() {
+    fn loaded_save_does_not_retrigger_events() {
         let mut engine = GameEngine::new();
         let mut rng = seeded_rng();
         // 推进到 Day 20，期间某些事件可能触发
@@ -4382,7 +4402,7 @@ mod tests {
     }
 
     #[test]
-    fn json序列化反序列化完整往返() {
+    fn json_round_trip_is_complete() {
         let engine = GameEngine::new();
         let json = engine.to_json();
         assert!(!json.is_empty(), "JSON 不应为空");
@@ -4390,7 +4410,7 @@ mod tests {
     }
 
     #[test]
-    fn 旧存档缺少补给字段时使用默认值() {
+    fn legacy_save_without_supply_uses_default_value() {
         let json = json!({
             "version": 2,
             "day": 18,
@@ -4434,7 +4454,7 @@ mod tests {
     }
 
     #[test]
-    fn v1存档会迁移杜伊勒里宫前夜并去重() {
+    fn v1_save_migrates_tuileries_event_and_deduplicates() {
         let json = json!({
             "version": 1,
             "day": 18,
@@ -4515,7 +4535,7 @@ mod tests {
     // ── 叙事引擎集成 ──────────────────────────────────
 
     #[test]
-    fn 执行征兵政策后有叙事报告() {
+    fn enact_conscription_produces_narrative_report() {
         let mut engine = GameEngine::new();
         let mut rng = seeded_rng();
         engine.process_day(
@@ -4530,7 +4550,7 @@ mod tests {
     }
 
     #[test]
-    fn 执行休整后无叙事文本() {
+    fn rest_action_has_no_narrative_text() {
         let mut engine = GameEngine::new();
         let mut rng = seeded_rng();
         engine.process_day(PlayerAction::Rest, &mut rng);
@@ -4540,7 +4560,7 @@ mod tests {
     }
 
     #[test]
-    fn 强化忠诚后有司汤达文本() {
+    fn boost_loyalty_produces_stendhal_text() {
         let mut engine = GameEngine::new();
         let mut rng = seeded_rng();
         engine.process_day(
@@ -4554,7 +4574,7 @@ mod tests {
     }
 
     #[test]
-    fn 强化忠诚结算使用将领显示名() {
+    fn boost_loyalty_uses_character_display_name() {
         let mut engine = GameEngine::new();
         let mut rng = seeded_rng();
         engine.process_day(
@@ -4576,7 +4596,7 @@ mod tests {
     }
 
     #[test]
-    fn 游戏开始前无叙事报告() {
+    fn no_narrative_report_before_game_starts() {
         let engine = GameEngine::new();
         assert!(engine.last_report().is_none(), "初始状态应无叙事报告");
     }
@@ -4584,7 +4604,7 @@ mod tests {
     // ── 事件系统集成 ──────────────────────────────────
 
     #[test]
-    fn 引擎内部自动触发内伊倒戈() {
+    fn engine_triggers_ney_defection_internally() {
         let mut engine = GameEngine::new();
         let mut rng = seeded_rng();
         // 推进到 Day 6（内伊倒戈窗口）
@@ -4603,7 +4623,7 @@ mod tests {
     }
 
     #[test]
-    fn 事件只触发一次() {
+    fn events_trigger_only_once() {
         let mut engine = GameEngine::new();
         let mut rng = seeded_rng();
         for _ in 0..20 {
@@ -4622,7 +4642,7 @@ mod tests {
     }
 
     #[test]
-    fn 触发事件被记录到历史() {
+    fn triggered_events_are_recorded_in_history() {
         let mut engine = GameEngine::new();
         let mut rng = seeded_rng();
         for _ in 0..20 {
@@ -4642,7 +4662,7 @@ mod tests {
     }
 
     #[test]
-    fn 最近触发事件详情保留史注内容() {
+    fn last_triggered_event_details_keep_historical_note() {
         let mut engine = GameEngine::new();
         let mut rng = seeded_rng();
         for _ in 0..20 {
@@ -4664,7 +4684,7 @@ mod tests {
     }
 
     #[test]
-    fn 战役结算使用可读地形与结果标签() {
+    fn battle_resolution_uses_readable_terrain_and_result_labels() {
         let mut engine = GameEngine::new();
         let mut rng = seeded_rng();
         engine.process_day(
@@ -4692,7 +4712,7 @@ mod tests {
     // ── 联军增长 ──────────────────────────────────────
 
     #[test]
-    fn 联军兵力随时间增长() {
+    fn coalition_troops_grow_over_time() {
         let mut engine = GameEngine::new();
         let early = engine.coalition_force().troops;
         engine.day = 90;
@@ -4708,7 +4728,7 @@ mod tests {
     // ── 叛逃/倒戈每日检查（Tier 3.2）──────────────────
 
     #[test]
-    fn 内伊忠诚正常时不触发叛逃() {
+    fn ney_does_not_defect_with_normal_loyalty() {
         let mut engine = GameEngine::new();
         let mut rng = seeded_rng();
         engine.day = 6;
@@ -4726,7 +4746,7 @@ mod tests {
     }
 
     #[test]
-    fn 内伊忠诚危机时可触发叛逃() {
+    fn ney_can_defect_at_crisis_loyalty() {
         // 辅助函数：创建一个内伊低忠诚引擎
         fn make_low_ney_engine() -> GameEngine {
             let mut engine = GameEngine::new();
@@ -4770,7 +4790,7 @@ mod tests {
     }
 
     #[test]
-    fn 叛逃后不会重复触发() {
+    fn defection_does_not_repeat() {
         let mut engine = GameEngine::new();
         engine.day = 6;
         // 标记已叛逃
@@ -4793,7 +4813,7 @@ mod tests {
     }
 
     #[test]
-    fn 格鲁希day90前不触发脱离() {
+    fn grouchy_does_not_depart_before_day_90() {
         let mut engine = GameEngine::new();
         engine.day = 50;
         // 强制低忠诚
@@ -4812,7 +4832,7 @@ mod tests {
     }
 
     #[test]
-    fn 格鲁希忠诚低且day90后可触发脱离() {
+    fn grouchy_can_depart_after_day_90_with_low_loyalty() {
         fn make_low_grouchy_engine() -> GameEngine {
             let mut engine = GameEngine::new();
             engine.day = 92;
@@ -4847,7 +4867,7 @@ mod tests {
     // ── 联军动态化（Tier 3.3）──────────────────────────
 
     #[test]
-    fn 大胜后联军兵力下降() {
+    fn decisive_victory_reduces_coalition_troops() {
         let mut engine = GameEngine::new();
         let bonus_before = engine.coalition_troops_bonus;
         // 投入20000兵力大胜
@@ -4861,7 +4881,7 @@ mod tests {
     }
 
     #[test]
-    fn 大败后联军兵力增加() {
+    fn decisive_defeat_increases_coalition_troops() {
         let mut engine = GameEngine::new();
         let bonus_before = engine.coalition_troops_bonus;
         engine.apply_battle_coalition_impact(BattleResult::DecisiveDefeat, 20_000);
@@ -4873,7 +4893,7 @@ mod tests {
     }
 
     #[test]
-    fn 小胜后联军兵力适度下降() {
+    fn marginal_victory_moderately_reduces_coalition_troops() {
         let mut engine = GameEngine::new();
         let bonus_before = engine.coalition_troops_bonus;
         engine.apply_battle_coalition_impact(BattleResult::MarginalVictory, 10_000);

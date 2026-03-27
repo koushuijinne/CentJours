@@ -74,6 +74,7 @@ E:\software\godot\Godot_v4.6.1-stable_win64_console.exe --headless --path E:\pro
 ### 当前质量门槛
 
 - 代码改动默认要补对应验证
+- 代码路径改动默认要同步更新 `README.md` 或 `docs/`，GitHub Actions 会做文档同步门禁
 - 主菜单和地图交互问题优先绑定 `GdUnit4`
 - 视觉、布局、滚动与可读性问题以 Windows 真机为最终标准
 - GitHub Actions 已有 Windows workflow，会跑 Rust tests、GDExt build、`GdUnit4`、headless boot 和 smoke
@@ -82,9 +83,9 @@ E:\software\godot\Godot_v4.6.1-stable_win64_console.exe --headless --path E:\pro
 
 ### 当前优先级
 
-- 补开发者文档入口：根 `README.md`、架构文档、接口文档、bug 制度
-- 继续收口 Windows CI 与 Godot 前端自动回归
+- 继续收口 Windows CI、文档同步门禁与 Godot 前端自动回归
 - 把 `docs/bugs` 里的关键问题持续转成自动化验证
+- 在测试护栏稳定后继续推进补给玩法产品化与教学链
 
 ### 中期目标
 

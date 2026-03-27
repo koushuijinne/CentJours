@@ -83,6 +83,8 @@ UI refresh / logs / dialogs / map feedback
   Godot `GdUnit4` 自动回归
 - `src/dev/engine_smoke_test_scene.tscn`
   主链路 smoke
+- `.github/workflows/doc-sync.yml`
+  文档同步门禁
 - `.github/workflows/windows-validation.yml`
   Windows CI
 
@@ -195,6 +197,7 @@ UI slot picker
 - Godot `GdUnit4`
 - Godot headless boot
 - smoke scene
+- doc-sync 门禁
 - 视觉问题看 Windows 真机
 
 Linux / WSL 不作为默认权威验证结论。

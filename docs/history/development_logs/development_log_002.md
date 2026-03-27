@@ -297,3 +297,22 @@
 - 本轮将与 bug 文档制度、导航同步和交接更新一起提交并推送到 `auto/gameplay_update`。
 下一步:
 - 文档补强目标闭环后，回到正常主线：继续收口 Windows CI、把剩余 bug 绑定自动化验证、扩大 `GdUnit4` 覆盖。
+
+## 2026-03-27 第 47 轮
+分支: `auto/gameplay_update`
+范围: 给代码改动补文档同步门禁，并推进命名/注释治理
+变更:
+- 新增 `.github/workflows/doc-sync.yml` 与 `tools/check_doc_sync.py`，让 `src/`、`cent-jours-core/`、`tests/`、`tools/`、`.github/workflows/` 改动时必须同步更新 `README.md` 或 `docs/`。
+- `README.md`、`dev_plan.md`、`agent_handoff.md`、`ADR-012`、`docs/interfaces.md`、`docs/architecture.md` 已同步写入新门禁，并删掉 live 文档中已经过期的“文档骨架刚补齐”表述。
+- 核心代码补了高价值中文注释：`engine/state.rs`、`game_state.gd`、`save_manager.gd`、`turn_manager.gd` 现在对行军预判契约、存档迁移边界、扁平状态同步和前端缓存职责说明更明确。
+- 生产函数名未发现中文残留；Rust 核心里剩余的中文函数名主要是测试，已统一改成英文，并在测试模块保留中文说明注释。
+验证:
+- 本地 `python3 tools/check_doc_sync.py --files ...` 通过。
+- Windows `cargo test` 通过，当前基线仍为 `211/211`。
+- Windows Godot 无头主项目通过。
+- Windows Godot smoke scene 通过。
+- 本轮未运行 Linux / WSL 侧测试。
+提交/推送:
+- 本轮将与 CI 门禁、注释补强和命名治理一起提交并推送到 `auto/gameplay_update`。
+下一步:
+- 继续把剩余高频 bug 绑定到 `GdUnit4`，并保持 README / architecture / interfaces 跟随接口变化同步维护。

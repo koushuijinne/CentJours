@@ -411,6 +411,7 @@ impl PoliticsState {
 mod tests {
     use super::*;
 
+    // 政治系统测试统一采用英文函数名，中文说明继续由注释和断言承载。
     fn fresh_state() -> PoliticsState {
         PoliticsState::default()
     }
@@ -420,14 +421,14 @@ mod tests {
     }
 
     #[test]
-    fn 初始合法性计算正确() {
+    fn initial_legitimacy_is_correct() {
         let s = fresh_state();
         // 0.25*45 + 0.20*30 + 0.30*65 + 0.25*70 = 11.25+6+19.5+17.5 = 54.25
         assert!((s.legitimacy - 54.25).abs() < 0.01);
     }
 
     #[test]
-    fn 征兵令提升军方降低民众() {
+    fn conscription_raises_military_and_lowers_populace() {
         let mut s = fresh_state();
         let p = policy("conscription");
         s.enact_policy(&p).unwrap();
@@ -437,7 +438,7 @@ mod tests {
     }
 
     #[test]
-    fn 宪政承诺降低rouge_noir() {
+    fn constitutional_promise_lowers_rouge_noir() {
         let mut s = fresh_state();
         s.shift_rouge_noir(20.0); // 先让Rouge偏高
         let p = policy("constitutional_promise");
@@ -447,7 +448,7 @@ mod tests {
     }
 
     #[test]
-    fn 行动点不足时政策失败() {
+    fn policy_fails_without_action_points() {
         let mut s = fresh_state();
         s.actions_remaining = 0;
         let p = policy("conscription");
@@ -455,7 +456,7 @@ mod tests {
     }
 
     #[test]
-    fn 政策冷却生效() {
+    fn policy_cooldown_is_applied() {
         let mut s = fresh_state();
         let p = policy("public_speech"); // 冷却3天
         s.enact_policy(&p).unwrap();
@@ -468,7 +469,7 @@ mod tests {
     }
 
     #[test]
-    fn 征用沿线仓储定义为补给政策() {
+    fn requisition_supplies_is_defined_as_supply_policy() {
         let p = policy("requisition_supplies");
         assert_eq!(p.supply_delta, 18.0);
         assert_eq!(p.cooldown_days, 6);
@@ -477,7 +478,7 @@ mod tests {
     }
 
     #[test]
-    fn 整顿驿站运输定义为补给线政策() {
+    fn stabilize_supply_lines_is_defined_as_supply_line_policy() {
         let p = policy("stabilize_supply_lines");
         assert_eq!(p.supply_delta, 6.0);
         assert_eq!(p.supply_line_bonus, 0.18);
@@ -488,7 +489,7 @@ mod tests {
     }
 
     #[test]
-    fn 前沿粮秣站定义为本地容量政策() {
+    fn forward_depot_is_defined_as_local_capacity_policy() {
         let p = policy("establish_forward_depot");
         assert_eq!(p.supply_delta, 4.0);
         assert_eq!(p.local_supply_capacity_bonus, 4);
@@ -499,7 +500,7 @@ mod tests {
     }
 
     #[test]
-    fn 巩固区域走廊定义为复合补给政策() {
+    fn regional_corridor_is_defined_as_composite_supply_policy() {
         let p = policy("secure_regional_corridor");
         assert_eq!(p.supply_delta, 8.0);
         assert_eq!(p.supply_line_bonus, 0.12);
@@ -512,7 +513,7 @@ mod tests {
     }
 
     #[test]
-    fn 派系支持不超出0到100范围() {
+    fn faction_support_stays_within_bounds() {
         let mut s = fresh_state();
         s.modify_faction("liberals", 200.0);
         assert_eq!(s.faction_support["liberals"], 100.0);
@@ -521,7 +522,7 @@ mod tests {
     }
 
     #[test]
-    fn 两派崩溃触发政治崩溃() {
+    fn two_collapsed_factions_trigger_political_collapse() {
         let mut s = fresh_state();
         s.modify_faction("liberals", -45.0); // → 0
         s.modify_faction("nobility", -30.0); // → 0
@@ -529,7 +530,7 @@ mod tests {
     }
 
     #[test]
-    fn 每日自然恢复向均衡值靠拢() {
+    fn daily_recovery_moves_toward_balance() {
         let mut s = fresh_state();
         s.modify_faction("populace", -30.0); // → 35 (均衡50)
         let before = s.faction_support["populace"];
@@ -539,7 +540,7 @@ mod tests {
     }
 
     #[test]
-    fn rouge_偏高时民众效果放大() {
+    fn high_rouge_bias_amplifies_populace_effect() {
         let mut s_neutral = fresh_state();
         let mut s_rouge = fresh_state();
         s_rouge.shift_rouge_noir(60.0); // 强烈偏Rouge

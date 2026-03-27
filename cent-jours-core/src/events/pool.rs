@@ -297,6 +297,7 @@ mod tests {
 
     const HISTORICAL_JSON: &str = include_str!("../../../src/data/events/historical.json");
 
+    // 事件测试统一使用英文函数名，中文说明保留在断言与分组注释中。
     fn seeded_rng() -> StdRng {
         StdRng::seed_from_u64(42)
     }
@@ -365,7 +366,7 @@ mod tests {
     }
 
     #[test]
-    fn 所有事件id唯一且史注非空() {
+    fn all_event_ids_are_unique_and_notes_are_present() {
         let events = load_events();
         let mut ids = std::collections::HashSet::new();
 
@@ -380,7 +381,7 @@ mod tests {
     }
 
     #[test]
-    fn 不使用会被状态机下限吞掉的负bonus字段() {
+    fn negative_bonus_fields_are_not_used_for_clamped_stats() {
         let events = load_events();
         let invalid_security: Vec<&str> = events
             .iter()
@@ -406,7 +407,7 @@ mod tests {
     }
 
     #[test]
-    fn 事件tier与叙事段数匹配adr要求() {
+    fn event_tiers_match_adr_narrative_requirements() {
         let events = load_events();
         let minor_count = events
             .iter()
@@ -453,7 +454,7 @@ mod tests {
     }
 
     #[test]
-    fn 历史事件文案不使用reframing句式() {
+    fn historical_event_copy_avoids_reframing_phrases() {
         let events = load_events();
         let mut violations = Vec::new();
 
@@ -624,7 +625,7 @@ mod tests {
     }
 
     #[test]
-    fn 触发结果保留tier与historical_note() {
+    fn triggered_events_keep_tier_and_historical_note() {
         let mut pool = EventPool::from_json(HISTORICAL_JSON).unwrap();
         let ctx = ney_defection_context(6);
         let mut rng = seeded_rng();
@@ -944,7 +945,7 @@ mod tests {
     }
 
     #[test]
-    fn 终盘关键事件按收紧时间线触发() {
+    fn late_campaign_events_follow_tightened_timeline() {
         let pool = EventPool::from_json(HISTORICAL_JSON).unwrap();
         let cases = [
             (
@@ -1037,7 +1038,7 @@ mod tests {
     }
 
     #[test]
-    fn 苏尔特参谋长在Day22触发() {
+    fn soult_as_chief_of_staff_triggers_on_day_22() {
         let pool = EventPool::from_json(HISTORICAL_JSON).unwrap();
         let ctx = TriggerContext {
             day: 22,
@@ -1057,7 +1058,7 @@ mod tests {
     }
 
     #[test]
-    fn 德尔隆军团迷失在Day83触发() {
+    fn derlon_corps_lost_triggers_on_day_83() {
         let pool = EventPool::from_json(HISTORICAL_JSON).unwrap();
         let ctx = TriggerContext {
             day: 83,
@@ -1077,7 +1078,7 @@ mod tests {
     }
 
     #[test]
-    fn 布吕歇尔承诺支援在Day88触发() {
+    fn bluecher_promises_support_triggers_on_day_88() {
         let pool = EventPool::from_json(HISTORICAL_JSON).unwrap();
         let ctx = TriggerContext {
             day: 88,
@@ -1097,7 +1098,7 @@ mod tests {
     }
 
     #[test]
-    fn 利尼伤兵车队在Day89触发() {
+    fn wounded_wagons_from_ligny_triggers_on_day_89() {
         let pool = EventPool::from_json(HISTORICAL_JSON).unwrap();
         let ctx = TriggerContext {
             day: 89,
@@ -1117,7 +1118,7 @@ mod tests {
     }
 
     #[test]
-    fn 格鲁希听见炮声在Day95触发() {
+    fn grouchy_hears_cannon_triggers_on_day_95() {
         let pool = EventPool::from_json(HISTORICAL_JSON).unwrap();
         let ctx = TriggerContext {
             day: 95,
@@ -1137,7 +1138,7 @@ mod tests {
     }
 
     #[test]
-    fn 普军压向普朗斯努瓦在Day96触发() {
+    fn prussians_push_plancenoit_triggers_on_day_96() {
         let pool = EventPool::from_json(HISTORICAL_JSON).unwrap();
         let ctx = TriggerContext {
             day: 96,
@@ -1157,7 +1158,7 @@ mod tests {
     }
 
     #[test]
-    fn 齐滕军团接上左翼在Day97触发() {
+    fn zieten_reaches_the_left_flank_on_day_97() {
         let pool = EventPool::from_json(HISTORICAL_JSON).unwrap();
         let ctx = TriggerContext {
             day: 97,
@@ -1177,7 +1178,7 @@ mod tests {
     }
 
     #[test]
-    fn 根特流亡宫廷在Day24触发() {
+    fn ghent_exile_court_triggers_on_day_24() {
         let pool = EventPool::from_json(HISTORICAL_JSON).unwrap();
         let ctx = TriggerContext {
             day: 24,
@@ -1197,7 +1198,7 @@ mod tests {
     }
 
     #[test]
-    fn 根特保皇派传单在Day30触发() {
+    fn ghent_royalist_pamphlets_trigger_on_day_30() {
         let pool = EventPool::from_json(HISTORICAL_JSON).unwrap();
         let ctx = TriggerContext {
             day: 30,
@@ -1216,7 +1217,7 @@ mod tests {
     }
 
     #[test]
-    fn 布鲁塞尔联军参谋会议在Day56触发() {
+    fn brussels_allied_staff_conference_triggers_on_day_56() {
         let pool = EventPool::from_json(HISTORICAL_JSON).unwrap();
         let ctx = TriggerContext {
             day: 56,

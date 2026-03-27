@@ -226,6 +226,7 @@ mod tests {
     use rand::rngs::StdRng;
     use rand::SeedableRng;
 
+    // 战斗测试统一用英文函数名，避免 CLI/IDE 过滤器对 Unicode 标识符支持不稳定。
     fn make_army(troops: u32, morale: f64, fatigue: f64, skill: f64) -> ForceData {
         ForceData {
             troops,
@@ -241,7 +242,7 @@ mod tests {
     }
 
     #[test]
-    fn 压倒性兵力优势应胜利() {
+    fn overwhelming_force_advantage_should_win() {
         let atk = make_army(100_000, 90.0, 10.0, 85.0);
         let def = make_army(5_000, 70.0, 20.0, 60.0);
         let outcome = resolve_battle(&atk, &def, Terrain::Plains, &mut rng_seeded(42));
@@ -249,7 +250,7 @@ mod tests {
     }
 
     #[test]
-    fn 高地防守应提升防御得分() {
+    fn high_ground_defense_should_raise_defense_score() {
         let atk = make_army(20_000, 80.0, 10.0, 70.0);
         let def = make_army(20_000, 80.0, 10.0, 70.0); // 兵力相同
                                                        // 平地：应为 Stalemate；高地防守方加成应让防守方更占优
@@ -260,7 +261,7 @@ mod tests {
     }
 
     #[test]
-    fn 疲劳100时战斗力减半() {
+    fn fatigue_100_halves_combat_power() {
         let fresh = make_army(10_000, 80.0, 0.0, 70.0);
         let fatigued = make_army(10_000, 80.0, 100.0, 70.0);
         let score_fresh = 10_000.0 * 0.8 * 1.35;
@@ -276,7 +277,7 @@ mod tests {
     }
 
     #[test]
-    fn 补给不足惩罚25percent() {
+    fn low_supply_applies_25_percent_penalty() {
         let supplied = ForceData {
             supply_ok: true,
             ..make_army(10_000, 80.0, 0.0, 70.0)
@@ -292,7 +293,7 @@ mod tests {
     }
 
     #[test]
-    fn 决定性胜利伤亡符合预期() {
+    fn decisive_victory_casualties_match_expectations() {
         // 用极大兵力差确保必胜
         let atk = make_army(500_000, 95.0, 0.0, 95.0);
         let def = make_army(1_000, 50.0, 50.0, 40.0);
@@ -308,7 +309,7 @@ mod tests {
     }
 
     #[test]
-    fn 随机因子在合理范围内() {
+    fn random_factor_stays_in_reasonable_range() {
         let atk = make_army(20_000, 75.0, 15.0, 70.0);
         let def = make_army(20_000, 75.0, 15.0, 70.0);
         let mut rng = rng_seeded(123);
@@ -319,7 +320,7 @@ mod tests {
     }
 
     #[test]
-    fn 滑铁卢场景_英军高地防守() {
+    fn waterloo_scenario_british_hold_the_ridge() {
         // 历史近似：拿破仑 72000 对威灵顿 68000（Ridgeline 高地防守 ×1.35）
         // 守方地形加成使威灵顿占压倒性优势，拿破仑主要以失败告终——符合历史
         let napoleon = make_army(72_000, 82.0, 25.0, 92.0);
@@ -355,7 +356,7 @@ mod tests {
     // ── 边界值测试 ─────────────────────────────────────
 
     #[test]
-    fn 零兵力攻方不崩溃且判定惨败() {
+    fn zero_troop_attacker_fails_without_crashing() {
         let atk = make_army(0, 80.0, 0.0, 70.0);
         let def = make_army(10_000, 70.0, 10.0, 60.0);
         let out = resolve_battle(&atk, &def, Terrain::Plains, &mut rng_seeded(1));
@@ -369,7 +370,7 @@ mod tests {
     }
 
     #[test]
-    fn 零士气攻方不崩溃且判定惨败() {
+    fn zero_morale_attacker_fails_without_crashing() {
         let atk = make_army(50_000, 0.0, 0.0, 70.0);
         let def = make_army(10_000, 70.0, 10.0, 60.0);
         let out = resolve_battle(&atk, &def, Terrain::Plains, &mut rng_seeded(2));
@@ -382,7 +383,7 @@ mod tests {
     }
 
     #[test]
-    fn 满疲劳叠加断补给比单项惩罚更严重() {
+    fn exhaustion_and_broken_supply_stack_harder_than_single_penalties() {
         // 基准：疲劳0 + 补给正常
         let baseline = ForceData {
             troops: 20_000,
@@ -424,7 +425,7 @@ mod tests {
     }
 
     #[test]
-    fn 双方均零兵力不崩溃() {
+    fn both_sides_zero_troops_do_not_crash() {
         let atk = make_army(0, 80.0, 0.0, 70.0);
         let def = make_army(0, 80.0, 0.0, 70.0);
         // def_score = 0 → max(1.0) 保护 → ratio = 0 → DecisiveDefeat，不 panic
@@ -436,7 +437,7 @@ mod tests {
     }
 
     #[test]
-    fn ratio_to_result边界值覆盖() {
+    fn ratio_to_result_covers_boundary_values() {
         // 精确测试各阈值边界
         assert_eq!(ratio_to_result(1.51), BattleResult::DecisiveVictory);
         assert_eq!(

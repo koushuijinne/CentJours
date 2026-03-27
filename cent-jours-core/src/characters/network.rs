@@ -392,6 +392,7 @@ mod tests {
     use super::*;
     use approx::assert_abs_diff_eq;
 
+    // 中文语义继续保留在注释和断言里，测试函数名统一改成英文便于工具过滤。
     fn make_historical_net() -> CharacterNetwork {
         historical_network_day1()
     }
@@ -582,7 +583,7 @@ mod tests {
     // ── 审计日志 ──────────────────────────────────────
 
     #[test]
-    fn 忠诚度变化被记录到日志() {
+    fn loyalty_changes_are_recorded_in_audit_log() {
         let mut net = make_historical_net();
         net.modify_loyalty("ney", 5.0, 10, "battle_victory");
         assert_eq!(net.loyalty_log.len(), 1);
@@ -593,7 +594,7 @@ mod tests {
     // ── from_json 测试 ────────────────────────────────
 
     #[test]
-    fn json加载15个人物成功() {
+    fn json_loads_fifteen_characters() {
         const JSON: &str = include_str!("../../../src/data/characters.json");
         let net = CharacterNetwork::from_json(JSON).expect("parse error");
         // 15个人物均已加载
@@ -605,7 +606,7 @@ mod tests {
     }
 
     #[test]
-    fn json加载后内伊忠诚度正确() {
+    fn json_loads_correct_ney_loyalty() {
         const JSON: &str = include_str!("../../../src/data/characters.json");
         let net = CharacterNetwork::from_json(JSON).expect("parse error");
         use approx::assert_abs_diff_eq;
@@ -614,14 +615,14 @@ mod tests {
     }
 
     #[test]
-    fn json加载后内伊显示名正确() {
+    fn json_loads_correct_ney_display_name() {
         const JSON: &str = include_str!("../../../src/data/characters.json");
         let net = CharacterNetwork::from_json(JSON).expect("parse error");
         assert_eq!(net.display_name("ney"), "内伊");
     }
 
     #[test]
-    fn json加载后内伊格鲁希为敌对关系() {
+    fn json_loads_negative_ney_grouchy_relationship() {
         const JSON: &str = include_str!("../../../src/data/characters.json");
         let net = CharacterNetwork::from_json(JSON).expect("parse error");
         // 两侧都设为-30，取最后写入的值（后写覆盖先写）
@@ -633,7 +634,7 @@ mod tests {
     }
 
     #[test]
-    fn json解析失败返回错误() {
+    fn json_parse_failure_returns_error() {
         let result = CharacterNetwork::from_json("{invalid json}");
         assert!(result.is_err());
     }
@@ -641,7 +642,7 @@ mod tests {
     // ── 军事技能加载（数据驱动化）────────────────────────
 
     #[test]
-    fn json加载后达武技能值正确() {
+    fn json_loads_correct_davout_skill() {
         // characters.json: davout.military_skill = 92（非 state.rs 硬编码的 82）
         const JSON: &str = include_str!("../../../src/data/characters.json");
         let net = CharacterNetwork::from_json(JSON).expect("parse error");
@@ -650,7 +651,7 @@ mod tests {
     }
 
     #[test]
-    fn json加载后内伊技能值正确() {
+    fn json_loads_correct_ney_skill() {
         const JSON: &str = include_str!("../../../src/data/characters.json");
         let net = CharacterNetwork::from_json(JSON).expect("parse error");
         use approx::assert_abs_diff_eq;
@@ -658,7 +659,7 @@ mod tests {
     }
 
     #[test]
-    fn json加载后苏尔特技能值正确() {
+    fn json_loads_correct_soult_skill() {
         // characters.json: soult.military_skill = 80（非 state.rs 硬编码的 72）
         const JSON: &str = include_str!("../../../src/data/characters.json");
         let net = CharacterNetwork::from_json(JSON).expect("parse error");
@@ -667,14 +668,14 @@ mod tests {
     }
 
     #[test]
-    fn 未知将领默认技能值60() {
+    fn unknown_character_defaults_to_skill_60() {
         let net = CharacterNetwork::new();
         use approx::assert_abs_diff_eq;
         assert_abs_diff_eq!(net.skill("unknown_general"), 60.0, epsilon = 0.001);
     }
 
     #[test]
-    fn 危机将领列表正确识别() {
+    fn crisis_character_list_is_detected() {
         let mut net = CharacterNetwork::new();
         net.add_general("fouche", 25.0); // 危机
         net.add_general("davout", 88.0); // 正常
@@ -690,7 +691,7 @@ mod tests {
     // ── 命令偏差系统（Tier 3.1）──────────────────────────
 
     #[test]
-    fn 高忠诚度将领偏差幅度小() {
+    fn high_loyalty_generals_have_small_deviation() {
         let mut net = CharacterNetwork::new();
         net.add_general("davout", 90.0); // 绝对忠诚
         let mut rng = rand::thread_rng();
@@ -705,7 +706,7 @@ mod tests {
     }
 
     #[test]
-    fn 低忠诚度将领偏差幅度大() {
+    fn low_loyalty_generals_can_have_large_deviation() {
         let mut net = CharacterNetwork::new();
         net.add_general("fouche", 20.0); // 危机忠诚
         let mut rng = rand::thread_rng();
@@ -722,7 +723,7 @@ mod tests {
     }
 
     #[test]
-    fn 偏差系数始终在合法范围() {
+    fn deviation_factor_stays_in_legal_range() {
         let mut net = CharacterNetwork::new();
         net.add_general("test", 10.0); // 极低忠诚
         let mut rng = rand::thread_rng();
@@ -734,7 +735,7 @@ mod tests {
     }
 
     #[test]
-    fn 偏差影响实际参战兵力() {
+    fn deviation_affects_actual_committed_troops() {
         let mut net = CharacterNetwork::new();
         net.add_general("ney", 55.0); // 中等忠诚，偏差 ±15%
         let mut rng = rand::thread_rng();

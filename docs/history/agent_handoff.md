@@ -47,9 +47,7 @@
 - 主菜单弹窗状态机又补了一层：`新局` 取消、`读档` 取消、战斗弹窗取消和低合法性接见禁用都已进入 `GdUnit4`，后续回归不再只靠手点。
 - 结局弹窗本轮也纳入自动回归：覆盖弹窗出现、重开后回到 `Day 1 / action`、以及结局统计的天数上限截断。
 - `GdUnit4` 日志噪音本轮也清了一层：战斗弹窗整数除法、地图控制器局部变量遮蔽和几处无用变量警告已移除；当前剩余的主要噪音集中在 `EventBus` 的声明型 signals。
-- 面向人类开发者的三份主入口文档已落地：根 `README.md`、`docs/architecture.md`、`docs/interfaces.md`，后续接手不再只靠 `agent_handoff` 和 `dev_plan`。
-- `docs/bugs/` 已进入结构化模式：现有问题开始收口到 `bug_index.md`、`bug_template.md` 和专门条目，不再只堆截图。
-- 文档目录已重构为 `docs/plans`、`docs/rules`、`docs/history`、`docs/decisions`，开发历史已从 live 计划文档中抽离到 `docs/history/development_logs/`。
+- 开发者文档当前以根 `README.md`、`docs/architecture.md`、`docs/interfaces.md` 和 `docs/bugs/` 为主入口；代码路径改动需要同步更新这些文档之一，CI 已做门禁。
 - 前端已拆出 `map / layout / tray / sidebar / dialogs` 控制器，但发布级视觉和交互收口仍未完成。
 - Windows 原生 Godot 与 Windows 无头仍是默认验证路径；不要把 Linux / WSL Godot 无头结果当成默认结论。
 - 自动工作流下不要运行 Linux / WSL 侧测试，包括 Linux `cargo test` 和 Linux Godot 无头；若 Windows 验证链暂时不完整，就明确写“未验证”，不要用 Linux 结果补位。
@@ -75,8 +73,8 @@
 - `产品化能力仍缺`：设置/选项页、导出配置、Steam 商店素材、教程引导都未完成
 - `Windows 真机体验验收仍未收口`：这轮已经补齐 Windows DLL 重编、Windows 无头与 smoke scene，但更长时的真机 UI / 体验验收还没补
 - `最终资产仍是占位`：地图底图、肖像、插图、BGM、SFX、结局画面还没替换
-- `文档维护纪律需要持续执行`：根 `README.md`、架构文档、接口文档和 bug 索引已补齐，但后续若不同步维护，仍会再次漂移。
-- `命名与注释治理未制度化`：旧中文函数名和关键路径说明不足的问题还没有正式写入项目规范。
+- `文档维护纪律需要持续执行`：根 `README.md`、架构文档、接口文档和 bug 索引都已是正式入口；若不同步维护，CI 和人工接手都会立即漂移。
+- `命名与注释治理未收口`：旧中文测试函数名和关键路径说明不足的问题仍在渐进治理中。
 
 ## 当前写入边界
 

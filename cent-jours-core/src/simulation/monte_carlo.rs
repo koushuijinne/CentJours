@@ -440,8 +440,9 @@ pub fn run_engine_simulation(n_runs: u32, seed: u64) -> EngineSimReport {
 mod tests {
     use super::*;
 
+    // 模拟测试函数名统一成英文，中文语义继续由注释和断言承担。
     #[test]
-    fn 单局模拟能正常完成() {
+    fn single_simulation_completes() {
         let mut rng = StdRng::seed_from_u64(42);
         let record = simulate_one_game(PlayerStrategy::Balanced, &mut rng);
         // 无论结局是什么，天数应在1-100内
@@ -449,7 +450,7 @@ mod tests {
     }
 
     #[test]
-    fn 模拟100局不崩溃() {
+    fn simulate_100_runs_without_crashing() {
         let report = run_simulation(100, PlayerStrategy::Balanced, 0);
         assert_eq!(report.n_runs, 100);
         let total: u32 = report.outcomes.values().sum();
@@ -457,7 +458,7 @@ mod tests {
     }
 
     #[test]
-    fn 纯军事策略合法性低于纯政治策略() {
+    fn pure_military_strategy_has_lower_legitimacy_than_pure_political_strategy() {
         let mil_report = run_simulation(200, PlayerStrategy::Military, 1);
         let pol_report = run_simulation(200, PlayerStrategy::Political, 1);
         // 政治策略应维持更高的合法性
@@ -470,7 +471,7 @@ mod tests {
     }
 
     #[test]
-    fn 胜率结构合理() {
+    fn win_rate_structure_is_reasonable() {
         // 各策略都不应该是0%胜率（无法胜利）
         for strategy in [
             PlayerStrategy::Military,
@@ -485,14 +486,14 @@ mod tests {
     // ── 引擎耦合蒙特卡洛测试 ──────────────────────────────
 
     #[test]
-    fn 三系统耦合1000局不崩溃() {
+    fn coupled_systems_survive_1000_runs() {
         let report = run_engine_simulation(1000, 42);
         let total: u32 = report.outcomes.values().sum();
         assert_eq!(total, 1000, "1000局模拟结局计数应为1000");
     }
 
     #[test]
-    fn 引擎模拟胜率在合理范围内() {
+    fn engine_simulated_win_rate_is_in_reasonable_range() {
         // 引擎包含事件系统，平衡可能与简化版略有不同，但不应极端
         let report = run_engine_simulation(500, 2026);
         assert!(
@@ -508,7 +509,7 @@ mod tests {
     }
 
     #[test]
-    fn 内伊倒戈事件在合理频率触发() {
+    fn ney_defection_triggers_at_reasonable_frequency() {
         let report = run_engine_simulation(500, 2026);
         // 历史上内伊几乎必然倒戈（百日真实事件）
         // 只在极少数Napoleon声望极低的局中不触发
@@ -526,7 +527,7 @@ mod tests {
     }
 
     #[test]
-    fn 引擎模拟结局计数完整() {
+    fn engine_simulation_outcome_counts_are_complete() {
         // 多种策略偏向产生不同结局分布
         let balanced = run_engine_simulation(300, 1234);
         let total: u32 = balanced.outcomes.values().sum();

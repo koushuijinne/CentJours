@@ -350,6 +350,7 @@ pub fn update_supply_with_capacity(
 mod tests {
     use super::*;
 
+    // 行军测试函数名统一成英文，中文业务含义继续留在注释和断言里。
     fn simple_map() -> MapGraph {
         let nodes = vec![
             MapNode {
@@ -448,7 +449,7 @@ mod tests {
     }
 
     #[test]
-    fn 普通行军到相邻节点() {
+    fn regular_march_to_adjacent_node() {
         let map = simple_map();
         let army = army_at("paris");
         let result = move_army(&army, "laon", false, &map);
@@ -458,7 +459,7 @@ mod tests {
     }
 
     #[test]
-    fn 强行军增加疲劳() {
+    fn forced_march_increases_fatigue() {
         let map = simple_map();
         let army = army_at("paris");
         let normal = move_army(&army, "laon", false, &map);
@@ -468,7 +469,7 @@ mod tests {
     }
 
     #[test]
-    fn 不相邻节点无法直接移动() {
+    fn non_adjacent_nodes_cannot_move_directly() {
         let map = simple_map();
         let army = army_at("paris");
         let result = move_army(&army, "waterloo", false, &map);
@@ -476,7 +477,7 @@ mod tests {
     }
 
     #[test]
-    fn dijkstra路径查找_巴黎到滑铁卢() {
+    fn dijkstra_finds_path_from_paris_to_waterloo() {
         let map = simple_map();
         let path = map.find_path("paris", "waterloo");
         assert!(path.is_some());
@@ -489,7 +490,7 @@ mod tests {
     }
 
     #[test]
-    fn 节点距离_巴黎到滑铁卢() {
+    fn node_distance_from_paris_to_waterloo() {
         let map = simple_map();
         let dist = map.node_distance("paris", "waterloo");
         // paris → laon → maubeuge → charleroi → waterloo = 4 跳
@@ -497,7 +498,7 @@ mod tests {
     }
 
     #[test]
-    fn 补给线断裂时供应减少() {
+    fn broken_supply_line_reduces_supply() {
         let map = simple_map();
         let army = army_at("waterloo"); // 远离补给线
         let intact = update_supply(&army, 0.9, &map);
@@ -507,7 +508,7 @@ mod tests {
     }
 
     #[test]
-    fn 前线低容量节点会持续消耗补给() {
+    fn frontline_low_capacity_nodes_consume_supply() {
         let map = simple_map();
         let army = army_at("waterloo");
         let result = update_supply(&army, 0.7, &map);
@@ -517,7 +518,7 @@ mod tests {
     }
 
     #[test]
-    fn 高容量节点能补回补给() {
+    fn high_capacity_nodes_restore_supply() {
         let map = simple_map();
         let mut army = army_at("paris");
         army.supply = 40.0;
@@ -528,7 +529,7 @@ mod tests {
     }
 
     #[test]
-    fn 节点容量会映射为补给角色() {
+    fn node_capacity_maps_to_supply_role() {
         let map = simple_map();
         assert_eq!(map.supply_role_of("waterloo"), "frontline_outpost");
         assert_eq!(map.supply_role_label_of("waterloo"), "前沿消耗点");
@@ -538,7 +539,7 @@ mod tests {
     }
 
     #[test]
-    fn 临时容量加成会改变补给结果() {
+    fn temporary_capacity_bonus_changes_supply_result() {
         let army = army_at("waterloo");
         let baseline = update_supply_with_capacity(&army, 0.7, 2);
         let boosted = update_supply_with_capacity(&army, 0.7, 6);
@@ -549,7 +550,7 @@ mod tests {
     // ── rest_army() 直接单元测试 ─────────────────────
 
     #[test]
-    fn 补给充足时休整疲劳恢复40士气恢复10() {
+    fn rest_with_good_supply_recovers_forty_fatigue_and_ten_morale() {
         let army = ArmyState {
             id: "test".into(),
             location: "paris".into(),
@@ -568,7 +569,7 @@ mod tests {
     }
 
     #[test]
-    fn 补给不足时休整疲劳恢复30士气恢复5() {
+    fn rest_with_low_supply_recovers_thirty_fatigue_and_five_morale() {
         let army = ArmyState {
             id: "test".into(),
             location: "waterloo".into(),
@@ -583,7 +584,7 @@ mod tests {
     }
 
     #[test]
-    fn 补给恰好阈值时取低档() {
+    fn threshold_supply_uses_lower_recovery_tier() {
         // supply = 阈值，条件 supply > 阈值 为 false → 低档
         let army = ArmyState {
             id: "test".into(),
@@ -602,7 +603,7 @@ mod tests {
     }
 
     #[test]
-    fn 休整恢复量高于强行军消耗() {
+    fn rest_recovery_exceeds_forced_march_cost() {
         // 休整疲劳恢复(30+) 应远大于强行军消耗(20)
         let army = ArmyState {
             id: "test".into(),

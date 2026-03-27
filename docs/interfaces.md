@@ -245,6 +245,17 @@ E:\software\godot\Godot_v4.6.1-stable_win64_console.exe --headless --path E:\pro
 
 ### CI
 
+文件：`.github/workflows/doc-sync.yml`
+
+- 作用：代码路径改动时，强制要求同步更新 `README.md` 或 `docs/`
+- 覆盖路径：
+  - `src/`
+  - `cent-jours-core/`
+  - `tests/`
+  - `tools/`
+  - `.github/workflows/`
+- 本地复用入口：`python3 tools/check_doc_sync.py --files ...`
+
 文件：`.github/workflows/windows-validation.yml`
 
 当前顺序：
@@ -255,7 +266,7 @@ E:\software\godot\Godot_v4.6.1-stable_win64_console.exe --headless --path E:\pro
 4. headless boot
 5. smoke scene
 
-该 workflow 已启用 `concurrency`，同分支新 run 会取消旧 run。
+`windows-validation.yml` 已启用 `concurrency`，同分支新 run 会取消旧 run。
 
 ## 8. 维护要求
 
@@ -267,3 +278,4 @@ E:\software\godot\Godot_v4.6.1-stable_win64_console.exe --headless --path E:\pro
 - Save / Load 版本或迁移变化
 - `GdUnit4` 稳定节点名变化
 - CI 执行顺序变化
+- 文档同步门禁路径变化
