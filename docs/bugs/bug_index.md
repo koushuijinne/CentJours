@@ -1,0 +1,34 @@
+# Bug 索引
+
+## 用途
+
+这里记录两类问题：
+
+- 玩家可感知的功能 / UI bug
+- 在开发过程中发现的代码层问题、验证噪音或结构缺陷
+
+截图附件继续放在 `docs/bugs/`，但以后都要从本索引能追到具体问题条目。
+
+## 字段约定
+
+- `ID`
+- `标题`
+- `级别`
+- `状态`
+- `来源`
+- `回归`
+- `详情`
+
+## 当前条目
+
+| ID | 标题 | 级别 | 状态 | 来源 | 回归 | 详情 |
+|----|------|------|------|------|------|------|
+| `BUG-2026-03-24-UI-SWEEP` | 主菜单与地图首轮 bug sweep | P0 | 已修复 | [docs/bugs/bugs_check.md](/mnt/e/projects/CentJours/docs/bugs/bugs_check.md) | Windows headless / smoke / `GdUnit4` | [docs/history/bug_audit_2026-03-24.md](/mnt/e/projects/CentJours/docs/history/bug_audit_2026-03-24.md) |
+| `BUG-2026-03-27-EVENTBUS-WARNINGS` | `EventBus` 声明型 signal 在 `GdUnit4` 中持续产生 warning 噪音 | P2 | 待处理 | 本轮 `GdUnit4` 日志审计 | 尚未建立专项回归 | [docs/bugs/bug_eventbus_signal_warnings.md](/mnt/e/projects/CentJours/docs/bugs/bug_eventbus_signal_warnings.md) |
+
+## 维护规则
+
+- 新 bug 先建条目，再做修复
+- 修复完成后必须补“回归”字段
+- 纯截图不算 bug 记录
+- 同一个问题如果既有历史审计文档，又有当前修复条目，以当前条目为准，历史文档作为来源材料

@@ -283,3 +283,17 @@
 - 本轮将与三份核心文档和交接同步一起提交并推送到 `auto/gameplay_update`。
 下一步:
 - 第 3 轮规范 `docs/bugs/`：补索引、模板、维护规则，并更新 docs 导航。
+
+## 2026-03-27 第 46 轮
+分支: `auto/gameplay_update`
+范围: 收口文档补强目标，把 bug 文档制度和 docs 导航补齐
+变更:
+- `docs/bugs/` 新增 `bug_index.md`、`bug_template.md`，并创建首个代码问题条目 `BUG-2026-03-27-EVENTBUS-WARNINGS`。
+- `README.md` 与 `docs/README.md` 已把 bug 索引纳入默认导航，文档入口链现在包含根入口、架构、接口和 bug 制度。
+- `dev_plan.md` 与 `agent_handoff.md` 已切回正常开发优先级，同时把“文档补强已完成，后续进入维护期”写进当前状态。
+验证:
+- 本轮为文档轮，没有新增代码路径验证。
+提交/推送:
+- 本轮将与 bug 文档制度、导航同步和交接更新一起提交并推送到 `auto/gameplay_update`。
+下一步:
+- 文档补强目标闭环后，回到正常主线：继续收口 Windows CI、把剩余 bug 绑定自动化验证、扩大 `GdUnit4` 覆盖。

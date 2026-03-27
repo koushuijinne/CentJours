@@ -14,19 +14,17 @@
 - 当前内容规模为 `15` 名角色、`41` 个地图节点、`58` 条历史事件；补给、政治、历史日志、存档读档和主菜单主循环都已接通。
 - Save / Load 已进入 `v3` 兼容阶段；最近一次权威回归基线是 Windows `211/211` Rust tests、Windows `GdUnit4 18/18`、Windows Godot 主项目无头和 smoke scene。
 - Rust 规则层的第一批正式集成测试和属性测试已经落地；Godot 前端第一批 `GdUnit4` 回归也已接入，Windows GitHub Actions 工作流与仓库脚本也已落地。
-- 面向人类开发者的三份核心入口文档已补齐：根 `README.md`、`docs/architecture.md`、`docs/interfaces.md`。
+- 面向人类开发者的核心入口文档已补齐：根 `README.md`、`docs/architecture.md`、`docs/interfaces.md`，`docs/bugs/` 也已进入结构化记录模式。
 - 当前总目标已按 [ADR-011](/mnt/e/projects/CentJours/docs/decisions/ADR-011-core-loop-systemization-and-historical-depth.md) 固定为：核心玩法优化完成，并达到 Steam 可上线级别。
 
 ## 当前技术优先级
 
 | 优先级 | 项目 | 规模 | 决策理由 |
 |--------|------|------|----------|
-| **P0** | **补仓库根 `README.md` 与开发者统一入口** | M | 当前 `docs/` 更适合持续开发中的接手，不够适合第一次进入仓库的人类开发者。 |
-| **P0** | **补 `architecture.md` 与 `interfaces.md`** | M | 运行时边界、存档契约、Rust / Godot 数据流目前主要分散在代码和 ADR 中，阅读成本偏高。 |
-| **P0** | **规范 `docs/bugs/` 为结构化 bug 记录区** | S | 当前 bug 目录已有截图和历史记录，但缺少统一索引、模板和回归字段。 |
 | **P0** | **继续收口 Windows GitHub Actions 验证链** | M | 已观察到首条成功 run，下一步要收紧 docs-only 触发和并发占用，把 Windows runner 留给真正的代码验证。 |
 | **P0** | **把 `docs/bugs` 中的关键问题继续转成可重复验证** | M | 第一批主菜单与地图问题已经进入 `GdUnit4`，剩余 bug 仍要持续绑定自动化回归。 |
 | **P0** | **继续扩 Godot `GdUnit4` 覆盖面** | M | 存读档槽位、槽位标签、新局确认/取消、读档取消、战斗取消、接见禁用态和结局弹窗已纳入回归，下一步继续补设置和更多失败恢复边界。 |
+| **P1** | **维护开发者文档与 bug 制度同步** | S | 根 `README`、架构文档、接口文档和 bug 模板已经补齐，后续重点转为跟随代码持续维护。 |
 | **P1** | **继续补强补给玩法的产品化表达与教学链** | L | 后勤已经是当前玩法主轴，但应建立在更稳的测试护栏之上。 |
 | **P1** | **历史事件扩到 `100+` 并继续文本 QA** | L | 内容量仍是长局重玩性的核心约束。 |
 | **P1** | **补前 10 天引导、失败归因、结局文本与关键 UI 文案统一** | M | 新玩家理解链仍不完整，需要结合玩法和日志一起收口。 |
@@ -151,7 +149,7 @@ tools\run_gdunit_windows.cmd E:\software\godot\Godot_v4.6.1-stable_win64_console
 - `main_menu.gd` 和 `map_controller.gd` 仍偏大，后续还需要继续按职责下沉。
 - `tests/monte_carlo_balance.py` 与 Rust 核心基线已漂移，不应继续作为平衡主依据。
 - 多槽存档 UI 已接入，但元信息、覆盖确认和删除入口还不完整。
-- 人类开发者导向的主入口文档仍不完整：缺根 `README.md`，也缺长期维护的架构与接口文档。
+- 文档维护刚进入制度化阶段：主入口文档已补齐，但后续每次接口、架构和验证方式变化都需要严格同步。
 - 代码命名与注释风格仍不统一：存在旧中文函数名和“关键路径说明不足”的问题，需渐进治理，而不是一次性大扫除。
 
 ## 测试现状概览

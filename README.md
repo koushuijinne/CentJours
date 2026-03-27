@@ -107,6 +107,8 @@ E:\software\godot\Godot_v4.6.1-stable_win64_console.exe --headless --path E:\pro
   系统结构、模块关系和主数据流
 - [docs/interfaces.md](/mnt/e/projects/CentJours/docs/interfaces.md)
   Rust / Godot / Save / Test 的核心接口契约
+- [docs/bugs/bug_index.md](/mnt/e/projects/CentJours/docs/bugs/bug_index.md)
+  结构化 bug 索引与当前代码问题记录
 - [docs/history/agent_handoff.md](/mnt/e/projects/CentJours/docs/history/agent_handoff.md)
   当前状态、当前分支和接手约束
 - [docs/decisions/](/mnt/e/projects/CentJours/docs/decisions/)

@@ -48,6 +48,7 @@
 - 结局弹窗本轮也纳入自动回归：覆盖弹窗出现、重开后回到 `Day 1 / action`、以及结局统计的天数上限截断。
 - `GdUnit4` 日志噪音本轮也清了一层：战斗弹窗整数除法、地图控制器局部变量遮蔽和几处无用变量警告已移除；当前剩余的主要噪音集中在 `EventBus` 的声明型 signals。
 - 面向人类开发者的三份主入口文档已落地：根 `README.md`、`docs/architecture.md`、`docs/interfaces.md`，后续接手不再只靠 `agent_handoff` 和 `dev_plan`。
+- `docs/bugs/` 已进入结构化模式：现有问题开始收口到 `bug_index.md`、`bug_template.md` 和专门条目，不再只堆截图。
 - 文档目录已重构为 `docs/plans`、`docs/rules`、`docs/history`、`docs/decisions`，开发历史已从 live 计划文档中抽离到 `docs/history/development_logs/`。
 - 前端已拆出 `map / layout / tray / sidebar / dialogs` 控制器，但发布级视觉和交互收口仍未完成。
 - Windows 原生 Godot 与 Windows 无头仍是默认验证路径；不要把 Linux / WSL Godot 无头结果当成默认结论。
@@ -56,11 +57,11 @@
 
 ## 当前最高优先级
 
-1. 规范 `docs/bugs/` 为结构化 bug 记录区
-2. 更新 docs 导航，让新入口文档进入默认索引
-3. 继续收口 Windows GitHub Actions 验证链
-4. 把 `docs/bugs` 中的关键问题继续转成可重复验证
-5. 继续扩 Godot `GdUnit4` 覆盖面
+1. 继续收口 Windows GitHub Actions 验证链
+2. 把 `docs/bugs` 中的关键问题继续转成可重复验证
+3. 继续扩 Godot `GdUnit4` 覆盖面
+4. 在测试护栏稳定后继续推进补给玩法产品化
+5. 然后再扩历史事件、教学链和发布级 polish
 
 ## 当前已知缺口
 
@@ -74,7 +75,7 @@
 - `产品化能力仍缺`：设置/选项页、导出配置、Steam 商店素材、教程引导都未完成
 - `Windows 真机体验验收仍未收口`：这轮已经补齐 Windows DLL 重编、Windows 无头与 smoke scene，但更长时的真机 UI / 体验验收还没补
 - `最终资产仍是占位`：地图底图、肖像、插图、BGM、SFX、结局画面还没替换
-- `bug 文档制度仍不完整`：根 `README.md`、架构文档和接口文档已补齐，但 `docs/bugs/` 还缺统一索引、模板和字段规范。
+- `文档维护纪律需要持续执行`：根 `README.md`、架构文档、接口文档和 bug 索引已补齐，但后续若不同步维护，仍会再次漂移。
 - `命名与注释治理未制度化`：旧中文函数名和关键路径说明不足的问题还没有正式写入项目规范。
 
 ## 当前写入边界
