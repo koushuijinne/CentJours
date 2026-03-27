@@ -207,6 +207,40 @@ func test_delete_save_from_load_picker_removes_slot() -> void:
 	assert_bool(execute_button.disabled).is_false()
 
 
+func test_delete_save_from_save_picker_removes_slot() -> void:
+	var runner := await _load_main_menu()
+	var scene := runner.scene()
+	var execute_button := scene.find_child("ExecuteActionButton", true, false) as Button
+	var load_button := scene.find_child("LoadGameButton", true, false) as Button
+
+	scene.call("_save_to_slot", 1, null)
+	await await_idle_frame()
+	assert_bool(SaveManager.has_save(1)).is_true()
+	assert_bool(load_button.disabled).is_false()
+
+	scene.call("_on_save_pressed")
+	await await_idle_frame()
+
+	var save_popup := scene.find_child("SaveSlotPickerPopup", true, false) as PopupPanel
+	var delete_button := scene.find_child("SaveDeleteSlotButton1", true, false) as Button
+	assert_object(save_popup).is_not_null()
+	assert_object(delete_button).is_not_null()
+	assert_object(execute_button).is_not_null()
+	assert_bool(execute_button.disabled).is_true()
+
+	delete_button.pressed.emit()
+	await await_idle_frame()
+	var confirm := scene.find_child("DeleteSaveConfirmDialog", true, false) as ConfirmationDialog
+	assert_object(confirm).is_not_null()
+	confirm.confirmed.emit()
+	await runner.simulate_frames(2)
+
+	assert_bool(SaveManager.has_save(1)).is_false()
+	assert_bool(load_button.disabled).is_true()
+	assert_object(scene.find_child("SaveSlotPickerPopup", true, false)).is_null()
+	assert_bool(execute_button.disabled).is_false()
+
+
 func test_save_overwrite_cancel_keeps_picker_open() -> void:
 	var runner := await _load_main_menu()
 	var scene := runner.scene()
@@ -423,6 +457,68 @@ func test_settings_apply_persists_ui_scale() -> void:
 	assert_bool(execute_button.disabled).is_false()
 
 
+func test_settings_cancel_does_not_persist_unsaved_changes() -> void:
+	SettingsManagerScript.save_settings({
+		"window_mode": "windowed",
+		"ui_scale": 1.0,
+	})
+	var runner := await _load_main_menu()
+	var scene := runner.scene()
+	var settings_button := scene.find_child("SettingsButton", true, false) as Button
+	var execute_button := scene.find_child("ExecuteActionButton", true, false) as Button
+	assert_object(settings_button).is_not_null()
+	assert_object(execute_button).is_not_null()
+
+	settings_button.pressed.emit()
+	await await_idle_frame()
+
+	var ui_scale_option := scene.find_child("SettingsUiScaleOption", true, false) as OptionButton
+	var cancel_button := scene.find_child("SettingsCancelButton", true, false) as Button
+	assert_object(ui_scale_option).is_not_null()
+	assert_object(cancel_button).is_not_null()
+	assert_bool(execute_button.disabled).is_true()
+
+	_select_option_metadata(ui_scale_option, 1.25)
+	cancel_button.pressed.emit()
+	await runner.simulate_frames(2)
+
+	var settings := SettingsManagerScript.load_settings()
+	assert_bool(absf(float(settings.get("ui_scale", 0.0)) - 1.0) < 0.001).is_true()
+	assert_bool(absf(scene.get_window().content_scale_factor - 1.0) < 0.001).is_true()
+	assert_bool(execute_button.disabled).is_false()
+
+
+func test_settings_reset_restores_defaults() -> void:
+	SettingsManagerScript.save_settings({
+		"window_mode": "fullscreen",
+		"ui_scale": 1.25,
+	})
+	var runner := await _load_main_menu()
+	var scene := runner.scene()
+	var settings_button := scene.find_child("SettingsButton", true, false) as Button
+	var execute_button := scene.find_child("ExecuteActionButton", true, false) as Button
+	assert_object(settings_button).is_not_null()
+	assert_object(execute_button).is_not_null()
+	assert_bool(absf(scene.get_window().content_scale_factor - 1.25) < 0.001).is_true()
+
+	settings_button.pressed.emit()
+	await await_idle_frame()
+
+	var reset_button := scene.find_child("SettingsResetButton", true, false) as Button
+	assert_object(reset_button).is_not_null()
+	assert_bool(execute_button.disabled).is_true()
+
+	reset_button.pressed.emit()
+	await runner.simulate_frames(2)
+
+	var settings := SettingsManagerScript.load_settings()
+	assert_str(String(settings.get("window_mode", ""))).is_equal("windowed")
+	assert_bool(absf(float(settings.get("ui_scale", 0.0)) - 1.0) < 0.001).is_true()
+	assert_bool(absf(scene.get_window().content_scale_factor - 1.0) < 0.001).is_true()
+	assert_object(scene.find_child("SettingsPopup", true, false)).is_null()
+	assert_bool(execute_button.disabled).is_false()
+
+
 func test_narrative_panel_keeps_scroll_container_and_appends_entries() -> void:
 	var runner := await _load_main_menu()
 	var scene := runner.scene()
@@ -613,6 +709,33 @@ func test_game_over_stats_clamp_display_day_to_100() -> void:
 	var stats_label := scene.find_child("GameOverStatsLabel", true, false) as Label
 	assert_object(stats_label).is_not_null()
 	assert_str(stats_label.text).contains("天数: 100")
+
+
+func test_loading_save_clears_locked_map_selection() -> void:
+	var runner := await _load_main_menu()
+	var scene := runner.scene()
+	var controller = runner.get_property("_map_controller")
+	var inspector_panel := scene.find_child("MapInspectorPanel", true, false) as PanelContainer
+	assert_object(inspector_panel).is_not_null()
+
+	controller.select_node("paris")
+	await runner.simulate_frames(4)
+	assert_str(controller.get_selected_node_id()).is_equal("paris")
+	assert_bool(inspector_panel.visible).is_true()
+
+	scene.call("_save_to_slot", 1, null)
+	await await_idle_frame()
+	scene.call("_load_from_slot", 1, null)
+	await await_idle_frame()
+
+	var confirm := scene.find_child("LoadConfirmDialog", true, false) as ConfirmationDialog
+	assert_object(confirm).is_not_null()
+	confirm.confirmed.emit()
+	await runner.simulate_frames(4)
+
+	assert_str(controller.get_selected_node_id()).is_equal("")
+	assert_str(controller.get_hovered_node_id()).is_equal("")
+	assert_bool(inspector_panel.visible).is_false()
 
 
 func test_boost_submit_failure_restores_action_interactivity() -> void:

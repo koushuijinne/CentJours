@@ -1,6 +1,6 @@
 # Cent Jours — 开发优先级计划
 
-> **更新**: 2026-03-27 v91
+> **更新**: 2026-03-27 v92
 > **通用原则**: [docs/rules/development_principles.md](/mnt/e/projects/CentJours/docs/rules/development_principles.md)
 > **快速接手**: [docs/history/agent_handoff.md](/mnt/e/projects/CentJours/docs/history/agent_handoff.md)
 > **开发历史**: [docs/history/development_logs/](/mnt/e/projects/CentJours/docs/history/development_logs/)
@@ -12,7 +12,7 @@
 
 - 项目已经有可玩的纵向切片，正式入口仍是 `src/ui/main_menu.tscn`，主链路 `TurnManager -> CentJoursEngine -> GameState -> UI` 已跑通。
 - 当前内容规模为 `15` 名角色、`41` 个地图节点、`58` 条历史事件；补给、政治、历史日志、存档读档和主菜单主循环都已接通。
-- Save / Load 已进入 `v3` 兼容阶段；最近一次权威回归基线是 Windows `211/211` Rust tests、Windows `GdUnit4 37/37`、Windows Godot 主项目无头和 smoke scene。
+- Save / Load 已进入 `v3` 兼容阶段；最近一次权威回归基线是 Windows `211/211` Rust tests、Windows `GdUnit4 41/41`、Windows Godot 主项目无头和 smoke scene。
 - Rust 规则层的第一批正式集成测试和属性测试已经落地；Godot 前端第一批 `GdUnit4` 回归也已接入，Windows GitHub Actions 工作流与仓库脚本也已落地。
 - GitHub Actions 已新增文档同步门禁：代码路径改动必须伴随 `README.md` 或 `docs/` 更新。
 - 当前总目标已按 [ADR-011](/mnt/e/projects/CentJours/docs/decisions/ADR-011-core-loop-systemization-and-historical-depth.md) 固定为：核心玩法优化完成，并达到 Steam 可上线级别。
@@ -23,7 +23,7 @@
 |--------|------|------|----------|
 | **P0** | **继续收口 Windows GitHub Actions 验证链** | M | `windows-validation` 已改成代码白名单触发，下一步继续观察 CI 稳定性和无效排队是否真正下降。 |
 | **P0** | **把 `docs/bugs` 中的关键问题继续转成可重复验证** | M | 第一批主菜单与地图问题、存档槽位误操作护栏和 `EventBus` 日志噪音已经处理，剩余 bug 仍要持续绑定自动化回归。 |
-| **P0** | **继续扩 Godot `GdUnit4` 覆盖面** | M | 现已覆盖存读档槽位、槽位标签、覆盖确认、删除入口、确认取消后返回槽位选择框、新局确认/取消、读档取消、存档槽位取消恢复、设置弹窗打开/取消/应用/持久化、战斗取消、战斗提交失败恢复、接见禁用态、接见取消恢复、接见提交失败恢复、结局弹窗和重开后的交互恢复，并新增地图 hover/锁定详情同锚点与滚动护栏、锁定后忽略他处 hover、重复点击取消锁定、空白画布清空交互、右键缩放复位保持锁定等回归；下一步继续补更多地图边界和剩余失败恢复。 |
+| **P0** | **继续扩 Godot `GdUnit4` 覆盖面** | M | 现已覆盖存读档槽位、槽位标签、覆盖确认、删除入口、确认取消后返回槽位选择框、新局确认/取消、读档取消、存档槽位取消恢复、保存页删除、设置弹窗打开/取消/应用/重置默认/取消不污染已保存配置、读档成功后清空地图锁定、战斗取消、战斗提交失败恢复、接见禁用态、接见取消恢复、接见提交失败恢复、结局弹窗和重开后的交互恢复，并新增地图 hover/锁定详情同锚点与滚动护栏、锁定后忽略他处 hover、重复点击取消锁定、空白画布清空交互、右键缩放复位保持锁定等回归；下一步继续补更多地图边界和剩余失败恢复。 |
 | **P1** | **维护开发者文档与 bug 制度同步** | S | 文档骨架已经齐备，后续重点是跟随代码、接口和验证方式持续维护。 |
 | **P1** | **继续补强补给玩法的产品化表达与教学链** | L | 后勤已经是当前玩法主轴，但应建立在更稳的测试护栏之上。 |
 | **P1** | **历史事件扩到 `100+` 并继续文本 QA** | L | 内容量仍是长局重玩性的核心约束。 |
