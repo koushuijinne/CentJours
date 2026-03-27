@@ -17,6 +17,10 @@
 *.ilk
 *.exe
 
+# Python cache
+__pycache__/
+*.pyc
+
 # Windows junk
 Thumbs.db
 Desktop.ini
