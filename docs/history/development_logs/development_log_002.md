@@ -353,3 +353,20 @@
 - 本轮将与地图详情层布局收口、`GdUnit4` 回归和文档同步一起提交并推送到 `auto/gameplay_update`。
 下一步:
 - 继续按当前 `P0` 推进：把设置链路、更多失败恢复边界和剩余 `docs/bugs` 问题继续转成自动化验证。
+
+## 2026-03-27 第 50 轮
+分支: `auto/gameplay_update`
+范围: 收口主菜单 transient modal 与 `DecisionTray` 的交互竞态
+变更:
+- `main_menu.gd` 新增 transient modal 深度计数，统一管理 `新局`、`存档槽位`、`读档确认` 打开时的托盘锁定与关闭后的恢复。
+- `main_menu_flow_test.gd` 新增 1 条回归，并加强已有取消链路断言：存档槽位打开时执行按钮禁用、取消后恢复；`新局` 取消与 `读档确认` 取消也都显式验证执行按钮恢复。
+- `docs/bugs/` 新增 `BUG-2026-03-27-MAIN-MENU-MODAL-LOCK`，并把当前 Godot 基线同步到 `GdUnit4 21/21`。
+验证:
+- Windows `tools\\run_gdunit_windows.cmd` 通过，`GdUnit4 21/21`。
+- Windows Godot 无头主项目通过。
+- Windows Godot smoke scene 通过。
+- 本轮未运行 Linux / WSL 侧测试。
+提交/推送:
+- 本轮将与 modal 状态机修复、`GdUnit4` 回归和文档同步一起提交并推送到 `auto/gameplay_update`。
+下一步:
+- 继续按当前 `P0` 推进：补设置链路和剩余失败恢复边界，并继续把 `docs/bugs` 的问题转成自动化验证。

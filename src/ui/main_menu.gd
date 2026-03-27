@@ -67,6 +67,8 @@ var _new_game_btn: Button         # 顶栏新局按钮（动态创建）
 var _save_btn: Button             # 顶栏存档按钮（动态创建）
 var _load_btn: Button             # 顶栏读档按钮（动态创建）
 var _awaiting_action: bool = false  # 是否处于等待玩家操作的 Action Phase
+var _transient_modal_depth: int = 0
+var _tray_interactive_before_modal: bool = false
 # 上回合数值快照，用于派系趋势箭头和数值变化动效
 var _prev_faction_support: Dictionary = {}
 var _prev_legitimacy: float = 50.0
@@ -291,6 +293,7 @@ func _on_new_game_pressed() -> void:
 	confirm.cancel_button_text = "取消"
 	confirm.confirmed.connect(_restart_game)
 	add_child(confirm)
+	_open_transient_modal(confirm)
 	confirm.popup_centered()
 
 func _show_slot_picker(mode: String) -> void:
@@ -323,16 +326,16 @@ func _show_slot_picker(mode: String) -> void:
 	var cancel_btn := Button.new()
 	cancel_btn.name = "SlotPickerCancelButton"
 	cancel_btn.text = "取消"
-	cancel_btn.pressed.connect(func(): popup.queue_free())
+	cancel_btn.pressed.connect(func(): _close_transient_popup(popup))
 	content.add_child(cancel_btn)
 
 	popup.add_child(content)
 	add_child(popup)
+	_open_transient_modal(popup)
 	popup.popup_centered()
 
 func _save_to_slot(slot_id: int, popup: PopupPanel) -> void:
-	if popup != null:
-		popup.queue_free()
+	_close_transient_popup(popup)
 	if TurnManager.save_to_file(slot_id):
 		_refresh_save_load_buttons()
 		_save_btn.text = "已存档 ✓"
@@ -348,8 +351,7 @@ func _save_to_slot(slot_id: int, popup: PopupPanel) -> void:
 		)
 
 func _load_from_slot(slot_id: int, popup: PopupPanel) -> void:
-	if popup != null:
-		popup.queue_free()
+	_close_transient_popup(popup)
 	var confirm := ConfirmationDialog.new()
 	confirm.name = "LoadConfirmDialog"
 	confirm.dialog_text = "读档将覆盖当前进度，确定读取槽位 %d 吗？" % slot_id
@@ -364,6 +366,7 @@ func _load_from_slot(slot_id: int, popup: PopupPanel) -> void:
 			_refresh_save_load_buttons()
 	)
 	add_child(confirm)
+	_open_transient_modal(confirm)
 	confirm.popup_centered()
 
 func _restart_game() -> void:
@@ -390,6 +393,43 @@ func _start_game() -> void:
 func _set_tray_interactive(enabled: bool) -> void:
 	_awaiting_action = enabled
 	_sync_tray_state()
+
+
+func _open_transient_modal(popup: Window) -> void:
+	if popup == null:
+		return
+	if _transient_modal_depth == 0:
+		_tray_interactive_before_modal = _awaiting_action and not _dialogs_controller.is_modal_active()
+	_transient_modal_depth += 1
+	_set_tray_interactive(false)
+	var visibility_changed_cb := Callable(self, "_on_transient_modal_visibility_changed").bind(popup)
+	if not popup.visibility_changed.is_connected(visibility_changed_cb):
+		popup.visibility_changed.connect(visibility_changed_cb)
+
+
+func _close_transient_popup(popup: Window) -> void:
+	if popup == null:
+		return
+	popup.hide()
+	popup.queue_free()
+
+
+func _on_transient_modal_visibility_changed(popup: Window) -> void:
+	if popup != null and popup.visible:
+		return
+	var visibility_changed_cb := Callable(self, "_on_transient_modal_visibility_changed").bind(popup)
+	if popup != null and popup.visibility_changed.is_connected(visibility_changed_cb):
+		popup.visibility_changed.disconnect(visibility_changed_cb)
+	_on_transient_modal_closed()
+
+
+func _on_transient_modal_closed() -> void:
+	_transient_modal_depth = max(_transient_modal_depth - 1, 0)
+	if _transient_modal_depth > 0:
+		return
+	if _dialogs_controller.is_modal_active():
+		return
+	_set_tray_interactive(_tray_interactive_before_modal)
 
 func _connect_signals() -> void:
 	# 接 UI 层信号：状态变化 → 刷新显示

@@ -15,7 +15,7 @@
 - Rust 规则层最近一次完整回归基线是 Windows `211/211`；自动工作流后续不再把 Linux / WSL `cargo test` 当成默认验证路径。
 - 当前核心数据基线：`15` 名角色、`41` 个地图节点、`58` 条历史事件，其中 `major 16 / normal 35 / minor 7`。
 - 当前活跃开发分支为 `auto/gameplay_update`。
-- Godot 前端自动回归已扩到 `GdUnit4 20/20`，当前 Windows 基线包含存读档槽位、槽位标签文案、新局确认/取消、读档取消、叙事面板、区域任务显示、战斗弹窗取消、接见禁用态、接见取消恢复、结局弹窗显示/重开/天数截断、地图 hover/锁定详情同锚点与滚动护栏、地图交互、Windows Godot 主项目无头和 Windows smoke scene；Windows CI workflow 与本地脚本入口也已写入仓库。
+- Godot 前端自动回归已扩到 `GdUnit4 21/21`，当前 Windows 基线包含存读档槽位、槽位标签文案、新局确认/取消、读档取消、存档槽位取消恢复、叙事面板、区域任务显示、战斗弹窗取消、接见禁用态、接见取消恢复、结局弹窗显示/重开/天数截断、地图 hover/锁定详情同锚点与滚动护栏、地图交互、Windows Godot 主项目无头和 Windows smoke scene；Windows CI workflow 与本地脚本入口也已写入仓库。
 - Save / Load 已进入 `v3` 兼容路径，旧存档会把 `fontainebleau_eve` 迁移为正式 ID `tuileries_eve`，前沿粮秣站状态也会随存档读写。
 - 历史事件正文、`historical_note` 与玩家行动结算日志都已接入侧栏日志链路。
 - 动态补给已接进核心循环：补给值会进入存档、`get_state()`、主菜单顶栏、休整恢复、战斗补给惩罚和每日行动结算日志。
@@ -44,6 +44,7 @@
 - `docs/bugs/bugs_check.md` 的第二轮问题仍在收口，但“hover 与锁定详情位置跳变”这一条已经正式转成 `BUG-2026-03-27-MAP-DETAIL-ANCHOR`，并由 `GdUnit4` 锁住右上同锚点与滚动护栏。
 - 这轮又补了一层前端护栏：`Current Situation` 已开始显示区域任务；`GdUnit4` 已锁住多槽存读档可用性、叙事日志滚动链和区域任务文本展示；`save_manager.gd` 里槽位标签的字符串格式化 bug 已修掉。
 - 存读档槽位标签现在会把进行中的 `null / in_progress` 状态统一显示成玩家可读的“进行中”，并已由 `GdUnit4` 锁住。
+- 主菜单自己创建的 transient modal 现在也统一接入托盘锁定：`新局`、`存档槽位`、`读档确认` 打开时会禁用 `DecisionTray`，关闭后再按进入前状态恢复。
 - 主菜单弹窗状态机又补了一层：`新局` 取消、`读档` 取消、战斗弹窗取消和低合法性接见禁用都已进入 `GdUnit4`，后续回归不再只靠手点。
 - 结局弹窗本轮也纳入自动回归：覆盖弹窗出现、重开后回到 `Day 1 / action`、以及结局统计的天数上限截断。
 - `GdUnit4` 日志噪音本轮也清了一层：战斗弹窗整数除法、地图控制器局部变量遮蔽和几处无用变量警告已移除；当前剩余的主要噪音集中在 `EventBus` 的声明型 signals。
