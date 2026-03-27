@@ -370,3 +370,22 @@
 - 本轮将与 modal 状态机修复、`GdUnit4` 回归和文档同步一起提交并推送到 `auto/gameplay_update`。
 下一步:
 - 继续按当前 `P0` 推进：补设置链路和剩余失败恢复边界，并继续把 `docs/bugs` 的问题转成自动化验证。
+
+## 2026-03-27 第 51 轮
+分支: `auto/gameplay_update`
+范围: 给多槽存档补齐覆盖确认、删除入口和 modal 收尾护栏
+变更:
+- `main_menu.gd` 的槽位弹窗改成行式布局；已有槽位保存时不再直接覆盖，而是先弹 `SaveOverwriteConfirmDialog` 二次确认。
+- 已存在的存档槽位现在会在存档 / 读档弹窗里都显示删除按钮，删除前统一经过 `DeleteSaveConfirmDialog`。
+- `新局`、`读档确认`、`覆盖确认`、`删除确认` 的 `confirmed` 回调都改成先显式关闭确认弹窗，再执行后续业务，避免 transient modal depth 残留导致 `DecisionTray` 卡死。
+- `tests/godot/main_menu_flow_test.gd` 新增 2 条回归：已有槽位必须先覆盖确认、从读档弹窗删除存档后槽位和按钮状态同步恢复。
+- `docs/bugs/` 新增 `BUG-2026-03-27-SAVE-SLOT-GUARDS`，并把 `dev_plan.md`、`agent_handoff.md` 同步到 `GdUnit4 23/23` 基线。
+验证:
+- Windows `tools\\run_gdunit_windows.cmd` 通过，`GdUnit4 23/23`。
+- Windows Godot 无头主项目通过。
+- Windows Godot smoke scene 通过。
+- 本轮未运行 Linux / WSL 侧测试。
+提交/推送:
+- 本轮将与存档槽位交互收口、`GdUnit4` 回归和文档同步一起提交并推送到 `auto/gameplay_update`。
+下一步:
+- 继续按当前 `P0` 推进：优先把设置链路和更多失败恢复边界继续压进 `GdUnit4`，再处理 `EventBus` 验证噪音。

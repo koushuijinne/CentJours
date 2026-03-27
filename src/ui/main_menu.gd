@@ -291,7 +291,10 @@ func _on_new_game_pressed() -> void:
 	confirm.dialog_text = "重新开始将丢失当前未保存进度，确定吗？"
 	confirm.ok_button_text = "确认新开一局"
 	confirm.cancel_button_text = "取消"
-	confirm.confirmed.connect(_restart_game)
+	confirm.confirmed.connect(func():
+		_close_transient_popup(confirm)
+		_restart_game()
+	)
 	add_child(confirm)
 	_open_transient_modal(confirm)
 	confirm.popup_centered()
@@ -313,15 +316,31 @@ func _show_slot_picker(mode: String) -> void:
 	for slot in SaveManager.list_save_slots():
 		var slot_id := int(slot.get("slot_id", 0))
 		var exists := bool(slot.get("exists", false))
+		var row := HBoxContainer.new()
+		row.name = "SlotPickerRow%d" % slot_id
+		row.add_theme_constant_override("separation", 8)
 		var button := Button.new()
 		button.name = "%sSlotButton%d" % ["Save" if mode == "save" else "Load", slot_id]
 		button.text = String(slot.get("label", "槽位 %d" % slot_id))
+		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		button.disabled = mode == "load" and not exists
-		if mode == "save":
+		if mode == "save" and exists:
+			button.pressed.connect(_confirm_save_overwrite.bind(slot_id, popup))
+		elif mode == "save":
 			button.pressed.connect(_save_to_slot.bind(slot_id, popup))
 		else:
 			button.pressed.connect(_load_from_slot.bind(slot_id, popup))
-		content.add_child(button)
+		row.add_child(button)
+
+		if exists:
+			var delete_btn := Button.new()
+			delete_btn.name = "%sDeleteSlotButton%d" % ["Save" if mode == "save" else "Load", slot_id]
+			delete_btn.text = "删除"
+			delete_btn.custom_minimum_size = Vector2(68, 0)
+			delete_btn.pressed.connect(_confirm_delete_save.bind(slot_id, popup))
+			row.add_child(delete_btn)
+
+		content.add_child(row)
 
 	var cancel_btn := Button.new()
 	cancel_btn.name = "SlotPickerCancelButton"
@@ -358,6 +377,7 @@ func _load_from_slot(slot_id: int, popup: PopupPanel) -> void:
 	confirm.ok_button_text = "确认读档"
 	confirm.cancel_button_text = "取消"
 	confirm.confirmed.connect(func():
+		_close_transient_popup(confirm)
 		if TurnManager.load_from_save(slot_id):
 			_map_controller.clear_interaction_state()
 			_build_decision_cards()
@@ -368,6 +388,52 @@ func _load_from_slot(slot_id: int, popup: PopupPanel) -> void:
 	add_child(confirm)
 	_open_transient_modal(confirm)
 	confirm.popup_centered()
+
+
+func _confirm_save_overwrite(slot_id: int, popup: PopupPanel) -> void:
+	var confirm := ConfirmationDialog.new()
+	confirm.name = "SaveOverwriteConfirmDialog"
+	confirm.dialog_text = "槽位 %d 已有存档（%s），确定覆盖吗？" % [slot_id, _slot_meta_summary(slot_id)]
+	confirm.ok_button_text = "确认覆盖"
+	confirm.cancel_button_text = "取消"
+	confirm.confirmed.connect(func():
+		_close_transient_popup(confirm)
+		_save_to_slot(slot_id, popup)
+	)
+	add_child(confirm)
+	_open_transient_modal(confirm)
+	confirm.popup_centered()
+
+
+func _confirm_delete_save(slot_id: int, popup: PopupPanel) -> void:
+	var confirm := ConfirmationDialog.new()
+	confirm.name = "DeleteSaveConfirmDialog"
+	confirm.dialog_text = "确定删除槽位 %d（%s）吗？" % [slot_id, _slot_meta_summary(slot_id)]
+	confirm.ok_button_text = "确认删除"
+	confirm.cancel_button_text = "取消"
+	confirm.confirmed.connect(func():
+		_close_transient_popup(confirm)
+		_delete_save_slot(slot_id, popup)
+	)
+	add_child(confirm)
+	_open_transient_modal(confirm)
+	confirm.popup_centered()
+
+
+func _delete_save_slot(slot_id: int, popup: PopupPanel) -> void:
+	_close_transient_popup(popup)
+	SaveManager.delete_save(slot_id)
+	_refresh_save_load_buttons()
+
+
+func _slot_meta_summary(slot_id: int) -> String:
+	var meta := SaveManager.get_save_meta(slot_id)
+	if meta.is_empty():
+		return "空槽位"
+	return "Day %d · %s" % [
+		int(meta.get("day", 0)),
+		SaveManager._outcome_label(SaveManager._normalize_outcome(meta.get("outcome", "in_progress")))
+	]
 
 func _restart_game() -> void:
 	TurnManager.reset_engine()

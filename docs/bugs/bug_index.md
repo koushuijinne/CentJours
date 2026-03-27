@@ -26,6 +26,7 @@
 | `BUG-2026-03-24-UI-SWEEP` | 主菜单与地图首轮 bug sweep | P0 | 已修复 | [docs/bugs/bugs_check.md](/mnt/e/projects/CentJours/docs/bugs/bugs_check.md) | Windows headless / smoke / `GdUnit4` | [docs/history/bug_audit_2026-03-24.md](/mnt/e/projects/CentJours/docs/history/bug_audit_2026-03-24.md) |
 | `BUG-2026-03-27-MAP-DETAIL-ANCHOR` | 地图 hover 预览与锁定详情位置跳变，长文本详情缺少稳定滚动护栏 | P1 | 已修复 | [docs/bugs/bugs_check.md](/mnt/e/projects/CentJours/docs/bugs/bugs_check.md) | Windows headless / smoke / `GdUnit4` | [docs/bugs/bug_map_detail_anchor_and_scroll.md](/mnt/e/projects/CentJours/docs/bugs/bug_map_detail_anchor_and_scroll.md) |
 | `BUG-2026-03-27-MAIN-MENU-MODAL-LOCK` | 主菜单顶层 modal 打开时，`DecisionTray` 仍可继续交互 | P1 | 已修复 | 本轮主菜单状态机审计 | Windows headless / smoke / `GdUnit4` | [docs/bugs/bug_main_menu_modal_tray_lock.md](/mnt/e/projects/CentJours/docs/bugs/bug_main_menu_modal_tray_lock.md) |
+| `BUG-2026-03-27-SAVE-SLOT-GUARDS` | 多槽存档缺少覆盖确认与删除入口，确认弹窗可能残留 modal 锁定 | P1 | 已修复 | 发布前主菜单存档流程审计 | Windows headless / smoke / `GdUnit4` | [docs/bugs/bug_save_slot_overwrite_and_delete.md](/mnt/e/projects/CentJours/docs/bugs/bug_save_slot_overwrite_and_delete.md) |
 | `BUG-2026-03-27-EVENTBUS-WARNINGS` | `EventBus` 声明型 signal 在 `GdUnit4` 中持续产生 warning 噪音 | P2 | 待处理 | 本轮 `GdUnit4` 日志审计 | 尚未建立专项回归 | [docs/bugs/bug_eventbus_signal_warnings.md](/mnt/e/projects/CentJours/docs/bugs/bug_eventbus_signal_warnings.md) |
 
 ## 维护规则

@@ -1,6 +1,6 @@
 # Agent 交接
 
-> **更新**: 2026-03-25
+> **更新**: 2026-03-27
 > **当前分支**: 以 `git branch --show-current` 为准
 > **目标读者**: 新开会话后需要快速接手项目的 agent / 协作者
 > **开发历史**: 见 [docs/history/development_logs/](/mnt/e/projects/CentJours/docs/history/development_logs/)
@@ -15,7 +15,7 @@
 - Rust 规则层最近一次完整回归基线是 Windows `211/211`；自动工作流后续不再把 Linux / WSL `cargo test` 当成默认验证路径。
 - 当前核心数据基线：`15` 名角色、`41` 个地图节点、`58` 条历史事件，其中 `major 16 / normal 35 / minor 7`。
 - 当前活跃开发分支为 `auto/gameplay_update`。
-- Godot 前端自动回归已扩到 `GdUnit4 21/21`，当前 Windows 基线包含存读档槽位、槽位标签文案、新局确认/取消、读档取消、存档槽位取消恢复、叙事面板、区域任务显示、战斗弹窗取消、接见禁用态、接见取消恢复、结局弹窗显示/重开/天数截断、地图 hover/锁定详情同锚点与滚动护栏、地图交互、Windows Godot 主项目无头和 Windows smoke scene；Windows CI workflow 与本地脚本入口也已写入仓库。
+- Godot 前端自动回归已扩到 `GdUnit4 23/23`，当前 Windows 基线包含存读档槽位、槽位标签文案、覆盖确认、删除入口、新局确认/取消、读档取消、存档槽位取消恢复、叙事面板、区域任务显示、战斗弹窗取消、接见禁用态、接见取消恢复、结局弹窗显示/重开/天数截断、地图 hover/锁定详情同锚点与滚动护栏、地图交互、Windows Godot 主项目无头和 Windows smoke scene；Windows CI workflow 与本地脚本入口也已写入仓库。
 - Save / Load 已进入 `v3` 兼容路径，旧存档会把 `fontainebleau_eve` 迁移为正式 ID `tuileries_eve`，前沿粮秣站状态也会随存档读写。
 - 历史事件正文、`historical_note` 与玩家行动结算日志都已接入侧栏日志链路。
 - 动态补给已接进核心循环：补给值会进入存档、`get_state()`、主菜单顶栏、休整恢复、战斗补给惩罚和每日行动结算日志。
@@ -48,6 +48,7 @@
 - 主菜单弹窗状态机又补了一层：`新局` 取消、`读档` 取消、战斗弹窗取消和低合法性接见禁用都已进入 `GdUnit4`，后续回归不再只靠手点。
 - 结局弹窗本轮也纳入自动回归：覆盖弹窗出现、重开后回到 `Day 1 / action`、以及结局统计的天数上限截断。
 - `GdUnit4` 日志噪音本轮也清了一层：战斗弹窗整数除法、地图控制器局部变量遮蔽和几处无用变量警告已移除；当前剩余的主要噪音集中在 `EventBus` 的声明型 signals。
+- 多槽存档的发布级护栏本轮也补齐：已有槽位保存前会先经过覆盖确认，存档 / 读档弹窗都能直接删除槽位，这两条路径都已进入 `GdUnit4` 回归。
 - 开发者文档当前以根 `README.md`、`docs/architecture.md`、`docs/interfaces.md` 和 `docs/bugs/` 为主入口；代码路径改动需要同步更新这些文档之一，CI 已做门禁。
 - `windows-validation.yml` 现在只对白名单代码路径触发，不再因为文档和无关 workflow 改动默认占用 Windows runner。
 - 前端已拆出 `map / layout / tray / sidebar / dialogs` 控制器，但发布级视觉和交互收口仍未完成。
@@ -71,7 +72,7 @@
 - `文本 QA 未收口`：剩余事件仍需统一史实锚点、信息密度和句式风格
 - `前端发布级 polish 未完成`：主菜单主要 bug 已清一轮，但仍需 Windows 真机继续看地图缩放、hover 预览和存读档弹窗的最终体验
 - `Windows CI 仍需继续收口`：`23606297120` 已成功，`23607846862` 也已被后续 push 自动取消，说明 `concurrency` 生效；接下来继续观察新 run 稳定性并压缩剩余无效排队
-- `前端自动回归仍不够宽`：接见取消恢复已纳入 `GdUnit4`，但设置、更多地图交互边界和失败恢复链路还没进回归
+- `前端自动回归仍不够宽`：存读档槽位覆盖/删除已纳入 `GdUnit4`，但设置、更多地图交互边界和失败恢复链路还没进回归
 - `产品化能力仍缺`：设置/选项页、导出配置、Steam 商店素材、教程引导都未完成
 - `Windows 真机体验验收仍未收口`：这轮已经补齐 Windows DLL 重编、Windows 无头与 smoke scene，但更长时的真机 UI / 体验验收还没补
 - `最终资产仍是占位`：地图底图、肖像、插图、BGM、SFX、结局画面还没替换

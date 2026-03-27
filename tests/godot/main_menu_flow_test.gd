@@ -136,6 +136,74 @@ func test_save_slot_labels_show_readable_outcome_text() -> void:
 	assert_bool(slot_button.text.contains("in_progress")).is_false()
 
 
+func test_existing_save_slot_requires_overwrite_confirmation() -> void:
+	var runner := await _load_main_menu()
+	var scene := runner.scene()
+	var execute_button := scene.find_child("ExecuteActionButton", true, false) as Button
+
+	scene.call("_save_to_slot", 1, null)
+	await await_idle_frame()
+	runner.invoke("_on_confirm_pressed")
+	await runner.simulate_frames(8)
+	assert_int(GameState.current_day).is_equal(2)
+
+	scene.call("_on_save_pressed")
+	await await_idle_frame()
+	var save_popup := scene.find_child("SaveSlotPickerPopup", true, false) as PopupPanel
+	var overwrite_button := scene.find_child("SaveSlotButton1", true, false) as Button
+	assert_object(save_popup).is_not_null()
+	assert_object(overwrite_button).is_not_null()
+	assert_object(execute_button).is_not_null()
+	assert_bool(execute_button.disabled).is_true()
+
+	overwrite_button.pressed.emit()
+	await await_idle_frame()
+	var confirm := scene.find_child("SaveOverwriteConfirmDialog", true, false) as ConfirmationDialog
+	assert_object(confirm).is_not_null()
+	assert_bool(execute_button.disabled).is_true()
+
+	confirm.confirmed.emit()
+	await runner.simulate_frames(2)
+
+	var meta := SaveManager.get_save_meta(1)
+	assert_int(int(meta.get("day", 0))).is_equal(2)
+	assert_object(scene.find_child("SaveSlotPickerPopup", true, false)).is_null()
+	assert_bool(execute_button.disabled).is_false()
+
+
+func test_delete_save_from_load_picker_removes_slot() -> void:
+	var runner := await _load_main_menu()
+	var scene := runner.scene()
+	var execute_button := scene.find_child("ExecuteActionButton", true, false) as Button
+	var load_button := scene.find_child("LoadGameButton", true, false) as Button
+
+	scene.call("_save_to_slot", 1, null)
+	await await_idle_frame()
+	assert_bool(SaveManager.has_save(1)).is_true()
+	assert_bool(load_button.disabled).is_false()
+
+	scene.call("_on_load_pressed")
+	await await_idle_frame()
+	var load_popup := scene.find_child("LoadSlotPickerPopup", true, false) as PopupPanel
+	var delete_button := scene.find_child("LoadDeleteSlotButton1", true, false) as Button
+	assert_object(load_popup).is_not_null()
+	assert_object(delete_button).is_not_null()
+	assert_object(execute_button).is_not_null()
+	assert_bool(execute_button.disabled).is_true()
+
+	delete_button.pressed.emit()
+	await await_idle_frame()
+	var confirm := scene.find_child("DeleteSaveConfirmDialog", true, false) as ConfirmationDialog
+	assert_object(confirm).is_not_null()
+	confirm.confirmed.emit()
+	await runner.simulate_frames(2)
+
+	assert_bool(SaveManager.has_save(1)).is_false()
+	assert_bool(load_button.disabled).is_true()
+	assert_object(scene.find_child("LoadSlotPickerPopup", true, false)).is_null()
+	assert_bool(execute_button.disabled).is_false()
+
+
 func test_new_game_dialog_restarts_after_confirmation() -> void:
 	var runner := await _load_main_menu()
 	var scene := runner.scene()
