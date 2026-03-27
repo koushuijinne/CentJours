@@ -3,6 +3,8 @@
 
 extends Node
 
+@warning_ignore_start("unused_signal")
+
 # 回合事件
 signal turn_started(day: int)
 signal turn_ended(day: int)
@@ -35,3 +37,5 @@ signal action_resolution_logged(event_type: String, description: String, effects
 # 游戏状态事件
 signal game_over(outcome: String)
 signal historical_event_triggered(event_id: String, event_data: Dictionary)
+
+@warning_ignore_restore("unused_signal")

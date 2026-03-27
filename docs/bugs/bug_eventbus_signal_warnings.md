@@ -5,7 +5,7 @@
 - `ID`: `BUG-2026-03-27-EVENTBUS-WARNINGS`
 - `标题`: `EventBus` 声明型 signal 在 `GdUnit4` 中持续产生 warning 噪音
 - `级别`: `P2`
-- `状态`: `待处理`
+- `状态`: `已修复`
 - `来源`: Windows `GdUnit4` 执行日志
 
 ## 复现
@@ -35,14 +35,16 @@
 
 ## 修复方案
 
-- 评估是否针对 `EventBus` 文件级关闭特定 warning
-- 或改成更适合 Godot 检查器识别的组织方式
-- 目标是降低日志噪音，但不牺牲信号总线的集中声明可读性
+- 在 [src/core/event_bus.gd](/mnt/e/projects/CentJours/src/core/event_bus.gd) 对声明型 signal 区块增加 `@warning_ignore_start("unused_signal")` / `@warning_ignore_restore("unused_signal")`
+- 仅屏蔽 `unused_signal`，不压制其他真实 warning
+- 保留集中声明结构，不把总线拆散到多个脚本
 
 ## 回归验证
 
-- 自动化：暂无
-- 手工：`tools\run_gdunit_windows.cmd` 日志观察
+- Windows `GdUnit4`
+- Windows Godot headless 主项目
+- Windows Godot smoke scene
+- 手工观察 `tools\run_gdunit_windows.cmd` 日志，确认 `EventBus` 的 `unused_signal` warning 不再刷屏
 
 ## 附件
 

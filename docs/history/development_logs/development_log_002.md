@@ -389,3 +389,21 @@
 - 本轮将与存档槽位交互收口、`GdUnit4` 回归和文档同步一起提交并推送到 `auto/gameplay_update`。
 下一步:
 - 继续按当前 `P0` 推进：优先把设置链路和更多失败恢复边界继续压进 `GdUnit4`，再处理 `EventBus` 验证噪音。
+
+## 2026-03-27 第 52 轮
+分支: `auto/gameplay_update`
+范围: 收掉 `EventBus` 声明型 signal 的 `GdUnit4` warning 噪音
+变更:
+- `event_bus.gd` 的 signal 声明区块增加 `@warning_ignore_start("unused_signal")` / `@warning_ignore_restore("unused_signal")`，只精准屏蔽这类集中声明信号带来的静态检查噪音。
+- `BUG-2026-03-27-EVENTBUS-WARNINGS` 已从待处理改成已修复，`bug_index.md` 同步补上回归方式。
+- `dev_plan.md` 与 `agent_handoff.md` 已同步到新状态：`EventBus` warning 不再是当前 Windows `GdUnit4` / CI 日志里的主要噪音来源。
+验证:
+- Windows `tools\\run_gdunit_windows.cmd` 通过。
+- Windows Godot 无头主项目通过。
+- Windows Godot smoke scene 通过。
+- 手工复核 `GdUnit4` 日志，确认 `EventBus` 的 `unused_signal` warning 已消失。
+- 本轮未运行 Linux / WSL 侧测试。
+提交/推送:
+- 本轮将与 `EventBus` 噪音修复和文档同步一起提交并推送到 `auto/gameplay_update`。
+下一步:
+- 继续按当前 `P0` 推进：把设置链路和更多失败恢复边界继续压进 `GdUnit4`，避免自动化只覆盖“成功路径”。
