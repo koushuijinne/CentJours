@@ -258,6 +258,15 @@ E:\software\godot\Godot_v4.6.1-stable_win64_console.exe --headless --path E:\pro
 
 文件：`.github/workflows/windows-validation.yml`
 
+当前触发范围：
+
+- `src/**`
+- `cent-jours-core/**`
+- `tests/**`
+- `addons/**`
+- `tools/run_gdunit_windows.cmd`
+- `.github/workflows/windows-validation.yml`
+
 当前顺序：
 
 1. Rust tests
@@ -266,7 +275,7 @@ E:\software\godot\Godot_v4.6.1-stable_win64_console.exe --headless --path E:\pro
 4. headless boot
 5. smoke scene
 
-`windows-validation.yml` 已启用 `concurrency`，同分支新 run 会取消旧 run。
+`windows-validation.yml` 已启用 `concurrency`，同分支新 run 会取消旧 run；同时改成白名单触发，避免文档和无关 workflow 改动占用 Windows runner。
 
 ## 8. 维护要求
 

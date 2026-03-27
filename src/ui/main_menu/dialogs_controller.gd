@@ -381,6 +381,7 @@ func show_battle_popup(state: Dictionary = {}) -> void:
 	_close_popup(_battle_popup)
 	_battle_popup = PopupPanel.new()
 	_battle_popup.name = "BattlePopup"
+	_call_optional(CALLBACK_SET_TRAY_INTERACTIVE, [false])
 
 	var vbox := VBoxContainer.new()
 	vbox.custom_minimum_size = Vector2(320, 300)
@@ -456,7 +457,7 @@ func show_battle_popup(state: Dictionary = {}) -> void:
 	var cancel_btn := Button.new()
 	cancel_btn.name = "BattleCancelButton"
 	cancel_btn.text = "取消"
-	cancel_btn.pressed.connect(_close_battle_popup)
+	cancel_btn.pressed.connect(_dismiss_battle_popup)
 	btn_row.add_child(cancel_btn)
 	vbox.add_child(btn_row)
 
@@ -469,6 +470,7 @@ func show_boost_popup(state: Dictionary = {}) -> void:
 	_close_popup(_boost_popup)
 	_boost_popup = PopupPanel.new()
 	_boost_popup.name = "BoostPopup"
+	_call_optional(CALLBACK_SET_TRAY_INTERACTIVE, [false])
 
 	var vbox := VBoxContainer.new()
 	vbox.custom_minimum_size = Vector2(300, 220)
@@ -506,7 +508,7 @@ func show_boost_popup(state: Dictionary = {}) -> void:
 	var cancel_btn := Button.new()
 	cancel_btn.name = "BoostCancelButton"
 	cancel_btn.text = "取消"
-	cancel_btn.pressed.connect(_close_boost_popup)
+	cancel_btn.pressed.connect(_dismiss_boost_popup)
 	btn_row.add_child(cancel_btn)
 	vbox.add_child(btn_row)
 
@@ -569,6 +571,16 @@ func _close_battle_popup() -> void:
 func _close_boost_popup() -> void:
 	_close_popup(_boost_popup)
 	_boost_popup = null
+
+
+func _dismiss_battle_popup() -> void:
+	_close_battle_popup()
+	_call_optional(CALLBACK_SET_TRAY_INTERACTIVE, [true])
+
+
+func _dismiss_boost_popup() -> void:
+	_close_boost_popup()
+	_call_optional(CALLBACK_SET_TRAY_INTERACTIVE, [true])
 
 
 func _call_optional(callback_name: String, args: Array = []) -> bool:

@@ -316,3 +316,21 @@
 - 本轮将与 CI 门禁、注释补强和命名治理一起提交并推送到 `auto/gameplay_update`。
 下一步:
 - 继续把剩余高频 bug 绑定到 `GdUnit4`，并保持 README / architecture / interfaces 跟随接口变化同步维护。
+
+## 2026-03-27 第 48 轮
+分支: `auto/gameplay_update`
+范围: 收紧 Windows CI 触发面，并给主菜单弹窗失败恢复补回归护栏
+变更:
+- `.github/workflows/windows-validation.yml` 从 `paths-ignore` 改成代码白名单 `paths`，现在只会被 `src/`、`cent-jours-core/`、`tests/`、`addons/`、`tools/run_gdunit_windows.cmd` 和自身 workflow 触发。
+- `dialogs_controller.gd` 现在会在战斗弹窗和接见弹窗打开时锁住托盘交互，取消时恢复，避免 modal 打开期间继续误触主托盘。
+- `tests/godot/main_menu_flow_test.gd` 新增接见弹窗取消恢复测试，并把战斗取消、低合法性接见、结局重开后的按钮可用性一起锁进回归。
+- `dev_plan.md`、`agent_handoff.md`、`interfaces.md` 已同步到新触发规则和 `GdUnit4 19/19` 基线。
+验证:
+- Windows `tools\\run_gdunit_windows.cmd` 通过，`GdUnit4 19/19`。
+- Windows Godot 无头主项目通过。
+- Windows Godot smoke scene 通过。
+- 本轮未运行 Linux / WSL 侧测试。
+提交/推送:
+- 本轮将与 CI 收口、弹窗交互修正和文档同步一起提交并推送到 `auto/gameplay_update`。
+下一步:
+- 继续把设置链路和更多失败恢复边界压进 `GdUnit4`，并观察新一轮 Windows CI 排队是否继续下降。

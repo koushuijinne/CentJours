@@ -12,7 +12,7 @@
 
 - 项目已经有可玩的纵向切片，正式入口仍是 `src/ui/main_menu.tscn`，主链路 `TurnManager -> CentJoursEngine -> GameState -> UI` 已跑通。
 - 当前内容规模为 `15` 名角色、`41` 个地图节点、`58` 条历史事件；补给、政治、历史日志、存档读档和主菜单主循环都已接通。
-- Save / Load 已进入 `v3` 兼容阶段；最近一次权威回归基线是 Windows `211/211` Rust tests、Windows `GdUnit4 18/18`、Windows Godot 主项目无头和 smoke scene。
+- Save / Load 已进入 `v3` 兼容阶段；最近一次权威回归基线是 Windows `211/211` Rust tests、Windows `GdUnit4 19/19`、Windows Godot 主项目无头和 smoke scene。
 - Rust 规则层的第一批正式集成测试和属性测试已经落地；Godot 前端第一批 `GdUnit4` 回归也已接入，Windows GitHub Actions 工作流与仓库脚本也已落地。
 - GitHub Actions 已新增文档同步门禁：代码路径改动必须伴随 `README.md` 或 `docs/` 更新。
 - 当前总目标已按 [ADR-011](/mnt/e/projects/CentJours/docs/decisions/ADR-011-core-loop-systemization-and-historical-depth.md) 固定为：核心玩法优化完成，并达到 Steam 可上线级别。
@@ -21,9 +21,9 @@
 
 | 优先级 | 项目 | 规模 | 决策理由 |
 |--------|------|------|----------|
-| **P0** | **继续收口 Windows GitHub Actions 验证链** | M | 已观察到首条成功 run，下一步要收紧 docs-only 触发和并发占用，把 Windows runner 留给真正的代码验证。 |
+| **P0** | **继续收口 Windows GitHub Actions 验证链** | M | `windows-validation` 已改成代码白名单触发，下一步继续观察 CI 稳定性和无效排队是否真正下降。 |
 | **P0** | **把 `docs/bugs` 中的关键问题继续转成可重复验证** | M | 第一批主菜单与地图问题已经进入 `GdUnit4`，剩余 bug 仍要持续绑定自动化回归。 |
-| **P0** | **继续扩 Godot `GdUnit4` 覆盖面** | M | 存读档槽位、槽位标签、新局确认/取消、读档取消、战斗取消、接见禁用态和结局弹窗已纳入回归，下一步继续补设置和更多失败恢复边界。 |
+| **P0** | **继续扩 Godot `GdUnit4` 覆盖面** | M | 现已覆盖存读档槽位、槽位标签、新局确认/取消、读档取消、战斗取消、接见禁用态、接见取消恢复、结局弹窗和重开后的交互恢复，下一步继续补设置和更多失败恢复边界。 |
 | **P1** | **维护开发者文档与 bug 制度同步** | S | 文档骨架已经齐备，后续重点是跟随代码、接口和验证方式持续维护。 |
 | **P1** | **继续补强补给玩法的产品化表达与教学链** | L | 后勤已经是当前玩法主轴，但应建立在更稳的测试护栏之上。 |
 | **P1** | **历史事件扩到 `100+` 并继续文本 QA** | L | 内容量仍是长局重玩性的核心约束。 |
@@ -139,7 +139,7 @@ tools\run_gdunit_windows.cmd E:\software\godot\Godot_v4.6.1-stable_win64_console
 
 ## 当前阻塞与风险
 
-- `Windows CI 仍需继续收口`：首条成功 run 已出现，但旧的 docs-only push 仍会占用 runner；需要继续收紧触发策略和并发取消，避免无效排队。
+- `Windows CI 仍需继续收口`：`windows-validation` 已切到白名单触发，但还要继续观察真实排队占用和失败分布，确认 Windows runner 负载确实下降。
 - `主菜单状态流仍脆弱`：存读档标签格式化 bug 已修，存读档、行动提交、地图 hover / 锁定和面板同步仍是高风险区。
 - `内容线仍未收口`：事件量、教学链、失败归因和最终资产都还不够完整。
 
@@ -154,7 +154,7 @@ tools\run_gdunit_windows.cmd E:\software\godot\Godot_v4.6.1-stable_win64_console
 ## 测试现状概览
 
 - Rust 当前自动化包含模块内单元测试、`cent-jours-core/tests/` 集成测试和 `proptest` 属性测试，最近一次 Windows 基线合计 `211` tests。
-- Godot 前端当前已有 `GdUnit4` `18/18` 回归，已覆盖主菜单初始化、执行行动、存读档槽位、槽位标签文案、新局确认/取消、读档取消、叙事面板、区域任务显示、战斗弹窗取消、接见禁用态、结局弹窗显示/重开/天数截断和地图交互；另保留 `src/dev/engine_smoke_test_scene.tscn` smoke 入口。
+- Godot 前端当前已有 `GdUnit4` `19/19` 回归，已覆盖主菜单初始化、执行行动、存读档槽位、槽位标签文案、新局确认/取消、读档取消、叙事面板、区域任务显示、战斗弹窗取消、接见禁用态、接见取消恢复、结局弹窗显示/重开/天数截断和地图交互；另保留 `src/dev/engine_smoke_test_scene.tscn` smoke 入口。
 - 仓库里现在已有 `.github/workflows/windows-validation.yml` 和 `tools/run_gdunit_windows.cmd`，Windows CI 与本地执行入口已经落地。
 
 ## 文档边界
