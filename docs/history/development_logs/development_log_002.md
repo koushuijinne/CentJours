@@ -445,3 +445,19 @@
 - 本轮将与设置系统、`GdUnit4` 回归和文档同步一起提交并推送到 `auto/gameplay_update`。
 下一步:
 - 继续按当前 `P0` 推进：补 Windows 主项目 / smoke 验证并提交这轮设置包；完成后继续收口更多地图交互边界。
+
+## 2026-03-27 第 55 轮
+分支: `auto/gameplay_update`
+范围: 扩地图交互边界回归，把常见误操作路径锁进 `GdUnit4`
+变更:
+- `tests/godot/map_controller_contract_test.gd` 新增 4 条地图边界回归：锁定后忽略其他节点 hover、重复点击同节点取消锁定、点击空白画布清空交互、右键缩放复位保持锁定。
+- 这轮没有改生产代码，说明当前 `map_controller.gd` 的交互状态机已经能满足这组真实误操作路径。
+- `dev_plan.md` 与 `agent_handoff.md` 已同步到 `GdUnit4 37/37` 基线，并把这组地图交互边界写成当前真值。
+验证:
+- Windows `tools\\run_gdunit_windows.cmd` 通过，`GdUnit4 37/37`。
+- 本轮未改生产代码，因此未重复跑 Windows Godot 主项目 / smoke scene。
+- 本轮未运行 Linux / WSL 侧测试。
+提交/推送:
+- 本轮将与地图交互回归扩展和文档同步一起提交并推送到 `auto/gameplay_update`。
+下一步:
+- 继续按当前 `P0` 推进：优先把更多地图行动边界或 CI 结果继续压成可重复验证。

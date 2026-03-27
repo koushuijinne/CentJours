@@ -98,7 +98,92 @@ func test_selecting_node_populates_inspector_title() -> void:
 	assert_str(inspector_title.text).contains("Paris")
 
 
+func test_locked_selection_ignores_hover_from_other_node() -> void:
+	var runner := await _load_main_menu()
+	var controller = runner.get_property("_map_controller")
+
+	controller.select_node("paris")
+	await runner.simulate_frames(4)
+	controller.set_hovered_node_id("lyon")
+	await runner.simulate_frames(4)
+
+	assert_str(controller.get_selected_node_id()).is_equal("paris")
+	assert_str(controller.get_hovered_node_id()).is_equal("paris")
+
+
+func test_clicking_selected_node_again_clears_locked_detail() -> void:
+	var runner := await _load_main_menu()
+	var scene := runner.scene()
+	var controller = runner.get_property("_map_controller")
+	var inspector_panel := scene.find_child("MapInspectorPanel", true, false) as PanelContainer
+
+	controller.select_node("paris")
+	await runner.simulate_frames(4)
+	assert_bool(inspector_panel.visible).is_true()
+
+	var hotspot: Control = controller.get_map_node_controls_by_id().get("paris", null)
+	assert_object(hotspot).is_not_null()
+	controller.on_map_node_gui_input(_left_click_event(), "paris", hotspot)
+	await runner.simulate_frames(4)
+
+	assert_str(controller.get_selected_node_id()).is_equal("")
+	assert_str(controller.get_hovered_node_id()).is_equal("")
+	assert_bool(inspector_panel.visible).is_false()
+
+
+func test_clicking_empty_canvas_clears_interaction_state() -> void:
+	var runner := await _load_main_menu()
+	var scene := runner.scene()
+	var controller = runner.get_property("_map_controller")
+	var inspector_panel := scene.find_child("MapInspectorPanel", true, false) as PanelContainer
+	var hover_panel := scene.find_child("MapHoverPanel", true, false) as PanelContainer
+
+	controller.select_node("lyon")
+	await runner.simulate_frames(4)
+	assert_bool(inspector_panel.visible).is_true()
+
+	controller.on_map_canvas_gui_input(_left_click_event())
+	await runner.simulate_frames(4)
+
+	assert_str(controller.get_selected_node_id()).is_equal("")
+	assert_str(controller.get_hovered_node_id()).is_equal("")
+	assert_bool(inspector_panel.visible).is_false()
+	assert_bool(hover_panel.visible).is_false()
+
+
+func test_right_click_zoom_reset_preserves_locked_selection() -> void:
+	var runner := await _load_main_menu()
+	var scene := runner.scene()
+	var controller = runner.get_property("_map_controller")
+	var inspector_panel := scene.find_child("MapInspectorPanel", true, false) as PanelContainer
+
+	controller.set_map_zoom(1.8)
+	controller.select_node("lyon")
+	await runner.simulate_frames(4)
+
+	controller.on_map_canvas_gui_input(_right_click_event())
+	await runner.simulate_frames(4)
+
+	assert_bool(absf(controller.get_map_zoom() - 1.0) < 0.01).is_true()
+	assert_str(controller.get_selected_node_id()).is_equal("lyon")
+	assert_bool(inspector_panel.visible).is_true()
+
+
 func _load_main_menu() -> GdUnitSceneRunner:
 	var runner := scene_runner(MAIN_MENU_SCENE)
 	await runner.simulate_frames(12)
 	return runner
+
+
+func _left_click_event() -> InputEventMouseButton:
+	var event := InputEventMouseButton.new()
+	event.button_index = MOUSE_BUTTON_LEFT
+	event.pressed = true
+	return event
+
+
+func _right_click_event() -> InputEventMouseButton:
+	var event := InputEventMouseButton.new()
+	event.button_index = MOUSE_BUTTON_RIGHT
+	event.pressed = true
+	return event
