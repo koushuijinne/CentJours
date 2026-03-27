@@ -407,3 +407,22 @@
 - 本轮将与 `EventBus` 噪音修复和文档同步一起提交并推送到 `auto/gameplay_update`。
 下一步:
 - 继续按当前 `P0` 推进：把设置链路和更多失败恢复边界继续压进 `GdUnit4`，避免自动化只覆盖“成功路径”。
+
+## 2026-03-27 第 53 轮
+分支: `auto/gameplay_update`
+范围: 补主菜单失败恢复回归，收口存档确认取消链和 battle/boost 提交失败链
+变更:
+- `main_menu.gd` 的覆盖确认 / 删除确认改成显式“先关闭确认框，再回到对应槽位选择框”的流转，不再依赖嵌套 transient modal 的副作用维持托盘锁定。
+- `main_menu.gd` 的 transient popup 关闭逻辑补上 `is_instance_valid()` 护栏，避免确认链里对已释放 popup 重复调用。
+- `dialogs_controller.gd` 现在会保留 `submit_action` 回调的布尔结果；战斗和接见提交失败时，主菜单会恢复 `DecisionTray` 交互，不再把玩家卡在半关闭 modal 状态。
+- `tests/godot/main_menu_flow_test.gd` 新增 4 条回归：覆盖确认取消返回槽位选择框、删除确认取消返回槽位选择框、战斗提交失败恢复交互、接见提交失败恢复交互。
+- `bug_save_slot_overwrite_and_delete.md` 与 `bug_main_menu_modal_tray_lock.md` 已同步补充这轮的取消路径与失败恢复护栏；`dev_plan.md`、`agent_handoff.md` 已同步到 `GdUnit4 27/27` 基线。
+验证:
+- Windows `tools\\run_gdunit_windows.cmd` 通过，`GdUnit4 27/27`。
+- Windows Godot 无头主项目通过。
+- Windows Godot smoke scene 通过。
+- 本轮未运行 Linux / WSL 侧测试。
+提交/推送:
+- 本轮将与主菜单失败恢复修复、`GdUnit4` 回归和文档同步一起提交并推送到 `auto/gameplay_update`。
+下一步:
+- 继续按当前 `P0` 推进：把设置入口、更多地图交互边界和剩余失败恢复链继续压进 `GdUnit4`。

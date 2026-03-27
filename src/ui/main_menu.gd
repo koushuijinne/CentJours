@@ -68,6 +68,7 @@ var _save_btn: Button             # 顶栏存档按钮（动态创建）
 var _load_btn: Button             # 顶栏读档按钮（动态创建）
 var _awaiting_action: bool = false  # 是否处于等待玩家操作的 Action Phase
 var _transient_modal_depth: int = 0
+var _tracked_transient_modals: Dictionary = {}
 var _tray_interactive_before_modal: bool = false
 # 上回合数值快照，用于派系趋势箭头和数值变化动效
 var _prev_faction_support: Dictionary = {}
@@ -291,6 +292,7 @@ func _on_new_game_pressed() -> void:
 	confirm.dialog_text = "重新开始将丢失当前未保存进度，确定吗？"
 	confirm.ok_button_text = "确认新开一局"
 	confirm.cancel_button_text = "取消"
+	_prepare_transient_confirmation_dialog(confirm)
 	confirm.confirmed.connect(func():
 		_close_transient_popup(confirm)
 		_restart_game()
@@ -376,6 +378,7 @@ func _load_from_slot(slot_id: int, popup: PopupPanel) -> void:
 	confirm.dialog_text = "读档将覆盖当前进度，确定读取槽位 %d 吗？" % slot_id
 	confirm.ok_button_text = "确认读档"
 	confirm.cancel_button_text = "取消"
+	_prepare_transient_confirmation_dialog(confirm)
 	confirm.confirmed.connect(func():
 		_close_transient_popup(confirm)
 		if TurnManager.load_from_save(slot_id):
@@ -391,14 +394,17 @@ func _load_from_slot(slot_id: int, popup: PopupPanel) -> void:
 
 
 func _confirm_save_overwrite(slot_id: int, popup: PopupPanel) -> void:
+	_close_transient_popup(popup)
 	var confirm := ConfirmationDialog.new()
 	confirm.name = "SaveOverwriteConfirmDialog"
 	confirm.dialog_text = "槽位 %d 已有存档（%s），确定覆盖吗？" % [slot_id, _slot_meta_summary(slot_id)]
 	confirm.ok_button_text = "确认覆盖"
 	confirm.cancel_button_text = "取消"
+	_prepare_transient_confirmation_dialog(confirm)
+	confirm.canceled.connect(func(): _show_slot_picker("save"))
 	confirm.confirmed.connect(func():
 		_close_transient_popup(confirm)
-		_save_to_slot(slot_id, popup)
+		_save_to_slot(slot_id, null)
 	)
 	add_child(confirm)
 	_open_transient_modal(confirm)
@@ -406,14 +412,18 @@ func _confirm_save_overwrite(slot_id: int, popup: PopupPanel) -> void:
 
 
 func _confirm_delete_save(slot_id: int, popup: PopupPanel) -> void:
+	var mode := "save" if popup != null and popup.name == "SaveSlotPickerPopup" else "load"
+	_close_transient_popup(popup)
 	var confirm := ConfirmationDialog.new()
 	confirm.name = "DeleteSaveConfirmDialog"
 	confirm.dialog_text = "确定删除槽位 %d（%s）吗？" % [slot_id, _slot_meta_summary(slot_id)]
 	confirm.ok_button_text = "确认删除"
 	confirm.cancel_button_text = "取消"
+	_prepare_transient_confirmation_dialog(confirm)
+	confirm.canceled.connect(func(): _show_slot_picker(mode))
 	confirm.confirmed.connect(func():
 		_close_transient_popup(confirm)
-		_delete_save_slot(slot_id, popup)
+		_delete_save_slot(slot_id, null)
 	)
 	add_child(confirm)
 	_open_transient_modal(confirm)
@@ -434,6 +444,13 @@ func _slot_meta_summary(slot_id: int) -> String:
 		int(meta.get("day", 0)),
 		SaveManager._outcome_label(SaveManager._normalize_outcome(meta.get("outcome", "in_progress")))
 	]
+
+
+func _prepare_transient_confirmation_dialog(confirm: ConfirmationDialog) -> void:
+	if confirm == null:
+		return
+	confirm.canceled.connect(func(): _close_transient_popup(confirm))
+
 
 func _restart_game() -> void:
 	TurnManager.reset_engine()
@@ -464,8 +481,12 @@ func _set_tray_interactive(enabled: bool) -> void:
 func _open_transient_modal(popup: Window) -> void:
 	if popup == null:
 		return
+	var popup_id := popup.get_instance_id()
+	if _tracked_transient_modals.has(popup_id):
+		return
 	if _transient_modal_depth == 0:
 		_tray_interactive_before_modal = _awaiting_action and not _dialogs_controller.is_modal_active()
+	_tracked_transient_modals[popup_id] = true
 	_transient_modal_depth += 1
 	_set_tray_interactive(false)
 	var visibility_changed_cb := Callable(self, "_on_transient_modal_visibility_changed").bind(popup)
@@ -474,7 +495,7 @@ func _open_transient_modal(popup: Window) -> void:
 
 
 func _close_transient_popup(popup: Window) -> void:
-	if popup == null:
+	if popup == null or not is_instance_valid(popup):
 		return
 	popup.hide()
 	popup.queue_free()
@@ -483,6 +504,10 @@ func _close_transient_popup(popup: Window) -> void:
 func _on_transient_modal_visibility_changed(popup: Window) -> void:
 	if popup != null and popup.visible:
 		return
+	var popup_id := popup.get_instance_id() if popup != null else 0
+	if not _tracked_transient_modals.has(popup_id):
+		return
+	_tracked_transient_modals.erase(popup_id)
 	var visibility_changed_cb := Callable(self, "_on_transient_modal_visibility_changed").bind(popup)
 	if popup != null and popup.visibility_changed.is_connected(visibility_changed_cb):
 		popup.visibility_changed.disconnect(visibility_changed_cb)
@@ -767,11 +792,12 @@ func _show_battle_popup() -> void:
 func _show_boost_popup() -> void:
 	_dialogs_controller.show_boost_popup(_boost_popup_state())
 
-func _submit_modal_action(action_name: String, payload: Dictionary) -> void:
+func _submit_modal_action(action_name: String, payload: Dictionary) -> bool:
 	if not TurnManager.submit_action(action_name, payload):
 		_set_tray_interactive(true)
-		return
+		return false
 	_clear_tray_selection()
+	return true
 
 ## map_controller 行军确认回调：向 TurnManager 提交行军行动
 func _on_march_confirmed(target_node: String) -> void:

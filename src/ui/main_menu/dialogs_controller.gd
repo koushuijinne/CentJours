@@ -529,7 +529,9 @@ func _confirm_battle(gen_opt: OptionButton, troop_slider: HSlider, terrain_opt: 
 		"terrain": terrain
 	}
 	if not _call_optional(CALLBACK_SUBMIT_ACTION, [ACTION_BATTLE, payload]):
-		battle_confirmed.emit(general_id, troops, terrain)
+		_call_optional(CALLBACK_SET_TRAY_INTERACTIVE, [true])
+		if not _has_callback(CALLBACK_SUBMIT_ACTION):
+			battle_confirmed.emit(general_id, troops, terrain)
 
 
 func _confirm_boost(gen_opt: OptionButton) -> void:
@@ -538,7 +540,9 @@ func _confirm_boost(gen_opt: OptionButton) -> void:
 	_call_optional(CALLBACK_SET_TRAY_INTERACTIVE, [false])
 	var payload := {"general_id": general_id}
 	if not _call_optional(CALLBACK_SUBMIT_ACTION, [ACTION_BOOST_LOYALTY, payload]):
-		boost_confirmed.emit(general_id)
+		_call_optional(CALLBACK_SET_TRAY_INTERACTIVE, [true])
+		if not _has_callback(CALLBACK_SUBMIT_ACTION):
+			boost_confirmed.emit(general_id)
 
 
 func _on_restart_requested() -> void:
@@ -586,9 +590,16 @@ func _dismiss_boost_popup() -> void:
 func _call_optional(callback_name: String, args: Array = []) -> bool:
 	var callback: Variant = _callbacks.get(callback_name, Callable())
 	if callback is Callable and callback.is_valid():
-		(callback as Callable).callv(args)
+		var result: Variant = (callback as Callable).callv(args)
+		if result is bool:
+			return bool(result)
 		return true
 	return false
+
+
+func _has_callback(callback_name: String) -> bool:
+	var callback: Variant = _callbacks.get(callback_name, Callable())
+	return callback is Callable and callback.is_valid()
 
 
 func _host_or_self() -> Node:

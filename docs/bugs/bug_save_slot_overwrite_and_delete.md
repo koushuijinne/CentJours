@@ -28,6 +28,8 @@ P1
 - 多槽存档在覆盖已有槽位前，先弹出 `SaveOverwriteConfirmDialog`。
 - 已存在的槽位在存档 / 读档弹窗中都增加删除按钮。
 - 覆盖确认、删除确认、新局确认、读档确认在 `confirmed` 回调里都显式关闭确认弹窗，再执行后续业务，避免 transient modal depth 残留。
+- 覆盖确认和删除确认的 `取消` 现在会重新打开对应的槽位选择框，而不是直接把整个存读档链路打断。
+- 取消确认后，`DecisionTray` 会继续保持锁定，直到槽位选择框真正关闭。
 - 存档槽位摘要现在会在确认文案里显示 `Day X · 结局状态`，降低误操作成本。
 
 ## 回归
@@ -35,6 +37,8 @@ P1
 - Windows `GdUnit4`
   - `test_existing_save_slot_requires_overwrite_confirmation`
   - `test_delete_save_from_load_picker_removes_slot`
+  - `test_save_overwrite_cancel_keeps_picker_open`
+  - `test_delete_save_cancel_keeps_load_picker_open`
 - Windows Godot headless 主项目
 - Windows Godot smoke scene
 
