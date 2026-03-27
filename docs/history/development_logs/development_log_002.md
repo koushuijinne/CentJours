@@ -254,3 +254,17 @@
 - 本轮将与 warning 清理和文档同步一起提交并推送到 `auto/gameplay_update`。
 下一步:
 - 继续按当前 `P0` 推进：把设置链路和更多失败恢复边界继续压进 `GdUnit4`，并继续观察最新 Windows CI run。
+
+## 2026-03-27 第 44 轮
+分支: `auto/gameplay_update`
+范围: 把“文档补强”从建议升级为正式决策，并提到当前 `P0`
+变更:
+- 新增 [ADR-012](/mnt/e/projects/CentJours/docs/decisions/ADR-012-developer-documentation-operability.md)，正式采纳“根 README、架构文档、接口文档、结构化 bug 文档、英文函数名渐进迁移、关键中文注释”的开发者文档基线。
+- `dev_plan.md` 当前 `P0` 已前置文档补强：优先补根 `README.md`、`architecture.md`、`interfaces.md` 和 `docs/bugs/` 规范化。
+- `agent_handoff.md` 当前最高优先级和已知缺口已同步到“先补人类开发者入口”的口径。
+验证:
+- 本轮为文档与规则轮，没有新增代码路径验证。
+提交/推送:
+- 本轮将与 ADR、计划和交接同步一起提交并推送到 `auto/gameplay_update`。
+下一步:
+- 第 2 轮直接补齐根 `README.md`、`docs/architecture.md`、`docs/interfaces.md` 三份核心文档。
