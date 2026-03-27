@@ -3,16 +3,19 @@ extends GdUnitTestSuite
 
 const __source = "res://src/ui/main_menu.gd"
 const MAIN_MENU_SCENE := "res://src/ui/main_menu.tscn"
+const SettingsManagerScript = preload("res://src/core/settings_manager.gd")
 
 
 func before_test() -> void:
 	_cleanup_saves()
+	_cleanup_settings()
 	TurnManager.reset_engine()
 	GameState.triggered_events.clear()
 
 
 func after_test() -> void:
 	_cleanup_saves()
+	_cleanup_settings()
 	TurnManager.reset_engine()
 
 
@@ -350,6 +353,76 @@ func test_save_slot_picker_cancel_restores_action_interactivity() -> void:
 	assert_bool(execute_button.disabled).is_false()
 
 
+func test_settings_popup_cancel_restores_action_interactivity() -> void:
+	var runner := await _load_main_menu()
+	var scene := runner.scene()
+	var settings_button := scene.find_child("SettingsButton", true, false) as Button
+	var execute_button := scene.find_child("ExecuteActionButton", true, false) as Button
+	assert_object(settings_button).is_not_null()
+	assert_object(execute_button).is_not_null()
+
+	settings_button.pressed.emit()
+	await await_idle_frame()
+
+	var settings_popup := scene.find_child("SettingsPopup", true, false) as PopupPanel
+	var cancel_button := scene.find_child("SettingsCancelButton", true, false) as Button
+	assert_object(settings_popup).is_not_null()
+	assert_object(cancel_button).is_not_null()
+	assert_bool(execute_button.disabled).is_true()
+
+	cancel_button.pressed.emit()
+	await runner.simulate_frames(2)
+
+	assert_object(scene.find_child("SettingsPopup", true, false)).is_null()
+	assert_bool(execute_button.disabled).is_false()
+
+
+func test_settings_popup_reflects_saved_values() -> void:
+	SettingsManagerScript.save_settings({
+		"window_mode": "windowed",
+		"ui_scale": 1.25,
+	})
+	var runner := await _load_main_menu()
+	var scene := runner.scene()
+	var settings_button := scene.find_child("SettingsButton", true, false) as Button
+	assert_object(settings_button).is_not_null()
+
+	settings_button.pressed.emit()
+	await await_idle_frame()
+
+	var ui_scale_option := scene.find_child("SettingsUiScaleOption", true, false) as OptionButton
+	assert_object(ui_scale_option).is_not_null()
+	assert_bool(absf(float(ui_scale_option.get_item_metadata(ui_scale_option.get_selected_id())) - 1.25) < 0.001).is_true()
+
+
+func test_settings_apply_persists_ui_scale() -> void:
+	var runner := await _load_main_menu()
+	var scene := runner.scene()
+	var settings_button := scene.find_child("SettingsButton", true, false) as Button
+	var execute_button := scene.find_child("ExecuteActionButton", true, false) as Button
+	assert_object(settings_button).is_not_null()
+	assert_object(execute_button).is_not_null()
+
+	settings_button.pressed.emit()
+	await await_idle_frame()
+
+	var ui_scale_option := scene.find_child("SettingsUiScaleOption", true, false) as OptionButton
+	var apply_button := scene.find_child("SettingsApplyButton", true, false) as Button
+	assert_object(ui_scale_option).is_not_null()
+	assert_object(apply_button).is_not_null()
+	assert_bool(execute_button.disabled).is_true()
+
+	_select_option_metadata(ui_scale_option, 1.1)
+	apply_button.pressed.emit()
+	await runner.simulate_frames(2)
+
+	var settings := SettingsManagerScript.load_settings()
+	assert_bool(absf(float(settings.get("ui_scale", 0.0)) - 1.1) < 0.001).is_true()
+	assert_bool(absf(scene.get_window().content_scale_factor - 1.1) < 0.001).is_true()
+	assert_object(scene.find_child("SettingsPopup", true, false)).is_null()
+	assert_bool(execute_button.disabled).is_false()
+
+
 func test_narrative_panel_keeps_scroll_container_and_appends_entries() -> void:
 	var runner := await _load_main_menu()
 	var scene := runner.scene()
@@ -591,6 +664,23 @@ func _press_dialog_cancel(dialog: ConfirmationDialog) -> void:
 func _cleanup_saves() -> void:
 	for slot_id in range(1, SaveManager.SLOT_COUNT + 1):
 		SaveManager.delete_save(slot_id)
+
+
+func _cleanup_settings() -> void:
+	SettingsManagerScript.clear_settings()
+	SettingsManagerScript.apply_settings(SettingsManagerScript.default_settings())
+
+
+func _select_option_metadata(option_button: OptionButton, metadata: Variant) -> void:
+	for index in range(option_button.item_count):
+		var item_metadata: Variant = option_button.get_item_metadata(index)
+		if item_metadata is float and metadata is float:
+			if is_equal_approx(float(item_metadata), float(metadata)):
+				option_button.select(index)
+				return
+		elif item_metadata == metadata:
+			option_button.select(index)
+			return
 
 
 func _always_fail_submit_action(_action_name: String, _payload: Dictionary) -> bool:

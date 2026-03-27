@@ -426,3 +426,22 @@
 - 本轮将与主菜单失败恢复修复、`GdUnit4` 回归和文档同步一起提交并推送到 `auto/gameplay_update`。
 下一步:
 - 继续按当前 `P0` 推进：把设置入口、更多地图交互边界和剩余失败恢复链继续压进 `GdUnit4`。
+
+## 2026-03-27 第 54 轮
+分支: `auto/gameplay_update`
+范围: 补最小设置系统，并把设置入口从计划项变成可验证功能
+变更:
+- 新增 `src/core/settings_manager.gd`，负责默认值、归一化、`ConfigFile` 读写和把窗口模式 / 界面缩放应用到当前窗口。
+- `main_menu.gd` 顶栏新增 `设置` 入口；设置弹窗现已支持窗口模式、界面缩放、应用、恢复默认和取消。
+- 新增 `tests/godot/settings_manager_test.gd`；`main_menu_flow_test.gd` 也补了设置弹窗的打开/取消/读取已保存值/应用持久化回归。
+- `README.md`、`interfaces.md`、`dev_plan.md`、`agent_handoff.md` 已同步到“最小设置入口已落地，Godot 前端 `GdUnit4 33/33`”的新基线。
+验证:
+- Windows `tools\\run_gdunit_windows.cmd` 通过，`GdUnit4 33/33`。
+- 本轮 `settings_manager.gd` 的 enum warning 已一并收口，没有把新噪音带回日志。
+- Windows Godot 无头主项目通过。
+- Windows Godot smoke scene 通过。
+- 本轮未运行 Linux / WSL 侧测试。
+提交/推送:
+- 本轮将与设置系统、`GdUnit4` 回归和文档同步一起提交并推送到 `auto/gameplay_update`。
+下一步:
+- 继续按当前 `P0` 推进：补 Windows 主项目 / smoke 验证并提交这轮设置包；完成后继续收口更多地图交互边界。

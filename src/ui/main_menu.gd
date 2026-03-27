@@ -4,6 +4,7 @@
 
 extends Control
 
+const SettingsManagerScript = preload("res://src/core/settings_manager.gd")
 const MainMenuConfigData = preload("res://src/ui/main_menu/main_menu_config.gd")
 const MainMenuFormattersLib = preload("res://src/ui/main_menu/ui_formatters.gd")
 const MainMenuLayoutControllerScript = preload("res://src/ui/main_menu/layout_controller.gd")
@@ -63,6 +64,7 @@ const MainMenuTrayControllerScript = preload("res://src/ui/main_menu/tray_contro
 @onready var _decision_row: HBoxContainer = $RootLayout/MainArea/LeftColumn/DecisionTray/TrayMargin/TrayContent/DecisionScroll/DecisionScrollContent/DecisionRow
 
 var _confirm_button: Button       # 执行行动确认按钮（动态创建）
+var _settings_btn: Button         # 顶栏设置按钮（动态创建）
 var _new_game_btn: Button         # 顶栏新局按钮（动态创建）
 var _save_btn: Button             # 顶栏存档按钮（动态创建）
 var _load_btn: Button             # 顶栏读档按钮（动态创建）
@@ -70,6 +72,7 @@ var _awaiting_action: bool = false  # 是否处于等待玩家操作的 Action P
 var _transient_modal_depth: int = 0
 var _tracked_transient_modals: Dictionary = {}
 var _tray_interactive_before_modal: bool = false
+var _settings_state: Dictionary = {}
 # 上回合数值快照，用于派系趋势箭头和数值变化动效
 var _prev_faction_support: Dictionary = {}
 var _prev_legitimacy: float = 50.0
@@ -85,6 +88,7 @@ var _tray_controller = MainMenuTrayControllerScript.new()
 func _ready() -> void:
 	# 统一入口主题，保证占位骨架先具备正式视觉语言。
 	theme = CentJoursTheme.create()
+	_load_and_apply_user_settings()
 	_layout_controller.name = "LayoutController"
 	_map_controller.name = "MapController"
 	_dialogs_controller.name = "DialogsController"
@@ -111,6 +115,11 @@ func _ready() -> void:
 	call_deferred("_refresh_ui")
 	# 引导 TurnManager 进入第一回合，必须在所有节点就绪后执行。
 	call_deferred("_start_game")
+
+
+func _load_and_apply_user_settings() -> void:
+	_settings_state = SettingsManagerScript.load_settings()
+	SettingsManagerScript.apply_settings(_settings_state, get_window())
 
 func _configure_layout_controller() -> void:
 	_layout_controller.bind_nodes({
@@ -252,6 +261,13 @@ func _build_confirm_button() -> void:
 
 ## 在 TopBarRow 右侧动态创建存档/读档按钮
 func _build_save_load_buttons() -> void:
+	var settings_btn := Button.new()
+	settings_btn.name = "SettingsButton"
+	settings_btn.text = "设置"
+	settings_btn.custom_minimum_size = Vector2(60, 0)
+	settings_btn.pressed.connect(_on_settings_pressed)
+	_top_bar_row.add_child(settings_btn)
+
 	var new_game_btn := Button.new()
 	new_game_btn.name = "NewGameButton"
 	new_game_btn.text = "新局"
@@ -273,6 +289,7 @@ func _build_save_load_buttons() -> void:
 	load_btn.pressed.connect(_on_load_pressed)
 	_top_bar_row.add_child(load_btn)
 	# 缓存按钮引用，读档后刷新可用状态
+	_settings_btn = settings_btn
 	_new_game_btn = new_game_btn
 	_save_btn = save_btn
 	_load_btn = load_btn
@@ -285,6 +302,9 @@ func _on_save_pressed() -> void:
 ## 读档按钮回调
 func _on_load_pressed() -> void:
 	_show_slot_picker("load")
+
+func _on_settings_pressed() -> void:
+	_show_settings_popup()
 
 func _on_new_game_pressed() -> void:
 	var confirm := ConfirmationDialog.new()
@@ -300,6 +320,104 @@ func _on_new_game_pressed() -> void:
 	add_child(confirm)
 	_open_transient_modal(confirm)
 	confirm.popup_centered()
+
+
+func _show_settings_popup() -> void:
+	var popup := PopupPanel.new()
+	popup.name = "SettingsPopup"
+
+	var content := VBoxContainer.new()
+	content.name = "SettingsContent"
+	content.custom_minimum_size = Vector2(320, 0)
+	content.add_theme_constant_override("separation", 10)
+
+	var title := Label.new()
+	title.name = "SettingsTitle"
+	title.text = "设置"
+	title.add_theme_font_size_override("font_size", 16)
+	content.add_child(title)
+
+	var current_settings := SettingsManagerScript.normalize_settings(_settings_state)
+	var window_mode_option := OptionButton.new()
+	window_mode_option.name = "SettingsWindowModeOption"
+	for option in SettingsManagerScript.WINDOW_MODE_OPTIONS:
+		window_mode_option.add_item(String(option.get("label", "")))
+		window_mode_option.set_item_metadata(window_mode_option.item_count - 1, String(option.get("id", "")))
+	window_mode_option.select(SettingsManagerScript.find_window_mode_index(String(current_settings.get("window_mode", "windowed"))))
+	content.add_child(_build_settings_option_row("窗口模式", window_mode_option))
+
+	var ui_scale_option := OptionButton.new()
+	ui_scale_option.name = "SettingsUiScaleOption"
+	for option in SettingsManagerScript.UI_SCALE_OPTIONS:
+		ui_scale_option.add_item(String(option.get("label", "")))
+		ui_scale_option.set_item_metadata(ui_scale_option.item_count - 1, float(option.get("value", 1.0)))
+	ui_scale_option.select(SettingsManagerScript.find_ui_scale_index(float(current_settings.get("ui_scale", 1.0))))
+	content.add_child(_build_settings_option_row("界面缩放", ui_scale_option))
+
+	var buttons := HBoxContainer.new()
+	buttons.name = "SettingsButtonRow"
+	buttons.alignment = BoxContainer.ALIGNMENT_END
+	buttons.add_theme_constant_override("separation", 8)
+
+	var reset_button := Button.new()
+	reset_button.name = "SettingsResetButton"
+	reset_button.text = "恢复默认"
+	reset_button.pressed.connect(func(): _reset_settings_from_popup(popup))
+	buttons.add_child(reset_button)
+
+	var cancel_button := Button.new()
+	cancel_button.name = "SettingsCancelButton"
+	cancel_button.text = "取消"
+	cancel_button.pressed.connect(func(): _close_transient_popup(popup))
+	buttons.add_child(cancel_button)
+
+	var apply_button := Button.new()
+	apply_button.name = "SettingsApplyButton"
+	apply_button.text = "应用"
+	apply_button.pressed.connect(func(): _apply_settings_from_popup(window_mode_option, ui_scale_option, popup))
+	buttons.add_child(apply_button)
+
+	content.add_child(buttons)
+	popup.add_child(content)
+	add_child(popup)
+	_open_transient_modal(popup)
+	popup.popup_centered()
+
+
+func _build_settings_option_row(label_text: String, option_button: OptionButton) -> HBoxContainer:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+
+	var label := Label.new()
+	label.text = label_text
+	label.custom_minimum_size = Vector2(96, 0)
+	row.add_child(label)
+
+	option_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(option_button)
+	return row
+
+
+func _apply_settings_from_popup(window_mode_option: OptionButton, ui_scale_option: OptionButton, popup: PopupPanel) -> void:
+	var window_mode_index := window_mode_option.get_selected_id()
+	var ui_scale_index := ui_scale_option.get_selected_id()
+	var settings := {
+		"window_mode": String(window_mode_option.get_item_metadata(window_mode_index)),
+		"ui_scale": float(ui_scale_option.get_item_metadata(ui_scale_index)),
+	}
+	_settings_state = SettingsManagerScript.normalize_settings(settings)
+	SettingsManagerScript.save_settings(_settings_state)
+	SettingsManagerScript.apply_settings(_settings_state, get_window())
+	_close_transient_popup(popup)
+	call_deferred("_apply_responsive_layout")
+
+
+func _reset_settings_from_popup(popup: PopupPanel) -> void:
+	_settings_state = SettingsManagerScript.default_settings()
+	SettingsManagerScript.save_settings(_settings_state)
+	SettingsManagerScript.apply_settings(_settings_state, get_window())
+	_close_transient_popup(popup)
+	call_deferred("_apply_responsive_layout")
 
 func _show_slot_picker(mode: String) -> void:
 	var popup := PopupPanel.new()

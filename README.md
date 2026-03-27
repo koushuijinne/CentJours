@@ -3,6 +3,7 @@
 你扮演 1815 年的拿破仑，从厄尔巴岛出逃，在 100 天内重建帝国、稳住政治与补给体系，并决定自己是在巴黎站稳脚跟，还是走向滑铁卢。
 
 本项目当前是一个 Windows-first 的 Godot 4 + Rust GDExtension 策略游戏原型，主场景入口为 `src/ui/main_menu.tscn`。仓库已经具备可玩的纵向切片，也已经接入 Windows 自动化测试、Godot `GdUnit4` 回归和 Windows CI。
+主菜单当前还提供最小设置入口，可持久化窗口模式和界面缩放。
 
 ## 环境部署说明
 
@@ -78,6 +79,7 @@ E:\software\godot\Godot_v4.6.1-stable_win64_console.exe --headless --path E:\pro
 - 主菜单和地图交互问题优先绑定 `GdUnit4`
 - 视觉、布局、滚动与可读性问题以 Windows 真机为最终标准
 - GitHub Actions 已有 Windows workflow，会跑 Rust tests、GDExt build、`GdUnit4`、headless boot 和 smoke
+- 玩家设置会写入 `user://cent_jours_settings.cfg`，默认管理窗口模式与界面缩放
 
 ## Roadmap
 

@@ -206,7 +206,57 @@
 
 这些节点名已经被 `GdUnit4` 用作稳定测试锚点。改名时必须同步测试。
 
-## 7. 测试与 CI 入口
+## 7. 玩家设置契约
+
+文件：
+
+- `src/core/settings_manager.gd`
+- `src/ui/main_menu.gd`
+
+当前最小设置链路：
+
+- 持久化路径：`user://cent_jours_settings.cfg`
+- 配置分区：`display`
+- 当前键：
+  - `window_mode`
+  - `ui_scale`
+
+已固定的窗口模式值：
+
+- `windowed`
+- `maximized`
+- `fullscreen`
+
+已固定的界面缩放值：
+
+- `0.9`
+- `1.0`
+- `1.1`
+- `1.25`
+
+规则：
+
+- `SettingsManager` 负责默认值、归一化、`ConfigFile` 读写和把设置应用到当前窗口
+- `main_menu.gd` 只负责顶栏入口和设置弹窗 UI
+- 若增加新的设置项，至少同步：
+  - `SettingsManager`
+  - 主菜单设置弹窗
+  - `GdUnit4` 回归
+  - 本文档
+
+当前已固定的可测试节点包括：
+
+- `SettingsButton`
+- `SettingsPopup`
+- `SettingsWindowModeOption`
+- `SettingsUiScaleOption`
+- `SettingsApplyButton`
+- `SettingsResetButton`
+- `SettingsCancelButton`
+
+这些节点名已经进入 `GdUnit4` 回归。改名时必须同步测试。
+
+## 8. 测试与 CI 入口
 
 ### 本地
 
