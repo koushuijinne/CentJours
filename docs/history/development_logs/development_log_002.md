@@ -268,3 +268,18 @@
 - 本轮将与 ADR、计划和交接同步一起提交并推送到 `auto/gameplay_update`。
 下一步:
 - 第 2 轮直接补齐根 `README.md`、`docs/architecture.md`、`docs/interfaces.md` 三份核心文档。
+
+## 2026-03-27 第 45 轮
+分支: `auto/gameplay_update`
+范围: 补齐人类开发者接手的三份核心文档
+变更:
+- 新增根 `README.md`，补齐项目简介、Windows-first 环境部署、测试与质量、roadmap、术语表和文档导航。
+- 新增 `docs/architecture.md`，解释 `TurnManager -> CentJoursEngine -> GameState -> UI` 主结构、目录职责、主循环、数据流、Save/Load 边界和验证结构。
+- 新增 `docs/interfaces.md`，整理 `TurnManager`、`CentJoursEngine`、`GameState`、Save/Load、主菜单弹窗和 CI 的核心接口契约。
+- `dev_plan.md` 与 `agent_handoff.md` 已同步写明：这三份文档已经存在，当前剩余文档补强重点转为 `docs/bugs/` 规范化与导航更新。
+验证:
+- 本轮为文档轮，没有新增代码路径验证。
+提交/推送:
+- 本轮将与三份核心文档和交接同步一起提交并推送到 `auto/gameplay_update`。
+下一步:
+- 第 3 轮规范 `docs/bugs/`：补索引、模板、维护规则，并更新 docs 导航。
