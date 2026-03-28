@@ -734,6 +734,81 @@ func test_battle_submit_failure_restores_action_interactivity() -> void:
 	assert_str(GameState.current_phase).is_equal("action")
 
 
+func test_battle_submit_success_advances_day_and_resets_tray() -> void:
+	var runner := await _load_main_menu()
+	var scene := runner.scene()
+	var tray_controller = runner.get_property("_tray_controller")
+	var execute_button := scene.find_child("ExecuteActionButton", true, false) as Button
+	assert_object(execute_button).is_not_null()
+	assert_int(GameState.current_day).is_equal(1)
+
+	scene.call("_show_battle_popup")
+	await await_idle_frame()
+
+	var battle_popup := scene.find_child("BattlePopup", true, false) as PopupPanel
+	var confirm_button := scene.find_child("BattleConfirmButton", true, false) as Button
+	assert_object(battle_popup).is_not_null()
+	assert_object(confirm_button).is_not_null()
+	assert_bool(execute_button.disabled).is_true()
+
+	confirm_button.pressed.emit()
+	await runner.simulate_frames(10)
+
+	assert_object(scene.find_child("BattlePopup", true, false)).is_null()
+	assert_int(GameState.current_day).is_equal(2)
+	assert_str(GameState.current_phase).is_equal("action")
+	assert_str(tray_controller.get_selected_policy_id()).is_equal("")
+	assert_bool(execute_button.disabled).is_false()
+
+
+func test_boost_submit_success_advances_day_and_resets_tray() -> void:
+	var runner := await _load_main_menu()
+	var scene := runner.scene()
+	var tray_controller = runner.get_property("_tray_controller")
+	var execute_button := scene.find_child("ExecuteActionButton", true, false) as Button
+	assert_object(execute_button).is_not_null()
+	assert_int(GameState.current_day).is_equal(1)
+	assert_bool(GameState.legitimacy >= 10.0).is_true()
+
+	scene.call("_show_boost_popup")
+	await await_idle_frame()
+
+	var boost_popup := scene.find_child("BoostPopup", true, false) as PopupPanel
+	var confirm_button := scene.find_child("BoostConfirmButton", true, false) as Button
+	assert_object(boost_popup).is_not_null()
+	assert_object(confirm_button).is_not_null()
+	assert_bool(confirm_button.disabled).is_false()
+	assert_bool(execute_button.disabled).is_true()
+
+	confirm_button.pressed.emit()
+	await runner.simulate_frames(10)
+
+	assert_object(scene.find_child("BoostPopup", true, false)).is_null()
+	assert_int(GameState.current_day).is_equal(2)
+	assert_str(GameState.current_phase).is_equal("action")
+	assert_str(tray_controller.get_selected_policy_id()).is_equal("")
+	assert_bool(execute_button.disabled).is_false()
+
+
+func test_rest_action_advances_day_without_popup() -> void:
+	var runner := await _load_main_menu()
+	var scene := runner.scene()
+	var tray_controller = runner.get_property("_tray_controller")
+	var execute_button := scene.find_child("ExecuteActionButton", true, false) as Button
+	assert_object(execute_button).is_not_null()
+	assert_int(GameState.current_day).is_equal(1)
+
+	tray_controller.select_policy("rest")
+	await runner.simulate_frames(2)
+	runner.invoke("_on_confirm_pressed")
+	await runner.simulate_frames(10)
+
+	assert_int(GameState.current_day).is_equal(2)
+	assert_str(GameState.current_phase).is_equal("action")
+	assert_str(tray_controller.get_selected_policy_id()).is_equal("")
+	assert_bool(execute_button.disabled).is_false()
+
+
 func test_game_over_overlay_disables_action_and_shows_restart() -> void:
 	var runner := await _load_main_menu()
 	var scene := runner.scene()

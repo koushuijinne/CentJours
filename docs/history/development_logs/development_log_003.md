@@ -30,3 +30,29 @@
 
 下一步:
 - 继续按 P0 推进：补更多核心玩法状态流回归或处理 bugs_check 中的关键问题
+
+---
+
+## 轮次 2: 战斗/接见/休整成功推进 GdUnit4 回归
+
+日期: 2026-03-28
+目标: 补齐三种核心行动的成功提交 → 天数推进 → 状态重置回归
+适用原则: TDD、核心循环优先、验证闭环、文档同步
+
+改动:
+- `tests/godot/main_menu_flow_test.gd` 新增 3 条行动成功推进测试：
+  - `test_battle_submit_success_advances_day_and_resets_tray` — 战斗弹窗确认后天数推进到 2、阶段回 action、tray 清空、弹窗消失
+  - `test_boost_submit_success_advances_day_and_resets_tray` — 接见弹窗确认后天数推进到 2、阶段回 action、tray 清空、弹窗消失
+  - `test_rest_action_advances_day_without_popup` — 休整直接确认，不经弹窗，天数推进到 2、tray 清空
+- GdUnit4 预期基线从 `45` 升到 `48`
+
+验证:
+- 所有 API 引用和 UI 节点名已通过代码审计确认
+- 本轮未改生产代码，属于纯测试扩展
+- Windows GdUnit4 运行时验证标记为待验证
+
+提交/推送:
+- 与文档同步一起提交并推送到 `auto/gameplay_update`
+
+下一步:
+- 继续按 P0 推进：补多日连续行动、政策冷却回归，或转向 bugs_check 关键问题
