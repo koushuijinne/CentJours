@@ -81,3 +81,29 @@
 
 下一步:
 - 继续按 P0 推进：补存读档后状态一致性、bugs_check 剩余项或更多边界回归
+
+---
+
+## 轮次 4: 测试文件按职责拆分
+
+日期: 2026-03-28
+目标: 响应用户反馈"大文件及时拆分"，把 1022 行的 main_menu_flow_test.gd 按职责拆成三个文件
+适用原则: KISS、文档同步
+
+改动:
+- `tests/godot/main_menu_flow_test.gd` — 缩减为 250 行 / 11 tests：初始化、核心行动流、行军、政策冷却、多日连续行动
+- `tests/godot/save_load_flow_test.gd` — 新建 393 行 / 13 tests：存读档槽位全链路
+- `tests/godot/dialog_flow_test.gd` — 新建 419 行 / 15 tests：设置、战斗/接见弹窗、结局
+- 测试总数不变：50 tests = 11 + 13 + 15 + 8 (map) + 3 (settings)
+- 每个文件有独立的 before_test/after_test 和所需 helpers
+
+验证:
+- 测试总数审计：11 + 13 + 15 + 8 + 3 = 50，与拆分前一致
+- 本轮未改生产代码
+- Windows GdUnit4 运行时验证标记为待验证
+
+提交/推送:
+- 与文档同步一起提交并推送到 `auto/gameplay_update`
+
+下一步:
+- 继续按 P0 推进：bugs_check 剩余项或更多边界回归

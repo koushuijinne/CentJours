@@ -1,6 +1,6 @@
 # Cent Jours — 开发优先级计划
 
-> **更新**: 2026-03-28 v95
+> **更新**: 2026-03-28 v96
 > **通用原则**: [docs/rules/development_principles.md](/mnt/e/projects/CentJours/docs/rules/development_principles.md)
 > **快速接手**: [docs/history/agent_handoff.md](/mnt/e/projects/CentJours/docs/history/agent_handoff.md)
 > **开发历史**: [docs/history/development_logs/](/mnt/e/projects/CentJours/docs/history/development_logs/)
@@ -52,9 +52,11 @@
 
 - 当前状态：已完成
 - `GdUnit4` 已接入项目，运行时最小集已落到 `addons/gdUnit4/`。
-- 第一批 Godot 自动回归已建立：
-  - `tests/godot/main_menu_flow_test.gd`
-  - `tests/godot/map_controller_contract_test.gd`
+- 第一批 Godot 自动回归已建立并按职责拆分：
+  - `tests/godot/main_menu_flow_test.gd` — 核心行动流与行军
+  - `tests/godot/save_load_flow_test.gd` — 存读档与新局
+  - `tests/godot/dialog_flow_test.gd` — 弹窗、设置与结局
+  - `tests/godot/map_controller_contract_test.gd` — 地图交互
 - 已覆盖的前端行为：
   - 主菜单加载后的关键节点与默认状态
   - `执行行动 -> 次日`
@@ -90,13 +92,12 @@
      - 目标：验证 hover、click 锁定、地图缩放、弹窗确认、失败恢复、按钮状态、面板同步
   4. `Windows 真机清单`
      - 目标：字体、中文换行、遮挡、滚动、面板边界、按钮可达性
-- `GdUnit4` 重点先覆盖：
-  - `main_menu` 初始化后的关键节点和默认状态
-  - `新局 -> 执行行动 -> 次日`
-  - `存档 -> 读档`
-  - 地图 `hover -> click 锁定 -> 取消锁定`
-  - 弹窗打开 / 确认 / 取消 / 失败恢复
-  - `DecisionTray` 的选中、禁用、提交后状态
+- `GdUnit4` 测试按职责拆分到四个文件：
+  - `main_menu_flow_test.gd` — 初始化、核心行动流、行军、政策冷却、多日连续行动（11 tests）
+  - `save_load_flow_test.gd` — 存读档槽位、覆盖/删除、新局、读档取消、地图锁定清理（13 tests）
+  - `dialog_flow_test.gd` — 设置、战斗/接见弹窗、失败恢复、成功推进、结局弹窗（15 tests）
+  - `map_controller_contract_test.gd` — 地图交互边界（8 tests）
+  - `settings_manager_test.gd` — 设置管理器单元测试（3 tests）
 - 现阶段仍不建议直接做像素级截图对比。布局和视觉问题继续交给 Windows 真机验收。
 - 真正适合优先单元化的 Godot 侧对象，主要是：
   - formatter
