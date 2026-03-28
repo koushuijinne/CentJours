@@ -37,7 +37,7 @@ UI (GDScript Scene/Controller)
 | `src/ui/main_menu/` | 子控制器（map, layout, tray, sidebar, dialogs, topbar_actions） |
 | `src/data/` | 静态游戏数据（characters, events, map_nodes） |
 | `tests/godot/` | GdUnit4 前端回归 |
-| `docs/decisions/` | ADR 架构决策记录 |
+| `docs/decisions/` | [ADR 汇总表](docs/decisions/README.md) — 12 篇架构决策记录 |
 
 ## 测试
 
