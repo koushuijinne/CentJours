@@ -17,6 +17,7 @@
 - GitHub Actions 已新增文档同步门禁：代码路径改动必须伴随 `README.md` 或 `docs/` 更新。
 - 当前总目标已按 [ADR-011](docs/decisions/ADR-011-core-loop-systemization-and-historical-depth.md) 固定为：核心玩法优化完成，并达到 Steam 可上线级别。
 - `auto/gameplay_update` 分支的后勤系统、主菜单修复、GdUnit4 测试拆分和开发者文档已合并到本分支。
+- 本轮新增：难度系统 UI（Elba/Borodino/Austerlitz）、失败归因（GameState.key_decisions）、AudioManager 框架（BGM 交叉淡入 + SFX 池 + 音量持久化）、topbar_actions_controller 拆分（main_menu.gd 1025→670 行）。
 
 ---
 
@@ -110,11 +111,11 @@
 
 | ID | 任务 | 优先级 | 规模 | 说明 |
 |----|------|--------|------|------|
-| S5-1 | 设置系统补全 | P1 | M | 音频音量、难度、按键绑定、语言选择 |
+| S5-1 | 设置系统补全 | P1 | M | 音频音量滑条+难度选择已有，还缺按键绑定、语言选择 |
 | S5-2 | Windows 发布构建链 | P0 | M | Godot export template + 签名 + 安装包测试 |
 | S5-3 | 全流程 QA 清单 | P0 | L | 从安装到通关全路径人工验收，覆盖所有结局 |
 | S5-4 | 性能优化 | P1 | M | 内存泄漏检查、大地图帧率、长局稳定性 |
-| S5-5 | 主菜单 `main_menu.gd` 继续拆分 | P2 | M | 当前文件偏大，按职责下沉到子控制器 |
+| S5-5 | 主菜单 `main_menu.gd` 继续拆分 | P2 | M | 已从 1025→670 行，可继续下沉到子控制器 |
 
 ---
 
@@ -138,7 +139,7 @@
 ## 当前技术债
 
 - Rust 全局仍有约 `54` 处 `unwrap()` / `expect()` / `panic!()`，集中在 `events/pool.rs` 与 `engine/state.rs`。
-- `main_menu.gd` 和 `map_controller.gd` 仍偏大，后续还需要继续按职责下沉。
+- `main_menu.gd`（670 行）和 `map_controller.gd` 仍偏大，后续还需要继续按职责下沉。
 - `tests/monte_carlo_balance.py` 与 Rust 核心基线已漂移，不应继续作为平衡主依据。
 - 多槽存档 UI 已接入并补齐覆盖确认与删除入口，但设置与更多失败恢复链路仍不完整。
 - 代码命名与注释风格仍不统一：存在旧中文测试函数名和"关键路径说明不足"的问题，需渐进治理。
