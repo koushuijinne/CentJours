@@ -4,7 +4,6 @@
 
 extends Control
 
-const SettingsManagerScript = preload("res://src/core/settings_manager.gd")
 const MainMenuConfigData = preload("res://src/ui/main_menu/main_menu_config.gd")
 const MainMenuFormattersLib = preload("res://src/ui/main_menu/ui_formatters.gd")
 const MainMenuLayoutControllerScript = preload("res://src/ui/main_menu/layout_controller.gd")
@@ -12,6 +11,7 @@ const MainMenuMapControllerScript = preload("res://src/ui/main_menu/map_controll
 const MainMenuDialogsControllerScript = preload("res://src/ui/main_menu/dialogs_controller.gd")
 const MainMenuSidebarControllerScript = preload("res://src/ui/main_menu/sidebar_controller.gd")
 const MainMenuTrayControllerScript = preload("res://src/ui/main_menu/tray_controller.gd")
+const TopbarActionsControllerScript = preload("res://src/ui/main_menu/topbar_actions_controller.gd")
 
 @onready var _root_layout: VBoxContainer = $RootLayout
 @onready var _top_bar: PanelContainer = $RootLayout/TopBar
@@ -64,15 +64,7 @@ const MainMenuTrayControllerScript = preload("res://src/ui/main_menu/tray_contro
 @onready var _decision_row: HBoxContainer = $RootLayout/MainArea/LeftColumn/DecisionTray/TrayMargin/TrayContent/DecisionScroll/DecisionScrollContent/DecisionRow
 
 var _confirm_button: Button       # 执行行动确认按钮（动态创建）
-var _settings_btn: Button         # 顶栏设置按钮（动态创建）
-var _new_game_btn: Button         # 顶栏新局按钮（动态创建）
-var _save_btn: Button             # 顶栏存档按钮（动态创建）
-var _load_btn: Button             # 顶栏读档按钮（动态创建）
 var _awaiting_action: bool = false  # 是否处于等待玩家操作的 Action Phase
-var _transient_modal_depth: int = 0
-var _tracked_transient_modals: Dictionary = {}
-var _tray_interactive_before_modal: bool = false
-var _settings_state: Dictionary = {}
 # 上回合数值快照，用于派系趋势箭头和数值变化动效
 var _prev_faction_support: Dictionary = {}
 var _prev_legitimacy: float = 50.0
@@ -84,26 +76,40 @@ var _map_controller = MainMenuMapControllerScript.new()
 var _dialogs_controller = MainMenuDialogsControllerScript.new()
 var _sidebar_controller = MainMenuSidebarControllerScript.new()
 var _tray_controller = MainMenuTrayControllerScript.new()
+var _topbar_actions = TopbarActionsControllerScript.new()
 
 func _ready() -> void:
 	# 统一入口主题，保证占位骨架先具备正式视觉语言。
 	theme = CentJoursTheme.create()
-	_load_and_apply_user_settings()
 	_layout_controller.name = "LayoutController"
 	_map_controller.name = "MapController"
 	_dialogs_controller.name = "DialogsController"
 	_tray_controller.name = "TrayController"
+	_topbar_actions.name = "TopbarActionsController"
 	add_child(_layout_controller)
 	add_child(_map_controller)
 	add_child(_dialogs_controller)
 	add_child(_tray_controller)
+	add_child(_topbar_actions)
+	_topbar_actions.configure(self, _top_bar_row, {
+		"set_tray_interactive": Callable(self, "_set_tray_interactive"),
+		"is_dialog_modal_active": Callable(_dialogs_controller, "is_modal_active"),
+		"restart_game": Callable(self, "_restart_game"),
+		"refresh_ui": Callable(self, "_refresh_ui"),
+		"map_clear_interaction": Callable(_map_controller, "clear_interaction_state"),
+		"build_decision_cards": Callable(self, "_build_decision_cards"),
+	})
+	_topbar_actions.load_and_apply_user_settings(get_window())
+	_topbar_actions.new_game_confirmed.connect(_on_new_game_flow)
+	_dialogs_controller.difficulty_selected.connect(_on_difficulty_selected)
+	_topbar_actions.settings_applied.connect(func(_s): call_deferred("_apply_responsive_layout"))
 	_configure_layout_controller()
 	_configure_static_ui()
 	_apply_panel_styles()
 	_build_rouge_noir_slider()
 	_configure_sidebar_controller()
 	_build_confirm_button()
-	_build_save_load_buttons()
+	_topbar_actions.build_topbar_buttons()
 	_configure_tray_controller()
 	_configure_dialogs_controller()
 	_build_decision_cards()
@@ -116,10 +122,6 @@ func _ready() -> void:
 	# 引导 TurnManager 进入第一回合，必须在所有节点就绪后执行。
 	call_deferred("_start_game")
 
-
-func _load_and_apply_user_settings() -> void:
-	_settings_state = SettingsManagerScript.load_settings()
-	SettingsManagerScript.apply_settings(_settings_state, get_window())
 
 func _configure_layout_controller() -> void:
 	_layout_controller.bind_nodes({
@@ -259,316 +261,19 @@ func _build_confirm_button() -> void:
 	if _confirm_button != null:
 		_confirm_button.name = "ExecuteActionButton"
 
-## 在 TopBarRow 右侧动态创建存档/读档按钮
-func _build_save_load_buttons() -> void:
-	var settings_btn := Button.new()
-	settings_btn.name = "SettingsButton"
-	settings_btn.text = "设置"
-	settings_btn.custom_minimum_size = Vector2(60, 0)
-	settings_btn.pressed.connect(_on_settings_pressed)
-	_top_bar_row.add_child(settings_btn)
-
-	var new_game_btn := Button.new()
-	new_game_btn.name = "NewGameButton"
-	new_game_btn.text = "新局"
-	new_game_btn.custom_minimum_size = Vector2(60, 0)
-	new_game_btn.pressed.connect(_on_new_game_pressed)
-	_top_bar_row.add_child(new_game_btn)
-
-	var save_btn := Button.new()
-	save_btn.name = "SaveGameButton"
-	save_btn.text = "存档"
-	save_btn.custom_minimum_size = Vector2(60, 0)
-	save_btn.pressed.connect(_on_save_pressed)
-	_top_bar_row.add_child(save_btn)
-
-	var load_btn := Button.new()
-	load_btn.name = "LoadGameButton"
-	load_btn.text = "读档"
-	load_btn.custom_minimum_size = Vector2(60, 0)
-	load_btn.pressed.connect(_on_load_pressed)
-	_top_bar_row.add_child(load_btn)
-	# 缓存按钮引用，读档后刷新可用状态
-	_settings_btn = settings_btn
-	_new_game_btn = new_game_btn
-	_save_btn = save_btn
-	_load_btn = load_btn
-	_refresh_save_load_buttons()
-
-## 存档按钮回调
-func _on_save_pressed() -> void:
-	_show_slot_picker("save")
-
-## 读档按钮回调
-func _on_load_pressed() -> void:
-	_show_slot_picker("load")
-
-func _on_settings_pressed() -> void:
-	_show_settings_popup()
-
-func _on_new_game_pressed() -> void:
-	var confirm := ConfirmationDialog.new()
-	confirm.name = "NewGameConfirmDialog"
-	confirm.dialog_text = "重新开始将丢失当前未保存进度，确定吗？"
-	confirm.ok_button_text = "确认新开一局"
-	confirm.cancel_button_text = "取消"
-	_prepare_transient_confirmation_dialog(confirm)
-	confirm.confirmed.connect(func():
-		_close_transient_popup(confirm)
-		_restart_game()
-	)
-	add_child(confirm)
-	_open_transient_modal(confirm)
-	confirm.popup_centered()
 
 
-func _show_settings_popup() -> void:
-	var popup := PopupPanel.new()
-	popup.name = "SettingsPopup"
-
-	var content := VBoxContainer.new()
-	content.name = "SettingsContent"
-	content.custom_minimum_size = Vector2(320, 0)
-	content.add_theme_constant_override("separation", 10)
-
-	var title := Label.new()
-	title.name = "SettingsTitle"
-	title.text = "设置"
-	title.add_theme_font_size_override("font_size", 16)
-	content.add_child(title)
-
-	var current_settings := SettingsManagerScript.normalize_settings(_settings_state)
-	var window_mode_option := OptionButton.new()
-	window_mode_option.name = "SettingsWindowModeOption"
-	for option in SettingsManagerScript.WINDOW_MODE_OPTIONS:
-		window_mode_option.add_item(String(option.get("label", "")))
-		window_mode_option.set_item_metadata(window_mode_option.item_count - 1, String(option.get("id", "")))
-	window_mode_option.select(SettingsManagerScript.find_window_mode_index(String(current_settings.get("window_mode", "windowed"))))
-	content.add_child(_build_settings_option_row("窗口模式", window_mode_option))
-
-	var ui_scale_option := OptionButton.new()
-	ui_scale_option.name = "SettingsUiScaleOption"
-	for option in SettingsManagerScript.UI_SCALE_OPTIONS:
-		ui_scale_option.add_item(String(option.get("label", "")))
-		ui_scale_option.set_item_metadata(ui_scale_option.item_count - 1, float(option.get("value", 1.0)))
-	ui_scale_option.select(SettingsManagerScript.find_ui_scale_index(float(current_settings.get("ui_scale", 1.0))))
-	content.add_child(_build_settings_option_row("界面缩放", ui_scale_option))
-
-	var buttons := HBoxContainer.new()
-	buttons.name = "SettingsButtonRow"
-	buttons.alignment = BoxContainer.ALIGNMENT_END
-	buttons.add_theme_constant_override("separation", 8)
-
-	var reset_button := Button.new()
-	reset_button.name = "SettingsResetButton"
-	reset_button.text = "恢复默认"
-	reset_button.pressed.connect(func(): _reset_settings_from_popup(popup))
-	buttons.add_child(reset_button)
-
-	var cancel_button := Button.new()
-	cancel_button.name = "SettingsCancelButton"
-	cancel_button.text = "取消"
-	cancel_button.pressed.connect(func(): _close_transient_popup(popup))
-	buttons.add_child(cancel_button)
-
-	var apply_button := Button.new()
-	apply_button.name = "SettingsApplyButton"
-	apply_button.text = "应用"
-	apply_button.pressed.connect(func(): _apply_settings_from_popup(window_mode_option, ui_scale_option, popup))
-	buttons.add_child(apply_button)
-
-	content.add_child(buttons)
-	popup.add_child(content)
-	add_child(popup)
-	_open_transient_modal(popup)
-	popup.popup_centered()
 
 
-func _build_settings_option_row(label_text: String, option_button: OptionButton) -> HBoxContainer:
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 8)
+## 新局流程入口：先弹出难度选择
+func _on_new_game_flow() -> void:
+	_dialogs_controller.show_difficulty_selection()
 
-	var label := Label.new()
-	label.text = label_text
-	label.custom_minimum_size = Vector2(96, 0)
-	row.add_child(label)
-
-	option_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	row.add_child(option_button)
-	return row
-
-
-func _apply_settings_from_popup(window_mode_option: OptionButton, ui_scale_option: OptionButton, popup: PopupPanel) -> void:
-	var window_mode_index := window_mode_option.get_selected_id()
-	var ui_scale_index := ui_scale_option.get_selected_id()
-	var settings := {
-		"window_mode": String(window_mode_option.get_item_metadata(window_mode_index)),
-		"ui_scale": float(ui_scale_option.get_item_metadata(ui_scale_index)),
-	}
-	_settings_state = SettingsManagerScript.normalize_settings(settings)
-	SettingsManagerScript.save_settings(_settings_state)
-	SettingsManagerScript.apply_settings(_settings_state, get_window())
-	_close_transient_popup(popup)
-	call_deferred("_apply_responsive_layout")
-
-
-func _reset_settings_from_popup(popup: PopupPanel) -> void:
-	_settings_state = SettingsManagerScript.default_settings()
-	SettingsManagerScript.save_settings(_settings_state)
-	SettingsManagerScript.apply_settings(_settings_state, get_window())
-	_close_transient_popup(popup)
-	call_deferred("_apply_responsive_layout")
-
-func _show_slot_picker(mode: String) -> void:
-	var popup := PopupPanel.new()
-	popup.name = "SaveSlotPickerPopup" if mode == "save" else "LoadSlotPickerPopup"
-	var content := VBoxContainer.new()
-	content.name = "SlotPickerContent"
-	content.custom_minimum_size = Vector2(320, 0)
-	content.add_theme_constant_override("separation", 8)
-
-	var title := Label.new()
-	title.name = "SlotPickerTitle"
-	title.text = "选择存档槽位" if mode == "save" else "选择要读取的存档"
-	title.add_theme_font_size_override("font_size", 16)
-	content.add_child(title)
-
-	for slot in SaveManager.list_save_slots():
-		var slot_id := int(slot.get("slot_id", 0))
-		var exists := bool(slot.get("exists", false))
-		var row := HBoxContainer.new()
-		row.name = "SlotPickerRow%d" % slot_id
-		row.add_theme_constant_override("separation", 8)
-		var button := Button.new()
-		button.name = "%sSlotButton%d" % ["Save" if mode == "save" else "Load", slot_id]
-		button.text = String(slot.get("label", "槽位 %d" % slot_id))
-		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		button.disabled = mode == "load" and not exists
-		if mode == "save" and exists:
-			button.pressed.connect(_confirm_save_overwrite.bind(slot_id, popup))
-		elif mode == "save":
-			button.pressed.connect(_save_to_slot.bind(slot_id, popup))
-		else:
-			button.pressed.connect(_load_from_slot.bind(slot_id, popup))
-		row.add_child(button)
-
-		if exists:
-			var delete_btn := Button.new()
-			delete_btn.name = "%sDeleteSlotButton%d" % ["Save" if mode == "save" else "Load", slot_id]
-			delete_btn.text = "删除"
-			delete_btn.custom_minimum_size = Vector2(68, 0)
-			delete_btn.pressed.connect(_confirm_delete_save.bind(slot_id, popup))
-			row.add_child(delete_btn)
-
-		content.add_child(row)
-
-	var cancel_btn := Button.new()
-	cancel_btn.name = "SlotPickerCancelButton"
-	cancel_btn.text = "取消"
-	cancel_btn.pressed.connect(func(): _close_transient_popup(popup))
-	content.add_child(cancel_btn)
-
-	popup.add_child(content)
-	add_child(popup)
-	_open_transient_modal(popup)
-	popup.popup_centered()
-
-func _save_to_slot(slot_id: int, popup: PopupPanel) -> void:
-	_close_transient_popup(popup)
-	if TurnManager.save_to_file(slot_id):
-		_refresh_save_load_buttons()
-		_save_btn.text = "已存档 ✓"
-		get_tree().create_timer(1.0).timeout.connect(func():
-			if is_instance_valid(_save_btn):
-				_save_btn.text = "存档"
-		)
-	else:
-		_save_btn.text = "存档失败"
-		get_tree().create_timer(1.5).timeout.connect(func():
-			if is_instance_valid(_save_btn):
-				_save_btn.text = "存档"
-		)
-
-func _load_from_slot(slot_id: int, popup: PopupPanel) -> void:
-	_close_transient_popup(popup)
-	var confirm := ConfirmationDialog.new()
-	confirm.name = "LoadConfirmDialog"
-	confirm.dialog_text = "读档将覆盖当前进度，确定读取槽位 %d 吗？" % slot_id
-	confirm.ok_button_text = "确认读档"
-	confirm.cancel_button_text = "取消"
-	_prepare_transient_confirmation_dialog(confirm)
-	confirm.confirmed.connect(func():
-		_close_transient_popup(confirm)
-		if TurnManager.load_from_save(slot_id):
-			_map_controller.clear_interaction_state()
-			_build_decision_cards()
-			_refresh_ui()
-			_set_tray_interactive(true)
-			_refresh_save_load_buttons()
-	)
-	add_child(confirm)
-	_open_transient_modal(confirm)
-	confirm.popup_centered()
-
-
-func _confirm_save_overwrite(slot_id: int, popup: PopupPanel) -> void:
-	_close_transient_popup(popup)
-	var confirm := ConfirmationDialog.new()
-	confirm.name = "SaveOverwriteConfirmDialog"
-	confirm.dialog_text = "槽位 %d 已有存档（%s），确定覆盖吗？" % [slot_id, _slot_meta_summary(slot_id)]
-	confirm.ok_button_text = "确认覆盖"
-	confirm.cancel_button_text = "取消"
-	_prepare_transient_confirmation_dialog(confirm)
-	confirm.canceled.connect(func(): _show_slot_picker("save"))
-	confirm.confirmed.connect(func():
-		_close_transient_popup(confirm)
-		_save_to_slot(slot_id, null)
-	)
-	add_child(confirm)
-	_open_transient_modal(confirm)
-	confirm.popup_centered()
-
-
-func _confirm_delete_save(slot_id: int, popup: PopupPanel) -> void:
-	var mode := "save" if popup != null and popup.name == "SaveSlotPickerPopup" else "load"
-	_close_transient_popup(popup)
-	var confirm := ConfirmationDialog.new()
-	confirm.name = "DeleteSaveConfirmDialog"
-	confirm.dialog_text = "确定删除槽位 %d（%s）吗？" % [slot_id, _slot_meta_summary(slot_id)]
-	confirm.ok_button_text = "确认删除"
-	confirm.cancel_button_text = "取消"
-	_prepare_transient_confirmation_dialog(confirm)
-	confirm.canceled.connect(func(): _show_slot_picker(mode))
-	confirm.confirmed.connect(func():
-		_close_transient_popup(confirm)
-		_delete_save_slot(slot_id, null)
-	)
-	add_child(confirm)
-	_open_transient_modal(confirm)
-	confirm.popup_centered()
-
-
-func _delete_save_slot(slot_id: int, popup: PopupPanel) -> void:
-	_close_transient_popup(popup)
-	SaveManager.delete_save(slot_id)
-	_refresh_save_load_buttons()
-
-
-func _slot_meta_summary(slot_id: int) -> String:
-	var meta := SaveManager.get_save_meta(slot_id)
-	if meta.is_empty():
-		return "空槽位"
-	return "Day %d · %s" % [
-		int(meta.get("day", 0)),
-		SaveManager._outcome_label(SaveManager._normalize_outcome(meta.get("outcome", "in_progress")))
-	]
-
-
-func _prepare_transient_confirmation_dialog(confirm: ConfirmationDialog) -> void:
-	if confirm == null:
-		return
-	confirm.canceled.connect(func(): _close_transient_popup(confirm))
-
+## 难度选择完成后：设置引擎难度并重启
+func _on_difficulty_selected(difficulty_id: String) -> void:
+	GameState.difficulty = difficulty_id
+	TurnManager.set_difficulty(difficulty_id)
+	_restart_game()
 
 func _restart_game() -> void:
 	TurnManager.reset_engine()
@@ -576,11 +281,7 @@ func _restart_game() -> void:
 	_build_decision_cards()
 	_start_game()
 	_refresh_ui()
-	_refresh_save_load_buttons()
-
-func _refresh_save_load_buttons() -> void:
-	if _load_btn != null:
-		_load_btn.disabled = not SaveManager.has_any_save()
+	_topbar_actions.refresh_save_load_buttons()
 
 ## 引导第一回合：Dawn Phase 同步引擎真实状态，然后进入 Action Phase 等待玩家
 func _start_game() -> void:
@@ -595,50 +296,6 @@ func _set_tray_interactive(enabled: bool) -> void:
 	_awaiting_action = enabled
 	_sync_tray_state()
 
-
-func _open_transient_modal(popup: Window) -> void:
-	if popup == null:
-		return
-	var popup_id := popup.get_instance_id()
-	if _tracked_transient_modals.has(popup_id):
-		return
-	if _transient_modal_depth == 0:
-		_tray_interactive_before_modal = _awaiting_action and not _dialogs_controller.is_modal_active()
-	_tracked_transient_modals[popup_id] = true
-	_transient_modal_depth += 1
-	_set_tray_interactive(false)
-	var visibility_changed_cb := Callable(self, "_on_transient_modal_visibility_changed").bind(popup)
-	if not popup.visibility_changed.is_connected(visibility_changed_cb):
-		popup.visibility_changed.connect(visibility_changed_cb)
-
-
-func _close_transient_popup(popup: Window) -> void:
-	if popup == null or not is_instance_valid(popup):
-		return
-	popup.hide()
-	popup.queue_free()
-
-
-func _on_transient_modal_visibility_changed(popup: Window) -> void:
-	if popup != null and popup.visible:
-		return
-	var popup_id := popup.get_instance_id() if popup != null else 0
-	if not _tracked_transient_modals.has(popup_id):
-		return
-	_tracked_transient_modals.erase(popup_id)
-	var visibility_changed_cb := Callable(self, "_on_transient_modal_visibility_changed").bind(popup)
-	if popup != null and popup.visibility_changed.is_connected(visibility_changed_cb):
-		popup.visibility_changed.disconnect(visibility_changed_cb)
-	_on_transient_modal_closed()
-
-
-func _on_transient_modal_closed() -> void:
-	_transient_modal_depth = max(_transient_modal_depth - 1, 0)
-	if _transient_modal_depth > 0:
-		return
-	if _dialogs_controller.is_modal_active():
-		return
-	_set_tray_interactive(_tray_interactive_before_modal)
 
 func _connect_signals() -> void:
 	# 接 UI 层信号：状态变化 → 刷新显示
@@ -972,7 +629,7 @@ func _format_number(value: int) -> String:
 ## 组装游戏结束弹窗所需的状态快照
 ## 返回值契约见 dialogs_controller.build_game_over_state() 的 stats 参数
 func _dialog_stats_snapshot() -> Dictionary:
-	return _dialogs_controller.build_game_over_state({
+	var base := _dialogs_controller.build_game_over_state({
 		MainMenuDialogsControllerScript.STATE_KEY_CURRENT_DAY: GameState.current_day,
 		MainMenuDialogsControllerScript.STATE_KEY_LEGITIMACY: GameState.legitimacy,
 		MainMenuDialogsControllerScript.STATE_KEY_VICTORIES: GameState.victories,
@@ -989,6 +646,9 @@ func _dialog_stats_snapshot() -> Dictionary:
 		MainMenuDialogsControllerScript.STATE_KEY_LOGISTICS_REGIONAL_PRESSURE_DETAIL: GameState.logistics_regional_pressure_detail,
 		MainMenuDialogsControllerScript.STATE_KEY_LOGISTICS_RUNWAY_LABEL: GameState.logistics_runway_label,
 	})
+	base["key_decisions"] = GameState.key_decisions.duplicate()
+	base["difficulty"] = GameState.difficulty
+	return base
 
 ## 组装战斗弹窗所需的状态 Dictionary
 ## 返回键契约:

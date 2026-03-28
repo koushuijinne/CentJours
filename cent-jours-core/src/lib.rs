@@ -507,6 +507,7 @@ mod gdext_bindings {
             let _ = d.insert("victories", e.army.victories as i64);
             let _ = d.insert("defeats", e.army.defeats as i64);
             let _ = d.insert("napoleon_location", e.napoleon_location.as_str());
+            let _ = d.insert("difficulty", e.difficulty().as_str());
             let _ = d.insert("is_over", e.is_over());
             let _ = d.insert(
                 "outcome",
@@ -775,6 +776,18 @@ mod gdext_bindings {
                     d
                 })
                 .collect()
+        }
+
+        /// 设置难度并重置引擎
+        #[func]
+        pub fn set_difficulty(&mut self, difficulty: GString) {
+            self.engine = crate::engine::GameEngine::new_with_difficulty(&difficulty.to_string());
+        }
+
+        /// 获取当前难度
+        #[func]
+        pub fn get_difficulty(&self) -> GString {
+            GString::from(self.engine.difficulty().as_str())
         }
 
         /// 游戏是否已结束

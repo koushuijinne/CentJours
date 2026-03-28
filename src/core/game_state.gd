@@ -109,6 +109,20 @@ var triggered_events: Array = []    # 已触发的历史事件 id 列表
 # ── 难度 ──────────────────────────────────────────────
 var difficulty: String = "borodino"  # elba / borodino / austerlitz
 
+# ── 决策追踪（用于失败归因） ─────────────────────────
+# 记录关键决策节点，在游戏结束时用于复盘
+# 每条记录格式: { "day": int, "type": String, "desc": String }
+var key_decisions: Array = []
+const MAX_KEY_DECISIONS: int = 20
+
+func record_key_decision(day: int, decision_type: String, description: String) -> void:
+	key_decisions.append({"day": day, "type": decision_type, "desc": description})
+	if key_decisions.size() > MAX_KEY_DECISIONS:
+		key_decisions.pop_front()
+
+func clear_key_decisions() -> void:
+	key_decisions.clear()
+
 # ── 初始化 ────────────────────────────────────────────
 func _ready() -> void:
 	_load_all_data()

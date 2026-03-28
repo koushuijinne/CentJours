@@ -353,6 +353,21 @@ const FACTION_LABELS := {
 	"nobility": "旧贵族"
 }
 
+const DIFFICULTY_OPTIONS := {
+	"elba": {
+		"label": "厄尔巴 (简单)",
+		"desc": "更多补给，更高初始合法性，敌军较弱。适合首次游玩。",
+	},
+	"borodino": {
+		"label": "博罗季诺 (普通)",
+		"desc": "历史标准参数。推荐难度。",
+	},
+	"austerlitz": {
+		"label": "奥斯特里茨 (困难)",
+		"desc": "更少补给，更低合法性，敌军更强。挑战你的极限。",
+	}
+}
+
 const REST_CARD_META := {
 	"policy_id": "rest",
 	"name": "休整",

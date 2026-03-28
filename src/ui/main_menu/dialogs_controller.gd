@@ -57,6 +57,7 @@ const DEFAULT_GAME_OVER_STATE := {
 }
 
 signal restart_requested
+signal difficulty_selected(difficulty_id: String)
 signal battle_confirmed(general_id: String, troops: int, terrain: String)
 signal boost_confirmed(general_id: String)
 
@@ -64,6 +65,7 @@ var _host: Node = null
 var _callbacks: Dictionary = {}
 
 var _game_over_overlay: ColorRect = null
+var _difficulty_popup: PopupPanel = null
 var _battle_popup: PopupPanel = null
 var _boost_popup: PopupPanel = null
 
@@ -105,12 +107,13 @@ func build_game_over_state(stats: Dictionary = {}) -> Dictionary:
 
 func dismiss_active_popups() -> void:
 	_close_game_over_overlay()
+	_close_difficulty_popup()
 	_close_battle_popup()
 	_close_boost_popup()
 
 
 func is_modal_active() -> bool:
-	return _game_over_overlay != null or _battle_popup != null or _boost_popup != null
+	return _game_over_overlay != null or _difficulty_popup != null or _battle_popup != null or _boost_popup != null
 
 
 func show_game_over(outcome: String, stats: Dictionary = {}) -> void:
@@ -192,6 +195,29 @@ func show_game_over(outcome: String, stats: Dictionary = {}) -> void:
 		CentJoursTheme.COLOR["gold_dim"],
 		CentJoursTheme.COLOR["text_secondary"]
 	)
+
+	# 关键决策时间线（失败归因）
+	var key_decisions: Array = Array(stats.get("key_decisions", []))
+	if not key_decisions.is_empty():
+		_append_game_over_section(
+			vbox,
+			"关键决策",
+			_build_key_decisions_text(key_decisions),
+			CentJoursTheme.COLOR["gold_dim"],
+			CentJoursTheme.COLOR["text_secondary"]
+		)
+
+	# 难度标记
+	var diff_id: String = String(stats.get("difficulty", "borodino"))
+	if diff_id != "":
+		var diff_info: Dictionary = MainMenuConfigData.DIFFICULTY_OPTIONS.get(diff_id, {})
+		var diff_label: String = String(diff_info.get("label", diff_id))
+		var diff_note := Label.new()
+		diff_note.text = "难度：%s" % diff_label
+		diff_note.add_theme_color_override("font_color", CentJoursTheme.COLOR["text_secondary"])
+		diff_note.add_theme_font_size_override("font_size", 12)
+		diff_note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		vbox.add_child(diff_note)
 
 	var restart_btn := Button.new()
 	restart_btn.name = "GameOverRestartButton"
@@ -304,6 +330,22 @@ func _build_logistics_policy_review(game_over_state: Dictionary) -> Array[String
 	return lines
 
 
+func _build_key_decisions_text(decisions: Array) -> String:
+	var lines: Array[String] = []
+	for decision in decisions:
+		var d: Dictionary = decision if decision is Dictionary else {}
+		var day: int = int(d.get("day", 0))
+		var desc: String = String(d.get("desc", ""))
+		if desc != "":
+			lines.append("Day %d — %s" % [day, desc])
+	if lines.is_empty():
+		return ""
+	# 最多展示最后 8 条关键决策
+	if lines.size() > 8:
+		lines = lines.slice(lines.size() - 8)
+	return "\n".join(lines)
+
+
 ## 允许结局文案按终局状态选择不同变体；未提供 variants 时回退到单条文案。
 func _select_outcome_copy(
 	outcome: String,
@@ -375,6 +417,67 @@ func _append_game_over_section(
 
 func _display_game_over_day(day: int) -> int:
 	return min(day, 100)
+
+
+func show_difficulty_selection() -> void:
+	_close_difficulty_popup()
+	_call_optional(CALLBACK_SET_TRAY_INTERACTIVE, [false])
+
+	_difficulty_popup = PopupPanel.new()
+	_difficulty_popup.name = "DifficultyPopup"
+
+	var vbox := VBoxContainer.new()
+	vbox.custom_minimum_size = Vector2(380, 0)
+	vbox.add_theme_constant_override("separation", 12)
+
+	var title := Label.new()
+	title.name = "DifficultyTitle"
+	title.text = "选择难度"
+	title.add_theme_font_size_override("font_size", 20)
+	title.add_theme_color_override("font_color", CentJoursTheme.COLOR["gold_bright"])
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(title)
+
+	for diff_id in MainMenuConfigData.DIFFICULTY_OPTIONS:
+		var diff_data: Dictionary = MainMenuConfigData.DIFFICULTY_OPTIONS[diff_id]
+		var btn := Button.new()
+		btn.name = "Difficulty_%s" % diff_id
+		btn.text = String(diff_data.get("label", diff_id))
+		btn.custom_minimum_size = Vector2(0, 40)
+		btn.pressed.connect(_on_difficulty_chosen.bind(String(diff_id)))
+		vbox.add_child(btn)
+
+		var desc := Label.new()
+		desc.text = String(diff_data.get("desc", ""))
+		desc.add_theme_color_override("font_color", CentJoursTheme.COLOR["text_secondary"])
+		desc.add_theme_font_size_override("font_size", 12)
+		desc.autowrap_mode = TextServer.AUTOWRAP_WORD
+		vbox.add_child(desc)
+
+	var cancel_btn := Button.new()
+	cancel_btn.name = "DifficultyCancelButton"
+	cancel_btn.text = "取消"
+	cancel_btn.pressed.connect(_dismiss_difficulty_popup)
+	vbox.add_child(cancel_btn)
+
+	_difficulty_popup.add_child(vbox)
+	_host_or_self().add_child(_difficulty_popup)
+	_difficulty_popup.popup_centered()
+
+
+func _on_difficulty_chosen(diff_id: String) -> void:
+	_close_difficulty_popup()
+	difficulty_selected.emit(diff_id)
+
+
+func _close_difficulty_popup() -> void:
+	_close_popup(_difficulty_popup)
+	_difficulty_popup = null
+
+
+func _dismiss_difficulty_popup() -> void:
+	_close_difficulty_popup()
+	_call_optional(CALLBACK_SET_TRAY_INTERACTIVE, [true])
 
 
 func show_battle_popup(state: Dictionary = {}) -> void:

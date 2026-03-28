@@ -42,6 +42,75 @@ impl GameOutcome {
     }
 }
 
+// ── 难度 ──────────────────────────────────────────────
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum Difficulty {
+    Elba,       // Easy
+    Borodino,   // Normal (default)
+    Austerlitz, // Hard
+}
+
+impl Difficulty {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Self::Elba => "elba",
+            Self::Borodino => "borodino",
+            Self::Austerlitz => "austerlitz",
+        }
+    }
+
+    pub fn from_str(s: &str) -> Self {
+        match s {
+            "elba" => Self::Elba,
+            "austerlitz" => Self::Austerlitz,
+            _ => Self::Borodino,
+        }
+    }
+
+    /// Multiplier for enemy strength (lower = easier)
+    pub fn enemy_strength_mult(&self) -> f64 {
+        match self {
+            Self::Elba => 0.75,
+            Self::Borodino => 1.0,
+            Self::Austerlitz => 1.3,
+        }
+    }
+
+    /// Multiplier for political decay rate (lower = easier)
+    pub fn political_decay_mult(&self) -> f64 {
+        match self {
+            Self::Elba => 0.7,
+            Self::Borodino => 1.0,
+            Self::Austerlitz => 1.4,
+        }
+    }
+
+    /// Bonus to starting supply (higher = easier)
+    pub fn supply_bonus(&self) -> f64 {
+        match self {
+            Self::Elba => 15.0,
+            Self::Borodino => 0.0,
+            Self::Austerlitz => -10.0,
+        }
+    }
+
+    /// Bonus to starting legitimacy (higher = easier)
+    pub fn legitimacy_bonus(&self) -> f64 {
+        match self {
+            Self::Elba => 10.0,
+            Self::Borodino => 0.0,
+            Self::Austerlitz => -5.0,
+        }
+    }
+}
+
+impl Default for Difficulty {
+    fn default() -> Self {
+        Self::Borodino
+    }
+}
+
 // ── 游戏阶段 ──────────────────────────────────────────
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -409,6 +478,9 @@ pub struct SaveState {
     pub triggered_event_ids: Vec<String>,
     // 结局（in_progress 表示游戏进行中）
     pub outcome: Option<String>,
+    // 难度设定（旧存档默认 borodino）
+    #[serde(default = "default_difficulty")]
+    pub difficulty: String,
 }
 
 /// 地图 JSON 解析用的轻量包装结构。
@@ -459,6 +531,10 @@ fn default_regional_task_progress() -> u8 {
 
 fn default_regional_task_completed() -> bool {
     false
+}
+
+fn default_difficulty() -> String {
+    "borodino".to_string()
 }
 
 fn migrate_triggered_event_ids(ids: Vec<String>) -> Vec<String> {
@@ -577,6 +653,8 @@ pub struct GameEngine {
     last_action_events: Vec<DayEvent>,
     /// 最近一次 Dawn 触发的历史事件详情（供 UI 在本回合立即展示）
     last_triggered_events: Vec<TriggeredEvent>,
+    /// 难度设定
+    difficulty: Difficulty,
 }
 
 impl Default for GameEngine {
@@ -609,6 +687,7 @@ impl Default for GameEngine {
             last_report: None,
             last_action_events: Vec::new(),
             last_triggered_events: Vec::new(),
+            difficulty: Difficulty::default(),
         }
     }
 }
@@ -616,6 +695,24 @@ impl Default for GameEngine {
 impl GameEngine {
     pub fn new() -> Self {
         Self::default()
+    }
+
+    /// 指定难度创建新引擎
+    pub fn new_with_difficulty(difficulty_str: &str) -> Self {
+        let difficulty = Difficulty::from_str(difficulty_str);
+        let mut engine = Self::default();
+        engine.difficulty = difficulty;
+        // Apply difficulty bonuses to initial state
+        engine.army.supply =
+            (engine.army.supply + difficulty.supply_bonus()).clamp(0.0, 100.0);
+        engine.politics.legitimacy =
+            (engine.politics.legitimacy + difficulty.legitimacy_bonus()).clamp(0.0, 100.0);
+        engine
+    }
+
+    /// 当前难度
+    pub fn difficulty(&self) -> Difficulty {
+        self.difficulty
     }
 
     // ── 状态查询 ──────────────────────────────────────
@@ -2052,6 +2149,7 @@ impl GameEngine {
             relationships,
             triggered_event_ids: self.triggered_event_ids.clone(),
             outcome: self.outcome.map(|o| o.as_str().to_string()),
+            difficulty: self.difficulty.as_str().to_string(),
         }
     }
 
@@ -2099,6 +2197,7 @@ impl GameEngine {
         engine
             .event_pool
             .restore_triggered(migrated_triggered_event_ids);
+        engine.difficulty = Difficulty::from_str(&state.difficulty);
         engine.outcome = state.outcome.as_deref().and_then(|s| match s {
             "napoleon_victory" => Some(GameOutcome::NapoleonVictory),
             "waterloo_historical" => Some(GameOutcome::WaterlooHistorical),

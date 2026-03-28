@@ -162,6 +162,8 @@ func _run_dusk_phase(action_type: String, params: Dictionary) -> void:
 
 	# ── 同步状态 ─────────────────────────────────────
 	_sync_state_from_engine()
+	# ── 记录关键决策（失败归因用） ───────────────────
+	_record_key_decision(action_type, params, previous_location, previous_victories)
 	# 历史事件已在 process_day() 的 Dawn 阶段生效；这里立刻转发给 UI，
 	# 避免玩家要等到下一回合才看到事件正文和史注。
 	_emit_new_triggered_events()
@@ -431,18 +433,49 @@ func load_from_save(slot_id: int = 1) -> bool:
 	EventBus.phase_changed.emit("action")
 	return true
 
+## 记录关键决策点，用于游戏结束时的失败归因
+func _record_key_decision(action_type: String, params: Dictionary, prev_location: String, prev_victories: int) -> void:
+	var day := GameState.current_day
+	# 战斗结果是关键决策
+	if action_type == "battle":
+		if GameState.victories > prev_victories:
+			GameState.record_key_decision(day, "battle_won", "在 %s 赢得一场战役" % params.get("terrain", ""))
+		else:
+			GameState.record_key_decision(day, "battle_lost", "在 %s 战败" % params.get("terrain", ""))
+	# 行军决策
+	elif action_type == "march" and prev_location != GameState.napoleon_location:
+		if GameState.supply < 40.0:
+			GameState.record_key_decision(day, "risky_march", "在补给 %.0f 时行军到 %s" % [GameState.supply, GameState.napoleon_location])
+	# 政治危机点
+	if GameState.legitimacy < 20.0:
+		GameState.record_key_decision(day, "legitimacy_crisis", "合法性跌到 %.0f" % GameState.legitimacy)
+	# 补给危机点
+	if GameState.supply < 30.0:
+		GameState.record_key_decision(day, "supply_crisis", "补给跌到 %.0f" % GameState.supply)
+
+
 ## 保存当前引擎状态到存档
 func save_to_file(slot_id: int = 1) -> bool:
 	_ensure_engine()
 	return SaveManager.save_game(engine, slot_id)
 
+## 设置难度（在 reset_engine 之前调用）
+func set_difficulty(difficulty_id: String) -> void:
+	_pending_difficulty = difficulty_id
+
+var _pending_difficulty: String = ""
+
 ## 重置引擎，用于重新开始游戏
 func reset_engine() -> void:
 	engine = CentJoursEngine.new()
+	if _pending_difficulty != "":
+		engine.set_difficulty(_pending_difficulty)
+		_pending_difficulty = ""
 	current_phase = Phase.DAWN
 	# 重新加载角色数据
 	GameState._load_all_data()
 	GameState.triggered_events.clear()
+	GameState.clear_key_decisions()
 
 ## 确保 TurnManager 生命周期内始终复用同一个原生引擎实例。
 func _ensure_engine() -> void:

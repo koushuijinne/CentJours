@@ -13,8 +13,8 @@
 
 - 正式入口为 `src/ui/main_menu.tscn`，主循环 `TurnManager -> CentJoursEngine -> GameState -> UI` 已接通。
 - Rust 规则层最近一次完整回归基线是 Windows `211/211`；自动工作流后续不再把 Linux / WSL `cargo test` 当成默认验证路径。
-- 当前核心数据基线：`15` 名角色、`41` 个地图节点、`58` 条历史事件，其中 `major 16 / normal 35 / minor 7`。
-- 当前活跃开发分支为 `auto/gameplay_update`。
+- 当前核心数据基线：`17` 名角色、`43` 个地图节点、`58` 条历史事件，其中 `major 16 / normal 35 / minor 7`。
+- 当前活跃开发分支为 `claude/review-project-status-05vxD`（已合并 `auto/gameplay_update`）。
 - Godot 前端自动回归已扩到 `GdUnit4 50/50`，当前 Windows 基线包含存读档槽位、槽位标签文案、覆盖确认、删除入口、覆盖/删除确认取消后返回槽位选择框、新局确认/取消、读档取消、存档槽位取消恢复、保存页删除、设置弹窗打开/取消/读取已保存值/应用持久化/恢复默认/取消不污染已保存配置、叙事面板、区域任务显示、战斗弹窗取消、战斗提交失败恢复、接见禁用态、接见取消恢复、接见提交失败恢复、结局弹窗显示/重开/天数截断、地图 hover/锁定详情同锚点与滚动护栏、锁定后忽略他处 hover、重复点击取消锁定、空白画布清空交互、右键缩放复位保持锁定、读档成功后清空地图锁定、行军无目标提示、不可达目标拒绝反馈、合法目标确认推进天数与位置更新、切换政策清空 pending target、Windows Godot 主项目无头和 Windows smoke scene；Windows CI workflow 与本地脚本入口也已写入仓库。
 - Save / Load 已进入 `v3` 兼容路径，旧存档会把 `fontainebleau_eve` 迁移为正式 ID `tuileries_eve`，前沿粮秣站状态也会随存档读写。
 - 历史事件正文、`historical_note` 与玩家行动结算日志都已接入侧栏日志链路。
@@ -57,7 +57,13 @@
 - 设置和存读档残余状态本轮又补了一层：设置取消不会误写入配置，恢复默认会立即落回默认缩放；从保存页删除存档和读档成功后清空地图锁定也已进 `GdUnit4`。
 - 开发者文档当前以根 `README.md`、`docs/architecture.md`、`docs/interfaces.md` 和 `docs/bugs/` 为主入口；代码路径改动需要同步更新这些文档之一，CI 已做门禁。
 - `windows-validation.yml` 现在只对白名单代码路径触发，不再因为文档和无关 workflow 改动默认占用 Windows runner。
-- 前端已拆出 `map / layout / tray / sidebar / dialogs` 控制器，但发布级视觉和交互收口仍未完成。
+- 前端已拆出 `map / layout / tray / sidebar / dialogs / topbar_actions` 控制器，`main_menu.gd` 已从 1025 行减到 670 行，但发布级视觉和交互收口仍未完成。
+- `AudioManager` 音频管理器 autoload 已创建，支持 BGM 交叉淡入、SFX 池化播放、音量持久化；音频资产文件尚未制作。
+- Rust 引擎难度系统已实现：`Difficulty` 枚举（Elba/Borodino/Austerlitz）、敌军强度/政治衰减/补给/合法性修正器、GDExtension 暴露、存档兼容。
+- 难度选择 UI 弹窗已接入新局流程，GDScript 侧通过 `TurnManager.set_difficulty()` → `CentJoursEngine.set_difficulty()` 设置。
+- 失败归因系统已增强：`GameState.key_decisions` 追踪关键决策点（战败、低补给行军、合法性/补给危机），游戏结束弹窗会展示关键决策时间线和难度标记。
+- `dev_plan.md` 已重写为 v97，新增 Steam 上线就绪度评估和 5 阶段优先级任务计划。
+- 设置弹窗新增音频音量滑条（当 AudioManager 可用时显示）。
 - Windows 原生 Godot 与 Windows 无头仍是默认验证路径；不要把 Linux / WSL Godot 无头结果当成默认结论。
 - 自动工作流下不要运行 Linux / WSL 侧测试，包括 Linux `cargo test` 和 Linux Godot 无头；若 Windows 验证链暂时不完整，就明确写“未验证”，不要用 Linux 结果补位。
 - 当前这条补给玩法切片已经完成 Windows `cargo test`、Windows DLL 重编、Windows 主项目无头启动和 Windows smoke scene；smoke 输出已确认新 `logistics_route_chain_*`、`logistics_regional_pressure_*` 字段和 `secure_regional_corridor` 建议进入 Windows 运行时。自动工作流后续不再回到 Linux / WSL 侧测试补位。
