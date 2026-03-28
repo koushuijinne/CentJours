@@ -31,7 +31,7 @@
 | 存读档系统 | 100% | v3 兼容迁移已落地 |
 | 历史事件内容 | 58% | 58/100+ 条，需补 42+ 条 |
 | 教程/引导 | 10% | 仅有前 10 天 hint 文本，无正式教程流 |
-| 结局系统 | 50% | 2 种失败态 + 失败归因 + 难度标记已有，胜利条件和多结局分支未完成 |
+| 结局系统 | 85% | 7 种结局路径已实现（NapoleonVictory / DiplomaticSettlement / MilitaryDominance / WaterlooHistorical / WaterlooDefeat / PoliticalCollapse / MilitaryAnnihilation），含外交进度系统、失败归因、难度标记、UI 文本和变体选择 |
 | 音频 | 10% | AudioManager 框架已建立，缺音频资产文件 |
 | 美术资产 | 0% | 无角色肖像、无地图美术、无战斗特效，仅有 icon.svg |
 | 本地化 | 0% | 中文硬编码，无 i18n 框架，无英文翻译 |
@@ -62,7 +62,7 @@
 | ID | 任务 | 优先级 | 规模 | 说明 |
 |----|------|--------|------|------|
 | S1-1 | 历史事件扩到 100+ 条 | P0 | XL | 当前 58 条，需补中期政治/外交/社会事件 42+ 条，按 ADR-008 分级 |
-| S1-2 | 完成多结局系统 | P0 | L | 至少 4 种结局路径（军事胜利/政治崩溃/滑铁卢史实/谈判和约），每种有独立文本和评价 |
+| S1-2 | ~~完成多结局系统~~ | P0 | L | **已完成** — 7 种结局路径 (NapoleonVictory / DiplomaticSettlement / MilitaryDominance / WaterlooHistorical / WaterlooDefeat / PoliticalCollapse / MilitaryAnnihilation)，含外交进度系统、Rust check_outcome() 多路径逻辑、UI OUTCOME_TEXT + 变体选择 |
 | S1-3 | 前 10 天新手教程流 | P0 | L | 引导玩家理解补给、政治、命令偏差三大核心，用场景内提示而非独立教程关 |
 | S1-4 | 中期张力补强 (Day 20-80) | P1 | L | 增加定时危机事件、派系叛变窗口、联军集结压力曲线，避免重复行动感 |
 | S1-5 | ~~失败归因系统~~ | P1 | M | **已完成** — GameState.key_decisions 追踪 + 游戏结束弹窗展示 |

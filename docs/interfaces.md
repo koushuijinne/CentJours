@@ -150,6 +150,9 @@
   - `triggered_events`
   - `stendhal_diary`
 
+- 外交与结局
+  - `diplomatic_progress` — 外交进度 (0-100)，由事件 `diplomatic_progress_delta` 推进
+  - `outcome` — 7 种结局: `napoleon_victory` / `diplomatic_settlement` / `military_dominance` / `waterloo_historical` / `waterloo_defeat` / `political_collapse` / `military_annihilation`
 - 失败归因
   - `key_decisions` — 关键决策记录数组（最多 20 条）
   - `difficulty` — 当前难度 ID

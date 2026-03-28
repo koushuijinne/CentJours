@@ -221,11 +221,12 @@ pub fn simulate_one_game(strategy: PlayerStrategy, rng: &mut StdRng) -> GameReco
 
     let outcome = outcome.unwrap_or_else(|| {
         let legit = politics.legitimacy;
-        // 胜利需要"军政双赢"：足够的胜场（含至少1场决战胜利）+ 维持政治合法性
-        if victories >= 5 && legit >= 45.0 {
+        if victories >= 5 && legit > 20.0 {
+            GameOutcome::MilitaryDominance // 军事碾压：靠胜利弥补政治不足
+        } else if legit > 50.0 && victories >= 3 {
             GameOutcome::NapoleonVictory // 均衡发展：扭转历史
-        } else if victories >= 3 && legit >= 35.0 {
-            GameOutcome::WaterlooHistorical // 一方面成功：接近但未扭转历史
+        } else if legit > 30.0 {
+            GameOutcome::WaterlooHistorical // 接近但未扭转历史
         } else {
             GameOutcome::WaterlooDefeat // 双失：流放圣赫勒拿
         }

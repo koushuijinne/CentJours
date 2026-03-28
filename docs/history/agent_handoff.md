@@ -33,6 +33,7 @@
 - **前端拆分**: main_menu.gd 1025→670 行，拆出 map / layout / tray / sidebar / dialogs / topbar_actions 6 个子控制器
 - **弹窗状态机**: modal 统一锁定 DecisionTray，存读档/设置/战斗/接见/结局弹窗均有 GdUnit4 回归
 - **教程链**: DecisionTray 前 10 天后勤教程，侧栏情境化政策建议
+- **多结局系统**: GameOutcome 7 种路径 (NapoleonVictory / DiplomaticSettlement / MilitaryDominance / WaterlooHistorical / WaterlooDefeat / PoliticalCollapse / MilitaryAnnihilation)，外交进度系统 (diplomatic_progress 0-100)，check_outcome() 优先级逻辑，UI OUTCOME_TEXT 7 套文本 + 变体选择
 
 ### 验证与 CI
 

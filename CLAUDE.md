@@ -50,6 +50,7 @@ UI (GDScript Scene/Controller)
 
 - Godot 4.6.1 + Rust stable
 - 17 角色 / 43 地图节点 / 58 历史事件
+- 7 种结局路径 + 外交进度系统
 - Save v3 兼容路径
 - 难度系统: Elba / Borodino / Austerlitz
 

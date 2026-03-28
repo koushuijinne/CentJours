@@ -260,6 +260,10 @@ func _build_game_over_review(outcome: String, game_over_state: Dictionary, info:
 	match outcome:
 		"napoleon_victory":
 			lines.append("你把政权撑到了终局，还拿下了 %d 场有效胜利。政治线和军事线都没有先失手。" % victories)
+		"diplomatic_settlement":
+			lines.append("你在第 %d 天通过外交途径达成了停火，合法性 %.0f 和外交进程共同促成了这个结局。" % [current_day, legitimacy])
+		"military_dominance":
+			lines.append("你拿下了 %d 场胜利，以压倒性军事优势结束了百日。但合法性只有 %.0f，帝国靠剑而立。" % [victories, legitimacy])
 		"waterloo_historical":
 			lines.append("你把百日政权维持到了最后，但 %d 场胜利还不足以把中盘优势滚成改写历史的结果。" % victories)
 		"waterloo_defeat":
@@ -376,6 +380,10 @@ func _select_outcome_variant_index(outcome: String, game_over_state: Dictionary,
 	match outcome:
 		"napoleon_victory":
 			selected_index = 1 if victories >= 4 or legitimacy >= 65.0 else 0
+		"diplomatic_settlement":
+			selected_index = 1 if legitimacy >= 70.0 else 0
+		"military_dominance":
+			selected_index = 1 if victories >= 6 else 0
 		"waterloo_historical":
 			selected_index = 1 if legitimacy >= 45.0 else 0
 		"waterloo_defeat":

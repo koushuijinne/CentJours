@@ -24,6 +24,8 @@ use std::collections::{HashMap, HashSet};
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum GameOutcome {
     NapoleonVictory,
+    DiplomaticSettlement,
+    MilitaryDominance,
     WaterlooHistorical,
     WaterlooDefeat,
     PoliticalCollapse,
@@ -34,6 +36,8 @@ impl GameOutcome {
     pub fn as_str(&self) -> &'static str {
         match self {
             Self::NapoleonVictory => "napoleon_victory",
+            Self::DiplomaticSettlement => "diplomatic_settlement",
+            Self::MilitaryDominance => "military_dominance",
             Self::WaterlooHistorical => "waterloo_historical",
             Self::WaterlooDefeat => "waterloo_defeat",
             Self::PoliticalCollapse => "political_collapse",
@@ -481,6 +485,9 @@ pub struct SaveState {
     // 难度设定（旧存档默认 borodino）
     #[serde(default = "default_difficulty")]
     pub difficulty: String,
+    // 外交进度（旧存档默认 0）
+    #[serde(default)]
+    pub diplomatic_progress: u32,
 }
 
 /// 地图 JSON 解析用的轻量包装结构。
@@ -655,6 +662,8 @@ pub struct GameEngine {
     last_triggered_events: Vec<TriggeredEvent>,
     /// 难度设定
     difficulty: Difficulty,
+    /// 外交进度（0-100，由外交事件链推进，达到阈值可触发外交结局）
+    diplomatic_progress: u32,
 }
 
 impl Default for GameEngine {
@@ -688,6 +697,7 @@ impl Default for GameEngine {
             last_action_events: Vec::new(),
             last_triggered_events: Vec::new(),
             difficulty: Difficulty::default(),
+            diplomatic_progress: 0,
         }
     }
 }
@@ -2150,6 +2160,7 @@ impl GameEngine {
             triggered_event_ids: self.triggered_event_ids.clone(),
             outcome: self.outcome.map(|o| o.as_str().to_string()),
             difficulty: self.difficulty.as_str().to_string(),
+            diplomatic_progress: self.diplomatic_progress,
         }
     }
 
@@ -2198,8 +2209,11 @@ impl GameEngine {
             .event_pool
             .restore_triggered(migrated_triggered_event_ids);
         engine.difficulty = Difficulty::from_str(&state.difficulty);
+        engine.diplomatic_progress = state.diplomatic_progress;
         engine.outcome = state.outcome.as_deref().and_then(|s| match s {
             "napoleon_victory" => Some(GameOutcome::NapoleonVictory),
+            "diplomatic_settlement" => Some(GameOutcome::DiplomaticSettlement),
+            "military_dominance" => Some(GameOutcome::MilitaryDominance),
             "waterloo_historical" => Some(GameOutcome::WaterlooHistorical),
             "waterloo_defeat" => Some(GameOutcome::WaterlooDefeat),
             "political_collapse" => Some(GameOutcome::PoliticalCollapse),
@@ -2911,29 +2925,53 @@ impl GameEngine {
     }
 
     /// 胜负判定（百日结束或提前终止）
+    ///
+    /// 判定顺序：
+    /// 1. 即时失败（政治崩溃、军事覆灭）
+    /// 2. 提前胜利（外交解决）
+    /// 3. 百日终局（军事碾压 → 均衡胜利 → 惜败 → 惨败）
     fn check_outcome(&mut self) {
-        // 政治崩溃
+        // 政治崩溃（即时）
         if self.politics.is_collapsed() {
             self.outcome = Some(GameOutcome::PoliticalCollapse);
             return;
         }
-        // 军事崩溃
+        // 军事覆灭（即时）
         if self.army.total_troops < 5_000 {
             self.outcome = Some(GameOutcome::MilitaryAnnihilation);
             return;
         }
-        // 100天结束
+        // 外交解决（Day 60+ 可提前结束，需高合法性 + 外交事件链完成）
+        if self.day >= 60 && self.politics.legitimacy > 65.0 && self.diplomatic_progress >= 100 {
+            self.outcome = Some(GameOutcome::DiplomaticSettlement);
+            return;
+        }
+        // 百日终局
         if self.day > 100 {
             let legitimacy = self.politics.legitimacy;
             let victories = self.army.victories;
             self.outcome = Some(if legitimacy > 50.0 && victories >= 3 {
+                // 均衡胜利：政治+军事双达标（最佳结局）
                 GameOutcome::NapoleonVictory
+            } else if victories >= 5 && legitimacy > 20.0 {
+                // 军事碾压：低合法性但靠碾压胜利续命
+                GameOutcome::MilitaryDominance
             } else if legitimacy > 30.0 {
                 GameOutcome::WaterlooHistorical
             } else {
                 GameOutcome::WaterlooDefeat
             });
         }
+    }
+
+    /// 推进外交进度（由外交事件链的 effects 调用）
+    pub fn advance_diplomatic_progress(&mut self, amount: u32) {
+        self.diplomatic_progress = (self.diplomatic_progress + amount).min(100);
+    }
+
+    /// 查询当前外交进度
+    pub fn diplomatic_progress(&self) -> u32 {
+        self.diplomatic_progress
     }
 
     // ── 叙事系统 ──────────────────────────────────────
@@ -3017,6 +3055,9 @@ impl GameEngine {
         }
         if let Some(bonus) = effects.political_stability_bonus {
             self.political_stability_bonus = (self.political_stability_bonus + bonus).max(0.0);
+        }
+        if let Some(delta) = effects.diplomatic_progress_delta {
+            self.advance_diplomatic_progress(delta);
         }
     }
 

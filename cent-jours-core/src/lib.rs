@@ -508,6 +508,7 @@ mod gdext_bindings {
             let _ = d.insert("defeats", e.army.defeats as i64);
             let _ = d.insert("napoleon_location", e.napoleon_location.as_str());
             let _ = d.insert("difficulty", e.difficulty().as_str());
+            let _ = d.insert("diplomatic_progress", e.diplomatic_progress() as i64);
             let _ = d.insert("is_over", e.is_over());
             let _ = d.insert(
                 "outcome",

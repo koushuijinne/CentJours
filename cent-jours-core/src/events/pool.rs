@@ -47,6 +47,9 @@ pub struct EventEffects {
     pub military_available_troops_delta: Option<i64>,
     pub coalition_troops_bonus: Option<i32>,
     pub napoleon_morale_bonus: Option<f64>,
+    /// 外交进度推进量（用于外交结局事件链）
+    #[serde(default)]
+    pub diplomatic_progress_delta: Option<u32>,
 }
 
 /// 事件级别（ADR-008 三级体系）
