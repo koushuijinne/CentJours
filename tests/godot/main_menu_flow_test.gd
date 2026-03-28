@@ -552,6 +552,96 @@ func test_situation_panel_includes_regional_task_context() -> void:
 	assert_str(situation_body.text).contains(GameState.logistics_regional_task_progress_label)
 
 
+func test_march_confirm_without_target_shows_selection_guidance() -> void:
+	var runner := await _load_main_menu()
+	var scene := runner.scene()
+	var tray_controller = runner.get_property("_tray_controller")
+	var execute_button := scene.find_child("ExecuteActionButton", true, false) as Button
+	var narrative_body := scene.find_child("NarrativeBody", true, false) as Label
+	assert_object(execute_button).is_not_null()
+	assert_object(narrative_body).is_not_null()
+
+	tray_controller.select_policy("march")
+	await runner.simulate_frames(2)
+	runner.invoke("_on_confirm_pressed")
+	await runner.simulate_frames(2)
+
+	assert_int(GameState.current_day).is_equal(1)
+	assert_str(GameState.current_phase).is_equal("action")
+	assert_bool(execute_button.disabled).is_false()
+	assert_str(narrative_body.text).contains("请先在地图上选择一个与当前位置相邻的节点")
+
+
+func test_invalid_march_target_shows_rejection_feedback() -> void:
+	var runner := await _load_main_menu()
+	var scene := runner.scene()
+	var tray_controller = runner.get_property("_tray_controller")
+	var controller = runner.get_property("_map_controller")
+	var narrative_body := scene.find_child("NarrativeBody", true, false) as Label
+	assert_object(narrative_body).is_not_null()
+
+	tray_controller.select_policy("march")
+	await runner.simulate_frames(2)
+	controller.select_node("paris")
+	await runner.simulate_frames(4)
+
+	assert_str(controller.get_pending_march_target()).is_equal("")
+	assert_str(narrative_body.text).contains("无法在一天内抵达")
+
+
+func test_valid_march_target_confirm_advances_day_and_updates_location() -> void:
+	var runner := await _load_main_menu()
+	var scene := runner.scene()
+	var tray_controller = runner.get_property("_tray_controller")
+	var controller = runner.get_property("_map_controller")
+	var narrative_body := scene.find_child("NarrativeBody", true, false) as Label
+	assert_bool(GameState.available_march_targets.size() > 0).is_true()
+	assert_object(narrative_body).is_not_null()
+
+	var target_node := String(GameState.available_march_targets[0])
+	var target_label := String(controller.get_map_node(target_node).get("name_fr", target_node))
+
+	tray_controller.select_policy("march")
+	await runner.simulate_frames(2)
+	controller.select_node(target_node)
+	await runner.simulate_frames(4)
+
+	assert_str(controller.get_pending_march_target()).is_equal(target_node)
+	assert_str(narrative_body.text).contains(target_label)
+
+	runner.invoke("_on_confirm_pressed")
+	await runner.simulate_frames(10)
+
+	assert_int(GameState.current_day).is_equal(2)
+	assert_str(GameState.current_phase).is_equal("action")
+	assert_str(GameState.napoleon_location).is_equal(target_node)
+	assert_str(controller.get_pending_march_target()).is_equal("")
+	assert_str(tray_controller.get_selected_policy_id()).is_equal("")
+
+
+func test_switching_away_from_march_clears_pending_target() -> void:
+	var runner := await _load_main_menu()
+	var scene := runner.scene()
+	var tray_controller = runner.get_property("_tray_controller")
+	var controller = runner.get_property("_map_controller")
+	var narrative_body := scene.find_child("NarrativeBody", true, false) as Label
+	assert_bool(GameState.available_march_targets.size() > 0).is_true()
+	assert_object(narrative_body).is_not_null()
+
+	var target_node := String(GameState.available_march_targets[0])
+	tray_controller.select_policy("march")
+	await runner.simulate_frames(2)
+	controller.select_node(target_node)
+	await runner.simulate_frames(4)
+	assert_str(controller.get_pending_march_target()).is_equal(target_node)
+
+	tray_controller.select_policy("rest")
+	await runner.simulate_frames(2)
+
+	assert_str(controller.get_pending_march_target()).is_equal("")
+	assert_str(narrative_body.text).contains("休整")
+
+
 func test_battle_popup_cancel_keeps_action_phase() -> void:
 	var runner := await _load_main_menu()
 	var scene := runner.scene()

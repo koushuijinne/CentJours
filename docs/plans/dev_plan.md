@@ -1,6 +1,6 @@
 # Cent Jours — 开发优先级计划
 
-> **更新**: 2026-03-27 v92
+> **更新**: 2026-03-28 v93
 > **通用原则**: [docs/rules/development_principles.md](/mnt/e/projects/CentJours/docs/rules/development_principles.md)
 > **快速接手**: [docs/history/agent_handoff.md](/mnt/e/projects/CentJours/docs/history/agent_handoff.md)
 > **开发历史**: [docs/history/development_logs/](/mnt/e/projects/CentJours/docs/history/development_logs/)
@@ -23,7 +23,7 @@
 |--------|------|------|----------|
 | **P0** | **继续收口 Windows GitHub Actions 验证链** | M | `windows-validation` 已改成代码白名单触发，下一步继续观察 CI 稳定性和无效排队是否真正下降。 |
 | **P0** | **把 `docs/bugs` 中的关键问题继续转成可重复验证** | M | 第一批主菜单与地图问题、存档槽位误操作护栏和 `EventBus` 日志噪音已经处理，剩余 bug 仍要持续绑定自动化回归。 |
-| **P0** | **继续扩 Godot `GdUnit4` 覆盖面** | M | 现已覆盖存读档槽位、槽位标签、覆盖确认、删除入口、确认取消后返回槽位选择框、新局确认/取消、读档取消、存档槽位取消恢复、保存页删除、设置弹窗打开/取消/应用/重置默认/取消不污染已保存配置、读档成功后清空地图锁定、战斗取消、战斗提交失败恢复、接见禁用态、接见取消恢复、接见提交失败恢复、结局弹窗和重开后的交互恢复，并新增地图 hover/锁定详情同锚点与滚动护栏、锁定后忽略他处 hover、重复点击取消锁定、空白画布清空交互、右键缩放复位保持锁定等回归；下一步继续补更多地图边界和剩余失败恢复。 |
+| **P0** | **继续扩 Godot `GdUnit4` 覆盖面** | M | 现已覆盖存读档、设置、地图交互边界和失败恢复，并新增行军主流程 4 条回归（无目标提示、不可达拒绝、合法目标推进、切换政策清空 pending）；下一步继续补更多核心玩法状态流和剩余失败恢复。 |
 | **P1** | **维护开发者文档与 bug 制度同步** | S | 文档骨架已经齐备，后续重点是跟随代码、接口和验证方式持续维护。 |
 | **P1** | **继续补强补给玩法的产品化表达与教学链** | L | 后勤已经是当前玩法主轴，但应建立在更稳的测试护栏之上。 |
 | **P1** | **历史事件扩到 `100+` 并继续文本 QA** | L | 内容量仍是长局重玩性的核心约束。 |
@@ -154,7 +154,7 @@ tools\run_gdunit_windows.cmd E:\software\godot\Godot_v4.6.1-stable_win64_console
 ## 测试现状概览
 
 - Rust 当前自动化包含模块内单元测试、`cent-jours-core/tests/` 集成测试和 `proptest` 属性测试，最近一次 Windows 基线合计 `211` tests。
-- Godot 前端当前已有 `GdUnit4` `37/37` 回归，已覆盖主菜单初始化、执行行动、存读档槽位、槽位标签文案、覆盖确认、删除入口、覆盖/删除确认取消后返回槽位选择框、读档取消、新局确认/取消、存档槽位取消恢复、设置弹窗打开/取消/读取已保存值/应用持久化、叙事面板、区域任务显示、战斗弹窗取消、战斗提交失败恢复、接见禁用态、接见取消恢复、接见提交失败恢复、结局弹窗显示/重开/天数截断，以及地图 hover/锁定详情同锚点、滚动护栏、缩放、锁定后忽略他处 hover、重复点击取消锁定、空白画布清空交互与右键缩放复位保持锁定；另保留 `src/dev/engine_smoke_test_scene.tscn` smoke 入口。
+- Godot 前端当前已有 `GdUnit4` `45/45` 回归，已覆盖主菜单初始化、执行行动、存读档槽位、槽位标签文案、覆盖确认、删除入口、覆盖/删除确认取消后返回槽位选择框、读档取消、新局确认/取消、存档槽位取消恢复、设置弹窗打开/取消/读取已保存值/应用持久化、叙事面板、区域任务显示、战斗弹窗取消、战斗提交失败恢复、接见禁用态、接见取消恢复、接见提交失败恢复、结局弹窗显示/重开/天数截断，地图 hover/锁定详情同锚点、滚动护栏、缩放、锁定后忽略他处 hover、重复点击取消锁定、空白画布清空交互与右键缩放复位保持锁定，以及行军无目标提示、不可达目标拒绝反馈、合法目标确认推进天数与位置更新、切换政策清空 pending target；另保留 `src/dev/engine_smoke_test_scene.tscn` smoke 入口。
 - `EventBus` 的 `unused_signal` 噪音已在文件级精准屏蔽，当前 `GdUnit4` / CI 输出更适合直接定位真实 failure。
 - 仓库里现在已有 `.github/workflows/windows-validation.yml` 和 `tools/run_gdunit_windows.cmd`，Windows CI 与本地执行入口已经落地。
 
