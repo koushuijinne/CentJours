@@ -809,6 +809,53 @@ func test_rest_action_advances_day_without_popup() -> void:
 	assert_bool(execute_button.disabled).is_false()
 
 
+func test_policy_action_triggers_cooldown_on_next_day() -> void:
+	var runner := await _load_main_menu()
+	var scene := runner.scene()
+	var tray_controller = runner.get_property("_tray_controller")
+	assert_int(GameState.current_day).is_equal(1)
+
+	tray_controller.select_policy("public_speech")
+	await runner.simulate_frames(2)
+	runner.invoke("_on_confirm_pressed")
+	await runner.simulate_frames(10)
+
+	assert_int(GameState.current_day).is_equal(2)
+	var card := tray_controller.get_card("public_speech") as Node
+	assert_object(card).is_not_null()
+	assert_bool(card.on_cooldown).is_true()
+
+
+func test_two_consecutive_days_rest_then_march() -> void:
+	var runner := await _load_main_menu()
+	var scene := runner.scene()
+	var tray_controller = runner.get_property("_tray_controller")
+	var controller = runner.get_property("_map_controller")
+	assert_int(GameState.current_day).is_equal(1)
+
+	# Day 1: rest
+	tray_controller.select_policy("rest")
+	await runner.simulate_frames(2)
+	runner.invoke("_on_confirm_pressed")
+	await runner.simulate_frames(10)
+	assert_int(GameState.current_day).is_equal(2)
+	assert_str(GameState.current_phase).is_equal("action")
+
+	# Day 2: march to adjacent node
+	assert_bool(GameState.available_march_targets.size() > 0).is_true()
+	var target_node := String(GameState.available_march_targets[0])
+	tray_controller.select_policy("march")
+	await runner.simulate_frames(2)
+	controller.select_node(target_node)
+	await runner.simulate_frames(4)
+	runner.invoke("_on_confirm_pressed")
+	await runner.simulate_frames(10)
+
+	assert_int(GameState.current_day).is_equal(3)
+	assert_str(GameState.napoleon_location).is_equal(target_node)
+	assert_str(tray_controller.get_selected_policy_id()).is_equal("")
+
+
 func test_game_over_overlay_disables_action_and_shows_restart() -> void:
 	var runner := await _load_main_menu()
 	var scene := runner.scene()

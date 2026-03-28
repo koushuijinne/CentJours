@@ -56,3 +56,28 @@
 
 下一步:
 - 继续按 P0 推进：补多日连续行动、政策冷却回归，或转向 bugs_check 关键问题
+
+---
+
+## 轮次 3: 政策冷却 + 连续两日行动 GdUnit4 回归
+
+日期: 2026-03-28
+目标: 验证政策冷却机制和多日连续行动的状态一致性
+适用原则: TDD、核心循环优先、验证闭环、文档同步
+
+改动:
+- `tests/godot/main_menu_flow_test.gd` 新增 2 条测试：
+  - `test_policy_action_triggers_cooldown_on_next_day` — 使用 public_speech 后 Day 2 卡片显示冷却
+  - `test_two_consecutive_days_rest_then_march` — Day 1 休整 → Day 2 行军，验证天数、位置、tray 状态一致性
+- GdUnit4 预期基线从 `48` 升到 `50`
+
+验证:
+- API 引用和 cooldown 机制已通过 Rust 源码和 GDScript 层审计确认
+- 本轮未改生产代码
+- Windows GdUnit4 运行时验证标记为待验证
+
+提交/推送:
+- 与文档同步一起提交并推送到 `auto/gameplay_update`
+
+下一步:
+- 继续按 P0 推进：补存读档后状态一致性、bugs_check 剩余项或更多边界回归
