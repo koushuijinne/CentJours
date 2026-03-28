@@ -1,10 +1,10 @@
 # Cent Jours — 开发优先级计划
 
 > **更新**: 2026-03-28 v97
-> **通用原则**: [docs/rules/development_principles.md](/mnt/e/projects/CentJours/docs/rules/development_principles.md)
-> **快速接手**: [docs/history/agent_handoff.md](/mnt/e/projects/CentJours/docs/history/agent_handoff.md)
-> **开发历史**: [docs/history/development_logs/](/mnt/e/projects/CentJours/docs/history/development_logs/)
-> **可选自动工作流**: 仅在用户明确要求时阅读 [docs/rules/optional/agent_autonomous_workflow.md](/mnt/e/projects/CentJours/docs/rules/optional/agent_autonomous_workflow.md)
+> **通用原则**: [docs/rules/development_principles.md](docs/rules/development_principles.md)
+> **快速接手**: [docs/history/agent_handoff.md](docs/history/agent_handoff.md)
+> **开发历史**: [docs/history/development_logs/](docs/history/development_logs/)
+> **可选自动工作流**: 仅在用户明确要求时阅读 [docs/rules/optional/agent_autonomous_workflow.md](docs/rules/optional/agent_autonomous_workflow.md)
 
 ---
 
@@ -15,7 +15,7 @@
 - Save / Load 已进入 `v3` 兼容阶段；最近一次权威回归基线是 Windows `211/211` Rust tests、Windows `GdUnit4 50/50`、Windows Godot 主项目无头和 smoke scene。
 - Rust 规则层的第一批正式集成测试和属性测试已经落地；Godot 前端第一批 `GdUnit4` 回归也已接入，Windows GitHub Actions 工作流与仓库脚本也已落地。
 - GitHub Actions 已新增文档同步门禁：代码路径改动必须伴随 `README.md` 或 `docs/` 更新。
-- 当前总目标已按 [ADR-011](/mnt/e/projects/CentJours/docs/decisions/ADR-011-core-loop-systemization-and-historical-depth.md) 固定为：核心玩法优化完成，并达到 Steam 可上线级别。
+- 当前总目标已按 [ADR-011](docs/decisions/ADR-011-core-loop-systemization-and-historical-depth.md) 固定为：核心玩法优化完成，并达到 Steam 可上线级别。
 - `auto/gameplay_update` 分支的后勤系统、主菜单修复、GdUnit4 测试拆分和开发者文档已合并到本分支。
 
 ---
@@ -30,12 +30,12 @@
 | 存读档系统 | 100% | v3 兼容迁移已落地 |
 | 历史事件内容 | 58% | 58/100+ 条，需补 42+ 条 |
 | 教程/引导 | 10% | 仅有前 10 天 hint 文本，无正式教程流 |
-| 结局系统 | 40% | 2 种失败态已有，胜利条件和多结局分支未完成 |
-| 音频 | 0% | 无任何音乐/音效/音频系统 |
+| 结局系统 | 50% | 2 种失败态 + 失败归因 + 难度标记已有，胜利条件和多结局分支未完成 |
+| 音频 | 10% | AudioManager 框架已建立，缺音频资产文件 |
 | 美术资产 | 0% | 无角色肖像、无地图美术、无战斗特效，仅有 icon.svg |
 | 本地化 | 0% | 中文硬编码，无 i18n 框架，无英文翻译 |
 | Steam 集成 | 0% | 无 Steamworks SDK、无成就、无云存档 |
-| 设置系统 | 40% | 窗口模式 + UI 缩放已有，缺音频/难度/按键/语言 |
+| 设置系统 | 55% | 窗口模式 + UI 缩放 + 音频滑条 + 难度选择已有，缺按键/语言 |
 | 地图视觉 | 0% | 数据完整(43 节点)，渲染为线框，无美术 |
 | 测试覆盖 | 高 | Rust 211 + GdUnit4 50 + Windows CI |
 | UI 主题 | 20% | 使用 Godot 默认主题，未实现产品计划的帝国新古典风格 |
@@ -64,8 +64,8 @@
 | S1-2 | 完成多结局系统 | P0 | L | 至少 4 种结局路径（军事胜利/政治崩溃/滑铁卢史实/谈判和约），每种有独立文本和评价 |
 | S1-3 | 前 10 天新手教程流 | P0 | L | 引导玩家理解补给、政治、命令偏差三大核心，用场景内提示而非独立教程关 |
 | S1-4 | 中期张力补强 (Day 20-80) | P1 | L | 增加定时危机事件、派系叛变窗口、联军集结压力曲线，避免重复行动感 |
-| S1-5 | 失败归因系统 | P1 | M | 游戏结束时明确告诉玩家"为什么输了"，指向关键决策点 |
-| S1-6 | 难度选择 UI + 难度参数生效 | P1 | M | 代码已有 elba/borodino/austerlitz 三档枚举，需接入 UI 选择和数值调整 |
+| S1-5 | ~~失败归因系统~~ | P1 | M | **已完成** — GameState.key_decisions 追踪 + 游戏结束弹窗展示 |
+| S1-6 | ~~难度选择 UI + 难度参数生效~~ | P1 | M | **已完成** — 新局弹窗选择 → TurnManager → Rust 引擎 |
 
 ### 阶段 2: 音频系统
 
@@ -73,7 +73,7 @@
 
 | ID | 任务 | 优先级 | 规模 | 说明 |
 |----|------|--------|------|------|
-| S2-1 | 建立音频管理器框架 | P0 | M | AudioManager autoload，支持 BGM 切换、SFX 播放、音量控制 |
+| S2-1 | ~~建立音频管理器框架~~ | P0 | M | **已完成** — AudioManager autoload + BGM 交叉淡入 + SFX 池 + 音量持久化 |
 | S2-2 | 制作/采购 BGM | P0 | L | 最少 6 首：主菜单、行军、政治、战斗、胜利、失败；目标 AI 生成(AIVA/Suno) + 人工筛选 |
 | S2-3 | 制作/采购 SFX | P1 | M | 最少：按钮点击、回合推进、战斗结算、事件弹窗、存档、成就；可用免费素材库 |
 | S2-4 | Rouge/Noir 音乐动态切换 | P2 | M | 根据政治指针在暖色调/冷色调 BGM 间渐变 |
@@ -197,6 +197,6 @@ tools\run_gdunit_windows.cmd E:\software\godot\Godot_v4.6.1-stable_win64_console
 ## 文档边界
 
 - 本文档只保留当前技术基线、Steam 上线任务优先级、当前验证方式、当前技术债。
-- 当前状态与接手约束统一写入 [docs/history/agent_handoff.md](/mnt/e/projects/CentJours/docs/history/agent_handoff.md)。
-- 多轮开发历史统一写入 [docs/history/development_logs/](/mnt/e/projects/CentJours/docs/history/development_logs/)。
-- 产品里程碑与对外版本状态统一写入 [docs/plans/product_plan.md](/mnt/e/projects/CentJours/docs/plans/product_plan.md)。
+- 当前状态与接手约束统一写入 [docs/history/agent_handoff.md](docs/history/agent_handoff.md)。
+- 多轮开发历史统一写入 [docs/history/development_logs/](docs/history/development_logs/)。
+- 产品里程碑与对外版本状态统一写入 [docs/plans/product_plan.md](docs/plans/product_plan.md)。

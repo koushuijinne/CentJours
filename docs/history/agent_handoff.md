@@ -3,70 +3,42 @@
 > **更新**: 2026-03-28
 > **当前分支**: 以 `git branch --show-current` 为准
 > **目标读者**: 新开会话后需要快速接手项目的 agent / 协作者
-> **开发历史**: 见 [docs/history/development_logs/](/mnt/e/projects/CentJours/docs/history/development_logs/)
-> **可选自动工作流**: 仅在用户明确要求时使用 [docs/rules/optional/agent_autonomous_workflow.md](/mnt/e/projects/CentJours/docs/rules/optional/agent_autonomous_workflow.md)
-> **当前总目标**: 按 [ADR-011](/mnt/e/projects/CentJours/docs/decisions/ADR-011-core-loop-systemization-and-historical-depth.md) 收口核心玩法，达到 Steam 可上线级别
+> **开发历史**: 见 [docs/history/development_logs/](docs/history/development_logs/)
+> **可选自动工作流**: 仅在用户明确要求时使用 [docs/rules/optional/agent_autonomous_workflow.md](docs/rules/optional/agent_autonomous_workflow.md)
+> **当前总目标**: 按 [ADR-011](docs/decisions/ADR-011-core-loop-systemization-and-historical-depth.md) 收口核心玩法，达到 Steam 可上线级别
 
 ---
 
 ## 当前项目状态
 
-- 正式入口为 `src/ui/main_menu.tscn`，主循环 `TurnManager -> CentJoursEngine -> GameState -> UI` 已接通。
-- Rust 规则层最近一次完整回归基线是 Windows `211/211`；自动工作流后续不再把 Linux / WSL `cargo test` 当成默认验证路径。
-- 当前核心数据基线：`17` 名角色、`43` 个地图节点、`58` 条历史事件，其中 `major 16 / normal 35 / minor 7`。
-- 当前活跃开发分支为 `claude/review-project-status-05vxD`（已合并 `auto/gameplay_update`）。
-- Godot 前端自动回归已扩到 `GdUnit4 50/50`，当前 Windows 基线包含存读档槽位、槽位标签文案、覆盖确认、删除入口、覆盖/删除确认取消后返回槽位选择框、新局确认/取消、读档取消、存档槽位取消恢复、保存页删除、设置弹窗打开/取消/读取已保存值/应用持久化/恢复默认/取消不污染已保存配置、叙事面板、区域任务显示、战斗弹窗取消、战斗提交失败恢复、接见禁用态、接见取消恢复、接见提交失败恢复、结局弹窗显示/重开/天数截断、地图 hover/锁定详情同锚点与滚动护栏、锁定后忽略他处 hover、重复点击取消锁定、空白画布清空交互、右键缩放复位保持锁定、读档成功后清空地图锁定、行军无目标提示、不可达目标拒绝反馈、合法目标确认推进天数与位置更新、切换政策清空 pending target、Windows Godot 主项目无头和 Windows smoke scene；Windows CI workflow 与本地脚本入口也已写入仓库。
-- Save / Load 已进入 `v3` 兼容路径，旧存档会把 `fontainebleau_eve` 迁移为正式 ID `tuileries_eve`，前沿粮秣站状态也会随存档读写。
-- 历史事件正文、`historical_note` 与玩家行动结算日志都已接入侧栏日志链路。
-- 动态补给已接进核心循环：补给值会进入存档、`get_state()`、主菜单顶栏、休整恢复、战斗补给惩罚和每日行动结算日志。
-- 首个玩家可控补给政策 `requisition_supplies / 征用沿线仓储` 已接入政策表、叙事池、模拟策略和 UI 元数据。
-- 第二个玩家可控补给政策 `stabilize_supply_lines / 整顿驿站运输` 已接入：它会短期提高补给线效率，并进存档、预判、结算日志和叙事链。
-- 第三个玩家可控补给政策 `establish_forward_depot / 建立前沿粮秣站` 已接入：它会在当前驻地留下短期容量加成，并把这层状态同步到预判、地图检查器、地图渲染和存档。
-- 第四个玩家可控补给政策 `secure_regional_corridor / 巩固区域走廊` 已接入：它会同时保线并加固当前驻地，把脆弱中继线先稳成可持续走廊。
-- 行军预览现在会优先读取 Rust 引擎返回的权威预测值，能在确认前直接显示预计补给 / 疲劳 / 士气变化，并拆开显示仓储容量、补给线效率、预计可得量和需求；只有接口不可用时才退回前端轻量提示。
-- 行动后的补给结算现在会写出节点容量、需求 / 可得量与下一步建议，玩家已经能在结算日志里直接看到“为什么缺补给、该怎么补救”。
-- 侧栏政策预览现在会根据当前补给值和前 10 天阶段给出情境化建议，开始把补给教学直接嵌进 UI。
-- 地图检查器和行军预判现在会明确显示补给角色、有效容量、最近补给枢纽与跳数；地图渲染也会标出前沿粮秣站、战略枢纽和前线消耗点。
-- 引擎状态现在会给出后勤态势与阶段目标；侧栏、决策区提示和地图副标题会统一展示这层建议，当前行动目标不再只靠玩家自己读数字。
-- 当前驻地和行军落点现在会给出补给窗口提示，直接告诉玩家大约还能撑几天，或是否已经跌进战斗惩罚区。
-- 行军预判现在还会给出第二跳推进风险，直接告诉玩家落点后还剩几条相对稳妥的继续推进路线，以及哪条后续线路更稳。
-- 引擎状态现在还会给出阶段运营目标，明确这一阶段该优先抢哪类节点；侧栏、地图副标题和行军预判都会复用这层目标。
-- 引擎状态现在还会给出“当日行动计划”：当前优先动作、备选动作，以及推荐行军目标；侧栏、`DecisionTray` 提示、地图副标题、行军预判和终局复盘都会复用这层建议。
-- 引擎状态现在还会给出“三日后勤节奏”：今天、明天、后天该怎么排动作和节点承接；侧栏、`DecisionTray` 提示、行军预判和终局复盘都会复用这层节奏建议。
-- 引擎状态现在还会给出“区域运营链路”：当前节点、下一跳和后续承接点的推荐节点线；侧栏、地图副标题、行军预判和终局复盘都会复用这层建议。
-- 引擎状态现在还会给出“区域运营压力”：当前这片线路是承压、脆弱、稳固中还是可持续；侧栏、地图副标题、行军预判、政策预览和终局复盘都会复用这层反馈。
-- `DecisionTray` 提示现在会在前 10 天主动输出后勤教程链，根据补给窗口和阶段目标告诉玩家何时该先补给、何时该先抢整补节点。
-- 终局复盘现在会带上终盘补给、最后位置、后勤态势、阶段运营目标和补给窗口，失败归因已经开始接后勤节奏。
-- 三张补给牌的侧栏预览现在会直接给出“优先 / 可考虑 / 暂缓”的即时建议，政策选择已经开始和当前后勤态势直接对齐。
-- 终局复盘现在还会把失败归因落到具体补给牌和节奏错误，例如补给牌打晚、没及时保线、没把中继节点铺成跳板。
-- 主菜单 bug sweep 已完成第一轮闭环：前 10 天教程重复、地图 hover 面板挡图、城市详情窄列换行、读档阶段错位、单槽读档、缺少新局入口和“执行行动”语义不清等问题已收口。
-- 地图现在支持 `MapScroll + 滚轮缩放 + 右键复位`，并拆成“hover 小预览 + click 锁定详情”两层；多槽存读档与顶栏 `新局` 入口也已接通。
-- `docs/bugs/bugs_check.md` 的第二轮问题仍在收口，但“hover 与锁定详情位置跳变”这一条已经正式转成 `BUG-2026-03-27-MAP-DETAIL-ANCHOR`，并由 `GdUnit4` 锁住右上同锚点与滚动护栏。
-- 这轮又补了一层前端护栏：`Current Situation` 已开始显示区域任务；`GdUnit4` 已锁住多槽存读档可用性、叙事日志滚动链和区域任务文本展示；`save_manager.gd` 里槽位标签的字符串格式化 bug 已修掉。
-- 存读档槽位标签现在会把进行中的 `null / in_progress` 状态统一显示成玩家可读的“进行中”，并已由 `GdUnit4` 锁住。
-- 主菜单自己创建的 transient modal 现在也统一接入托盘锁定：`新局`、`存档槽位`、`读档确认` 打开时会禁用 `DecisionTray`，关闭后再按进入前状态恢复。
-- 主菜单弹窗状态机又补了一层：`新局` 取消、`读档` 取消、战斗弹窗取消和低合法性接见禁用都已进入 `GdUnit4`，后续回归不再只靠手点。
-- 结局弹窗本轮也纳入自动回归：覆盖弹窗出现、重开后回到 `Day 1 / action`、以及结局统计的天数上限截断。
-- `GdUnit4` 日志噪音本轮也清了一层：战斗弹窗整数除法、地图控制器局部变量遮蔽和几处无用变量警告已移除；当前剩余的主要噪音集中在 `EventBus` 的声明型 signals。
-- 多槽存档的发布级护栏本轮也补齐：已有槽位保存前会先经过覆盖确认，存档 / 读档弹窗都能直接删除槽位，这两条路径都已进入 `GdUnit4` 回归。
-- `EventBus` 的声明型 signal 噪音现在也已收口：`unused_signal` 只在该文件内精准忽略，`GdUnit4` 和 Windows CI 日志不再被同一批 warning 反复刷屏。
-- 存档覆盖 / 删除确认的取消路径现在也被锁住：取消时会返回对应的槽位选择框，并保持 `DecisionTray` 继续禁用，直到槽位弹窗真正关闭。
-- 战斗 / 接见弹窗现在也把提交失败链路纳入了自动回归；`submit_action` 回调失败后会恢复交互，不再把玩家卡在半关闭的 modal 状态里。
-- 顶栏最小设置入口本轮已补上：当前可持久化窗口模式与界面缩放，设置弹窗也已进入 `GdUnit4` 回归，不再是只写在计划里的缺口。
-- 地图交互边界本轮也补了一层：锁定后不会被其他节点 hover 抢焦点，重复点击同节点可取消锁定，点击空白画布会清空交互，右键缩放复位不会丢掉当前锁定。
-- 设置和存读档残余状态本轮又补了一层：设置取消不会误写入配置，恢复默认会立即落回默认缩放；从保存页删除存档和读档成功后清空地图锁定也已进 `GdUnit4`。
-- 开发者文档当前以根 `README.md`、`docs/architecture.md`、`docs/interfaces.md` 和 `docs/bugs/` 为主入口；代码路径改动需要同步更新这些文档之一，CI 已做门禁。
-- `windows-validation.yml` 现在只对白名单代码路径触发，不再因为文档和无关 workflow 改动默认占用 Windows runner。
-- 前端已拆出 `map / layout / tray / sidebar / dialogs / topbar_actions` 控制器，`main_menu.gd` 已从 1025 行减到 670 行，但发布级视觉和交互收口仍未完成。
-- `AudioManager` 音频管理器 autoload 已创建，支持 BGM 交叉淡入、SFX 池化播放、音量持久化；音频资产文件尚未制作。
-- Rust 引擎难度系统已实现：`Difficulty` 枚举（Elba/Borodino/Austerlitz）、敌军强度/政治衰减/补给/合法性修正器、GDExtension 暴露、存档兼容。
-- 难度选择 UI 弹窗已接入新局流程，GDScript 侧通过 `TurnManager.set_difficulty()` → `CentJoursEngine.set_difficulty()` 设置。
-- 失败归因系统已增强：`GameState.key_decisions` 追踪关键决策点（战败、低补给行军、合法性/补给危机），游戏结束弹窗会展示关键决策时间线和难度标记。
-- `dev_plan.md` 已重写为 v97，新增 Steam 上线就绪度评估和 5 阶段优先级任务计划。
-- 设置弹窗新增音频音量滑条（当 AudioManager 可用时显示）。
-- Windows 原生 Godot 与 Windows 无头仍是默认验证路径；不要把 Linux / WSL Godot 无头结果当成默认结论。
-- 自动工作流下不要运行 Linux / WSL 侧测试，包括 Linux `cargo test` 和 Linux Godot 无头；若 Windows 验证链暂时不完整，就明确写“未验证”，不要用 Linux 结果补位。
-- 当前这条补给玩法切片已经完成 Windows `cargo test`、Windows DLL 重编、Windows 主项目无头启动和 Windows smoke scene；smoke 输出已确认新 `logistics_route_chain_*`、`logistics_regional_pressure_*` 字段和 `secure_regional_corridor` 建议进入 Windows 运行时。自动工作流后续不再回到 Linux / WSL 侧测试补位。
+### 核心基线
+
+| 维度 | 状态 |
+|------|------|
+| 入口 | `src/ui/main_menu.tscn`，主循环 `TurnManager → CentJoursEngine → GameState → UI` 已接通 |
+| 数据 | 17 角色 / 43 地图节点 / 58 历史事件 (major 16 / normal 35 / minor 7) |
+| 测试 | Rust 211/211 + GdUnit4 50/50 + Windows CI + smoke |
+| 存档 | Save v3 兼容路径，旧 `fontainebleau_eve` → `tuileries_eve` 迁移 |
+| 分支 | `claude/review-project-status-05vxD`（已合并 `auto/gameplay_update`） |
+
+### 已完成的系统
+
+- **补给系统**: 动态补给进核心循环，4 张补给政策牌（征用/整顿/前沿粮秣站/巩固走廊），行军预判读 Rust 权威值，结算日志含补给解释
+- **后勤决策辅助**: 引擎输出后勤态势/阶段目标/当日计划/三日节奏/区域链路/区域压力，UI 侧栏和地图统一展示
+- **难度系统**: Rust Difficulty 枚举 (Elba/Borodino/Austerlitz) + GDExtension + 新局 UI 弹窗选择
+- **失败归因**: GameState.key_decisions 追踪关键决策，游戏结束弹窗展示决策时间线 + 难度标记
+- **音频框架**: AudioManager autoload (BGM 交叉淡入 + SFX 池 + 音量持久化)，缺音频资产
+- **设置系统**: 窗口模式 + UI 缩放 + 音频滑条，设置弹窗进 GdUnit4 回归
+- **地图交互**: MapScroll + 滚轮缩放 + hover 预览 / click 锁定详情两层，补给角色/枢纽/粮秣站标注
+- **前端拆分**: main_menu.gd 1025→670 行，拆出 map / layout / tray / sidebar / dialogs / topbar_actions 6 个子控制器
+- **弹窗状态机**: modal 统一锁定 DecisionTray，存读档/设置/战斗/接见/结局弹窗均有 GdUnit4 回归
+- **教程链**: DecisionTray 前 10 天后勤教程，侧栏情境化政策建议
+
+### 验证与 CI
+
+- Windows 是默认验证平台，不用 Linux/WSL 结果补位
+- `windows-validation.yml` 白名单触发：Rust tests → GDExt build → GdUnit4 → headless boot → smoke
+- `doc-sync.yml` 门禁：代码路径改动必须同步更新 README 或 docs/
 
 ## 当前最高优先级
 
@@ -162,13 +134,13 @@ E:\software\godot\Godot_v4.6.1-stable_win64_console.exe --headless --path E:\pro
 
 ## 新会话最少必读文件
 
-- [docs/rules/development_principles.md](/mnt/e/projects/CentJours/docs/rules/development_principles.md)
-- [docs/plans/dev_plan.md](/mnt/e/projects/CentJours/docs/plans/dev_plan.md)
-- [docs/history/agent_handoff.md](/mnt/e/projects/CentJours/docs/history/agent_handoff.md)
-- [docs/decisions/ADR-010-bug-sweep-and-validation-discipline.md](/mnt/e/projects/CentJours/docs/decisions/ADR-010-bug-sweep-and-validation-discipline.md)
-- [docs/decisions/ADR-011-core-loop-systemization-and-historical-depth.md](/mnt/e/projects/CentJours/docs/decisions/ADR-011-core-loop-systemization-and-historical-depth.md)
-- [docs/decisions/ADR-008-historical-events-expansion.md](/mnt/e/projects/CentJours/docs/decisions/ADR-008-historical-events-expansion.md)
-- [docs/history/historical_event_review.md](/mnt/e/projects/CentJours/docs/history/historical_event_review.md)
+- [docs/rules/development_principles.md](docs/rules/development_principles.md)
+- [docs/plans/dev_plan.md](docs/plans/dev_plan.md)
+- [docs/history/agent_handoff.md](docs/history/agent_handoff.md)
+- [docs/decisions/ADR-010-bug-sweep-and-validation-discipline.md](docs/decisions/ADR-010-bug-sweep-and-validation-discipline.md)
+- [docs/decisions/ADR-011-core-loop-systemization-and-historical-depth.md](docs/decisions/ADR-011-core-loop-systemization-and-historical-depth.md)
+- [docs/decisions/ADR-008-historical-events-expansion.md](docs/decisions/ADR-008-historical-events-expansion.md)
+- [docs/history/historical_event_review.md](docs/history/historical_event_review.md)
 
 ## 接手注意点
 
@@ -180,7 +152,7 @@ E:\software\godot\Godot_v4.6.1-stable_win64_console.exe --headless --path E:\pro
 - 若继续做产品方向判断，先以 `ADR-011` 为准：优先核心循环、历史逻辑与 Steam 首发完整度，不把低优先级扩展层提到主线前面
 - 若继续做玩法线，优先把补给压力扩成明确的玩家决策，而不是继续堆纯后台数值
 - 自动工作流开启时，每轮提交后都要先在对话里输出一份完整压缩摘要，再继续下一轮；这不是结束语
-- 自动工作流开启时，每轮结束前都要回看一次 [docs/rules/agent_session_rules.md](/mnt/e/projects/CentJours/docs/rules/agent_session_rules.md)，并输出覆盖整个上下文窗口的压缩摘要，防止后续压缩卡住
+- 自动工作流开启时，每轮结束前都要回看一次 [docs/rules/agent_session_rules.md](docs/rules/agent_session_rules.md)，并输出覆盖整个上下文窗口的压缩摘要，防止后续压缩卡住
 - 自动工作流开启时，除非项目已经达到可进入 Steam 提审 / 发版收口阶段，否则不允许把任何压缩摘要、阶段性汇报或提交结果当作收尾
 - 自动工作流开启时，单轮默认要做成“完整功能包”，优先覆盖规则 / UI / 验证 / 文档中的至少三层；若任务过小，先打包相邻子任务再开工
 - 自动工作流开启时，必要时可开 `1-2` 个子 agent 加速只读审计或叶子模块实现，但主 agent 仍独占集成文件，并在提交前统一回收全部子 agent
@@ -188,11 +160,11 @@ E:\software\godot\Godot_v4.6.1-stable_win64_console.exe --headless --path E:\pro
 - 允许直接修改文案，但必须遵守 ADR-008：直接、清楚、可考据，避免 reframing 句式
 - 拿破仑第一人称只用于教学、行动建议、阶段复盘、结局前独白等玩家直面文本；`historical_note`、联军情报、议会与外交动态默认保持第三人称或档案体
 - 若继续做 UI 线，优先解决玩家可感知问题，再做大文件工程收口
-- 若用户明确要求自动循环，再额外启用 [docs/rules/optional/agent_autonomous_workflow.md](/mnt/e/projects/CentJours/docs/rules/optional/agent_autonomous_workflow.md)
+- 若用户明确要求自动循环，再额外启用 [docs/rules/optional/agent_autonomous_workflow.md](docs/rules/optional/agent_autonomous_workflow.md)
 
 ## 维护约定
 
 - 本文件只保留当前状态、当前优先级、当前验证方式、当前下一步
-- 多轮开发历史不要继续回灌到本文件；统一写入 [docs/history/development_logs/](/mnt/e/projects/CentJours/docs/history/development_logs/)
-- 若默认验证方式变化，更新本文件与 [docs/plans/dev_plan.md](/mnt/e/projects/CentJours/docs/plans/dev_plan.md)
-- 若接手模板变化，更新 [docs/rules/agent_session_prompts.md](/mnt/e/projects/CentJours/docs/rules/agent_session_prompts.md)
+- 多轮开发历史不要继续回灌到本文件；统一写入 [docs/history/development_logs/](docs/history/development_logs/)
+- 若默认验证方式变化，更新本文件与 [docs/plans/dev_plan.md](docs/plans/dev_plan.md)
+- 若接手模板变化，更新 [docs/rules/agent_session_prompts.md](docs/rules/agent_session_prompts.md)

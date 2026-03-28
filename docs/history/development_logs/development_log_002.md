@@ -28,7 +28,7 @@
 - `NarrativePanel` 改成固定边界 + 内部滚动，动作后历史日志不再把整个页面撑出窗口。
 - `MapHoverPanel` 和 `MapInspectorPanel` 重新对齐到同一块右上区域；hover 预览补了内部滚动和更高的默认高度，锁定详情保留可滚动完整内容。
 - 存读档槽位弹窗修掉了 `theme_override_constants` 运行时报错，改成标准的 `add_theme_constant_override()`。
-- 新增 [ADR-010-bug-sweep-and-validation-discipline.md](/mnt/e/projects/CentJours/docs/decisions/ADR-010-bug-sweep-and-validation-discipline.md)，明确采纳“禁止 speculative implementation / implicit assumptions / missing error handling”，同时把 Windows 最小验证、长文本面板边界、入口真实交互验证和提交隔离规则正式写进决策层。
+- 新增 [ADR-010-bug-sweep-and-validation-discipline.md](docs/decisions/ADR-010-bug-sweep-and-validation-discipline.md)，明确采纳“禁止 speculative implementation / implicit assumptions / missing error handling”，同时把 Windows 最小验证、长文本面板边界、入口真实交互验证和提交隔离规则正式写进决策层。
 - `development_plan`、`agent_handoff`、`bug_audit_2026-03-24` 已同步到新的 bug 修复与规则优化计划。
 验证:
 - Windows Godot 无头主项目通过。
@@ -259,7 +259,7 @@
 分支: `auto/gameplay_update`
 范围: 把“文档补强”从建议升级为正式决策，并提到当前 `P0`
 变更:
-- 新增 [ADR-012](/mnt/e/projects/CentJours/docs/decisions/ADR-012-developer-documentation-operability.md)，正式采纳“根 README、架构文档、接口文档、结构化 bug 文档、英文函数名渐进迁移、关键中文注释”的开发者文档基线。
+- 新增 [ADR-012](docs/decisions/ADR-012-developer-documentation-operability.md)，正式采纳“根 README、架构文档、接口文档、结构化 bug 文档、英文函数名渐进迁移、关键中文注释”的开发者文档基线。
 - `dev_plan.md` 当前 `P0` 已前置文档补强：优先补根 `README.md`、`architecture.md`、`interfaces.md` 和 `docs/bugs/` 规范化。
 - `agent_handoff.md` 当前最高优先级和已知缺口已同步到“先补人类开发者入口”的口径。
 验证:

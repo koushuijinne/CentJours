@@ -14,7 +14,7 @@ P1
 
 ## 来源
 
-- [docs/bugs/bugs_check.md](/mnt/e/projects/CentJours/docs/bugs/bugs_check.md)
+- [docs/bugs/bugs_check.md](docs/bugs/bugs_check.md)
 - Windows 真机截图：`image1.png`、`image2.png`
 
 ## 现象
@@ -29,9 +29,9 @@ P1
 
 ## 修复
 
-- 在 [layout_controller.gd](/mnt/e/projects/CentJours/src/ui/main_menu/layout_controller.gd) 中统一 hover 与 inspector 的右上展示锚点、尺寸和顶部偏移。
-- 在 [main_menu.tscn](/mnt/e/projects/CentJours/src/ui/main_menu.tscn) 中显式固定 `MapHoverScroll` 与 `MapInspectorScroll` 的滚动模式。
-- 在 [map_controller_contract_test.gd](/mnt/e/projects/CentJours/tests/godot/map_controller_contract_test.gd) 中新增回归，锁住：
+- 在 [layout_controller.gd](src/ui/main_menu/layout_controller.gd) 中统一 hover 与 inspector 的右上展示锚点、尺寸和顶部偏移。
+- 在 [main_menu.tscn](src/ui/main_menu.tscn) 中显式固定 `MapHoverScroll` 与 `MapInspectorScroll` 的滚动模式。
+- 在 [map_controller_contract_test.gd](tests/godot/map_controller_contract_test.gd) 中新增回归，锁住：
   - hover / inspector 共用同一右上展示锚点
   - 两层都保留纵向滚动容器
   - 横向滚动保持禁用

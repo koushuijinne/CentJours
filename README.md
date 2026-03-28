@@ -102,21 +102,21 @@ E:\software\godot\Godot_v4.6.1-stable_win64_console.exe --headless --path E:\pro
 
 ## 文档导航
 
-- [docs/plans/dev_plan.md](/mnt/e/projects/CentJours/docs/plans/dev_plan.md)
+- [docs/plans/dev_plan.md](docs/plans/dev_plan.md)
   当前技术基线、优先级和验证方式
-- [docs/plans/product_plan.md](/mnt/e/projects/CentJours/docs/plans/product_plan.md)
+- [docs/plans/product_plan.md](docs/plans/product_plan.md)
   产品里程碑和版本目标
-- [docs/architecture.md](/mnt/e/projects/CentJours/docs/architecture.md)
+- [docs/architecture.md](docs/architecture.md)
   系统结构、模块关系和主数据流
-- [docs/interfaces.md](/mnt/e/projects/CentJours/docs/interfaces.md)
+- [docs/interfaces.md](docs/interfaces.md)
   Rust / Godot / Save / Test 的核心接口契约
-- [docs/bugs/bug_index.md](/mnt/e/projects/CentJours/docs/bugs/bug_index.md)
+- [docs/bugs/bug_index.md](docs/bugs/bug_index.md)
   结构化 bug 索引与当前代码问题记录
-- [docs/history/agent_handoff.md](/mnt/e/projects/CentJours/docs/history/agent_handoff.md)
+- [docs/history/agent_handoff.md](docs/history/agent_handoff.md)
   当前状态、当前分支和接手约束
-- [docs/decisions/](/mnt/e/projects/CentJours/docs/decisions/)
+- [docs/decisions/](docs/decisions/)
   ADR 决策记录
-- [docs/bugs/](/mnt/e/projects/CentJours/docs/bugs/)
+- [docs/bugs/](docs/bugs/)
   bug 记录、截图和回归追踪
 
 ## 术语表
@@ -139,5 +139,9 @@ E:\software\godot\Godot_v4.6.1-stable_win64_console.exe --headless --path E:\pro
   当前补给态势，如前线消耗区、稳定走廊等。
 - `forward depot`
   前沿粮秣站，短期提高驻地容量的补给设施状态。
+- `AudioManager`
+  音频管理器 autoload 单例，管理 BGM 交叉淡入、SFX 池化播放和音量持久化。
+- `Difficulty`
+  Rust 枚举 (Elba/Borodino/Austerlitz)，影响敌军强度、政治衰减、补给和合法性。
 - `Save v3`
   当前存档版本，包含 `tuileries_eve` 迁移和前沿粮秣站状态。

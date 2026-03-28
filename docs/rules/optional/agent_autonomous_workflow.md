@@ -2,7 +2,7 @@
 
 > **更新**: 2026-03-24
 > **用途**: 只有在用户明确要求“自动工作流 / 零阻塞循环 / 连续循环”时才启用。
-> **关系**: 本文件是 [docs/rules/agent_session_rules.md](/mnt/e/projects/CentJours/docs/rules/agent_session_rules.md) 的可选补充，不是默认入口。
+> **关系**: 本文件是 [docs/rules/agent_session_rules.md](docs/rules/agent_session_rules.md) 的可选补充，不是默认入口。
 
 ---
 

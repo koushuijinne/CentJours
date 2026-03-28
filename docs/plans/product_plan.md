@@ -5,7 +5,7 @@
 > **作者**: Julien
 > **版本**: v0.40 — 2026-03-26
 > **状态**: 草案 — M0-M4 完成，GATE 2 通过，测试 `168` 个；事件池按 ADR-008 分级（major 16 / normal 35 / minor 7），`historical_note` 与行动结算日志闭环已接通，政策 / 战役 / 行军 / 强化忠诚结算已玩家化，角色显示名已统一为数据驱动中文短称，累计 `24` 条旧事件完成 QA 修订，并累计新增 `27` 条中盘 / 联军 / 小人物 / 指挥 / 政治事件；`claude/review-project-status-05vxD` 已承接后续主开发，`tuileries_eve` 已成为正式事件 ID，Save / Load 进入兼容迁移收口阶段；自动工作流已迁入可选规则目录，仅在用户明确要求时启用；agent 可按 ADR-008 直接修文案，但必须避免 reframing 句式
-> **当前总目标**: 按 [ADR-011](/mnt/e/projects/CentJours/docs/decisions/ADR-011-core-loop-systemization-and-historical-depth.md) 收口核心玩法，推进到 **Steam 可上线级别**
+> **当前总目标**: 按 [ADR-011](docs/decisions/ADR-011-core-loop-systemization-and-historical-depth.md) 收口核心玩法，推进到 **Steam 可上线级别**
 
 -----
 

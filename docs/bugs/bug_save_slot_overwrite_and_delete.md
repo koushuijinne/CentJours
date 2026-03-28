@@ -44,5 +44,5 @@ P1
 
 ## 相关文件
 
-- [src/ui/main_menu.gd](/mnt/e/projects/CentJours/src/ui/main_menu.gd)
-- [tests/godot/main_menu_flow_test.gd](/mnt/e/projects/CentJours/tests/godot/main_menu_flow_test.gd)
+- [src/ui/main_menu.gd](src/ui/main_menu.gd)
+- [tests/godot/main_menu_flow_test.gd](tests/godot/main_menu_flow_test.gd)

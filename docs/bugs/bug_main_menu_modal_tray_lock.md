@@ -15,7 +15,7 @@ P1
 ## 来源
 
 - 本轮主菜单状态机审计
-- 关联代码：[main_menu.gd](/mnt/e/projects/CentJours/src/ui/main_menu.gd)
+- 关联代码：[main_menu.gd](src/ui/main_menu.gd)
 
 ## 现象
 
@@ -55,4 +55,4 @@ P1
 ## 备注
 
 - 这条规则只覆盖 `main_menu.gd` 自己创建的 transient modal。
-- 战斗、接见和结局弹窗仍由 [dialogs_controller.gd](/mnt/e/projects/CentJours/src/ui/main_menu/dialogs_controller.gd) 负责，它们已有独立的托盘锁定链路。
+- 战斗、接见和结局弹窗仍由 [dialogs_controller.gd](src/ui/main_menu/dialogs_controller.gd) 负责，它们已有独立的托盘锁定链路。

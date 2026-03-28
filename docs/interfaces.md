@@ -23,7 +23,8 @@
 | `get_march_preview(target_node)` | 只读行军预判 | 目标节点 ID | `Dictionary` 预判结果 |
 | `save_to_file(slot_id)` | 保存存档 | 槽位 ID | `bool` |
 | `load_from_save(slot_id)` | 从槽位读档 | 槽位 ID | `bool` |
-| `reset_engine()` | 新局重置 | 无 | 重建引擎并清缓存 |
+| `set_difficulty(difficulty_id)` | 设置下次新局难度 | 难度 ID 字符串 | 无 |
+| `reset_engine()` | 新局重置（应用 pending 难度） | 无 | 重建引擎并清缓存 |
 
 ### `submit_action()` 参数契约
 
@@ -63,6 +64,8 @@
 | `is_over()` | 返回是否结束 |
 | `to_json()` | 序列化整局状态 |
 | `load_from_json(json)` | 反序列化整局状态 |
+| `set_difficulty(id)` | 设置难度 (elba/borodino/austerlitz) |
+| `get_difficulty()` | 返回当前难度 ID |
 
 ### 其他 GDExt 节点
 
@@ -147,6 +150,10 @@
   - `triggered_events`
   - `stendhal_diary`
 
+- 失败归因
+  - `key_decisions` — 关键决策记录数组（最多 20 条）
+  - `difficulty` — 当前难度 ID
+
 规则：
 
 - `GameState` 不自行重算规则
@@ -206,7 +213,27 @@
 
 这些节点名已经被 `GdUnit4` 用作稳定测试锚点。改名时必须同步测试。
 
-## 7. 玩家设置契约
+## 7. 音频管理器契约
+
+文件：`src/core/audio_manager.gd`
+
+AudioManager 是 autoload 单例（在 `project.godot` 注册）。
+
+| 方法 | 用途 |
+|------|------|
+| `play_bgm(track_key)` | 切换 BGM（交叉淡入） |
+| `stop_bgm()` | 停止 BGM |
+| `play_sfx(event_key)` | 播放音效（池化） |
+| `set_volume(channel, value)` | 设置音量 (master/music/sfx, 0.0-1.0) |
+| `get_volume(channel)` | 获取音量 |
+| `set_muted(muted)` | 全局静音开关 |
+
+BGM 曲目键: `main_menu`, `march`, `politics`, `battle`, `victory`, `defeat`
+SFX 事件键: `button_click`, `turn_advance`, `battle_resolve`, `event_popup`, `save_complete`, `achievement`
+
+音频设置持久化路径: `user://cent_jours_audio.cfg`
+
+## 8. 玩家设置契约
 
 文件：
 
@@ -256,7 +283,7 @@
 
 这些节点名已经进入 `GdUnit4` 回归。改名时必须同步测试。
 
-## 8. 测试与 CI 入口
+## 9. 测试与 CI 入口
 
 ### 本地
 
@@ -327,7 +354,7 @@ E:\software\godot\Godot_v4.6.1-stable_win64_console.exe --headless --path E:\pro
 
 `windows-validation.yml` 已启用 `concurrency`，同分支新 run 会取消旧 run；同时改成白名单触发，避免文档和无关 workflow 改动占用 Windows runner。
 
-## 8. 维护要求
+## 10. 维护要求
 
 发生以下变化时必须同步本文档：
 

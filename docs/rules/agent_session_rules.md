@@ -1,7 +1,7 @@
 # Cent Jours — Agent 会话规则
 
 > **用途**: 约束 agent 在本仓库中的默认开发行为、文档同步边界和提交闭环。
-> **说明**: 本文件是常规规则文档，不等于默认启用自动工作流；如用户明确要求连续自动循环，再额外读取 [docs/rules/optional/agent_autonomous_workflow.md](/mnt/e/projects/CentJours/docs/rules/optional/agent_autonomous_workflow.md)。
+> **说明**: 本文件是常规规则文档，不等于默认启用自动工作流；如用户明确要求连续自动循环，再额外读取 [docs/rules/optional/agent_autonomous_workflow.md](docs/rules/optional/agent_autonomous_workflow.md)。
 
 ---
 

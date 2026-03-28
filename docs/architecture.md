@@ -54,11 +54,13 @@ UI refresh / logs / dialogs / map feedback
 - `src/core/turn_manager.gd`
   回合流程和 UI 到引擎的主协调点
 - `src/core/game_state.gd`
-  UI 读缓存与静态数据装载
+  UI 读缓存与静态数据装载（含 key_decisions 关键决策追踪）
 - `src/core/save_manager.gd`
   Save/Load 文件读写与槽位管理
 - `src/core/event_bus.gd`
   前端事件分发
+- `src/core/audio_manager.gd`
+  音频管理器 autoload（BGM 交叉淡入、SFX 池化播放、音量持久化）
 
 ### 主菜单前端
 
@@ -72,6 +74,8 @@ UI refresh / logs / dialogs / map feedback
   战斗、接见、结局等弹窗
 - `src/ui/main_menu/tray_controller.gd`
   `DecisionTray` 选择与确认状态
+- `src/ui/main_menu/topbar_actions_controller.gd`
+  顶栏按钮（设置、存读档、新局确认）与 modal 管理
 - `src/ui/main_menu/layout_controller.gd`
   布局与响应式边界
 
@@ -182,9 +186,17 @@ UI slot picker
 - 不把 `GameState` 当作第二套业务真值
 - 不把“为了显示方便”的字段回写成规则层权威状态
 
+## 难度系统
+
+Rust 引擎内置 `Difficulty` 枚举（Elba / Borodino / Austerlitz），影响敌军强度、政治衰减、补给加成和初始合法性。GDExtension 通过 `set_difficulty()` / `get_difficulty()` 暴露，存档兼容。GDScript 侧通过新局流程弹窗选择难度，经 `TurnManager.set_difficulty()` 传入引擎。
+
+## 失败归因
+
+`GameState.key_decisions` 追踪关键决策点（战败、低补给行军、合法性/补给危机），最多保留 20 条。游戏结束弹窗会展示最近 8 条关键决策时间线和当前难度标记。
+
 ## 当前已知架构压力
 
-- `main_menu.gd` 仍然偏大，虽然已拆 controller，但还不是最终状态
+- `main_menu.gd` 已从 1025 行减到 670 行，但仍可继续拆分
 - `GameState` 字段很多，接口文档必须跟上，否则容易出现“字段知道存在，但不知道边界”
 - 主菜单与地图交互仍是高回归区，需要继续用 `GdUnit4` 压住
 

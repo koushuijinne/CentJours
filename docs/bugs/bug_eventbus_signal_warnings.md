@@ -35,7 +35,7 @@
 
 ## 修复方案
 
-- 在 [src/core/event_bus.gd](/mnt/e/projects/CentJours/src/core/event_bus.gd) 对声明型 signal 区块增加 `@warning_ignore_start("unused_signal")` / `@warning_ignore_restore("unused_signal")`
+- 在 [src/core/event_bus.gd](src/core/event_bus.gd) 对声明型 signal 区块增加 `@warning_ignore_start("unused_signal")` / `@warning_ignore_restore("unused_signal")`
 - 仅屏蔽 `unused_signal`，不压制其他真实 warning
 - 保留集中声明结构，不把总线拆散到多个脚本
 
