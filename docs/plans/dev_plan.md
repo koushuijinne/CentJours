@@ -1,6 +1,6 @@
 # Cent Jours — 开发优先级计划
 
-> **更新**: 2026-03-28 v96
+> **更新**: 2026-03-28 v97
 > **通用原则**: [docs/rules/development_principles.md](/mnt/e/projects/CentJours/docs/rules/development_principles.md)
 > **快速接手**: [docs/history/agent_handoff.md](/mnt/e/projects/CentJours/docs/history/agent_handoff.md)
 > **开发历史**: [docs/history/development_logs/](/mnt/e/projects/CentJours/docs/history/development_logs/)
@@ -11,122 +11,167 @@
 ## 当前技术基线
 
 - 项目已经有可玩的纵向切片，正式入口仍是 `src/ui/main_menu.tscn`，主链路 `TurnManager -> CentJoursEngine -> GameState -> UI` 已跑通。
-- 当前内容规模为 `15` 名角色、`41` 个地图节点、`58` 条历史事件；补给、政治、历史日志、存档读档和主菜单主循环都已接通。
-- Save / Load 已进入 `v3` 兼容阶段；最近一次权威回归基线是 Windows `211/211` Rust tests、Windows `GdUnit4 41/41`、Windows Godot 主项目无头和 smoke scene。
+- 当前内容规模为 `17` 名角色、`43` 个地图节点、`58` 条历史事件；补给、政治、历史日志、存档读档和主菜单主循环都已接通。
+- Save / Load 已进入 `v3` 兼容阶段；最近一次权威回归基线是 Windows `211/211` Rust tests、Windows `GdUnit4 50/50`、Windows Godot 主项目无头和 smoke scene。
 - Rust 规则层的第一批正式集成测试和属性测试已经落地；Godot 前端第一批 `GdUnit4` 回归也已接入，Windows GitHub Actions 工作流与仓库脚本也已落地。
 - GitHub Actions 已新增文档同步门禁：代码路径改动必须伴随 `README.md` 或 `docs/` 更新。
 - 当前总目标已按 [ADR-011](/mnt/e/projects/CentJours/docs/decisions/ADR-011-core-loop-systemization-and-historical-depth.md) 固定为：核心玩法优化完成，并达到 Steam 可上线级别。
+- `auto/gameplay_update` 分支的后勤系统、主菜单修复、GdUnit4 测试拆分和开发者文档已合并到本分支。
 
-## 当前技术优先级
+---
 
-| 优先级 | 项目 | 规模 | 决策理由 |
-|--------|------|------|----------|
-| **P0** | **继续收口 Windows GitHub Actions 验证链** | M | `windows-validation` 已改成代码白名单触发，下一步继续观察 CI 稳定性和无效排队是否真正下降。 |
-| **P0** | **把 `docs/bugs` 中的关键问题继续转成可重复验证** | M | 第一批主菜单与地图问题、存档槽位误操作护栏和 `EventBus` 日志噪音已经处理，剩余 bug 仍要持续绑定自动化回归。 |
-| **P0** | **继续扩 Godot `GdUnit4` 覆盖面** | M | 现已覆盖存读档、设置、地图交互边界、失败恢复、行军主流程、战斗/接见/休整成功推进、政策冷却和连续两日行动；下一步继续补存读档后状态一致性、更多边界回归和 bugs_check 剩余项。 |
-| **P1** | **维护开发者文档与 bug 制度同步** | S | 文档骨架已经齐备，后续重点是跟随代码、接口和验证方式持续维护。 |
-| **P1** | **继续补强补给玩法的产品化表达与教学链** | L | 后勤已经是当前玩法主轴，但应建立在更稳的测试护栏之上。 |
-| **P1** | **历史事件扩到 `100+` 并继续文本 QA** | L | 内容量仍是长局重玩性的核心约束。 |
-| **P1** | **补前 10 天引导、失败归因、结局文本与关键 UI 文案统一** | M | 新玩家理解链仍不完整，需要结合玩法和日志一起收口。 |
-| **P2** | **前端发布级 polish** | M | 地图、Tray、Sidebar 与最小设置入口已基本可用，但还需要更稳的 Windows 真机收口。 |
-| **P2** | **Windows 发布链路、资产替换与 Steam 提审准备** | L | 这条线建立在玩法和测试稳定之后。 |
-| **P2** | **低优先级：大本营互动层表达** | L | 只记录为后续扩展方向，不进入当前 Steam 首发主线。 |
+## Steam 上线就绪度评估
 
-## 未来三轮计划
+> 基于 2026-03-28 全仓库审查
 
-### 第 1 轮: 先把测试底座补起来
+| 维度 | 完成度 | 判断 |
+|------|--------|------|
+| 核心玩法引擎 | 95% | Rust 规则层 + GDScript 前端主循环已跑通 |
+| 存读档系统 | 100% | v3 兼容迁移已落地 |
+| 历史事件内容 | 58% | 58/100+ 条，需补 42+ 条 |
+| 教程/引导 | 10% | 仅有前 10 天 hint 文本，无正式教程流 |
+| 结局系统 | 40% | 2 种失败态已有，胜利条件和多结局分支未完成 |
+| 音频 | 0% | 无任何音乐/音效/音频系统 |
+| 美术资产 | 0% | 无角色肖像、无地图美术、无战斗特效，仅有 icon.svg |
+| 本地化 | 0% | 中文硬编码，无 i18n 框架，无英文翻译 |
+| Steam 集成 | 0% | 无 Steamworks SDK、无成就、无云存档 |
+| 设置系统 | 40% | 窗口模式 + UI 缩放已有，缺音频/难度/按键/语言 |
+| 地图视觉 | 0% | 数据完整(43 节点)，渲染为线框，无美术 |
+| 测试覆盖 | 高 | Rust 211 + GdUnit4 50 + Windows CI |
+| UI 主题 | 20% | 使用 Godot 默认主题，未实现产品计划的帝国新古典风格 |
 
-- 当前状态：已完成
-- 新建 Rust 正式集成测试入口：
-  - `cent-jours-core/tests/save_load_flow.rs`
-  - `cent-jours-core/tests/action_resolution_flow.rs`
-  - `cent-jours-core/tests/march_preview_contract.rs`
-- 引入属性测试框架，先覆盖最容易退化的不变量：
-  - 补给、士气、疲劳的上下界
-  - 行军预判与结算的基本一致性
-  - 历史事件触发窗口不越界
-  - 存档迁移不会重复写入或丢状态
-- 把“修 bug 但不补验证”改成硬门槛：今后每修一类主菜单 bug，至少补一条 Rust 或 Godot 回归。
+---
 
-### 第 2 轮: 补 Godot 前端回归模型
+## Steam 上线优先级任务
 
-- 当前状态：已完成
-- `GdUnit4` 已接入项目，运行时最小集已落到 `addons/gdUnit4/`。
-- 第一批 Godot 自动回归已建立并按职责拆分：
-  - `tests/godot/main_menu_flow_test.gd` — 核心行动流与行军
-  - `tests/godot/save_load_flow_test.gd` — 存读档与新局
-  - `tests/godot/dialog_flow_test.gd` — 弹窗、设置与结局
-  - `tests/godot/map_controller_contract_test.gd` — 地图交互
-- 已覆盖的前端行为：
-  - 主菜单加载后的关键节点与默认状态
-  - `执行行动 -> 次日`
-  - `存档 -> 读档`
-  - `新局` 确认弹窗与重开
-  - 地图 hover 预览与 click 锁定详情分层
-  - 地图缩放与右键复位
-- 现有 `engine_smoke_test_scene.tscn` 继续保留，但不再是唯一前端验证。
-- 已确认一条执行约束：在新 checkout / 新环境上跑 `GdUnit4` 前，要先执行一次 Windows Godot `--headless --editor --quit`，刷新脚本类缓存，否则 CLI 可能找不到 `GdUnit4` 全局类。
+### 阶段 0: 验证链稳定（当前进行中）
 
-### 第 3 轮: 把 bug 修复、回归验证和玩法推进绑在一起
+> 目标：确保后续所有开发都有回归兜底
 
-- 当前状态：已完成
-- 建立 `.github/workflows/` 的 Windows 流水线，默认顺序为：
-  - Windows Rust `cargo test`
-  - Windows `cargo build --features godot-extension`
-  - Windows Godot `--headless --editor --quit`
-  - Windows `GdUnit4`
-  - Windows Godot smoke scene
-- 已新增仓库脚本 `tools/run_gdunit_windows.cmd`，把 `缓存刷新 -> GdUnit4` 顺序固化成单一入口。
-- 已新增 `.github/workflows/windows-validation.yml`，在 Windows runner 上执行 Rust tests、GDExt build、`GdUnit4`、headless boot 与 smoke scene，并上传 `reports/`。
-- 对照 [docs/bugs/bugs_check.md](/mnt/e/projects/CentJours/docs/bugs/bugs_check.md) 的继续收口，后续改成在这条 workflow 和本地脚本上迭代用例。
+| ID | 任务 | 优先级 | 规模 | 状态 |
+|----|------|--------|------|------|
+| S0-1 | 继续收口 Windows GitHub Actions 验证链 | P0 | M | 进行中 |
+| S0-2 | 把 `docs/bugs` 中的关键问题继续转成可重复验证 | P0 | M | 进行中 |
+| S0-3 | 继续扩 Godot `GdUnit4` 覆盖面（存读档一致性、更多边界） | P0 | M | 进行中 |
+
+### 阶段 1: 核心循环补厚 + 内容扩充
+
+> 目标：让一局游戏从头到尾有完整体验
+
+| ID | 任务 | 优先级 | 规模 | 说明 |
+|----|------|--------|------|------|
+| S1-1 | 历史事件扩到 100+ 条 | P0 | XL | 当前 58 条，需补中期政治/外交/社会事件 42+ 条，按 ADR-008 分级 |
+| S1-2 | 完成多结局系统 | P0 | L | 至少 4 种结局路径（军事胜利/政治崩溃/滑铁卢史实/谈判和约），每种有独立文本和评价 |
+| S1-3 | 前 10 天新手教程流 | P0 | L | 引导玩家理解补给、政治、命令偏差三大核心，用场景内提示而非独立教程关 |
+| S1-4 | 中期张力补强 (Day 20-80) | P1 | L | 增加定时危机事件、派系叛变窗口、联军集结压力曲线，避免重复行动感 |
+| S1-5 | 失败归因系统 | P1 | M | 游戏结束时明确告诉玩家"为什么输了"，指向关键决策点 |
+| S1-6 | 难度选择 UI + 难度参数生效 | P1 | M | 代码已有 elba/borodino/austerlitz 三档枚举，需接入 UI 选择和数值调整 |
+
+### 阶段 2: 音频系统
+
+> 目标：从无声变有声，达到可发布最低标准
+
+| ID | 任务 | 优先级 | 规模 | 说明 |
+|----|------|--------|------|------|
+| S2-1 | 建立音频管理器框架 | P0 | M | AudioManager autoload，支持 BGM 切换、SFX 播放、音量控制 |
+| S2-2 | 制作/采购 BGM | P0 | L | 最少 6 首：主菜单、行军、政治、战斗、胜利、失败；目标 AI 生成(AIVA/Suno) + 人工筛选 |
+| S2-3 | 制作/采购 SFX | P1 | M | 最少：按钮点击、回合推进、战斗结算、事件弹窗、存档、成就；可用免费素材库 |
+| S2-4 | Rouge/Noir 音乐动态切换 | P2 | M | 根据政治指针在暖色调/冷色调 BGM 间渐变 |
+
+### 阶段 3: 视觉资产与 UI 主题
+
+> 目标：脱离 Godot 默认外观，建立产品视觉身份
+
+| ID | 任务 | 优先级 | 规模 | 说明 |
+|----|------|--------|------|------|
+| S3-1 | 自定义 UI 主题 | P0 | L | 按产品计划的帝国新古典调色板，替换按钮/面板/字体/进度条主题 |
+| S3-2 | 17 张角色肖像 | P0 | L | AI 生成 + 手工修正，David 新古典肖像画风格，深色背景侧光 |
+| S3-3 | 地图底图美术 | P0 | L | 法国 + 比利时区域底图（深色基调地形图），节点标记用金色菱形 |
+| S3-4 | 行军路线与军队可视化 | P1 | M | 金色虚线路径 + 简化军队图标，替换当前线框 |
+| S3-5 | 战斗结算视觉反馈 | P2 | M | 战斗结果弹窗增加简化动画/插图 |
+| S3-6 | 应用图标与 Steam 胶囊图 | P1 | S | Steam 商店页需要：主胶囊图、头图、截图 5-10 张 |
+
+### 阶段 4: 本地化与 Steam 集成
+
+> 目标：满足 Steam 提审和国际发售最低要求
+
+| ID | 任务 | 优先级 | 规模 | 说明 |
+|----|------|--------|------|------|
+| S4-1 | 引入 i18n 框架 | P0 | L | 使用 Godot 内置 `tr()` + CSV/PO，抽取所有硬编码中文字符串 |
+| S4-2 | 英文翻译 | P0 | XL | 全量 UI + 58-100 条事件 + 教程 + 结局文本，约 3-5 万字 |
+| S4-3 | Steamworks SDK 集成 | P0 | L | 使用 GodotSteam 插件，接入初始化、成就、云存档、Overlay |
+| S4-4 | 成就系统设计与实现 | P1 | M | 10-20 个成就：首次胜利、各结局达成、特定历史选择 |
+| S4-5 | Steam 商店页准备 | P1 | M | 商店描述(中/英)、标签、截图、预告片素材、年龄分级 |
+| S4-6 | 手柄支持验证 | P2 | M | Godot 原生支持手柄，需验证全流程可用性 |
+
+### 阶段 5: 发布打磨
+
+> 目标：提审前最终收口
+
+| ID | 任务 | 优先级 | 规模 | 说明 |
+|----|------|--------|------|------|
+| S5-1 | 设置系统补全 | P1 | M | 音频音量、难度、按键绑定、语言选择 |
+| S5-2 | Windows 发布构建链 | P0 | M | Godot export template + 签名 + 安装包测试 |
+| S5-3 | 全流程 QA 清单 | P0 | L | 从安装到通关全路径人工验收，覆盖所有结局 |
+| S5-4 | 性能优化 | P1 | M | 内存泄漏检查、大地图帧率、长局稳定性 |
+| S5-5 | 主菜单 `main_menu.gd` 继续拆分 | P2 | M | 当前文件偏大，按职责下沉到子控制器 |
+
+---
+
+## 推荐执行顺序
+
+```
+阶段 0 ──────► 阶段 1 ──────► 阶段 2 ──────► 阶段 3 ──────► 阶段 4 ──────► 阶段 5
+验证链稳定     核心循环+内容   音频系统       视觉资产       本地化+Steam    发布打磨
+(当前)        ↕ 可并行 ↕      ↕ 可并行 ↕
+              阶段 2          阶段 3
+```
+
+- 阶段 0 是一切的前提，必须持续维护
+- 阶段 1 是玩法核心，不达标则其他都无意义
+- 阶段 2 和 3 可以与阶段 1 并行推进（音频/美术不依赖代码逻辑）
+- 阶段 4 依赖阶段 1 的文本稳定后才能开始翻译
+- 阶段 5 是最终收口，依赖前四阶段基本完成
+
+---
+
+## 当前技术债
+
+- Rust 全局仍有约 `54` 处 `unwrap()` / `expect()` / `panic!()`，集中在 `events/pool.rs` 与 `engine/state.rs`。
+- `main_menu.gd` 和 `map_controller.gd` 仍偏大，后续还需要继续按职责下沉。
+- `tests/monte_carlo_balance.py` 与 Rust 核心基线已漂移，不应继续作为平衡主依据。
+- 多槽存档 UI 已接入并补齐覆盖确认与删除入口，但设置与更多失败恢复链路仍不完整。
+- 代码命名与注释风格仍不统一：存在旧中文测试函数名和"关键路径说明不足"的问题，需渐进治理。
+
+---
 
 ## Godot 部分怎么测试
 
-- 当前策略改成：`GdUnit4 + smoke + Windows 真机`，三层都要，不是只做 smoke。
-- Godot 前端测试建议按下面四层补齐：
-  1. `场景加载 smoke`
-     - 目标：场景能打开，关键节点路径存在，脚本不会在 `_ready()` 直接报错
-  2. `主流程 smoke`
-     - 目标：`新局 / 执行行动 / 次日 / 存档 / 读档 / 地图选点` 这些用户真实路径可重复执行
-  3. `GdUnit4` 契约与状态流测试
-     - 目标：验证 hover、click 锁定、地图缩放、弹窗确认、失败恢复、按钮状态、面板同步
-  4. `Windows 真机清单`
-     - 目标：字体、中文换行、遮挡、滚动、面板边界、按钮可达性
-- `GdUnit4` 测试按职责拆分到四个文件：
-  - `main_menu_flow_test.gd` — 初始化、核心行动流、行军、政策冷却、多日连续行动（11 tests）
-  - `save_load_flow_test.gd` — 存读档槽位、覆盖/删除、新局、读档取消、地图锁定清理（13 tests）
-  - `dialog_flow_test.gd` — 设置、战斗/接见弹窗、失败恢复、成功推进、结局弹窗（15 tests）
+- 当前策略：`GdUnit4 + smoke + Windows 真机`，三层都要。
+- Godot 前端测试按四层补齐：
+  1. `场景加载 smoke` — 场景能打开，关键节点存在，`_ready()` 不报错
+  2. `主流程 smoke` — 新局/执行行动/次日/存档/读档/地图选点可重复执行
+  3. `GdUnit4 契约与状态流测试` — hover、click 锁定、缩放、弹窗确认、失败恢复
+  4. `Windows 真机清单` — 字体、中文换行、遮挡、滚动、面板边界
+- `GdUnit4` 测试按职责拆分到五个文件（共 50 tests）：
+  - `main_menu_flow_test.gd` — 初始化、核心行动流、行军（11 tests）
+  - `save_load_flow_test.gd` — 存读档槽位、覆盖/删除、新局（13 tests）
+  - `dialog_flow_test.gd` — 设置、战斗/接见弹窗、失败恢复、结局（15 tests）
   - `map_controller_contract_test.gd` — 地图交互边界（8 tests）
-  - `settings_manager_test.gd` — 设置管理器单元测试（3 tests）
-- 现阶段仍不建议直接做像素级截图对比。布局和视觉问题继续交给 Windows 真机验收。
-- 真正适合优先单元化的 Godot 侧对象，主要是：
-  - formatter
-  - 纯数据映射
-  - 不依赖场景树的轻量控制器辅助函数
+  - `settings_manager_test.gd` — 设置管理器（3 tests）
 
 ## 默认验证方式
 
-- 自动工作流开启时，不运行 Linux / WSL 侧测试，包括 Linux `cargo test`、Linux Godot 无头和任何 WSL 侧补位验证。
+- 自动工作流开启时，不运行 Linux / WSL 侧测试。
 - 本地默认保留最小 Windows 验证：
   - Rust 改动：Windows `cargo test`
   - Rust + GDExt API 改动：Windows `cargo build --features godot-extension`
   - GDScript / 场景 / UI 改动：Windows Godot `--headless --editor --quit` + Windows `GdUnit4` + Windows Godot 无头 + 必要的 Windows GUI 冒烟
-- 昂贵测试优先逐步迁到 GitHub Actions 的 Windows runner：
-  - Rust 集成测试
-  - Rust 属性测试
-  - Godot `GdUnit4`
-  - Godot smoke
-  - 关键流程回归
+- 昂贵测试优先迁到 GitHub Actions 的 Windows runner。
 - 默认 Windows 无头命令：
 
 ```bash
 E:\software\godot\Godot_v4.6.1-stable_win64_console.exe --headless --path E:\projects\CentJours --quit
-```
-
-- `GdUnit4` 前置缓存刷新命令：
-
-```bash
-E:\software\godot\Godot_v4.6.1-stable_win64_console.exe --headless --editor --path E:\projects\CentJours --quit
 ```
 
 - `GdUnit4` 默认命令：
@@ -136,64 +181,22 @@ cd /d E:\projects\CentJours
 tools\run_gdunit_windows.cmd E:\software\godot\Godot_v4.6.1-stable_win64_console.exe res://tests/godot
 ```
 
-- 若本轮没有完成对应的 Windows 验证，就明确记录“未验证”；不要用 Linux / WSL 结果补位。
+- 若本轮没有完成对应的 Windows 验证，就明确记录"未验证"。
 
-## 当前阻塞与风险
-
-- `Windows CI 仍需继续收口`：`windows-validation` 已切到白名单触发，但还要继续观察真实排队占用和失败分布，确认 Windows runner 负载确实下降。
-- `主菜单状态流仍脆弱`：存读档标签格式化、modal 托盘锁定、覆盖确认和删除入口已修，设置链路、行动提交、地图 hover / 锁定和面板同步仍是高风险区。
-- `内容线仍未收口`：事件量、教学链、失败归因和最终资产都还不够完整。
-
-## 当前技术债
-
-- Rust 全局仍有约 `54` 处 `unwrap()` / `expect()` / `panic!()`，集中在 `events/pool.rs` 与 `engine/state.rs`。
-- `main_menu.gd` 和 `map_controller.gd` 仍偏大，后续还需要继续按职责下沉。
-- `tests/monte_carlo_balance.py` 与 Rust 核心基线已漂移，不应继续作为平衡主依据。
-- 多槽存档 UI 已接入并补齐覆盖确认与删除入口，但设置与更多失败恢复链路仍不完整。
-- 代码命名与注释风格仍不统一：存在旧中文测试函数名和“关键路径说明不足”的问题，需渐进治理，而不是一次性大扫除。
+---
 
 ## 测试现状概览
 
-- Rust 当前自动化包含模块内单元测试、`cent-jours-core/tests/` 集成测试和 `proptest` 属性测试，最近一次 Windows 基线合计 `211` tests。
-- Godot 前端当前已有 `GdUnit4` `50/50` 回归，已覆盖主菜单初始化、执行行动、存读档槽位、槽位标签文案、覆盖确认、删除入口、覆盖/删除确认取消后返回槽位选择框、读档取消、新局确认/取消、存档槽位取消恢复、设置弹窗打开/取消/读取已保存值/应用持久化、叙事面板、区域任务显示、战斗弹窗取消/成功推进、战斗提交失败恢复、接见禁用态/取消/成功推进、接见提交失败恢复、休整行动推进、政策冷却验证、连续两日行动状态一致性、结局弹窗显示/重开/天数截断，地图 hover/锁定详情同锚点、滚动护栏、缩放、锁定后忽略他处 hover、重复点击取消锁定、空白画布清空交互与右键缩放复位保持锁定，以及行军无目标提示、不可达目标拒绝反馈、合法目标确认推进天数与位置更新、切换政策清空 pending target；另保留 `src/dev/engine_smoke_test_scene.tscn` smoke 入口。
-- `EventBus` 的 `unused_signal` 噪音已在文件级精准屏蔽，当前 `GdUnit4` / CI 输出更适合直接定位真实 failure。
-- 仓库里现在已有 `.github/workflows/windows-validation.yml` 和 `tools/run_gdunit_windows.cmd`，Windows CI 与本地执行入口已经落地。
+- Rust 自动化包含模块内单元测试、`cent-jours-core/tests/` 集成测试和 `proptest` 属性测试，Windows 基线合计 `211` tests。
+- Godot 前端 `GdUnit4` `50/50` 回归，覆盖主菜单初始化、行动执行、存读档、设置、战斗/接见/休整、政策冷却、地图交互等核心路径。
+- `EventBus` 的 `unused_signal` 噪音已精准屏蔽。
+- `.github/workflows/windows-validation.yml` 和 `tools/run_gdunit_windows.cmd` 已落地。
+
+---
 
 ## 文档边界
 
-- 本文档只保留当前技术基线、当前优先级、当前验证方式、当前技术债和当前三轮计划。
+- 本文档只保留当前技术基线、Steam 上线任务优先级、当前验证方式、当前技术债。
 - 当前状态与接手约束统一写入 [docs/history/agent_handoff.md](/mnt/e/projects/CentJours/docs/history/agent_handoff.md)。
 - 多轮开发历史统一写入 [docs/history/development_logs/](/mnt/e/projects/CentJours/docs/history/development_logs/)。
 - 产品里程碑与对外版本状态统一写入 [docs/plans/product_plan.md](/mnt/e/projects/CentJours/docs/plans/product_plan.md)。
-
-<!--
-旧三轮计划归档：
-
-第 1 轮: 主菜单与地图交互稳定化
-- 目标:
-  - 清掉 hover / 锁定详情遮挡与跳位
-  - 修掉存读档入口报错
-  - 给长文本面板补固定边界和内部滚动
-  - 收口“执行行动 -> 次日”的语义
-- 当前状态:
-  - 已完成
-
-第 2 轮: 入口验证与场景契约硬化
-- 目标:
-  - 给存档 / 读档 / 新局 / 行动确认 / 地图选点补真实交互验证清单
-  - 给关键 UI 入口补最小可复现 smoke 脚本或检查表
-  - 补“提交失败后恢复交互”的统一护栏
-- 验收:
-  - Windows headless 主项目
-  - Windows smoke scene
-  - 至少一次 Windows GUI 启动冒烟
-
-第 3 轮: 主菜单耦合继续下沉
-- 目标:
-  - 继续把 `main_menu.gd` 中的弹窗、顶栏入口、地图态同步拆到更清晰的职责边界
-  - 避免后续 bug fix 再落回“大文件里顺手混改”
-  - 给多槽存档补更完整的元信息与删除/覆盖细节
-- 边界:
-  - 只做定向重构
-  - 不做脱离 bug / 入口稳定化目标的大重写
--->
