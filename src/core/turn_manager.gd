@@ -1,5 +1,5 @@
 ## TurnManager — 回合流程控制器（v2，接入 CentJoursEngine）
-## 管理 Dawn → Action → Dusk 三段式回合结构
+## 管理晨间 → 行动 → 黄昏 三段式回合结构
 ## 所有游戏逻辑通过 CentJoursEngine（Rust GDExtension）执行
 ## GDScript 层只负责驱动 UI 信号
 
@@ -28,11 +28,12 @@ func _ready() -> void:
 
 func start_new_turn() -> void:
 	_ensure_engine()
+	engine.begin_day()
 	var day := engine.current_day()
 	EventBus.turn_started.emit(day)
 	_run_dawn_phase()
 
-## Dawn Phase：同步状态、显示情报、通知 UI 等待玩家确认
+## 晨间阶段：同步状态、显示情报、通知 UI 等待玩家确认
 func _run_dawn_phase() -> void:
 	current_phase = Phase.DAWN
 	GameState.current_phase = PHASE_NAMES[Phase.DAWN]
@@ -43,7 +44,7 @@ func _run_dawn_phase() -> void:
 
 	# UI 调用 begin_action_phase() 后进入下一段
 
-## Action Phase：等待玩家做出决策
+## 行动阶段：等待玩家做出决策
 func begin_action_phase() -> void:
 	current_phase = Phase.ACTION
 	GameState.current_phase = PHASE_NAMES[Phase.ACTION]
@@ -57,12 +58,20 @@ func begin_action_phase() -> void:
 ##   policy        → { policy_id(String) }
 ##   boost_loyalty → { general_id(String) }
 ##   rest          → {}
-## 返回 true 表示已接受提交并进入结算；false 表示当前阶段不允许提交。
+## 返回 true 表示已接受日内动作；false 表示当前阶段不允许提交。
 func submit_action(action_type: String, params: Dictionary = {}) -> bool:
 	if current_phase != Phase.ACTION:
-		push_warning("[TurnManager] 不在 Action Phase，无法提交行动")
+		push_warning("[TurnManager] 当前不在行动阶段，无法提交行动")
 		return false
-	_run_dusk_phase(action_type, params)
+	_run_action_step(action_type, params)
+	return true
+
+## 玩家结束今天：若未使用机动槽，引擎会自动按休整结算。
+func end_day() -> bool:
+	if current_phase != Phase.ACTION:
+		push_warning("[TurnManager] 当前不在行动阶段，无法结束今天")
+		return false
+	_run_day_end()
 	return true
 
 ## 只读预览一次普通行军，不修改真实状态。
@@ -130,43 +139,39 @@ func get_march_preview(target_node: String) -> Dictionary:
 		}
 	return Dictionary(engine.preview_march(target_node))
 
-## Dusk Phase：调用 Rust 引擎执行行动，同步结果，触发叙事
-func _run_dusk_phase(action_type: String, params: Dictionary) -> void:
+## 在当前日内执行一次动作，不推进日期。
+func _run_action_step(action_type: String, params: Dictionary) -> void:
 	_ensure_engine()
-	current_phase = Phase.DUSK
-	GameState.current_phase = PHASE_NAMES[Phase.DUSK]
-	EventBus.phase_changed.emit("dusk")
+	current_phase = Phase.ACTION
+	GameState.current_phase = PHASE_NAMES[Phase.ACTION]
 	var previous_location: String = GameState.napoleon_location
 	var previous_victories: int = GameState.victories
 	# GameState 当前只缓存胜场，不缓存败场；败场归因需通过引擎状态回读。
 	var previous_defeats: int = int(engine.get_state().get("defeats", 0))
 
-	# ── 调用 Rust 引擎处理完整一天 ──────────────────────
+	# ── 调用 Rust 引擎处理当前日内动作 ──────────────────
 	match action_type:
 		"battle":
-			engine.process_day_battle(
+			engine.execute_day_battle(
 				params.get("general_id", ""),
 				int(params.get("troops", 0)),
 				params.get("terrain", "plains")
 			)
 		"march":
 			var target_node: String = params.get("target_node", "")
-			engine.process_day_march(target_node)
+			engine.execute_day_march(target_node)
 		"policy":
 			var policy_id: String = params.get("policy_id", "")
-			engine.process_day_policy(policy_id)
+			engine.execute_day_policy(policy_id)
 		"boost_loyalty":
-			engine.process_day_boost_loyalty(params.get("general_id", ""))
+			engine.execute_day_boost_loyalty(params.get("general_id", ""))
 		_:  # "rest" 及未知类型
-			engine.process_day_rest()
+			engine.execute_day_rest()
 
 	# ── 同步状态 ─────────────────────────────────────
 	_sync_state_from_engine()
 	# ── 记录关键决策（失败归因用） ───────────────────
 	_record_key_decision(action_type, params, previous_location, previous_victories)
-	# 历史事件已在 process_day() 的 Dawn 阶段生效；这里立刻转发给 UI，
-	# 避免玩家要等到下一回合才看到事件正文和史注。
-	_emit_new_triggered_events()
 	_emit_last_action_events()
 	if action_type == "march" and previous_location != GameState.napoleon_location:
 		EventBus.unit_moved.emit("napoleon_main_force", previous_location, GameState.napoleon_location)
@@ -201,7 +206,21 @@ func _run_dusk_phase(action_type: String, params: Dictionary) -> void:
 		var state := engine.get_state()
 		EventBus.game_over.emit(state.get("outcome", "unknown"))
 		return
+	EventBus.phase_changed.emit("action")
 
+## 黄昏阶段：结束今天，推进到下一天。
+func _run_day_end() -> void:
+	_ensure_engine()
+	current_phase = Phase.DUSK
+	GameState.current_phase = PHASE_NAMES[Phase.DUSK]
+	EventBus.phase_changed.emit("dusk")
+	engine.end_day()
+	_sync_state_from_engine()
+	_emit_last_action_events()
+	if engine.is_over():
+		var state := engine.get_state()
+		EventBus.game_over.emit(state.get("outcome", "unknown"))
+		return
 	GameState.current_day = engine.current_day()
 	EventBus.turn_ended.emit(GameState.current_day)
 
@@ -282,6 +301,8 @@ func _sync_state_from_engine() -> void:
 	GameState.avg_fatigue      = float(state.get("fatigue", 20.0))
 	GameState.supply           = float(state.get("supply", GameState.supply))
 	GameState.victories        = int(state.get("victories", 0))
+	GameState.actions_remaining = int(state.get("actions_remaining", GameState.actions_remaining))
+	GameState.maneuver_available = bool(state.get("maneuver_available", true))
 	GameState.difficulty       = String(state.get("difficulty", GameState.difficulty))
 	GameState.napoleon_location = String(state.get("napoleon_location", GameState.napoleon_location))
 	GameState.forward_depot_location = String(state.get("forward_depot_location", ""))

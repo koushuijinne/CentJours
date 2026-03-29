@@ -19,7 +19,7 @@ fn 存档往返会保留前沿粮秣站与区域任务字段() {
     );
 
     let saved = engine.save();
-    assert_eq!(saved.version, 3, "当前存档版本应为 v3");
+    assert_eq!(saved.version, 4, "当前存档版本应为 v4");
     assert_eq!(saved.forward_depot_location, "golfe_juan");
     assert!(saved.forward_depot_capacity_bonus > 0);
 
@@ -44,6 +44,12 @@ fn 存档往返会保留前沿粮秣站与区域任务字段() {
         restored_saved.regional_task_completed,
         saved.regional_task_completed
     );
+    assert_eq!(restored_saved.day_started, saved.day_started);
+    assert_eq!(
+        restored_saved.decision_actions_start,
+        saved.decision_actions_start
+    );
+    assert_eq!(restored_saved.maneuver_used, saved.maneuver_used);
 }
 
 #[test]

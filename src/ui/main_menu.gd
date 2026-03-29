@@ -64,7 +64,9 @@ const TopbarActionsControllerScript = preload("res://src/ui/main_menu/topbar_act
 @onready var _decision_row: HBoxContainer = $RootLayout/MainArea/LeftColumn/DecisionTray/TrayMargin/TrayContent/DecisionScroll/DecisionScrollContent/DecisionRow
 
 var _confirm_button: Button       # 执行行动确认按钮（动态创建）
-var _awaiting_action: bool = false  # 是否处于等待玩家操作的 Action Phase
+var _end_day_button: Button       # 结束今天并推进到次日
+var _awaiting_action: bool = false  # 是否处于等待玩家操作的行动阶段
+var _last_tutorial_popup_day_shown: int = 0
 # 上回合数值快照，用于派系趋势箭头和数值变化动效
 var _prev_faction_support: Dictionary = {}
 var _prev_legitimacy: float = 50.0
@@ -101,6 +103,8 @@ func _ready() -> void:
 	})
 	_topbar_actions.load_and_apply_user_settings(get_window())
 	_topbar_actions.new_game_confirmed.connect(_on_new_game_flow)
+	_topbar_actions.strategy_goals_requested.connect(_show_strategy_goals_popup)
+	_topbar_actions.narrative_log_requested.connect(_show_narrative_log_popup)
 	_dialogs_controller.difficulty_selected.connect(_on_difficulty_selected)
 	_topbar_actions.settings_applied.connect(func(_s): call_deferred("_apply_responsive_layout"))
 	_configure_layout_controller()
@@ -212,8 +216,8 @@ func _configure_sidebar_controller() -> void:
 
 func _configure_tray_controller() -> void:
 	_tray_controller.bind_nodes(_decision_row, _tray_hint, _confirm_button)
-	_tray_controller.set_tray_hint_texts("选择一项政策或直接休整", "正在结算并进入次日…")
-	_tray_controller.set_confirm_button_text("执行今日行动 → 次日")
+	_tray_controller.set_tray_hint_texts("选择一项动作或政策。", "正在结束今天…")
+	_tray_controller.set_confirm_button_text("执行当前动作")
 	if not _tray_controller.policy_selected.is_connected(_on_policy_selected):
 		_tray_controller.policy_selected.connect(_on_policy_selected)
 	if not _tray_controller.confirm_requested.is_connected(_on_confirm_requested):
@@ -247,7 +251,7 @@ func _build_rn_overlay() -> void:
 ## 游戏开始时初始化叙事面板占位文本
 func _init_narrative_panel() -> void:
 	_sidebar_controller.reset_narrative(
-		"Jour 1 · 厄尔巴岛出发\n\n选择行动，历史将在此处展开。",
+		"第 1 天 · 厄尔巴岛出发\n\n选择行动，历史将在此处展开。",
 		CentJoursTheme.COLOR["text_secondary"]
 	)
 
@@ -257,9 +261,16 @@ func _append_narrative(entry: String, color: Color) -> void:
 
 ## 在 TrayHeader 右侧动态创建"执行行动"确认按钮
 func _build_confirm_button() -> void:
-	_confirm_button = _tray_controller.create_confirm_button(_tray_header, "执行今日行动 → 次日")
+	_confirm_button = _tray_controller.create_confirm_button(_tray_header, "执行当前动作")
 	if _confirm_button != null:
 		_confirm_button.name = "ExecuteActionButton"
+	_end_day_button = Button.new()
+	_end_day_button.name = "EndDayButton"
+	_end_day_button.text = "结束今天 → 次日"
+	_end_day_button.size_flags_horizontal = Control.SIZE_SHRINK_END
+	_end_day_button.custom_minimum_size = Vector2(132, 28)
+	_end_day_button.pressed.connect(_on_end_day_pressed)
+	_tray_header.add_child(_end_day_button)
 
 
 
@@ -283,7 +294,7 @@ func _restart_game() -> void:
 	_refresh_ui()
 	_topbar_actions.refresh_save_load_buttons()
 
-## 引导第一回合：Dawn Phase 同步引擎真实状态，然后进入 Action Phase 等待玩家
+## 引导第一回合：先同步晨间状态，再进入行动阶段等待玩家
 func _start_game() -> void:
 	TurnManager.start_new_turn()
 	TurnManager.begin_action_phase()
@@ -319,8 +330,12 @@ func _connect_signals() -> void:
 	_map_controller.march_feedback.connect(_on_march_feedback)
 
 func _refresh_ui() -> void:
-	_day_label.text = "Jour %d" % GameState.current_day
-	_phase_label.text = _phase_display_name(GameState.current_phase)
+	_day_label.text = "第 %d 天" % GameState.current_day
+	_phase_label.text = "%s · %s · 决策点 %d" % [
+		_phase_display_name(GameState.current_phase),
+		"机动可用" if GameState.maneuver_available else "机动已用",
+		GameState.actions_remaining
+	]
 	_legitimacy_value.text = "%.1f" % GameState.legitimacy
 	_legitimacy_bar.value = GameState.legitimacy
 	_troops_value.text = _format_number(GameState.total_troops)
@@ -336,6 +351,7 @@ func _refresh_ui() -> void:
 	_apply_rn_atmosphere()
 	_sync_tray_state()
 	_refresh_card_cooldowns()
+	_maybe_show_daily_tutorial_popup()
 	# 数值变化闪烁动效（对比上回合快照）
 	_flash_value_change(_legitimacy_value, GameState.legitimacy, _prev_legitimacy)
 	_flash_value_change(_troops_value, float(GameState.total_troops), float(_prev_troops))
@@ -402,12 +418,14 @@ func _apply_rn_atmosphere() -> void:
 
 func _sync_tray_state() -> void:
 	_tray_controller.set_tray_state(_tray_controller.get_selected_policy_id(), _awaiting_action)
+	if _end_day_button != null:
+		_end_day_button.disabled = not _awaiting_action
 	_sync_march_preview()
 
 func _refresh_logistics_guidance() -> void:
 	var hint_text := _build_tutorial_hint_text()
 	if hint_text.strip_edges() == "":
-		hint_text = "选择一项政策或直接休整"
+		hint_text = "先决定今天的机动，再安排剩余决策点。"
 		if GameState.logistics_regional_pressure_short.strip_edges() != "":
 			hint_text = GameState.logistics_regional_pressure_short
 		elif GameState.logistics_route_chain_short.strip_edges() != "":
@@ -421,7 +439,11 @@ func _refresh_logistics_guidance() -> void:
 		elif GameState.logistics_focus_short.strip_edges() != "":
 			hint_text = GameState.logistics_focus_short
 	var map_subtitle_text := _build_map_context_subtitle(hint_text)
-	_tray_controller.set_tray_hint_texts(hint_text, "正在结算并进入次日…")
+	var budget_text := "今日节奏：%s，剩余决策点 %d。" % [
+		"机动仍可执行" if GameState.maneuver_available else "机动已执行",
+		GameState.actions_remaining
+	]
+	_tray_controller.set_tray_hint_texts("%s\n%s" % [budget_text, hint_text], "正在结束今天…")
 	_map_controller.set_context_subtitle(map_subtitle_text)
 
 func _build_map_context_subtitle(hint_text: String) -> String:
@@ -473,7 +495,7 @@ func _on_confirm_requested(_policy_id: String) -> void:
 	_on_confirm_pressed()
 
 func _on_policy_selected(policy_id: String) -> void:
-	# 仅在 Action Phase 允许切换选中政策
+	# 仅在行动阶段允许切换选中政策
 	if not _awaiting_action:
 		return
 	# 切换政策时清除行军交互状态
@@ -493,6 +515,9 @@ func _on_confirm_pressed() -> void:
 	if not _awaiting_action:
 		return
 	var selected_policy_id := _tray_controller.get_selected_policy_id()
+	if selected_policy_id == "":
+		_show_tutorial_popup("先选动作再执行", "请先在下方选择一个机动动作或政策；如果今天已经安排完毕，直接点击“结束今天 → 次日”。")
+		return
 	# 行军模式由 map_controller 的状态机处理
 	if selected_policy_id == "march":
 		_map_controller.try_confirm_march()
@@ -504,17 +529,22 @@ func _on_confirm_pressed() -> void:
 	if selected_policy_id == "boost_loyalty":
 		_show_boost_popup()
 		return
-	_set_tray_interactive(false)
-	# "rest" policy_id 和空选均映射到 rest 行动（ADR-004）
+	# "rest" 仍视为当前日的一次机动动作，但不会立即推进到次日。
 	var submitted := false
-	if selected_policy_id != "" and selected_policy_id != "rest":
+	if selected_policy_id != "rest":
 		submitted = TurnManager.submit_action("policy", {"policy_id": selected_policy_id})
 	else:
 		submitted = TurnManager.submit_action("rest", {})
 	if not submitted:
-		_set_tray_interactive(true)
 		return
 	_clear_tray_selection()
+
+func _on_end_day_pressed() -> void:
+	if not _awaiting_action:
+		return
+	_set_tray_interactive(false)
+	if not TurnManager.end_day():
+		_set_tray_interactive(true)
 
 ## 从 GameState.policy_cooldowns 刷新所有卡片的冷却状态（Rust 引擎权威数据）
 ## 跳过 rest/battle/boost_loyalty（它们不属于政策冷却系统）
@@ -542,9 +572,73 @@ func _begin_next_turn() -> void:
 	TurnManager.start_new_turn()
 	TurnManager.begin_action_phase()
 
+
+func _maybe_show_daily_tutorial_popup() -> void:
+	if GameState.current_day > 10:
+		return
+	if GameState.current_phase != "action":
+		return
+	if _last_tutorial_popup_day_shown == GameState.current_day:
+		return
+	var tutorial_text := _build_tutorial_hint_text().strip_edges()
+	if tutorial_text == "":
+		return
+	_last_tutorial_popup_day_shown = GameState.current_day
+	_show_tutorial_popup("前 10 天教程", tutorial_text)
+
+
+func _show_tutorial_popup(title: String, body: String) -> void:
+	_dialogs_controller.show_info_popup("TutorialPopup", title, body)
+
+
+func _show_strategy_goals_popup() -> void:
+	_dialogs_controller.show_info_popup(
+		"StrategyGoalsPopup",
+		"结局与战略目标",
+		_build_strategy_goals_overview()
+	)
+
+
+func _show_narrative_log_popup() -> void:
+	var body := _narrative_body.text.strip_edges()
+	if body == "":
+		body = "当前还没有可回看的日志。"
+	_dialogs_controller.show_info_popup("NarrativeLogPopup", "日志回看", body)
+
+
+func _build_strategy_goals_overview() -> String:
+	var lines: Array[String] = []
+	lines.append("当前局势")
+	lines.append("第 %d 天 · 合法性 %.1f · 胜场 %d · 补给 %.0f" % [
+		GameState.current_day,
+		GameState.legitimacy,
+		GameState.victories,
+		GameState.supply
+	])
+	lines.append("")
+	lines.append("可达成结局")
+	for outcome_id in [
+		"napoleon_victory",
+		"diplomatic_settlement",
+		"military_dominance",
+		"waterloo_historical",
+		"waterloo_defeat",
+		"political_collapse",
+		"military_annihilation"
+	]:
+		var info: Dictionary = MainMenuConfigData.OUTCOME_TEXT.get(outcome_id, {})
+		if info.is_empty():
+			continue
+		lines.append("• %s" % String(info.get("title", outcome_id)))
+		lines.append(String(info.get("review_hint", "暂无说明。")))
+		lines.append("")
+	lines.append("当前建议")
+	lines.append("优先同时考虑机动节奏、合法性、补给和胜场，不要只盯一项数值。")
+	return "\n".join(lines)
+
 ## TODO(history): 当前标题仍是原型期的 Stendhal 文案，后续要改成 Bertrand diary 的展示口径。
 func _on_stendhal_entry(day: int, text: String) -> void:
-	_append_narrative("Jour %d — Stendhal\n%s" % [day, text], CentJoursTheme.COLOR["gold_dim"])
+	_append_narrative("第 %d 天 — Stendhal\n%s" % [day, text], CentJoursTheme.COLOR["gold_dim"])
 
 ## 行动后果微叙事：进入滚动日志（ADR-004）
 func _on_micro_narrative(action_type: String, consequence: String) -> void:
@@ -576,9 +670,7 @@ func _submit_modal_action(action_name: String, payload: Dictionary) -> bool:
 
 ## map_controller 行军确认回调：向 TurnManager 提交行军行动
 func _on_march_confirmed(target_node: String) -> void:
-	_set_tray_interactive(false)
 	if not TurnManager.submit_action("march", {"target_node": target_node}):
-		_set_tray_interactive(true)
 		return
 	_clear_tray_selection()
 
@@ -602,10 +694,9 @@ func _on_loyalty_changed(_character_id: String, _old_value: float, _new_value: f
 
 ## 历史事件到达时，直接写入叙事日志，让正文和史注在同一时间出现。
 func _on_history_changed(event_id: String, event_data: Dictionary) -> void:
-	_append_narrative(
-		_sidebar_controller.build_historical_event_entry(event_id, event_data),
-		CentJoursTheme.COLOR["gold"]
-	)
+	var entry := _sidebar_controller.build_historical_event_entry(event_id, event_data)
+	_append_narrative(entry, CentJoursTheme.COLOR["gold"])
+	_dialogs_controller.show_info_popup("HistoricalEventPopup", String(event_data.get("label", "历史事件")), entry)
 	_refresh_ui()
 
 func _action_resolution_color(event_type: String) -> Color:

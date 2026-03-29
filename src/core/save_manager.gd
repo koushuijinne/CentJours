@@ -8,8 +8,8 @@ extends RefCounted
 const LEGACY_SAVE_PATH := "user://cent_jours_save.json"
 const SAVE_DIR := "user://saves"
 const SLOT_COUNT := 3
-# Save v3 之后，多槽 UI、事件迁移和前沿粮秣站状态都依赖统一版本口径。
-const SAVE_VERSION := 3
+# Save v4 之后，日内行动进度（已开局 / 机动槽 / 决策点起始值）也进入统一版本口径。
+const SAVE_VERSION := 4
 
 ## 存档：序列化引擎状态并写入磁盘
 ## 返回 true 表示写入成功
@@ -143,7 +143,7 @@ static func _is_valid_slot(slot_id: int) -> bool:
 static func _slot_label(slot_id: int, meta: Dictionary) -> String:
 	if meta.is_empty():
 		return "槽位 %d · 空" % slot_id
-	return "槽位 %d · Day %d · %s" % [
+	return "槽位 %d · 第 %d 天 · %s" % [
 		slot_id,
 		int(meta.get("day", 0)),
 		_outcome_label(_normalize_outcome(meta.get("outcome", "in_progress")))

@@ -11,9 +11,13 @@ signal save_completed(slot_id: int, success: bool)
 signal load_completed(slot_id: int, success: bool)
 signal new_game_confirmed
 signal settings_applied(settings: Dictionary)
+signal strategy_goals_requested
+signal narrative_log_requested
 
 var _host: Node = null
 var _top_bar_row: HBoxContainer = null
+var _strategy_btn: Button = null
+var _log_btn: Button = null
 var _settings_btn: Button = null
 var _new_game_btn: Button = null
 var _save_btn: Button = null
@@ -56,6 +60,20 @@ func load_and_apply_user_settings(window: Window) -> Dictionary:
 
 
 func build_topbar_buttons() -> Dictionary:
+	var strategy_btn := Button.new()
+	strategy_btn.name = "StrategyGoalsButton"
+	strategy_btn.text = "结局"
+	strategy_btn.custom_minimum_size = Vector2(60, 0)
+	strategy_btn.pressed.connect(func(): strategy_goals_requested.emit())
+	_top_bar_row.add_child(strategy_btn)
+
+	var log_btn := Button.new()
+	log_btn.name = "NarrativeLogButton"
+	log_btn.text = "日志"
+	log_btn.custom_minimum_size = Vector2(60, 0)
+	log_btn.pressed.connect(func(): narrative_log_requested.emit())
+	_top_bar_row.add_child(log_btn)
+
 	var settings_btn := Button.new()
 	settings_btn.name = "SettingsButton"
 	settings_btn.text = "设置"
@@ -84,6 +102,8 @@ func build_topbar_buttons() -> Dictionary:
 	load_btn.pressed.connect(_on_load_pressed)
 	_top_bar_row.add_child(load_btn)
 
+	_strategy_btn = strategy_btn
+	_log_btn = log_btn
 	_settings_btn = settings_btn
 	_new_game_btn = new_game_btn
 	_save_btn = save_btn
@@ -92,6 +112,8 @@ func build_topbar_buttons() -> Dictionary:
 
 	return {
 		"settings_btn": settings_btn,
+		"strategy_btn": strategy_btn,
+		"log_btn": log_btn,
 		"new_game_btn": new_game_btn,
 		"save_btn": save_btn,
 		"load_btn": load_btn,
@@ -430,7 +452,7 @@ func _slot_meta_summary(slot_id: int) -> String:
 	var meta := SaveManager.get_save_meta(slot_id)
 	if meta.is_empty():
 		return "空槽位"
-	return "Day %d · %s" % [
+	return "第 %d 天 · %s" % [
 		int(meta.get("day", 0)),
 		SaveManager._outcome_label(SaveManager._normalize_outcome(meta.get("outcome", "in_progress")))
 	]

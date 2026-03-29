@@ -19,6 +19,7 @@ func after_test() -> void:
 func test_save_then_load_restores_day_one() -> void:
 	var runner := await _load_main_menu()
 	var scene := runner.scene()
+	var tray_controller = runner.get_property("_tray_controller")
 	var execute_button := scene.find_child("ExecuteActionButton", true, false) as Button
 	var load_button := scene.find_child("LoadGameButton", true, false) as Button
 	assert_object(execute_button).is_not_null()
@@ -29,22 +30,21 @@ func test_save_then_load_restores_day_one() -> void:
 	assert_bool(load_button.disabled).is_false()
 	assert_bool(execute_button.disabled).is_false()
 
-	runner.invoke("_on_confirm_pressed")
-	await runner.simulate_frames(8)
+	await _advance_one_day(scene, runner, tray_controller)
 	assert_int(GameState.current_day).is_equal(2)
 
 	await _confirm_load_slot(scene, runner, 1)
 
 	assert_int(GameState.current_day).is_equal(1)
 	assert_str(GameState.current_phase).is_equal("action")
-	assert_str((scene.find_child("DayLabel", true, false) as Label).text).is_equal("Jour 1")
+	assert_str((scene.find_child("DayLabel", true, false) as Label).text).is_equal("第 1 天")
 
 
 func test_load_slot_picker_reflects_slot_availability() -> void:
 	var runner := await _load_main_menu()
 	var scene := runner.scene()
 
-	var empty_popup := await _open_load_picker(scene)
+	var empty_popup := await _open_load_picker(scene, runner)
 	assert_object(empty_popup).is_not_null()
 	assert_bool((empty_popup.find_child("LoadSlotButton1", true, false) as Button).disabled).is_true()
 	assert_bool((empty_popup.find_child("LoadSlotButton2", true, false) as Button).disabled).is_true()
@@ -55,7 +55,7 @@ func test_load_slot_picker_reflects_slot_availability() -> void:
 	await _save_to_slot(scene, runner, 2)
 	assert_bool(SaveManager.has_save(2)).is_true()
 
-	var load_popup := await _open_load_picker(scene)
+	var load_popup := await _open_load_picker(scene, runner)
 	assert_object(load_popup).is_not_null()
 	assert_bool((load_popup.find_child("LoadSlotButton1", true, false) as Button).disabled).is_true()
 	assert_bool((load_popup.find_child("LoadSlotButton2", true, false) as Button).disabled).is_false()
@@ -67,11 +67,11 @@ func test_save_slot_labels_show_readable_outcome_text() -> void:
 	var scene := runner.scene()
 
 	await _save_to_slot(scene, runner, 2)
-	var load_popup := await _open_load_picker(scene)
+	var load_popup := await _open_load_picker(scene, runner)
 	var slot_button := load_popup.find_child("LoadSlotButton2", true, false) as Button
 	assert_object(load_popup).is_not_null()
 	assert_object(slot_button).is_not_null()
-	assert_str(slot_button.text).contains("Day 1")
+	assert_str(slot_button.text).contains("第 1 天")
 	assert_str(slot_button.text).contains("进行中")
 	assert_bool(slot_button.text.contains("in_progress")).is_false()
 
@@ -79,14 +79,14 @@ func test_save_slot_labels_show_readable_outcome_text() -> void:
 func test_existing_save_slot_requires_overwrite_confirmation() -> void:
 	var runner := await _load_main_menu()
 	var scene := runner.scene()
+	var tray_controller = runner.get_property("_tray_controller")
 	var execute_button := scene.find_child("ExecuteActionButton", true, false) as Button
 
 	await _save_to_slot(scene, runner, 1)
-	runner.invoke("_on_confirm_pressed")
-	await runner.simulate_frames(8)
+	await _advance_one_day(scene, runner, tray_controller)
 	assert_int(GameState.current_day).is_equal(2)
 
-	var save_popup := await _open_save_picker(scene)
+	var save_popup := await _open_save_picker(scene, runner)
 	var overwrite_button := scene.find_child("SaveSlotButton1", true, false) as Button
 	assert_object(save_popup).is_not_null()
 	assert_object(overwrite_button).is_not_null()
@@ -118,7 +118,7 @@ func test_delete_save_from_load_picker_removes_slot() -> void:
 	assert_bool(SaveManager.has_save(1)).is_true()
 	assert_bool(load_button.disabled).is_false()
 
-	var load_popup := await _open_load_picker(scene)
+	var load_popup := await _open_load_picker(scene, runner)
 	var delete_button := scene.find_child("LoadDeleteSlotButton1", true, false) as Button
 	assert_object(load_popup).is_not_null()
 	assert_object(delete_button).is_not_null()
@@ -148,7 +148,7 @@ func test_delete_save_from_save_picker_removes_slot() -> void:
 	assert_bool(SaveManager.has_save(1)).is_true()
 	assert_bool(load_button.disabled).is_false()
 
-	var save_popup := await _open_save_picker(scene)
+	var save_popup := await _open_save_picker(scene, runner)
 	var delete_button := scene.find_child("SaveDeleteSlotButton1", true, false) as Button
 	assert_object(save_popup).is_not_null()
 	assert_object(delete_button).is_not_null()
@@ -174,7 +174,7 @@ func test_save_overwrite_cancel_keeps_picker_open() -> void:
 	var execute_button := scene.find_child("ExecuteActionButton", true, false) as Button
 
 	await _save_to_slot(scene, runner, 1)
-	await _open_save_picker(scene)
+	await _open_save_picker(scene, runner)
 
 	var overwrite_button := scene.find_child("SaveSlotButton1", true, false) as Button
 	assert_object(overwrite_button).is_not_null()
@@ -200,7 +200,7 @@ func test_delete_save_cancel_keeps_load_picker_open() -> void:
 	var execute_button := scene.find_child("ExecuteActionButton", true, false) as Button
 
 	await _save_to_slot(scene, runner, 1)
-	await _open_load_picker(scene)
+	await _open_load_picker(scene, runner)
 
 	var delete_button := scene.find_child("LoadDeleteSlotButton1", true, false) as Button
 	assert_object(delete_button).is_not_null()
@@ -223,12 +223,12 @@ func test_delete_save_cancel_keeps_load_picker_open() -> void:
 func test_new_game_dialog_restarts_after_confirmation_and_difficulty_choice() -> void:
 	var runner := await _load_main_menu()
 	var scene := runner.scene()
+	var tray_controller = runner.get_property("_tray_controller")
 
-	runner.invoke("_on_confirm_pressed")
-	await runner.simulate_frames(8)
+	await _advance_one_day(scene, runner, tray_controller)
 	assert_int(GameState.current_day).is_equal(2)
 
-	var confirm := await _open_new_game_confirm(scene)
+	var confirm := await _open_new_game_confirm(scene, runner)
 	assert_object(confirm).is_not_null()
 	confirm.confirmed.emit()
 	await runner.simulate_frames(2)
@@ -243,19 +243,19 @@ func test_new_game_dialog_restarts_after_confirmation_and_difficulty_choice() ->
 	assert_int(GameState.current_day).is_equal(1)
 	assert_str(GameState.current_phase).is_equal("action")
 	assert_str(GameState.difficulty).is_equal("austerlitz")
-	assert_str((scene.find_child("DayLabel", true, false) as Label).text).is_equal("Jour 1")
+	assert_str((scene.find_child("DayLabel", true, false) as Label).text).is_equal("第 1 天")
 
 
 func test_new_game_dialog_cancel_keeps_progress() -> void:
 	var runner := await _load_main_menu()
 	var scene := runner.scene()
+	var tray_controller = runner.get_property("_tray_controller")
 	var execute_button := scene.find_child("ExecuteActionButton", true, false) as Button
 
-	runner.invoke("_on_confirm_pressed")
-	await runner.simulate_frames(8)
+	await _advance_one_day(scene, runner, tray_controller)
 	assert_int(GameState.current_day).is_equal(2)
 
-	var confirm := await _open_new_game_confirm(scene)
+	var confirm := await _open_new_game_confirm(scene, runner)
 	assert_object(confirm).is_not_null()
 	assert_object(execute_button).is_not_null()
 	assert_bool(execute_button.disabled).is_true()
@@ -270,14 +270,14 @@ func test_new_game_dialog_cancel_keeps_progress() -> void:
 func test_difficulty_picker_cancel_keeps_progress() -> void:
 	var runner := await _load_main_menu()
 	var scene := runner.scene()
+	var tray_controller = runner.get_property("_tray_controller")
 	var execute_button := scene.find_child("ExecuteActionButton", true, false) as Button
 	assert_object(execute_button).is_not_null()
 
-	runner.invoke("_on_confirm_pressed")
-	await runner.simulate_frames(8)
+	await _advance_one_day(scene, runner, tray_controller)
 	assert_int(GameState.current_day).is_equal(2)
 
-	var confirm := await _open_new_game_confirm(scene)
+	var confirm := await _open_new_game_confirm(scene, runner)
 	assert_object(confirm).is_not_null()
 	confirm.confirmed.emit()
 	await runner.simulate_frames(2)
@@ -300,11 +300,11 @@ func test_difficulty_picker_cancel_keeps_progress() -> void:
 func test_load_dialog_cancel_keeps_current_progress() -> void:
 	var runner := await _load_main_menu()
 	var scene := runner.scene()
+	var tray_controller = runner.get_property("_tray_controller")
 	var execute_button := scene.find_child("ExecuteActionButton", true, false) as Button
 
 	await _save_to_slot(scene, runner, 1)
-	runner.invoke("_on_confirm_pressed")
-	await runner.simulate_frames(8)
+	await _advance_one_day(scene, runner, tray_controller)
 	assert_int(GameState.current_day).is_equal(2)
 
 	var confirm := await _request_load_slot(scene, runner, 1)
@@ -324,7 +324,7 @@ func test_save_slot_picker_cancel_restores_action_interactivity() -> void:
 	var scene := runner.scene()
 	var execute_button := scene.find_child("ExecuteActionButton", true, false) as Button
 
-	var save_popup := await _open_save_picker(scene)
+	var save_popup := await _open_save_picker(scene, runner)
 	var cancel_button := scene.find_child("SlotPickerCancelButton", true, false) as Button
 	assert_object(save_popup).is_not_null()
 	assert_object(cancel_button).is_not_null()
@@ -383,13 +383,42 @@ func test_loading_save_restores_saved_difficulty_and_clears_tray_selection() -> 
 	assert_str(tray_controller.get_selected_policy_id()).is_equal("")
 
 
+func test_midday_save_load_restores_action_budget_and_can_end_day() -> void:
+	var runner := await _load_main_menu()
+	var scene := runner.scene()
+	var tray_controller = runner.get_property("_tray_controller")
+
+	tray_controller.select_policy("public_speech")
+	await runner.simulate_frames(2)
+	runner.invoke("_on_confirm_pressed")
+	await runner.simulate_frames(6)
+
+	assert_int(GameState.current_day).is_equal(1)
+	assert_int(GameState.actions_remaining).is_equal(1)
+	assert_bool(GameState.maneuver_available).is_true()
+
+	await _save_to_slot(scene, runner, 1)
+	await _start_new_game_with_difficulty(scene, runner, "elba")
+	await _confirm_load_slot(scene, runner, 1)
+
+	assert_int(GameState.current_day).is_equal(1)
+	assert_str(GameState.current_phase).is_equal("action")
+	assert_int(GameState.actions_remaining).is_equal(1)
+	assert_bool(GameState.maneuver_available).is_true()
+
+	await _end_day(scene, runner)
+	assert_int(GameState.current_day).is_equal(2)
+
+
 func _load_main_menu() -> GdUnitSceneRunner:
 	var runner := scene_runner(MAIN_MENU_SCENE)
 	await runner.simulate_frames(12)
+	await _dismiss_tutorial_popup_if_present(runner.scene(), runner)
 	return runner
 
 
-func _open_save_picker(scene: Node) -> PopupPanel:
+func _open_save_picker(scene: Node, runner: GdUnitSceneRunner) -> PopupPanel:
+	await _dismiss_tutorial_popup_if_present(scene, runner)
 	var save_button := scene.find_child("SaveGameButton", true, false) as Button
 	assert_object(save_button).is_not_null()
 	save_button.pressed.emit()
@@ -397,7 +426,8 @@ func _open_save_picker(scene: Node) -> PopupPanel:
 	return scene.find_child("SaveSlotPickerPopup", true, false) as PopupPanel
 
 
-func _open_load_picker(scene: Node) -> PopupPanel:
+func _open_load_picker(scene: Node, runner: GdUnitSceneRunner) -> PopupPanel:
+	await _dismiss_tutorial_popup_if_present(scene, runner)
 	var load_button := scene.find_child("LoadGameButton", true, false) as Button
 	assert_object(load_button).is_not_null()
 	load_button.pressed.emit()
@@ -406,7 +436,7 @@ func _open_load_picker(scene: Node) -> PopupPanel:
 
 
 func _save_to_slot(scene: Node, runner: GdUnitSceneRunner, slot_id: int) -> void:
-	var popup := await _open_save_picker(scene)
+	var popup := await _open_save_picker(scene, runner)
 	var slot_button := scene.find_child("SaveSlotButton%d" % slot_id, true, false) as Button
 	assert_object(popup).is_not_null()
 	assert_object(slot_button).is_not_null()
@@ -415,7 +445,7 @@ func _save_to_slot(scene: Node, runner: GdUnitSceneRunner, slot_id: int) -> void
 
 
 func _request_load_slot(scene: Node, runner: GdUnitSceneRunner, slot_id: int) -> ConfirmationDialog:
-	var popup := await _open_load_picker(scene)
+	var popup := await _open_load_picker(scene, runner)
 	var slot_button := scene.find_child("LoadSlotButton%d" % slot_id, true, false) as Button
 	assert_object(popup).is_not_null()
 	assert_object(slot_button).is_not_null()
@@ -432,7 +462,8 @@ func _confirm_load_slot(scene: Node, runner: GdUnitSceneRunner, slot_id: int) ->
 	await runner.simulate_frames(4)
 
 
-func _open_new_game_confirm(scene: Node) -> ConfirmationDialog:
+func _open_new_game_confirm(scene: Node, runner: GdUnitSceneRunner) -> ConfirmationDialog:
+	await _dismiss_tutorial_popup_if_present(scene, runner)
 	var new_game_button := scene.find_child("NewGameButton", true, false) as Button
 	assert_object(new_game_button).is_not_null()
 	new_game_button.pressed.emit()
@@ -441,7 +472,7 @@ func _open_new_game_confirm(scene: Node) -> ConfirmationDialog:
 
 
 func _start_new_game_with_difficulty(scene: Node, runner: GdUnitSceneRunner, difficulty_id: String) -> void:
-	var confirm := await _open_new_game_confirm(scene)
+	var confirm := await _open_new_game_confirm(scene, runner)
 	assert_object(confirm).is_not_null()
 	confirm.confirmed.emit()
 	await runner.simulate_frames(2)
@@ -449,6 +480,31 @@ func _start_new_game_with_difficulty(scene: Node, runner: GdUnitSceneRunner, dif
 	assert_object(difficulty_button).is_not_null()
 	difficulty_button.pressed.emit()
 	await runner.simulate_frames(6)
+
+
+func _advance_one_day(scene: Node, runner: GdUnitSceneRunner, tray_controller) -> void:
+	tray_controller.select_policy("rest")
+	await runner.simulate_frames(2)
+	runner.invoke("_on_confirm_pressed")
+	await runner.simulate_frames(6)
+	await _end_day(scene, runner)
+
+
+func _end_day(scene: Node, runner: GdUnitSceneRunner) -> void:
+	await _dismiss_tutorial_popup_if_present(scene, runner)
+	var end_day_button := scene.find_child("EndDayButton", true, false) as Button
+	assert_object(end_day_button).is_not_null()
+	end_day_button.pressed.emit()
+	await runner.simulate_frames(8)
+	await _dismiss_tutorial_popup_if_present(scene, runner)
+
+
+func _dismiss_tutorial_popup_if_present(scene: Node, runner: GdUnitSceneRunner) -> void:
+	var close_button := scene.find_child("TutorialPopupCloseButton", true, false) as Button
+	if close_button == null:
+		return
+	close_button.pressed.emit()
+	await runner.simulate_frames(2)
 
 
 func _press_dialog_cancel(dialog: ConfirmationDialog) -> void:

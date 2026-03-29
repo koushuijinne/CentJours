@@ -55,7 +55,7 @@ custom_minimum_size = Vector2(126, 0)
 
 [node name="DayLabel" type="Label" parent="RootLayout/TopBar/TopBarMargin/TopBarRow/DayBlock"]
 layout_mode = 2
-text = "Jour 1"
+text = "第 1 天"
 
 [node name="PhaseLabel" type="Label" parent="RootLayout/TopBar/TopBarMargin/TopBarRow/DayBlock"]
 layout_mode = 2
@@ -68,7 +68,7 @@ theme_override_constants/separation = 1
 
 [node name="RNLabel" type="Label" parent="RootLayout/TopBar/TopBarMargin/TopBarRow/RNBlock"]
 layout_mode = 2
-text = "Rouge / Noir"
+text = "红 / 黑"
 
 [node name="RougeNoirSlot" type="Control" parent="RootLayout/TopBar/TopBarMargin/TopBarRow/RNBlock"]
 layout_mode = 2
@@ -86,7 +86,7 @@ layout_mode = 2
 [node name="LegitimacyCaption" type="Label" parent="RootLayout/TopBar/TopBarMargin/TopBarRow/LegitimacyBlock/LegitimacyHeader"]
 layout_mode = 2
 size_flags_horizontal = 3
-text = "Legitimacy"
+text = "合法性"
 
 [node name="LegitimacyValue" type="Label" parent="RootLayout/TopBar/TopBarMargin/TopBarRow/LegitimacyBlock/LegitimacyHeader"]
 layout_mode = 2
@@ -107,7 +107,7 @@ layout_mode = 2
 
 [node name="TroopsCaption" type="Label" parent="RootLayout/TopBar/TopBarMargin/TopBarRow/ResourceBlock/TroopsBlock"]
 layout_mode = 2
-text = "Troops"
+text = "兵力"
 
 [node name="TroopsValue" type="Label" parent="RootLayout/TopBar/TopBarMargin/TopBarRow/ResourceBlock/TroopsBlock"]
 layout_mode = 2
@@ -118,7 +118,7 @@ layout_mode = 2
 
 [node name="SupplyCaption" type="Label" parent="RootLayout/TopBar/TopBarMargin/TopBarRow/ResourceBlock/SupplyBlock"]
 layout_mode = 2
-text = "Supply"
+text = "补给"
 
 [node name="SupplyValue" type="Label" parent="RootLayout/TopBar/TopBarMargin/TopBarRow/ResourceBlock/SupplyBlock"]
 layout_mode = 2
@@ -129,7 +129,7 @@ layout_mode = 2
 
 [node name="MoraleCaption" type="Label" parent="RootLayout/TopBar/TopBarMargin/TopBarRow/ResourceBlock/MoraleBlock"]
 layout_mode = 2
-text = "Morale"
+text = "士气"
 
 [node name="MoraleValue" type="Label" parent="RootLayout/TopBar/TopBarMargin/TopBarRow/ResourceBlock/MoraleBlock"]
 layout_mode = 2
@@ -140,7 +140,7 @@ layout_mode = 2
 
 [node name="FatigueCaption" type="Label" parent="RootLayout/TopBar/TopBarMargin/TopBarRow/ResourceBlock/FatigueBlock"]
 layout_mode = 2
-text = "Fatigue"
+text = "疲劳"
 
 [node name="FatigueValue" type="Label" parent="RootLayout/TopBar/TopBarMargin/TopBarRow/ResourceBlock/FatigueBlock"]
 layout_mode = 2
@@ -161,7 +161,7 @@ theme_override_constants/separation = 14
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
-size_flags_stretch_ratio = 2.2
+size_flags_stretch_ratio = 2.6
 
 [node name="MapMargin" type="MarginContainer" parent="RootLayout/MainArea/LeftColumn/MapArea"]
 layout_mode = 2
@@ -179,14 +179,14 @@ size_flags_vertical = 3
 layout_mode = 0
 offset_right = 260.0
 offset_bottom = 22.0
-text = "THEATRE OF OPERATIONS"
+text = "战区地图"
 
 [node name="MapSubtitle" type="Label" parent="RootLayout/MainArea/LeftColumn/MapArea/MapMargin/MapContent"]
 layout_mode = 0
 offset_top = 22.0
 offset_right = 320.0
 offset_bottom = 42.0
-text = "Northward march to Paris and the Belgian frontier"
+text = "向北推进，连接巴黎与比利时方向。"
 
 [node name="MapHoverPanel" type="PanelContainer" parent="RootLayout/MainArea/LeftColumn/MapArea/MapMargin/MapContent"]
 visible = false
@@ -285,7 +285,7 @@ theme_override_constants/separation = 6
 [node name="MapInspectorTitle" type="Label" parent="RootLayout/MainArea/LeftColumn/MapArea/MapMargin/MapContent/MapInspectorPanel/MapInspectorMargin/MapInspectorScroll/MapInspectorBox"]
 layout_mode = 2
 size_flags_horizontal = 3
-text = "Map Inspector"
+text = "地图详情"
 
 [node name="MapInspectorMeta" type="Label" parent="RootLayout/MainArea/LeftColumn/MapArea/MapMargin/MapContent/MapInspectorPanel/MapInspectorMargin/MapInspectorScroll/MapInspectorBox"]
 layout_mode = 2
@@ -327,7 +327,7 @@ layout_mode = 2
 [node name="TrayTitle" type="Label" parent="RootLayout/MainArea/LeftColumn/DecisionTray/TrayMargin/TrayContent/TrayHeader"]
 layout_mode = 2
 size_flags_horizontal = 3
-text = "Decision Tray"
+text = "当日行动"
 
 [node name="TrayHint" type="Label" parent="RootLayout/MainArea/LeftColumn/DecisionTray/TrayMargin/TrayContent/TrayHeader"]
 layout_mode = 2
@@ -349,7 +349,7 @@ theme_override_constants/separation = 10
 
 [node name="Sidebar" type="PanelContainer" parent="RootLayout/MainArea"]
 layout_mode = 2
-custom_minimum_size = Vector2(320, 0)
+custom_minimum_size = Vector2(300, 0)
 size_flags_vertical = 3
 
 [node name="SidebarMargin" type="MarginContainer" parent="RootLayout/MainArea/Sidebar"]
@@ -365,7 +365,7 @@ theme_override_constants/separation = 12
 
 [node name="SidebarTitle" type="Label" parent="RootLayout/MainArea/Sidebar/SidebarMargin/SidebarContent"]
 layout_mode = 2
-text = "Empire Briefing"
+text = "帝国简报"
 
 [node name="SituationPanel" type="PanelContainer" parent="RootLayout/MainArea/Sidebar/SidebarMargin/SidebarContent"]
 layout_mode = 2
@@ -385,7 +385,7 @@ theme_override_constants/separation = 6
 
 [node name="SituationHeading" type="Label" parent="RootLayout/MainArea/Sidebar/SidebarMargin/SidebarContent/SituationPanel/SituationMargin/SituationBox"]
 layout_mode = 2
-text = "Current Situation"
+text = "当前局势"
 
 [node name="SituationScroll" type="ScrollContainer" parent="RootLayout/MainArea/Sidebar/SidebarMargin/SidebarContent/SituationPanel/SituationMargin/SituationBox"]
 layout_mode = 2
@@ -413,7 +413,7 @@ theme_override_constants/separation = 6
 
 [node name="LoyaltyHeading" type="Label" parent="RootLayout/MainArea/Sidebar/SidebarMargin/SidebarContent/LoyaltyPanel/LoyaltyMargin/LoyaltyBox"]
 layout_mode = 2
-text = "Marshal Loyalty"
+text = "元帅忠诚"
 
 [node name="LoyaltyScroll" type="ScrollContainer" parent="RootLayout/MainArea/Sidebar/SidebarMargin/SidebarContent/LoyaltyPanel/LoyaltyMargin/LoyaltyBox"]
 layout_mode = 2
@@ -441,7 +441,7 @@ theme_override_constants/separation = 6
 
 [node name="NarrativeHeading" type="Label" parent="RootLayout/MainArea/Sidebar/SidebarMargin/SidebarContent/NarrativePanel/NarrativeMargin/NarrativeBox"]
 layout_mode = 2
-text = "History & Narrative"
+text = "历史与叙事"
 
 [node name="NarrativeScroll" type="ScrollContainer" parent="RootLayout/MainArea/Sidebar/SidebarMargin/SidebarContent/NarrativePanel/NarrativeMargin/NarrativeBox"]
 layout_mode = 2

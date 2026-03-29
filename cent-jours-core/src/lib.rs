@@ -428,6 +428,123 @@ mod gdext_bindings {
             );
         }
 
+        /// 开始新的一天：触发 Dawn 历史事件，并进入日内行动阶段。
+        #[func]
+        pub fn begin_day(&mut self) {
+            self.engine.begin_day(&mut self.rng);
+        }
+
+        /// 结束当前一天：若未使用机动槽，则自动按休整结算，然后进入次日。
+        #[func]
+        pub fn end_day(&mut self) {
+            self.engine.end_day(&mut self.rng);
+        }
+
+        /// 在当前日内执行一次休整，不推进日期。
+        #[func]
+        pub fn execute_day_rest(&mut self) {
+            use crate::engine::PlayerAction;
+            self.engine
+                .execute_day_action(PlayerAction::Rest, &mut self.rng);
+        }
+
+        /// 在当前日内执行一次战役，不推进日期。
+        #[func]
+        pub fn execute_day_battle(&mut self, general_id: GString, troops: i64, terrain: GString) {
+            use crate::battle::resolver::Terrain as T;
+            use crate::engine::PlayerAction;
+            let t = match terrain.to_string().as_str() {
+                "hills" => T::Hills,
+                "mountains" => T::Mountains,
+                "forest" => T::Forest,
+                "urban" => T::Urban,
+                "river_crossing" => T::RiverJunction,
+                "river_junction" => T::RiverJunction,
+                "coastal" => T::Coastal,
+                "fortress" => T::Fortress,
+                "ridgeline" => T::Ridgeline,
+                _ => T::Plains,
+            };
+            self.engine.execute_day_action(
+                PlayerAction::LaunchBattle {
+                    general_id: general_id.to_string(),
+                    troops: troops.max(0) as u32,
+                    terrain: t,
+                },
+                &mut self.rng,
+            );
+        }
+
+        /// 在当前日内执行一次行军，不推进日期。
+        #[func]
+        pub fn execute_day_march(&mut self, target_node: GString) {
+            use crate::engine::PlayerAction;
+            self.engine.execute_day_action(
+                PlayerAction::March {
+                    target_node: target_node.to_string(),
+                },
+                &mut self.rng,
+            );
+        }
+
+        /// 在当前日内执行一次政策，不推进日期。
+        #[func]
+        pub fn execute_day_policy(&mut self, policy_id: GString) {
+            use crate::engine::PlayerAction;
+            let action = match policy_id.to_string().as_str() {
+                "conscription" => PlayerAction::EnactPolicy {
+                    policy_id: "conscription",
+                },
+                "constitutional_promise" => PlayerAction::EnactPolicy {
+                    policy_id: "constitutional_promise",
+                },
+                "public_speech" => PlayerAction::EnactPolicy {
+                    policy_id: "public_speech",
+                },
+                "reduce_taxes" => PlayerAction::EnactPolicy {
+                    policy_id: "reduce_taxes",
+                },
+                "increase_military_budget" => PlayerAction::EnactPolicy {
+                    policy_id: "increase_military_budget",
+                },
+                "requisition_supplies" => PlayerAction::EnactPolicy {
+                    policy_id: "requisition_supplies",
+                },
+                "stabilize_supply_lines" => PlayerAction::EnactPolicy {
+                    policy_id: "stabilize_supply_lines",
+                },
+                "establish_forward_depot" => PlayerAction::EnactPolicy {
+                    policy_id: "establish_forward_depot",
+                },
+                "secure_regional_corridor" => PlayerAction::EnactPolicy {
+                    policy_id: "secure_regional_corridor",
+                },
+                "grant_titles" => PlayerAction::EnactPolicy {
+                    policy_id: "grant_titles",
+                },
+                "secret_diplomacy" => PlayerAction::EnactPolicy {
+                    policy_id: "secret_diplomacy",
+                },
+                "print_money" => PlayerAction::EnactPolicy {
+                    policy_id: "print_money",
+                },
+                _ => PlayerAction::Rest,
+            };
+            self.engine.execute_day_action(action, &mut self.rng);
+        }
+
+        /// 在当前日内执行一次将领接见，不推进日期。
+        #[func]
+        pub fn execute_day_boost_loyalty(&mut self, general_id: GString) {
+            use crate::engine::PlayerAction;
+            self.engine.execute_day_action(
+                PlayerAction::BoostLoyalty {
+                    general_id: general_id.to_string(),
+                },
+                &mut self.rng,
+            );
+        }
+
         /// 预览一次普通行军，不修改真实状态。
         #[func]
         pub fn preview_march(&self, target_node: GString) -> Dictionary {
@@ -507,6 +624,8 @@ mod gdext_bindings {
             let _ = d.insert("supply", e.army.supply);
             let _ = d.insert("victories", e.army.victories as i64);
             let _ = d.insert("defeats", e.army.defeats as i64);
+            let _ = d.insert("actions_remaining", e.politics.actions_remaining as i64);
+            let _ = d.insert("maneuver_available", e.maneuver_available());
             let _ = d.insert("napoleon_location", e.napoleon_location.as_str());
             let _ = d.insert("difficulty", e.difficulty().as_str());
             let _ = d.insert("diplomatic_progress", e.diplomatic_progress() as i64);

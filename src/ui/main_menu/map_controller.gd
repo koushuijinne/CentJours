@@ -8,8 +8,8 @@ const MainMenuFormattersLib = preload("res://src/ui/main_menu/ui_formatters.gd")
 const MAP_RENDER_CONTROLLER_PATH := "res://src/ui/main_menu/map_render_controller.gd"
 
 const DEFAULT_MAP_NODES_PATH := "res://src/data/map_nodes.json"
-const DEFAULT_MAP_TITLE := "THEATRE OF OPERATIONS"
-const DEFAULT_INSPECTOR_TITLE := "Map Inspector"
+const DEFAULT_MAP_TITLE := "战区地图"
+const DEFAULT_INSPECTOR_TITLE := "地图详情"
 const DEFAULT_INSPECTOR_HINT := "悬停查看预览，点击后锁定详情。滚轮缩放，右键复位。"
 const SUPPLY_WARNING_THRESHOLD := 45.0
 const SUPPLY_HUB_IDS := ["golfe_juan", "grenoble", "lyon", "paris", "lille", "maubeuge"]

@@ -290,12 +290,14 @@ func test_battle_submit_failure_restores_action_interactivity() -> void:
 	assert_str(GameState.current_phase).is_equal("action")
 
 
-func test_battle_submit_success_advances_day_and_resets_tray() -> void:
+func test_battle_submit_success_keeps_day_until_manual_end() -> void:
 	var runner := await _load_main_menu()
 	var scene := runner.scene()
 	var tray_controller = runner.get_property("_tray_controller")
 	var execute_button := scene.find_child("ExecuteActionButton", true, false) as Button
+	var end_day_button := scene.find_child("EndDayButton", true, false) as Button
 	assert_object(execute_button).is_not_null()
+	assert_object(end_day_button).is_not_null()
 	assert_int(GameState.current_day).is_equal(1)
 
 	scene.call("_show_battle_popup")
@@ -308,21 +310,30 @@ func test_battle_submit_success_advances_day_and_resets_tray() -> void:
 	assert_bool(execute_button.disabled).is_true()
 
 	confirm_button.pressed.emit()
-	await runner.simulate_frames(10)
+	await runner.simulate_frames(6)
 
 	assert_object(scene.find_child("BattlePopup", true, false)).is_null()
-	assert_int(GameState.current_day).is_equal(2)
+	assert_int(GameState.current_day).is_equal(1)
 	assert_str(GameState.current_phase).is_equal("action")
+	assert_bool(GameState.maneuver_available).is_false()
 	assert_str(tray_controller.get_selected_policy_id()).is_equal("")
 	assert_bool(execute_button.disabled).is_false()
 
+	end_day_button.pressed.emit()
+	await runner.simulate_frames(8)
 
-func test_boost_submit_success_advances_day_and_resets_tray() -> void:
+	assert_int(GameState.current_day).is_equal(2)
+	assert_bool(GameState.maneuver_available).is_true()
+
+
+func test_boost_submit_success_keeps_day_until_manual_end() -> void:
 	var runner := await _load_main_menu()
 	var scene := runner.scene()
 	var tray_controller = runner.get_property("_tray_controller")
 	var execute_button := scene.find_child("ExecuteActionButton", true, false) as Button
+	var end_day_button := scene.find_child("EndDayButton", true, false) as Button
 	assert_object(execute_button).is_not_null()
+	assert_object(end_day_button).is_not_null()
 	assert_int(GameState.current_day).is_equal(1)
 	assert_bool(GameState.legitimacy >= 10.0).is_true()
 
@@ -337,13 +348,19 @@ func test_boost_submit_success_advances_day_and_resets_tray() -> void:
 	assert_bool(execute_button.disabled).is_true()
 
 	confirm_button.pressed.emit()
-	await runner.simulate_frames(10)
+	await runner.simulate_frames(6)
 
 	assert_object(scene.find_child("BoostPopup", true, false)).is_null()
-	assert_int(GameState.current_day).is_equal(2)
+	assert_int(GameState.current_day).is_equal(1)
 	assert_str(GameState.current_phase).is_equal("action")
+	assert_int(GameState.actions_remaining).is_equal(1)
 	assert_str(tray_controller.get_selected_policy_id()).is_equal("")
 	assert_bool(execute_button.disabled).is_false()
+
+	end_day_button.pressed.emit()
+	await runner.simulate_frames(8)
+
+	assert_int(GameState.current_day).is_equal(2)
 
 
 func test_boost_submit_failure_restores_action_interactivity() -> void:
@@ -397,8 +414,13 @@ func test_game_over_restart_resets_day_and_clears_overlay() -> void:
 	var runner := await _load_main_menu()
 	var scene := runner.scene()
 	var execute_button := scene.find_child("ExecuteActionButton", true, false) as Button
+	var tray_controller = runner.get_property("_tray_controller")
 
+	tray_controller.select_policy("rest")
+	await runner.simulate_frames(2)
 	runner.invoke("_on_confirm_pressed")
+	await runner.simulate_frames(6)
+	(scene.find_child("EndDayButton", true, false) as Button).pressed.emit()
 	await runner.simulate_frames(8)
 	assert_int(GameState.current_day).is_equal(2)
 
@@ -444,6 +466,10 @@ func test_game_over_stats_clamp_display_day_to_100() -> void:
 func _load_main_menu() -> GdUnitSceneRunner:
 	var runner := scene_runner(MAIN_MENU_SCENE)
 	await runner.simulate_frames(12)
+	var close_button := runner.scene().find_child("TutorialPopupCloseButton", true, false) as Button
+	if close_button != null:
+		close_button.pressed.emit()
+		await runner.simulate_frames(2)
 	return runner
 
 

@@ -146,7 +146,7 @@ func _build_ui() -> void:
 
 	# 行动点消耗
 	var cost_label := Label.new()
-	cost_label.text = "· %d Action%s" % [cost_actions, "s" if cost_actions > 1 else ""]
+	cost_label.text = "· %d 行动点" % cost_actions
 	cost_label.add_theme_color_override("font_color", CentJoursTheme.COLOR["neutral"])
 	cost_label.add_theme_font_size_override("font_size", 9)
 	body.add_child(cost_label)

@@ -17,3 +17,23 @@
 - 本轮与试玩反馈原文、参考图归档和计划文档同步一起提交并推送到 `claude/review-project-status-05vxD`。
 下一步:
 - 先按 `P0-1` 设计行动经济重构方案，再把真人试玩问题逐条转成 Rust / `GdUnit4` / Windows 真机回归项。
+
+## 2026-03-29 第 2 轮
+分支: `claude/review-project-status-05vxD`
+范围: 落第一版 S1 真人试玩修复，并补齐 Windows 自动回归
+变更:
+- Rust / GDExt / GDScript 主链落地日内行动节奏：每天改为 `1` 次机动槽（行军 / 战役 / 休整）+ `2` 次决策点，并由玩家手动点击“结束今天 → 次日”推进到下一天。
+- 主菜单新增教程 / 历史事件 / 结局目标 / 日志回看弹窗链，顶栏补“结局”“日志”，玩家可见主 UI 文本继续向中文收口，地图占比上调。
+- 扩 `GdUnit4` 到 `57` 条，新增连续两日行动、存读档取消链、新局取消链、教程 modal 干扰链等回归；本轮还修了测试夹具，使跨天后会先关闭教程 modal，再继续验证真实交互状态。
+- 更新 [docs/plans/dev_plan.md](docs/plans/dev_plan.md)、[docs/history/agent_handoff.md](docs/history/agent_handoff.md)、[docs/bugs/bug_real_playtest_2026-03-29.md](docs/bugs/bug_real_playtest_2026-03-29.md)、[docs/bugs/bug_validation_matrix_2026-03-28.md](docs/bugs/bug_validation_matrix_2026-03-28.md) 到当前基线。
+验证:
+- Windows `cargo test` 通过：`215/215`
+- Windows `cargo build --features godot-extension` 通过
+- Windows `GdUnit4` 通过：`57/57`
+- Windows Godot 主项目无头启动通过
+- Windows smoke scene 通过
+- 未运行 Linux / WSL 侧测试
+提交/推送:
+- 待本轮统一提交
+下一步:
+- 继续做 S1 第二轮 polish，优先补中文 UI 残留、地图真机可读性和弹窗文案密度。

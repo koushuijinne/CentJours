@@ -247,11 +247,11 @@ func apply_responsive_layout(viewport_size: Vector2 = Vector2.ZERO) -> void:
 	_set_container_separation(_tray_content, int(clampf(roundf(viewport.y * 0.008), 6.0, 8.0)))
 	_set_container_separation(_decision_row, int(clampf(roundf(viewport.x * 0.006), 8.0, 12.0)))
 
-	var sidebar_width := clampf(viewport.x * 0.27, 332.0, 372.0)
+	var sidebar_width := clampf(viewport.x * 0.235, 284.0, 324.0)
 	if _sidebar != null:
 		_sidebar.custom_minimum_size.x = sidebar_width
-	var detail_panel_width := clampf(viewport.x * 0.29, 340.0, 420.0)
-	var detail_panel_height := clampf(viewport.y * 0.38, 240.0, 344.0)
+	var detail_panel_width := clampf(viewport.x * 0.255, 300.0, 360.0)
+	var detail_panel_height := clampf(viewport.y * 0.34, 220.0, 304.0)
 	var detail_panel_top := clampf(viewport.y * 0.11, 78.0, 100.0)
 	if _map_hover_panel != null:
 		# hover 预览与锁定详情共用一组几何锚点，避免两层面板来回跳位。
@@ -296,15 +296,15 @@ func apply_responsive_layout(viewport_size: Vector2 = Vector2.ZERO) -> void:
 		_decision_tray.custom_minimum_size.y = _compute_tray_min_height(scroll_height, tray_margin)
 
 	if _situation_panel != null:
-		_situation_panel.custom_minimum_size.y = clampf(viewport.y * 0.34, 208.0, 312.0)
+		_situation_panel.custom_minimum_size.y = clampf(viewport.y * 0.30, 188.0, 272.0)
 	if _situation_scroll != null:
-		_situation_scroll.custom_minimum_size = Vector2(0.0, clampf(viewport.y * 0.26, 136.0, 228.0))
+		_situation_scroll.custom_minimum_size = Vector2(0.0, clampf(viewport.y * 0.22, 124.0, 196.0))
 		_situation_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		_situation_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	if _narrative_panel != null:
-		_narrative_panel.custom_minimum_size.y = clampf(viewport.y * 0.30, 188.0, 276.0)
+		_narrative_panel.custom_minimum_size.y = clampf(viewport.y * 0.24, 164.0, 228.0)
 	if _narrative_scroll != null:
-		_narrative_scroll.custom_minimum_size = Vector2(0.0, clampf(viewport.y * 0.22, 132.0, 220.0))
+		_narrative_scroll.custom_minimum_size = Vector2(0.0, clampf(viewport.y * 0.18, 112.0, 172.0))
 		_narrative_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		_narrative_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	if _loyalty_panel != null:

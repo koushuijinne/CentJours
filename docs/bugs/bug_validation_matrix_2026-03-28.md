@@ -19,6 +19,7 @@
 | 一回合行动语义不清、modal 打开时还能继续交互 | `tests/godot/save_load_flow_test.gd` + `tests/godot/dialog_flow_test.gd` | 新局确认/取消、难度取消、设置取消、读档取消、战斗/接见失败恢复 |
 | 读档后状态错位或锁死 | `tests/godot/save_load_flow_test.gd` | Day / phase 恢复、地图锁定清空、难度恢复、Tray 清空 |
 | 页面被长文本撑大 | `tests/godot/main_menu_flow_test.gd` + `tests/godot/map_controller_contract_test.gd` | Narrative/Situation 仍走滚动容器，hover/详情面板有边界和滚动 |
+| 第 2 天后教程弹窗遮住主流程，连续两日行动 / 顶栏存读档 / 新局取消链容易误判 | `tests/godot/main_menu_flow_test.gd` + `tests/godot/save_load_flow_test.gd` | 跨天后先清 tutorial modal，再验证连续休整后行军、覆盖确认、读档取消、新局取消 |
 
 ## 仍需 Windows 真机
 

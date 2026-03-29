@@ -68,6 +68,7 @@ var _game_over_overlay: ColorRect = null
 var _difficulty_popup: PopupPanel = null
 var _battle_popup: PopupPanel = null
 var _boost_popup: PopupPanel = null
+var _info_popup: PopupPanel = null
 
 
 func configure(host: Node, callbacks: Dictionary = {}) -> void:
@@ -110,10 +111,54 @@ func dismiss_active_popups() -> void:
 	_close_difficulty_popup()
 	_close_battle_popup()
 	_close_boost_popup()
+	_close_info_popup()
 
 
 func is_modal_active() -> bool:
-	return _game_over_overlay != null or _difficulty_popup != null or _battle_popup != null or _boost_popup != null
+	return _game_over_overlay != null or _difficulty_popup != null or _battle_popup != null or _boost_popup != null or _info_popup != null
+
+
+func show_info_popup(popup_name: String, title_text: String, body_text: String, close_text: String = "关闭") -> void:
+	_close_info_popup()
+	_call_optional(CALLBACK_SET_TRAY_INTERACTIVE, [false])
+
+	_info_popup = PopupPanel.new()
+	_info_popup.name = popup_name
+	var content := VBoxContainer.new()
+	content.custom_minimum_size = Vector2(460, 0)
+	content.add_theme_constant_override("separation", 10)
+
+	var title := Label.new()
+	title.name = "%sTitle" % popup_name
+	title.text = title_text
+	title.add_theme_font_size_override("font_size", 18)
+	title.add_theme_color_override("font_color", CentJoursTheme.COLOR["gold_bright"])
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	content.add_child(title)
+
+	var scroll := ScrollContainer.new()
+	scroll.name = "%sScroll" % popup_name
+	scroll.custom_minimum_size = Vector2(0, 340)
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	content.add_child(scroll)
+
+	var body := Label.new()
+	body.name = "%sBody" % popup_name
+	body.text = body_text
+	body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	body.add_theme_color_override("font_color", CentJoursTheme.COLOR["text_primary"])
+	scroll.add_child(body)
+
+	var close_button := Button.new()
+	close_button.name = "%sCloseButton" % popup_name
+	close_button.text = close_text
+	close_button.pressed.connect(_dismiss_info_popup)
+	content.add_child(close_button)
+
+	_info_popup.add_child(content)
+	_host_or_self().add_child(_info_popup)
+	_info_popup.popup_centered()
 
 
 func show_game_over(outcome: String, stats: Dictionary = {}) -> void:
@@ -341,7 +386,7 @@ func _build_key_decisions_text(decisions: Array) -> String:
 		var day: int = int(d.get("day", 0))
 		var desc: String = String(d.get("desc", ""))
 		if desc != "":
-			lines.append("Day %d — %s" % [day, desc])
+			lines.append("第 %d 天 — %s" % [day, desc])
 	if lines.is_empty():
 		return ""
 	# 最多展示最后 8 条关键决策
@@ -688,6 +733,11 @@ func _close_boost_popup() -> void:
 	_boost_popup = null
 
 
+func _close_info_popup() -> void:
+	_close_popup(_info_popup)
+	_info_popup = null
+
+
 func _dismiss_battle_popup() -> void:
 	_close_battle_popup()
 	_call_optional(CALLBACK_SET_TRAY_INTERACTIVE, [true])
@@ -695,6 +745,11 @@ func _dismiss_battle_popup() -> void:
 
 func _dismiss_boost_popup() -> void:
 	_close_boost_popup()
+	_call_optional(CALLBACK_SET_TRAY_INTERACTIVE, [true])
+
+
+func _dismiss_info_popup() -> void:
+	_close_info_popup()
 	_call_optional(CALLBACK_SET_TRAY_INTERACTIVE, [true])
 
 

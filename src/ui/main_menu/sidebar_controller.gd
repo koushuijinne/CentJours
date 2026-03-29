@@ -5,11 +5,11 @@ const MainMenuConfigData = preload("res://src/ui/main_menu/main_menu_config.gd")
 const MainMenuFormattersLib = preload("res://src/ui/main_menu/ui_formatters.gd")
 
 const DEFAULT_VISIBLE_LOYALTY_COUNT := 6
-const DEFAULT_NARRATIVE_TEXT := "Day 1 - Elba departure\n\nChoose an action; history will unfold here."
+const DEFAULT_NARRATIVE_TEXT := "第 1 天 · 厄尔巴岛出发\n\n选择行动，历史将在此处展开。"
 const POLICY_PREVIEW_COLOR := CentJoursTheme.COLOR["text_secondary"]
 const SPECIAL_POLICY_PREVIEW_TEXTS := {
 	"rest": "休整 · 养精蓄锐\n\n让军队获得喘息之机，为下一步行动积蓄力量。",
-	"march": "行军部署\n\n选择一个与当前位置相邻的节点，确认后推进一天并同步拿破仑位置。前线低容量节点会明显拉高补给压力。",
+	"march": "行军部署\n\n选择一个与当前位置相邻的节点，确认后执行今日机动并同步拿破仑位置。日期要等你手动结束今天才会推进。前线低容量节点会明显拉高补给压力。",
 	"battle": "发动战役\n\n选择将领和兵力，与反法联军决战。点击确认后选择参数。",
 	"boost_loyalty": "亲自接见将领\n\n消耗 5 合法性，目标将领忠诚度 +8。需合法性 >= 10。"
 }
@@ -23,12 +23,15 @@ const ACTION_EVENT_LABELS := {
 	"policy": "政策结算",
 	"policy_failed": "政策受阻",
 	"battle": "战役结算",
+	"battle_failed": "战役受阻",
 	"march": "行军结算",
 	"march_failed": "行军受阻",
 	"supply": "补给结算",
 	"boost_loyalty": "将领关系",
 	"boost_failed": "关系经营受阻",
-	"rest": "休整结算"
+	"rest": "休整结算",
+	"rest_failed": "休整受阻",
+	"action_failed": "行动受阻"
 }
 const LOYALTY_VALUE_WIDTH := 126.0
 const LOYALTY_MIN_NAME_WIDTH := 96.0
@@ -40,7 +43,7 @@ var _loyalty_list: VBoxContainer = null
 var _narrative_body: Label = null
 
 var _loyalty_visible_limit: int = DEFAULT_VISIBLE_LOYALTY_COUNT
-var _loyalty_overflow_template: String = "…another %d officers"
+var _loyalty_overflow_template: String = "…另 %d 位将领"
 var _narrative_log: Array[String] = []
 var _narrative_preview_text: String = ""
 var _narrative_preview_color: Color = CentJoursTheme.COLOR["text_secondary"]
@@ -365,7 +368,7 @@ func refresh_situation(
 		if logistics_regional_task_reward_label.strip_edges() != "":
 			logistics_lines.append(logistics_regional_task_reward_label)
 
-	_situation_body.text = "%s\n%s · Legitimacy %.1f\n补给 %.0f · 疲劳 %.0f\n\n%s\n\n%s" % [
+	_situation_body.text = "%s\n%s · 合法性 %.1f\n补给 %.0f · 疲劳 %.0f\n\n%s\n\n%s" % [
 		MainMenuFormattersLib.phase_display_name(phase_id),
 		napoleon_location_label,
 		legitimacy,

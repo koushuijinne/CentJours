@@ -4,11 +4,11 @@ class_name MainMenuFormatters
 static func phase_display_name(phase_id: String) -> String:
 	match phase_id:
 		"dawn":
-			return "Aube · 情报阶段"
+			return "晨间 · 情报阶段"
 		"action":
-			return "Action · 决策阶段"
+			return "白昼 · 行动阶段"
 		"dusk":
-			return "Crepuscule · 结算阶段"
+			return "黄昏 · 结算阶段"
 		_:
 			return phase_id.capitalize()
 

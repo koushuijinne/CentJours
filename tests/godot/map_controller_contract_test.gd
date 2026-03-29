@@ -172,6 +172,10 @@ func test_right_click_zoom_reset_preserves_locked_selection() -> void:
 func _load_main_menu() -> GdUnitSceneRunner:
 	var runner := scene_runner(MAIN_MENU_SCENE)
 	await runner.simulate_frames(12)
+	var close_button := runner.scene().find_child("TutorialPopupCloseButton", true, false) as Button
+	if close_button != null:
+		close_button.pressed.emit()
+		await runner.simulate_frames(2)
 	return runner
 
 

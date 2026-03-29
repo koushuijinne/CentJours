@@ -12,12 +12,12 @@
 
 - 项目已经有可玩的纵向切片，正式入口仍是 `src/ui/main_menu.tscn`，主链路 `TurnManager -> CentJoursEngine -> GameState -> UI` 已跑通。
 - 当前内容规模为 `15` 名角色、`41` 个地图节点、`58` 条历史事件；补给、政治、历史日志、存档读档和主菜单主循环都已接通。
-- Save / Load 已进入 `v3` 兼容阶段；最近一次权威回归基线是 Windows `211/211` Rust tests、Windows `GdUnit4 54/54`、Windows Godot 主项目无头和 smoke scene。
-- Rust 规则层的第一批正式集成测试和属性测试已经落地；Godot 前端第一批 `GdUnit4` 回归也已接入，Windows GitHub Actions 工作流与仓库脚本也已落地。
+- Save / Load 已进入 `v4` 兼容阶段；最近一次权威回归基线是 Windows `cargo test 215/215`、Windows `GdUnit4 57/57`、Windows Godot 主项目无头和 smoke scene。
+- Rust 规则层的正式集成测试和属性测试已经落地；Godot 前端 `GdUnit4` 回归已扩到主菜单日内状态机、弹窗取消链、存读档一致性与地图交互边界，Windows GitHub Actions 工作流与仓库脚本已落地。
 - GitHub Actions 已新增文档同步门禁：代码路径改动必须伴随 `README.md` 或 `docs/` 更新。
 - 当前总目标已按 [ADR-011](docs/decisions/ADR-011-core-loop-systemization-and-historical-depth.md) 固定为：核心玩法优化完成，并达到 Steam 可上线级别。
 - `auto/gameplay_update` 分支的后勤系统、主菜单修复、GdUnit4 测试拆分和开发者文档已合并到本分支。
-- 本轮新增：难度系统 UI（Elba/Borodino/Austerlitz）、失败归因（GameState.key_decisions）、AudioManager 框架（BGM 交叉淡入 + SFX 池 + 音量持久化）、topbar_actions_controller 拆分（main_menu.gd 1025→684 行）。
+- 本轮新增：日内行动节奏改为“1 次机动槽 + 2 次决策点 + 手动结束今天”，前 10 天教程/历史事件/结局目标入口已弹窗化并可回看，玩家可见主 UI 文本继续向中文收口，地图区域占比已抬高。
 
 ---
 
@@ -39,7 +39,7 @@
 | 维度 | 完成度 | 判断 |
 |------|--------|------|
 | 核心玩法引擎 | 95% | Rust 规则层 + GDScript 前端主循环已跑通 |
-| 存读档系统 | 100% | v3 兼容迁移已落地 |
+| 存读档系统 | 100% | v4 兼容迁移已落地 |
 | 历史事件内容 | 58% | 58/100+ 条，需补 42+ 条 |
 | 教程/引导 | 10% | 仅有前 10 天 hint 文本，无正式教程流 |
 | 结局系统 | 85% | 7 种结局路径已实现（NapoleonVictory / DiplomaticSettlement / MilitaryDominance / WaterlooHistorical / WaterlooDefeat / PoliticalCollapse / MilitaryAnnihilation），含外交进度系统、失败归因、难度标记、UI 文本和变体选择 |
@@ -49,7 +49,7 @@
 | Steam 集成 | 0% | 无 Steamworks SDK、无成就、无云存档 |
 | 设置系统 | 55% | 窗口模式 + UI 缩放 + 音频滑条 + 难度选择已有，缺按键/语言 |
 | 地图视觉 | 0% | 数据完整(41 节点)，渲染为线框，无美术 |
-| 测试覆盖 | 高 | Rust 211 + GdUnit4 54 + Windows CI |
+| 测试覆盖 | 高 | Rust 215 + GdUnit4 57 + Windows CI |
 | UI 主题 | 20% | 使用 Godot 默认主题，未实现产品计划的帝国新古典风格 |
 
 ---
@@ -179,9 +179,9 @@
   2. `主流程 smoke` — 新局/执行行动/次日/存档/读档/地图选点可重复执行
   3. `GdUnit4 契约与状态流测试` — hover、click 锁定、缩放、弹窗确认、失败恢复
   4. `Windows 真机清单` — 字体、中文换行、遮挡、滚动、面板边界
-- `GdUnit4` 测试按职责拆分到五个文件（共 54 tests）：
+- `GdUnit4` 测试按职责拆分到五个文件（共 57 tests）：
   - `main_menu_flow_test.gd` — 初始化、核心行动流、行军（11 tests）
-  - `save_load_flow_test.gd` — 存读档槽位、覆盖/删除、新局、难度恢复、一致性（15 tests）
+  - `save_load_flow_test.gd` — 存读档槽位、覆盖/删除、新局、难度恢复、一致性（16 tests）
   - `dialog_flow_test.gd` — 设置、音频滑条、战斗/接见弹窗、失败恢复、结局（17 tests）
   - `map_controller_contract_test.gd` — 地图交互边界（8 tests）
   - `settings_manager_test.gd` — 设置管理器（3 tests）
@@ -213,8 +213,8 @@ tools\run_gdunit_windows.cmd E:\software\godot\Godot_v4.6.1-stable_win64_console
 
 ## 测试现状概览
 
-- Rust 自动化包含模块内单元测试、`cent-jours-core/tests/` 集成测试和 `proptest` 属性测试，Windows 基线合计 `211` tests。
-- Godot 前端 `GdUnit4` `54/54` 回归，覆盖主菜单初始化、行动执行、存读档、难度恢复、设置音频滑条、战斗/接见/休整、政策冷却、地图交互等核心路径。
+- Rust 自动化包含模块内单元测试、`cent-jours-core/tests/` 集成测试和 `proptest` 属性测试，Windows `cargo test` 当前基线合计 `215` tests。
+- Godot 前端 `GdUnit4` `57/57` 回归，覆盖主菜单初始化、日内行动、结束今天、教程弹窗、日志回看、存读档、难度恢复、设置音频滑条、战斗/接见/休整、政策冷却、地图交互等核心路径。
 - `EventBus` 的 `unused_signal` 噪音已精准屏蔽。
 - `.github/workflows/windows-validation.yml` 和 `tools/run_gdunit_windows.cmd` 已落地；`project.godot` 变更现在也会触发 Windows 验证链。
 

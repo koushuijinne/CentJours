@@ -443,11 +443,17 @@ pub struct SaveState {
     /// 存档格式版本（用于兼容性检查）
     pub version: u32,
     pub day: u32,
+    #[serde(default)]
+    pub day_started: bool,
     // 政治系统
     pub legitimacy: f64,
     pub rouge_noir: f64,
     pub factions: HashMap<String, f64>,
     pub actions_remaining: u32,
+    #[serde(default)]
+    pub decision_actions_start: u32,
+    #[serde(default)]
+    pub maneuver_used: bool,
     // 军事系统
     pub troops: u32,
     pub morale: f64,
@@ -617,6 +623,7 @@ fn format_rouge_noir_effect(delta: f64) -> Option<String> {
 pub struct GameEngine {
     pub day: u32,
     pub phase: TurnPhase,
+    day_started: bool,
     pub politics: PoliticsState,
     pub characters: CharacterNetwork,
     pub army: ArmyState,
@@ -665,6 +672,10 @@ pub struct GameEngine {
     difficulty: Difficulty,
     /// 外交进度（0-100，由外交事件链推进，达到阈值可触发外交结局）
     diplomatic_progress: u32,
+    /// 当前日开始时可用的决策点数，用于计算日内消耗和保存中途进度。
+    decision_actions_start: u8,
+    /// 当前日是否已用掉机动槽（行军 / 战役 / 休整）。
+    maneuver_used: bool,
 }
 
 impl Default for GameEngine {
@@ -673,6 +684,7 @@ impl Default for GameEngine {
         Self {
             day: 1,
             phase: TurnPhase::Dawn,
+            day_started: false,
             politics: PoliticsState::default(),
             characters: historical_network_day1(),
             army: ArmyState::default(),
@@ -699,6 +711,8 @@ impl Default for GameEngine {
             last_triggered_events: Vec::new(),
             difficulty: Difficulty::default(),
             diplomatic_progress: 0,
+            decision_actions_start: 0,
+            maneuver_used: false,
         }
     }
 }
@@ -714,8 +728,7 @@ impl GameEngine {
         let mut engine = Self::default();
         engine.difficulty = difficulty;
         // Apply difficulty bonuses to initial state
-        engine.army.supply =
-            (engine.army.supply + difficulty.supply_bonus()).clamp(0.0, 100.0);
+        engine.army.supply = (engine.army.supply + difficulty.supply_bonus()).clamp(0.0, 100.0);
         engine.politics.legitimacy =
             (engine.politics.legitimacy + difficulty.legitimacy_bonus()).clamp(0.0, 100.0);
         engine
@@ -736,6 +749,10 @@ impl GameEngine {
     /// 当前结局（游戏进行中返回 None）
     pub fn outcome(&self) -> Option<GameOutcome> {
         self.outcome.clone()
+    }
+
+    pub fn maneuver_available(&self) -> bool {
+        !self.maneuver_used
     }
 
     /// 当前日期
@@ -2132,12 +2149,15 @@ impl GameEngine {
             .collect();
 
         SaveState {
-            version: 3,
+            version: 4,
             day: self.day,
+            day_started: self.day_started,
             legitimacy: self.politics.legitimacy,
             rouge_noir: self.politics.rouge_noir_index,
             factions: self.politics.faction_support.clone(),
             actions_remaining: self.politics.actions_remaining as u32,
+            decision_actions_start: self.decision_actions_start as u32,
+            maneuver_used: self.maneuver_used,
             troops: self.army.total_troops,
             morale: self.army.avg_morale,
             fatigue: self.army.avg_fatigue,
@@ -2175,10 +2195,13 @@ impl GameEngine {
         let mut engine = Self::new();
 
         engine.day = state.day;
+        engine.day_started = state.day_started;
         engine.politics.legitimacy = state.legitimacy;
         engine.politics.rouge_noir_index = state.rouge_noir;
         engine.politics.faction_support = state.factions;
         engine.politics.actions_remaining = state.actions_remaining as u8;
+        engine.decision_actions_start = state.decision_actions_start as u8;
+        engine.maneuver_used = state.maneuver_used;
         engine.army.total_troops = state.troops;
         engine.army.avg_morale = state.morale;
         engine.army.avg_fatigue = state.fatigue;
@@ -2233,22 +2256,23 @@ impl GameEngine {
 
     // ── 回合驱动 ──────────────────────────────────────
 
-    /// 处理一整天（Dawn → Action → Dusk）。
-    ///
-    /// 这里是整局规则的唯一日推进入口：
-    /// - Dawn 先结算历史事件，让事件效果参与当天决策和后续结算
-    /// - Action 执行玩家动作，并记录叙事分类所需的上下文
-    /// - Dusk 再统一落每日被动结算，保证 UI 只面对一份权威日结果
-    pub fn process_day<R: Rng>(&mut self, action: PlayerAction, rng: &mut R) {
+    /// 开始新的一天，只执行 Dawn 历史事件与日内预算初始化。
+    pub fn begin_day<R: Rng>(&mut self, rng: &mut R) {
         if self.is_over() {
             return;
         }
+        if self.day_started {
+            self.phase = TurnPhase::Action;
+            return;
+        }
 
-        // Dawn：触发历史事件，效果直接作用于三系统
         self.phase = TurnPhase::Dawn;
+        self.last_action_events.clear();
+        self.last_triggered_events.clear();
+        self.last_report = None;
+
         let ctx = self.build_trigger_ctx();
         let triggered = self.event_pool.trigger_all(&ctx, rng);
-        // 缓存最近触发详情，供 UI 在本回合结算后直接读取。
         self.last_triggered_events = triggered.clone();
         for t in triggered {
             self.triggered_event_ids.push(t.id.clone());
@@ -2261,25 +2285,62 @@ impl GameEngine {
             });
         }
 
-        // Action：提前提取叙事 key（action 下面会被消耗）
+        self.day_started = true;
+        self.maneuver_used = false;
+        self.decision_actions_start = self.politics.actions_remaining;
+        self.phase = TurnPhase::Action;
+    }
+
+    /// 在同一天内执行一次玩家动作，不推进日期，也不做 Dusk 结算。
+    pub fn execute_day_action<R: Rng>(&mut self, action: PlayerAction, rng: &mut R) {
+        if self.is_over() {
+            return;
+        }
+        if !self.day_started {
+            self.begin_day(rng);
+        }
+
+        let uses_maneuver_slot = matches!(
+            action,
+            PlayerAction::LaunchBattle { .. } | PlayerAction::March { .. } | PlayerAction::Rest
+        );
+        if uses_maneuver_slot && self.maneuver_used {
+            let (event_type, description) = match action {
+                PlayerAction::LaunchBattle { .. } => {
+                    ("battle_failed", "今日机动已用完，不能再发动第二次战役。")
+                }
+                PlayerAction::March { .. } => {
+                    ("march_failed", "今日机动已用完，不能再执行第二次行军。")
+                }
+                PlayerAction::Rest => ("rest_failed", "今日机动已用完，不能再额外休整。"),
+                _ => ("action_failed", "今日机动已用完。"),
+            };
+            let events = vec![DayEvent {
+                day: self.day,
+                event_type,
+                description: description.to_string(),
+                effects: vec!["今日已执行过一次行军 / 战役 / 休整。".to_string()],
+            }];
+            self.last_action_events = events.clone();
+            for event in events {
+                self.history.push(event);
+            }
+            return;
+        }
+
         self.phase = TurnPhase::Action;
         let (base_key, is_battle) = narrative_key_for_action(&action);
         let victories_before = self.army.victories;
         let defeats_before = self.army.defeats;
-        let mut events = self.execute_action(action, rng);
-
-        // Dusk：系统结算
-        self.phase = TurnPhase::Dusk;
-        let dusk_events = self.dusk_settlement(rng);
-        events.extend(dusk_events);
+        let events = self.execute_action(action, rng);
+        if uses_maneuver_slot {
+            self.maneuver_used = true;
+        }
         self.last_action_events = events.clone();
-
-        // 记录当日事件
-        for e in events {
-            self.history.push(e);
+        for event in events {
+            self.history.push(event);
         }
 
-        // 填充叙事报告（战斗结果在 execute_action 后才知道）
         let narrative_key = if is_battle {
             if self.army.victories > victories_before {
                 "battle_victory"
@@ -2287,17 +2348,59 @@ impl GameEngine {
                 "battle_defeat"
             } else {
                 ""
-            } // 平局无叙事
+            }
         } else {
             base_key
         };
         self.last_report = Some(self.build_day_report(narrative_key, rng));
+    }
 
-        // 推进日期
+    /// 结束当前一天：若机动槽未用则自动视为休整，再做 Dusk 结算并推进日期。
+    pub fn end_day<R: Rng>(&mut self, rng: &mut R) {
+        if self.is_over() {
+            return;
+        }
+        if !self.day_started {
+            self.begin_day(rng);
+        }
+
+        self.phase = TurnPhase::Dusk;
+        let mut closing_events = Vec::new();
+        if !self.maneuver_used {
+            closing_events.extend(self.execute_action(PlayerAction::Rest, rng));
+            self.maneuver_used = true;
+            self.last_report = Some(self.build_day_report("rest", rng));
+        }
+        closing_events.extend(self.dusk_settlement(rng));
+        self.last_action_events = closing_events.clone();
+        for event in closing_events {
+            self.history.push(event);
+        }
+
         self.day += 1;
-
-        // 胜负判定
+        self.day_started = false;
+        self.maneuver_used = false;
+        self.decision_actions_start = 0;
+        self.phase = TurnPhase::Dawn;
         self.check_outcome();
+    }
+
+    /// 兼容旧接口：一口气跑完 Dawn → 单次动作 → Dusk。
+    pub fn process_day<R: Rng>(&mut self, action: PlayerAction, rng: &mut R) {
+        if self.is_over() {
+            return;
+        }
+        self.begin_day(rng);
+        self.execute_day_action(action, rng);
+        let action_events = self.last_action_events.clone();
+        let action_report = self.last_report.clone();
+        self.end_day(rng);
+        let mut combined_events = action_events;
+        combined_events.extend(self.last_action_events.clone());
+        self.last_action_events = combined_events;
+        if let Some(report) = action_report {
+            self.last_report = Some(report);
+        }
     }
 
     /// 执行玩家行动，返回产生的事件列表
@@ -2610,6 +2713,14 @@ impl GameEngine {
     /// 强化忠诚度处理（消耗合法性）
     fn process_boost_loyalty(&mut self, general_id: &str) -> Vec<DayEvent> {
         let general_name = self.characters.display_name(general_id);
+        if self.politics.actions_remaining == 0 {
+            return vec![DayEvent {
+                day: self.day,
+                event_type: "boost_failed",
+                description: format!("今日决策点已用完，无法再接见 {}", general_name),
+                effects: vec!["需要保留至少 1 点决策点。".to_string()],
+            }];
+        }
         if self.politics.legitimacy < 10.0 {
             return vec![DayEvent {
                 day: self.day,
@@ -2618,6 +2729,7 @@ impl GameEngine {
                 effects: vec![],
             }];
         }
+        self.politics.actions_remaining = self.politics.actions_remaining.saturating_sub(1);
         self.politics.legitimacy -= 5.0;
         self.characters
             .modify_loyalty(general_id, 8.0, self.day, "personal_attention");
@@ -2627,6 +2739,7 @@ impl GameEngine {
             event_type: "boost_loyalty",
             description: format!("亲自接见 {}，试图稳住军心", general_name),
             effects: vec![
+                "行动点 -1".to_string(),
                 "合法性 -5.0".to_string(),
                 format!("{} 忠诚 +8.0", general_name),
             ],
@@ -3688,7 +3801,8 @@ mod tests {
         engine.army.supply = 30.0;
         let mut rng = seeded_rng();
 
-        engine.process_day(
+        engine.begin_day(&mut rng);
+        engine.execute_day_action(
             PlayerAction::EnactPolicy {
                 policy_id: "requisition_supplies",
             },
@@ -3711,7 +3825,8 @@ mod tests {
                 .any(|effect| effect.contains("补给")),
             "政策结算应显式展示补给变化"
         );
-        assert!(engine.army.supply > 30.0, "政策执行后补给应高于执行前");
+        assert_eq!(engine.day, 1, "日内政策测试不应提前推进日期");
+        assert!(engine.army.supply > 30.0, "政策执行后补给应立刻高于执行前");
     }
 
     #[test]
@@ -4671,6 +4786,129 @@ mod tests {
             1,
             "迁移后的事件在窗口内不应重复触发"
         );
+    }
+
+    #[test]
+    fn day_can_spend_policy_and_march_before_manual_end() {
+        let mut engine = GameEngine::new();
+        let mut rng = seeded_rng();
+
+        engine.begin_day(&mut rng);
+        let day_before = engine.day;
+        let actions_before = engine.politics.actions_remaining;
+
+        engine.execute_day_action(
+            PlayerAction::EnactPolicy {
+                policy_id: "public_speech",
+            },
+            &mut rng,
+        );
+        assert_eq!(engine.day, day_before, "日内执行政策不应立刻推进日期");
+        assert_eq!(
+            engine.politics.actions_remaining,
+            actions_before.saturating_sub(1),
+            "日内政策应消耗决策点"
+        );
+        assert!(engine.maneuver_available(), "政策不应占用机动槽");
+
+        engine.execute_day_action(
+            PlayerAction::March {
+                target_node: "grasse".to_string(),
+            },
+            &mut rng,
+        );
+        assert_eq!(engine.day, day_before, "日内行军后仍应停留在当天");
+        assert_eq!(engine.napoleon_location, "grasse");
+        assert!(!engine.maneuver_available(), "行军后机动槽应被占用");
+
+        engine.end_day(&mut rng);
+        assert_eq!(engine.day, day_before + 1, "手动结束今天后才应进入次日");
+        assert!(!engine.day_started, "结束今天后应重置为未开始次日");
+        assert!(engine.maneuver_available(), "进入次日后机动槽应恢复");
+    }
+
+    #[test]
+    fn second_maneuver_in_same_day_is_rejected() {
+        let mut engine = GameEngine::new();
+        let mut rng = seeded_rng();
+
+        engine.begin_day(&mut rng);
+        engine.execute_day_action(PlayerAction::Rest, &mut rng);
+        let location_before = engine.napoleon_location.clone();
+        engine.execute_day_action(
+            PlayerAction::March {
+                target_node: "grasse".to_string(),
+            },
+            &mut rng,
+        );
+
+        assert_eq!(
+            engine.napoleon_location, location_before,
+            "第二次机动动作不应改变真实位置"
+        );
+        let failure = engine
+            .last_action_events()
+            .iter()
+            .find(|event| event.event_type == "march_failed")
+            .expect("第二次机动应写入失败结算");
+        assert!(
+            failure.description.contains("今日机动已用完"),
+            "失败结算应明确说明机动槽已耗尽"
+        );
+    }
+
+    #[test]
+    fn ending_day_without_maneuver_auto_rests_before_dusk() {
+        let mut engine = GameEngine::new();
+        engine.army.avg_fatigue = 48.0;
+        engine.army.avg_morale = 56.0;
+        let fatigue_before = engine.army.avg_fatigue;
+        let morale_before = engine.army.avg_morale;
+        let mut rng = seeded_rng();
+
+        engine.begin_day(&mut rng);
+        engine.execute_day_action(
+            PlayerAction::EnactPolicy {
+                policy_id: "public_speech",
+            },
+            &mut rng,
+        );
+        engine.end_day(&mut rng);
+
+        assert!(
+            engine.army.avg_fatigue < fatigue_before,
+            "若当天未使用机动槽，结束今天前应自动休整降低疲劳"
+        );
+        assert!(
+            engine.army.avg_morale > morale_before,
+            "自动休整应同步回升士气"
+        );
+    }
+
+    #[test]
+    fn save_and_load_midday_preserves_action_budget_state() {
+        let mut engine = GameEngine::new();
+        let mut rng = seeded_rng();
+
+        engine.begin_day(&mut rng);
+        engine.execute_day_action(
+            PlayerAction::EnactPolicy {
+                policy_id: "public_speech",
+            },
+            &mut rng,
+        );
+
+        let json = engine.to_json();
+        let mut restored = GameEngine::from_json(&json).expect("日内存档应可恢复");
+
+        assert_eq!(restored.day, 1, "日内存档不应提前推进日期");
+        assert!(restored.day_started, "读档后应保留当天已开始状态");
+        assert_eq!(restored.decision_actions_start, 2);
+        assert_eq!(restored.politics.actions_remaining, 1);
+        assert!(restored.maneuver_available(), "只执行政策时机动槽仍应可用");
+
+        restored.end_day(&mut rng);
+        assert_eq!(restored.day, 2, "读档后仍可正常结束今天并进入次日");
     }
 
     // ── 叙事引擎集成 ──────────────────────────────────

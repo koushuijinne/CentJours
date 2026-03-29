@@ -33,74 +33,74 @@ const POLICY_EMOJIS := {
 
 const POLICY_EFFECTS := {
 	"conscription": [
-		{"label": "Troops", "value": 8, "type": "positive"},
-		{"label": "Populace", "value": -3, "type": "negative"},
-		{"label": "Rouge", "value": 5, "type": "rn"}
+		{"label": "兵力", "value": 8, "type": "positive"},
+		{"label": "民众", "value": -3, "type": "negative"},
+		{"label": "红派", "value": 5, "type": "rn"}
 	],
 	"public_speech": [
-		{"label": "Populace", "value": 5, "type": "positive"},
-		{"label": "Nobility", "value": -2, "type": "negative"},
-		{"label": "Rouge", "value": 3, "type": "rn"}
+		{"label": "民众", "value": 5, "type": "positive"},
+		{"label": "贵族", "value": -2, "type": "negative"},
+		{"label": "红派", "value": 3, "type": "rn"}
 	],
 	"constitutional_promise": [
-		{"label": "Liberals", "value": 7, "type": "positive"},
-		{"label": "Nobility", "value": -3, "type": "negative"},
-		{"label": "Noir", "value": -8, "type": "rn"}
+		{"label": "自由派", "value": 7, "type": "positive"},
+		{"label": "贵族", "value": -3, "type": "negative"},
+		{"label": "黑派", "value": -8, "type": "rn"}
 	],
 	"increase_military_budget": [
-		{"label": "Military", "value": 6, "type": "positive"},
-		{"label": "Economy", "value": -4, "type": "negative"},
-		{"label": "Rouge", "value": 4, "type": "rn"}
+		{"label": "军方", "value": 6, "type": "positive"},
+		{"label": "经济", "value": -4, "type": "negative"},
+		{"label": "红派", "value": 4, "type": "rn"}
 	],
 	"requisition_supplies": [
-		{"label": "Supply", "value": 18, "type": "positive"},
-		{"label": "Military", "value": 6, "type": "positive"},
-		{"label": "Populace", "value": -6, "type": "negative"},
-		{"label": "Rouge", "value": 4, "type": "rn"}
+		{"label": "补给", "value": 18, "type": "positive"},
+		{"label": "军方", "value": 6, "type": "positive"},
+		{"label": "民众", "value": -6, "type": "negative"},
+		{"label": "红派", "value": 4, "type": "rn"}
 	],
 	"stabilize_supply_lines": [
-		{"label": "Supply", "value": 6, "type": "positive"},
-		{"label": "Line", "value": 18, "type": "positive"},
-		{"label": "Military", "value": 5, "type": "positive"},
-		{"label": "Populace", "value": -3, "type": "negative"},
-		{"label": "Noir", "value": -2, "type": "rn"}
+		{"label": "补给", "value": 6, "type": "positive"},
+		{"label": "线路", "value": 18, "type": "positive"},
+		{"label": "军方", "value": 5, "type": "positive"},
+		{"label": "民众", "value": -3, "type": "negative"},
+		{"label": "黑派", "value": -2, "type": "rn"}
 	],
 	"establish_forward_depot": [
-		{"label": "Supply", "value": 4, "type": "positive"},
-		{"label": "Depot", "value": 4, "type": "positive"},
-		{"label": "Military", "value": 4, "type": "positive"},
-		{"label": "Populace", "value": -2, "type": "negative"},
-		{"label": "Noir", "value": -1, "type": "rn"}
+		{"label": "补给", "value": 4, "type": "positive"},
+		{"label": "粮站", "value": 4, "type": "positive"},
+		{"label": "军方", "value": 4, "type": "positive"},
+		{"label": "民众", "value": -2, "type": "negative"},
+		{"label": "黑派", "value": -1, "type": "rn"}
 	],
 	"secure_regional_corridor": [
-		{"label": "Supply", "value": 8, "type": "positive"},
-		{"label": "Line", "value": 12, "type": "positive"},
-		{"label": "Depot", "value": 3, "type": "positive"},
-		{"label": "Military", "value": 5, "type": "positive"},
-		{"label": "Populace", "value": -4, "type": "negative"},
-		{"label": "Noir", "value": -1, "type": "rn"}
+		{"label": "补给", "value": 8, "type": "positive"},
+		{"label": "线路", "value": 12, "type": "positive"},
+		{"label": "粮站", "value": 3, "type": "positive"},
+		{"label": "军方", "value": 5, "type": "positive"},
+		{"label": "民众", "value": -4, "type": "negative"},
+		{"label": "黑派", "value": -1, "type": "rn"}
 	],
 	"grant_titles": [
-		{"label": "Nobility", "value": 12, "type": "positive"},
-		{"label": "Liberals", "value": -5, "type": "negative"},
-		{"label": "Populace", "value": -3, "type": "negative"},
-		{"label": "Noir", "value": -5, "type": "rn"}
+		{"label": "贵族", "value": 12, "type": "positive"},
+		{"label": "自由派", "value": -5, "type": "negative"},
+		{"label": "民众", "value": -3, "type": "negative"},
+		{"label": "黑派", "value": -5, "type": "rn"}
 	],
 	"reduce_taxes": [
-		{"label": "Populace", "value": 10, "type": "positive"},
-		{"label": "Liberals", "value": 3, "type": "positive"},
-		{"label": "Economy", "value": -8, "type": "negative"}
+		{"label": "民众", "value": 10, "type": "positive"},
+		{"label": "自由派", "value": 3, "type": "positive"},
+		{"label": "经济", "value": -8, "type": "negative"}
 	],
 	"secret_diplomacy": [
-		{"label": "Cost", "value": 2, "type": "negative"},
-		{"label": "Noir", "value": -3, "type": "rn"}
+		{"label": "代价", "value": 2, "type": "negative"},
+		{"label": "黑派", "value": -3, "type": "rn"}
 	],
 	"print_money": [
-		{"label": "Economy", "value": 15, "type": "positive"},
-		{"label": "Populace", "value": -5, "type": "negative"},
-		{"label": "Liberals", "value": -8, "type": "negative"},
-		{"label": "Nobility", "value": -5, "type": "negative"},
-		{"label": "Rouge", "value": 8, "type": "rn"}
+		{"label": "经济", "value": 15, "type": "positive"},
+		{"label": "民众", "value": -5, "type": "negative"},
+		{"label": "自由派", "value": -8, "type": "negative"},
+		{"label": "贵族", "value": -5, "type": "negative"},
+		{"label": "红派", "value": 8, "type": "rn"}
 	]
 }
 
@@ -109,7 +109,7 @@ const BATTLE_CARD_META := {
 	"name": "发动战役",
 	"emoji": "⚔️",
 	"effects": [
-		{"label": "Risk", "value": 0, "type": "negative"}
+		{"label": "风险", "value": 0, "type": "negative"}
 	]
 }
 
@@ -118,8 +118,8 @@ const MARCH_CARD_META := {
 	"name": "行军",
 	"emoji": "🧭",
 	"effects": [
-		{"label": "Move", "value": 1, "type": "positive"},
-		{"label": "Fatigue", "value": -10, "type": "positive"}
+		{"label": "行军", "value": 1, "type": "positive"},
+		{"label": "疲劳", "value": -10, "type": "positive"}
 	]
 }
 
@@ -128,8 +128,8 @@ const BOOST_CARD_META := {
 	"name": "亲自接见将领",
 	"emoji": "🤝",
 	"effects": [
-		{"label": "Legitimacy", "value": -5, "type": "negative"},
-		{"label": "Loyalty", "value": 8, "type": "positive"}
+		{"label": "合法性", "value": -5, "type": "negative"},
+		{"label": "忠诚", "value": 8, "type": "positive"}
 	]
 }
 
@@ -401,8 +401,8 @@ const REST_CARD_META := {
 	"name": "休整",
 	"emoji": "🌙",
 	"effects": [
-		{"label": "Fatigue", "value": -10, "type": "positive"},
-		{"label": "Morale", "value": 3, "type": "positive"}
+		{"label": "疲劳", "value": -10, "type": "positive"},
+		{"label": "士气", "value": 3, "type": "positive"}
 	]
 }
 
