@@ -31,6 +31,7 @@
 | `BUG-2026-03-27-EVENTBUS-WARNINGS` | `EventBus` 声明型 signal 在 `GdUnit4` 中持续产生 warning 噪音 | P2 | 已修复 | 本轮 `GdUnit4` 日志审计 | Windows headless / smoke / `GdUnit4` | [docs/bugs/bug_eventbus_signal_warnings.md](docs/bugs/bug_eventbus_signal_warnings.md) |
 | `BUG-2026-03-28-VALIDATION-MATRIX` | 将关键 bug 收口为自动化回归与 Windows 真机清单 | P1 | 已建立 | 本轮验证链收口 | Windows headless / smoke / `GdUnit4` | [docs/bugs/bug_validation_matrix_2026-03-28.md](docs/bugs/bug_validation_matrix_2026-03-28.md) |
 | `BUG-2026-03-28-HISTORICAL-NARRATOR` | 百日王朝叙事者历史准确性错误：当前仍以 Stendhal 作为在场日记叙事者 | P1 | 待处理 | 2026-03-28 历史审校 | TODO 清单 | [docs/bugs/bug_historical_narrator_accuracy.md](docs/bugs/bug_historical_narrator_accuracy.md) |
+| `BUG-2026-03-29-REAL-PLAYTEST` | 真人试玩暴露出行动经济、教程/事件展示、结局入口、地图优先布局和中文化问题 | P0 | 待处理 | [docs/advice/真实游玩体验.md](docs/advice/真实游玩体验.md) | 待补 Rust / `GdUnit4` / Windows 真机清单 | [docs/bugs/bug_real_playtest_2026-03-29.md](docs/bugs/bug_real_playtest_2026-03-29.md) |
 
 ## 维护规则
 
