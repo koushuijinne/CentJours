@@ -16,8 +16,8 @@
 | 维度 | 状态 |
 |------|------|
 | 入口 | `src/ui/main_menu.tscn`，主循环 `TurnManager → CentJoursEngine → GameState → UI` 已接通 |
-| 数据 | 17 角色 / 43 地图节点 / 58 历史事件 (major 16 / normal 35 / minor 7) |
-| 测试 | Rust 211/211 + GdUnit4 50/50 + Windows CI + smoke |
+| 数据 | 15 角色 / 41 地图节点 / 58 历史事件 (major 16 / normal 35 / minor 7) |
+| 测试 | Rust 211/211 + GdUnit4 54/54 + Windows CI + smoke |
 | 存档 | Save v3 兼容路径，旧 `fontainebleau_eve` → `tuileries_eve` 迁移 |
 | 分支 | `claude/review-project-status-05vxD`（已合并 `auto/gameplay_update`） |
 
@@ -30,7 +30,7 @@
 - **音频框架**: AudioManager autoload (BGM 交叉淡入 + SFX 池 + 音量持久化)，缺音频资产
 - **设置系统**: 窗口模式 + UI 缩放 + 音频滑条，设置弹窗进 GdUnit4 回归
 - **地图交互**: MapScroll + 滚轮缩放 + hover 预览 / click 锁定详情两层，补给角色/枢纽/粮秣站标注
-- **前端拆分**: main_menu.gd 1025→670 行，拆出 map / layout / tray / sidebar / dialogs / topbar_actions 6 个子控制器
+- **前端拆分**: main_menu.gd 1025→684 行，拆出 map / layout / tray / sidebar / dialogs / topbar_actions 6 个子控制器
 - **弹窗状态机**: modal 统一锁定 DecisionTray，存读档/设置/战斗/接见/结局弹窗均有 GdUnit4 回归
 - **教程链**: DecisionTray 前 10 天后勤教程，侧栏情境化政策建议
 - **多结局系统**: GameOutcome 7 种路径 (NapoleonVictory / DiplomaticSettlement / MilitaryDominance / WaterlooHistorical / WaterlooDefeat / PoliticalCollapse / MilitaryAnnihilation)，外交进度系统 (diplomatic_progress 0-100)，check_outcome() 优先级逻辑，UI OUTCOME_TEXT 7 套文本 + 变体选择
@@ -38,7 +38,7 @@
 ### 验证与 CI
 
 - Windows 是默认验证平台，不用 Linux/WSL 结果补位
-- `windows-validation.yml` 白名单触发：Rust tests → GDExt build → GdUnit4 → headless boot → smoke
+- `windows-validation.yml` 白名单触发：Rust tests → GDExt build → GdUnit4 → headless boot → smoke；`project.godot` 改动也会触发
 - `doc-sync.yml` 门禁：代码路径改动必须同步更新 README 或 docs/
 
 ## 当前最高优先级
@@ -57,7 +57,7 @@
 - `文本 QA 未收口`：剩余事件仍需统一史实锚点、信息密度和句式风格
 - `前端发布级 polish 未完成`：主菜单主要 bug 已清一轮，但仍需 Windows 真机继续看地图缩放、hover 预览和存读档弹窗的最终体验
 - `Windows CI 仍需继续收口`：`23606297120` 已成功，`23607846862` 也已被后续 push 自动取消，说明 `concurrency` 生效；接下来继续观察新 run 稳定性并压缩剩余无效排队
-- `前端自动回归仍不够宽`：存读档、设置、地图交互边界、战斗/接见失败恢复与成功推进、行军主流程、休整行动、政策冷却和连续两日行动已纳入 `GdUnit4`，`EventBus` 噪音也已清掉，但存读档后状态一致性和更多边界路径还没进回归
+- `前端自动回归仍不够宽`：存读档、设置、音频滑条、地图交互边界、战斗/接见失败恢复与成功推进、行军主流程、休整行动、政策冷却、连续两日行动、读档后一致性和难度恢复已纳入 `GdUnit4`，`EventBus` 噪音也已清掉；但更多长链 UI 状态和真机视觉问题还没全覆盖
 - `产品化能力仍缺`：最小设置入口已落地，但更完整的选项页、导出配置、Steam 商店素材、教程引导都未完成
 - `Windows 真机体验验收仍未收口`：这轮已经补齐 Windows DLL 重编、Windows 无头与 smoke scene，但更长时的真机 UI / 体验验收还没补
 - `最终资产仍是占位`：地图底图、肖像、插图、BGM、SFX、结局画面还没替换

@@ -35,14 +35,18 @@ P1
 ## 回归
 
 - Windows `GdUnit4`
+  - `test_save_then_load_restores_day_one`
   - `test_existing_save_slot_requires_overwrite_confirmation`
   - `test_delete_save_from_load_picker_removes_slot`
+  - `test_delete_save_from_save_picker_removes_slot`
   - `test_save_overwrite_cancel_keeps_picker_open`
   - `test_delete_save_cancel_keeps_load_picker_open`
+  - `test_load_dialog_cancel_keeps_current_progress`
+  - `test_loading_save_restores_saved_difficulty_and_clears_tray_selection`
 - Windows Godot headless 主项目
 - Windows Godot smoke scene
 
 ## 相关文件
 
-- [src/ui/main_menu.gd](src/ui/main_menu.gd)
-- [tests/godot/main_menu_flow_test.gd](tests/godot/main_menu_flow_test.gd)
+- [src/ui/main_menu/topbar_actions_controller.gd](src/ui/main_menu/topbar_actions_controller.gd)
+- [tests/godot/save_load_flow_test.gd](tests/godot/save_load_flow_test.gd)

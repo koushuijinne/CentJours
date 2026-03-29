@@ -109,7 +109,6 @@ func test_rest_action_advances_day_without_popup() -> void:
 
 func test_policy_action_triggers_cooldown_on_next_day() -> void:
 	var runner := await _load_main_menu()
-	var scene := runner.scene()
 	var tray_controller = runner.get_property("_tray_controller")
 	assert_int(GameState.current_day).is_equal(1)
 
@@ -216,7 +215,6 @@ func test_switching_away_from_march_clears_pending_target() -> void:
 
 func test_two_consecutive_days_rest_then_march() -> void:
 	var runner := await _load_main_menu()
-	var scene := runner.scene()
 	var tray_controller = runner.get_property("_tray_controller")
 	var controller = runner.get_property("_map_controller")
 	assert_int(GameState.current_day).is_equal(1)

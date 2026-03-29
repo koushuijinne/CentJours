@@ -291,6 +291,7 @@ mod gdext_bindings {
     /// var engine = CentJoursEngine.new()
     /// engine.process_day_rest()
     /// var report = engine.get_last_report()   # { stendhal, consequence }
+    /// TODO(history): `stendhal` 键后续会迁移为 Bertrand diary 对应命名。
     /// var state  = engine.get_state()         # { day, legitimacy, troops, ... }
     /// ```
     #[derive(GodotClass)]

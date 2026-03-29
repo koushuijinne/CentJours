@@ -8,12 +8,14 @@ const SettingsManagerScript = preload("res://src/core/settings_manager.gd")
 
 func before_test() -> void:
 	_cleanup_settings()
+	_reset_audio_manager()
 	TurnManager.reset_engine()
 	GameState.triggered_events.clear()
 
 
 func after_test() -> void:
 	_cleanup_settings()
+	_reset_audio_manager()
 	TurnManager.reset_engine()
 
 
@@ -147,6 +149,53 @@ func test_settings_reset_restores_defaults() -> void:
 	assert_bool(absf(scene.get_window().content_scale_factor - 1.0) < 0.001).is_true()
 	assert_object(scene.find_child("SettingsPopup", true, false)).is_null()
 	assert_bool(execute_button.disabled).is_false()
+
+
+func test_settings_popup_exposes_audio_sliders_with_current_values() -> void:
+	var audio_manager := _audio_manager()
+	assert_object(audio_manager).is_not_null()
+	audio_manager.set_music_volume(0.35)
+	audio_manager.set_sfx_volume(0.65)
+
+	var runner := await _load_main_menu()
+	var scene := runner.scene()
+	var settings_button := scene.find_child("SettingsButton", true, false) as Button
+	assert_object(settings_button).is_not_null()
+
+	settings_button.pressed.emit()
+	await await_idle_frame()
+
+	var music_slider := scene.find_child("SettingsMusicVolumeSlider", true, false) as HSlider
+	var sfx_slider := scene.find_child("SettingsSfxVolumeSlider", true, false) as HSlider
+	assert_object(music_slider).is_not_null()
+	assert_object(sfx_slider).is_not_null()
+	assert_bool(absf(music_slider.value - 0.35) < 0.001).is_true()
+	assert_bool(absf(sfx_slider.value - 0.65) < 0.001).is_true()
+
+
+func test_settings_audio_sliders_update_audio_manager_immediately() -> void:
+	var audio_manager := _audio_manager()
+	assert_object(audio_manager).is_not_null()
+
+	var runner := await _load_main_menu()
+	var scene := runner.scene()
+	var settings_button := scene.find_child("SettingsButton", true, false) as Button
+	assert_object(settings_button).is_not_null()
+
+	settings_button.pressed.emit()
+	await await_idle_frame()
+
+	var music_slider := scene.find_child("SettingsMusicVolumeSlider", true, false) as HSlider
+	var sfx_slider := scene.find_child("SettingsSfxVolumeSlider", true, false) as HSlider
+	assert_object(music_slider).is_not_null()
+	assert_object(sfx_slider).is_not_null()
+
+	music_slider.value = 0.45
+	sfx_slider.value = 0.55
+	await runner.simulate_frames(2)
+
+	assert_bool(absf(audio_manager.get_music_volume() - 0.45) < 0.001).is_true()
+	assert_bool(absf(audio_manager.get_sfx_volume() - 0.55) < 0.001).is_true()
 
 
 func test_battle_popup_cancel_keeps_action_phase() -> void:
@@ -401,6 +450,26 @@ func _load_main_menu() -> GdUnitSceneRunner:
 func _cleanup_settings() -> void:
 	SettingsManagerScript.clear_settings()
 	SettingsManagerScript.apply_settings(SettingsManagerScript.default_settings())
+
+
+func _audio_manager() -> Node:
+	var main_loop := Engine.get_main_loop() as SceneTree
+	if main_loop == null:
+		return null
+	var root: Window = main_loop.root
+	if root == null or not root.has_node("AudioManager"):
+		return null
+	return root.get_node("AudioManager")
+
+
+func _reset_audio_manager() -> void:
+	var audio_manager := _audio_manager()
+	if audio_manager == null:
+		return
+	audio_manager.set_master_volume(1.0)
+	audio_manager.set_music_volume(0.8)
+	audio_manager.set_sfx_volume(1.0)
+	audio_manager.set_muted(false)
 
 
 func _select_option_metadata(option_button: OptionButton, metadata: Variant) -> void:

@@ -196,7 +196,7 @@ Rust 引擎内置 `Difficulty` 枚举（Elba / Borodino / Austerlitz），影响
 
 ## 当前已知架构压力
 
-- `main_menu.gd` 已从 1025 行减到 670 行，但仍可继续拆分
+- `main_menu.gd` 已从 1025 行减到 684 行，但仍可继续拆分
 - `GameState` 字段很多，接口文档必须跟上，否则容易出现“字段知道存在，但不知道边界”
 - 主菜单与地图交互仍是高回归区，需要继续用 `GdUnit4` 压住
 

@@ -145,8 +145,18 @@ func _show_settings_popup() -> void:
 	if Engine.has_singleton("AudioManager") or has_node("/root/AudioManager"):
 		var audio_mgr: Node = _get_audio_manager()
 		if audio_mgr != null:
-			content.add_child(_build_volume_row("音乐音量", audio_mgr.get_music_volume(), func(v: float): audio_mgr.set_music_volume(v)))
-			content.add_child(_build_volume_row("音效音量", audio_mgr.get_sfx_volume(), func(v: float): audio_mgr.set_sfx_volume(v)))
+			content.add_child(_build_volume_row(
+				"音乐音量",
+				audio_mgr.get_music_volume(),
+				func(v: float): audio_mgr.set_music_volume(v),
+				"SettingsMusicVolume"
+			))
+			content.add_child(_build_volume_row(
+				"音效音量",
+				audio_mgr.get_sfx_volume(),
+				func(v: float): audio_mgr.set_sfx_volume(v),
+				"SettingsSfxVolume"
+			))
 
 	var buttons := HBoxContainer.new()
 	buttons.name = "SettingsButtonRow"
@@ -190,14 +200,25 @@ func _build_settings_option_row(label_text: String, option_button: OptionButton)
 	return row
 
 
-func _build_volume_row(label_text: String, initial_value: float, on_change: Callable) -> HBoxContainer:
+func _build_volume_row(
+	label_text: String,
+	initial_value: float,
+	on_change: Callable,
+	node_prefix: String = ""
+) -> HBoxContainer:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 8)
+	if node_prefix != "":
+		row.name = "%sRow" % node_prefix
 	var label := Label.new()
 	label.text = label_text
 	label.custom_minimum_size = Vector2(96, 0)
+	if node_prefix != "":
+		label.name = "%sLabel" % node_prefix
 	row.add_child(label)
 	var slider := HSlider.new()
+	if node_prefix != "":
+		slider.name = "%sSlider" % node_prefix
 	slider.min_value = 0.0
 	slider.max_value = 1.0
 	slider.step = 0.05

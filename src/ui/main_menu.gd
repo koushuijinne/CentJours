@@ -303,7 +303,7 @@ func _connect_signals() -> void:
 	EventBus.legitimacy_changed.connect(_on_legitimacy_changed)
 	EventBus.loyalty_changed.connect(_on_loyalty_changed)
 	EventBus.historical_event_triggered.connect(_on_history_changed)
-	# 接叙事信号：司汤达日记与行动后果文本
+	# 接叙事信号：当前仍是 Stendhal 占位命名；后续要按 BUG-2026-03-28-HISTORICAL-NARRATOR 迁移为 Bertrand diary。
 	EventBus.stendhal_diary_entry.connect(_on_stendhal_entry)
 	EventBus.micro_narrative_shown.connect(_on_micro_narrative)
 	EventBus.action_resolution_logged.connect(_on_action_resolution_logged)
@@ -542,7 +542,7 @@ func _begin_next_turn() -> void:
 	TurnManager.start_new_turn()
 	TurnManager.begin_action_phase()
 
-## 司汤达日记：进入滚动日志，金色调以区分于普通后果文本（ADR-004）
+## TODO(history): 当前标题仍是原型期的 Stendhal 文案，后续要改成 Bertrand diary 的展示口径。
 func _on_stendhal_entry(day: int, text: String) -> void:
 	_append_narrative("Jour %d — Stendhal\n%s" % [day, text], CentJoursTheme.COLOR["gold_dim"])
 

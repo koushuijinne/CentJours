@@ -19,6 +19,8 @@
   ADR 架构决策记录
 - [docs/bugs/bug_index.md](docs/bugs/bug_index.md)
   结构化 bug 索引、模板和当前代码问题记录
+- [docs/reference_materials/](docs/reference_materials/)
+  文学 / 美术参考素材归档，不直接作为运行时资源
 
 默认接手顺序：
 

@@ -101,6 +101,9 @@ dark neutral background, even lighting,
 ```
 
 #### 司汤达（Stendhal / Marie-Henri Beyle）
+
+> TODO(history): 若游戏内日记叙事者切换为 `Henri Gatien Bertrand`，这里的人物模板也要同步替换；Stendhal 保留为文学参考来源，不再默认作为百日在场 NPC。
+
 ```
 Stendhal, Marie-Henri Beyle, French writer, 32 years old,
 chubby round face, intelligent ironic eyes, hint of smile,

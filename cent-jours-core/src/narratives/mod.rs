@@ -3,6 +3,7 @@
 //! 加载 stendhal_diary.json 和 consequences.json，
 //! 根据玩家行动类型随机抽取叙事文本。
 //! GameEngine 通过 `last_report()` 把结果暴露给 Godot UI。
+//! TODO(history): `stendhal_diary.json` 仍是早期原型命名；后续需迁移为 Bertrand diary，并同步 GDExt / GDScript / 文档。
 
 use rand::Rng;
 use std::collections::HashMap;
@@ -13,7 +14,7 @@ type NarrativeMap = HashMap<String, Vec<String>>;
 
 // ── 叙事池 ────────────────────────────────────────────────────────────────
 
-/// 双文本池：司汤达日记 + 微叙事后果片段
+/// 双文本池：司汤达日记占位文本 + 微叙事后果片段
 pub struct NarrativePool {
     stendhal: NarrativeMap,
     consequences: NarrativeMap,

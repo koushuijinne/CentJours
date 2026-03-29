@@ -10,6 +10,7 @@ on:
       - "cent-jours-core/**"
       - "tests/**"
       - "addons/**"
+      - "project.godot"
       - "tools/run_gdunit_windows.cmd"
       - ".github/workflows/windows-validation.yml"
   pull_request:
@@ -18,6 +19,7 @@ on:
       - "cent-jours-core/**"
       - "tests/**"
       - "addons/**"
+      - "project.godot"
       - "tools/run_gdunit_windows.cmd"
       - ".github/workflows/windows-validation.yml"
   workflow_dispatch:

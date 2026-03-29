@@ -161,6 +161,7 @@ pub struct DayEvent {
 #[derive(Debug, Clone)]
 pub struct DayReport {
     pub day: u32,
+    /// TODO(history): 当前 narrator 仍是原型期 Stendhal 占位，后续迁移为 Bertrand 宫廷总管日记。
     /// 司汤达当天的日记评论（基于玩家行动类型）
     pub stendhal: Option<String>,
     /// 普通人视角的后果片段（基于玩家行动类型）

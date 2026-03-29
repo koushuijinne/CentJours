@@ -175,6 +175,7 @@ func _run_dusk_phase(action_type: String, params: Dictionary) -> void:
 	# engine.get_last_report() 返回键（来自 lib.rs CentJoursEngine::get_last_report）:
 	#   day(int)           — 发生该叙事的天数
 	#   has_narrative(bool)— 本回合是否有叙事内容
+	# TODO(history): `stendhal` 字段是早期原型命名，后续迁移为 Bertrand diary，并同步改 GDExt / UI / 存档口径。
 	#   stendhal(String)   — 日记体叙事文本（可为空串）
 	#   consequence(String)— 行动后果文本（可为空串）
 	var report := engine.get_last_report()
@@ -281,6 +282,7 @@ func _sync_state_from_engine() -> void:
 	GameState.avg_fatigue      = float(state.get("fatigue", 20.0))
 	GameState.supply           = float(state.get("supply", GameState.supply))
 	GameState.victories        = int(state.get("victories", 0))
+	GameState.difficulty       = String(state.get("difficulty", GameState.difficulty))
 	GameState.napoleon_location = String(state.get("napoleon_location", GameState.napoleon_location))
 	GameState.forward_depot_location = String(state.get("forward_depot_location", ""))
 	GameState.forward_depot_capacity_bonus = int(state.get("forward_depot_capacity_bonus", 0))

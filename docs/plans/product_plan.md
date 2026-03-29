@@ -195,6 +195,8 @@ DEVIATION = BASE_RELIABILITY(loyalty)
 
 ### 3.1 司汤达NPC日记
 
+> TODO(history): 当前“司汤达在场日记”设定不符合百日王朝史实。后续要迁移为 `Henri Gatien Bertrand` 宫廷总管日记；司汤达保留为文学风格与《红与黑》来源，不再作为在场 NPC 叙事者。
+
 - 司汤达（Marie-Henri Beyle）作为NPC存在于游戏中，身份为”帝国审计官/业余作家”
 - 每天结算阶段（Dusk Phase），司汤达写一段日记评论当天事件
 - 日记内容**离线批量生成**：为每个关键决策分支预生成3-5个文本变体，运行时根据玩家行动选取匹配版本

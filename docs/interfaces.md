@@ -149,6 +149,7 @@
 - 叙事与历史
   - `triggered_events`
   - `stendhal_diary`
+    - TODO(history): 当前命名仍是早期占位，后续要按 `BUG-2026-03-28-HISTORICAL-NARRATOR` 迁移为 `Henri Gatien Bertrand` 的在场日记体系
 
 - 外交与结局
   - `diplomatic_progress` — 外交进度 (0-100)，由事件 `diplomatic_progress_delta` 推进
