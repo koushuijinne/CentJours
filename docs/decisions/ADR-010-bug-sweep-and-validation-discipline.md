@@ -200,7 +200,10 @@
 
 当前仓库落地形式：
 - 本地 Windows 执行入口：`tools/run_gdunit_windows.cmd`
-- 云端 Windows 执行入口：`.github/workflows/windows-validation.yml`
+- 云端 Windows 执行入口拆成三层：
+  - `.github/workflows/windows-fast.yml`
+  - `.github/workflows/windows-validation.yml`（workflow name: `windows-full`）
+  - `.github/workflows/windows-heavy-nightly.yml`
 
 ---
 

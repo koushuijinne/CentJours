@@ -2,7 +2,7 @@
 
 你扮演 1815 年的拿破仑，从厄尔巴岛出逃，在 100 天内重建帝国、稳住政治与补给体系，并决定自己是在巴黎站稳脚跟，还是走向滑铁卢。
 
-本项目当前是一个 Windows-first 的 Godot 4 + Rust GDExtension 策略游戏原型，主场景入口为 `src/ui/main_menu.tscn`。仓库已经具备可玩的纵向切片，也已经接入 Windows 自动化测试、Godot `GdUnit4` 回归和 Windows CI。
+本项目当前是一个 Windows-first 的 Godot 4 + Rust GDExtension 策略游戏原型，主场景入口为 `src/ui/main_menu.tscn`。仓库已经具备可玩的纵向切片，也已经接入 Windows 自动化测试、Godot `GdUnit4` 回归和三层 Windows CI。
 主菜单当前还提供最小设置入口，可持久化窗口模式和界面缩放。
 
 ## 环境部署说明
@@ -48,9 +48,9 @@ cargo build --features godot-extension
 
 ### 本地默认验证
 
-- Rust 规则层：Windows `cargo test`
+- Rust 规则层：优先跑定向测试；全量 `cargo test` 默认交给云端 `windows-full`
 - Rust + GDExt API：Windows `cargo build --features godot-extension`
-- Godot 前端：Windows `GdUnit4 + headless boot + smoke scene`
+- Godot 前端：优先跑定向 `GdUnit4` + `headless boot`；全量 `GdUnit4` 默认交给云端 `windows-full`
 
 Rust 测试：
 
@@ -63,7 +63,7 @@ Godot `GdUnit4`：
 
 ```bash
 cd /d E:\projects\CentJours
-tools\run_gdunit_windows.cmd E:\software\godot\Godot_v4.6.1-stable_win64_console.exe res://tests/godot
+tools\run_gdunit_windows.cmd E:\software\godot\Godot_v4.6.1-stable_win64_console.exe res://tests/godot/dialog_flow_test.gd res://tests/godot/main_menu_flow_test.gd
 ```
 
 Smoke scene：
@@ -78,14 +78,17 @@ E:\software\godot\Godot_v4.6.1-stable_win64_console.exe --headless --path E:\pro
 - 代码路径改动默认要同步更新 `README.md` 或 `docs/`，GitHub Actions 会做文档同步门禁
 - 主菜单和地图交互问题优先绑定 `GdUnit4`
 - 视觉、布局、滚动与可读性问题以 Windows 真机为最终标准
-- GitHub Actions 已有 Windows workflow，会跑 Rust tests、GDExt build、`GdUnit4`、headless boot 和 smoke
+- GitHub Actions 已拆成三层 Windows workflow：
+  - `windows-fast`：快反馈，跑 Rust 快速测试、GDExt build、核心 `GdUnit4`、headless boot
+  - `windows-full`：全量回归，跑完整 `cargo test`、完整 `GdUnit4`、smoke scene
+  - `windows-heavy-nightly`：夜间 / 手动重测，跑 Monte Carlo 长测和大样本属性测试
 - 玩家设置会写入 `user://cent_jours_settings.cfg`，默认管理窗口模式与界面缩放
 
 ## Roadmap
 
 ### 当前优先级
 
-- 继续收口 Windows CI、文档同步门禁与 Godot 前端自动回归
+- 继续收口三层 Windows CI、文档同步门禁与 Godot 前端自动回归
 - 把 `docs/bugs` 里的关键问题持续转成自动化验证
 - 在测试护栏稳定后继续推进补给玩法产品化与教学链
 

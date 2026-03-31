@@ -13,7 +13,7 @@
 - 项目已经有可玩的纵向切片，正式入口仍是 `src/ui/main_menu.tscn`，主链路 `TurnManager -> CentJoursEngine -> GameState -> UI` 已跑通。
 - 当前内容规模为 `15` 名角色、`41` 个地图节点、`58` 条历史事件；补给、政治、历史日志、存档读档和主菜单主循环都已接通。
 - Save / Load 已进入 `v4` 兼容阶段；最近一次权威回归基线是 Windows `cargo test 215/215`、Windows `GdUnit4 64/64`、Windows Godot 主项目无头和 smoke scene。
-- Rust 规则层的正式集成测试和属性测试已经落地；Godot 前端 `GdUnit4` 回归已扩到主菜单日内状态机、弹窗取消链、存读档一致性与地图交互边界，Windows GitHub Actions 工作流与仓库脚本已落地。
+- Rust 规则层的正式集成测试和属性测试已经落地；Godot 前端 `GdUnit4` 回归已扩到主菜单日内状态机、弹窗取消链、存读档一致性与地图交互边界；Windows GitHub Actions 已拆成 `fast / full / heavy-nightly` 三层。
 - GitHub Actions 已新增文档同步门禁：代码路径改动必须伴随 `README.md` 或 `docs/` 更新。
 - 当前总目标已按 [ADR-011](docs/decisions/ADR-011-core-loop-systemization-and-historical-depth.md) 固定为：核心玩法优化完成，并达到 Steam 可上线级别。
 - `auto/gameplay_update` 分支的后勤系统、主菜单修复、GdUnit4 测试拆分和开发者文档已合并到本分支。
@@ -86,7 +86,7 @@
 
 | ID | 任务 | 优先级 | 规模 | 状态 |
 |----|------|--------|------|------|
-| S0-1 | 继续收口 Windows GitHub Actions 验证链 | P0 | M | 进行中 |
+| S0-1 | 继续收口三层 Windows GitHub Actions 验证链 | P0 | M | 已拆成 `fast / full / heavy-nightly`，后续继续观察稳定性与队列占用 |
 | S0-2 | 把 `docs/bugs` 中的关键问题继续转成可重复验证 | P0 | M | 进行中 |
 | S0-3 | 继续扩 Godot `GdUnit4` 覆盖面（存读档一致性、更多边界） | P0 | M | 进行中 |
 
@@ -251,7 +251,7 @@ tools\run_gdunit_windows.cmd E:\software\godot\Godot_v4.6.1-stable_win64_console
 - Godot 前端 `GdUnit4` `64/64` 回归，覆盖主菜单初始化、日内行动、结束今天、教程弹窗、日志回看、存读档、难度恢复、设置音频滑条、战斗/接见/休整、政策冷却、地图交互、教程弹窗宽度回归、设置弹窗锁定语义和地图空白点击清空链等核心路径。
 - 教程正文宽度异常收缩、长中文段落竖排化的问题现在已有专门断言，但其余长文本弹窗还没有同等级别护栏。
 - `EventBus` 的 `unused_signal` 噪音已精准屏蔽。
-- `.github/workflows/windows-validation.yml` 和 `tools/run_gdunit_windows.cmd` 已落地；`project.godot` 变更现在也会触发 Windows 验证链。
+- `.github/workflows/windows-fast.yml`、`.github/workflows/windows-validation.yml`（`windows-full`）、`.github/workflows/windows-heavy-nightly.yml` 和 `tools/run_gdunit_windows.cmd` 已落地；`project.godot` 变更现在会触发对应的快反馈或全量云端验证链。
 
 ---
 

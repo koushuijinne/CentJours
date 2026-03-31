@@ -79,3 +79,21 @@
 - 待本轮统一提交
 下一步:
 - 继续收口 `S1-8` 行动面板禁用态与分区重排，并把百科第一版继续补到补给与结局关联。
+
+## 2026-03-29 第 5 轮
+分支: `claude/review-project-status-05vxD`
+范围: 把单条 Windows 验证链拆成 `fast / full / heavy-nightly` 三层，降低本地等待成本
+变更:
+- 在 [tools/run_gdunit_windows.cmd](../../../tools/run_gdunit_windows.cmd) 增加多测试路径支持；现在可以一次刷新 Godot 缓存后串行执行多个 `GdUnit4` 套件，供 `windows-fast` 复用。
+- 新增 [windows-fast.yml](../../../.github/workflows/windows-fast.yml)，在开发分支 `push / pull_request` 上执行 Rust 快速测试、Windows GDExt build、核心 `GdUnit4` 和 headless boot。
+- 将 [windows-validation.yml](../../../.github/workflows/windows-validation.yml) 重定义为 `windows-full`，保留开发分支 `push + workflow_dispatch` 的全量 `cargo test`、全量 `GdUnit4` 与 smoke scene。
+- 新增 [windows-heavy-nightly.yml](../../../.github/workflows/windows-heavy-nightly.yml)，在 `schedule + workflow_dispatch` 下执行 Monte Carlo 长测和 `PROPTEST_CASES=1024` 的大样本属性测试。
+- 更新 [README.md](../../../README.md)、[docs/architecture.md](../../architecture.md)、[docs/interfaces.md](../../interfaces.md)、[docs/decisions/ADR-010-bug-sweep-and-validation-discipline.md](../../decisions/ADR-010-bug-sweep-and-validation-discipline.md)、[docs/plans/dev_plan.md](../../plans/dev_plan.md)、[docs/history/agent_handoff.md](../agent_handoff.md)，把 CI 口径同步成“三层云端验证 + 本地最小验证”。
+验证:
+- Windows `tools\\run_gdunit_windows.cmd ... res://tests/godot/dialog_flow_test.gd res://tests/godot/settings_manager_test.gd` 通过，确认多路径执行可用
+- 本地 `python3 tools/check_doc_sync.py --files ...` 通过
+- 未运行 Linux / WSL 侧测试
+提交/推送:
+- 待本轮统一提交
+下一步:
+- 观察首轮 `windows-fast / windows-full / windows-heavy-nightly` 的云端稳定性，再继续推进 `S1-8` 的行动面板语义重排。

@@ -44,7 +44,11 @@
 ### 验证与 CI
 
 - Windows 是默认验证平台，不用 Linux/WSL 结果补位
-- `windows-validation.yml` 白名单触发：Rust tests → GDExt build → GdUnit4 → headless boot → smoke；`project.godot` 改动也会触发
+- Windows CI 已拆成三层：
+  - `windows-fast`：Rust 快速测试 → GDExt build → 核心 `GdUnit4` → headless boot
+  - `windows-full`：全量 `cargo test` → GDExt build → 全量 `GdUnit4` → smoke
+  - `windows-heavy-nightly`：Monte Carlo 长测 → 大样本属性测试
+- `project.godot`、代码路径和相关 workflow 变更会触发对应 Windows 验证链
 - `doc-sync.yml` 门禁：代码路径改动必须同步更新 README 或 docs/
 
 ## 当前最高优先级
@@ -61,7 +65,7 @@
 - `补给教学还没收口`：玩家现在已经能看到风险来源、阶段目标、当日行动计划和三日节奏，也能从终局复盘回看建议，但仍缺更系统的失败归因串联
 - `文本 QA 未收口`：剩余事件仍需统一史实锚点、信息密度和句式风格
 - `前端发布级 polish 未完成`：主菜单主要 bug 已清一轮，但仍需 Windows 真机继续看地图缩放、hover 预览和存读档弹窗的最终体验
-- `Windows CI 仍需继续收口`：`23606297120` 已成功，`23607846862` 也已被后续 push 自动取消，说明 `concurrency` 生效；接下来继续观察新 run 稳定性并压缩剩余无效排队
+- `Windows CI 仍需继续收口`：三层链路已经落地，但还要继续观察 `fast / full / nightly` 的稳定性、取消行为和 runner 占用
 - `前端自动回归仍不够宽`：存读档、设置、音频滑条、地图交互边界、战斗/接见失败恢复与成功推进、行军主流程、休整行动、政策冷却、连续两日行动、教程 modal 干扰链、读档后一致性、难度恢复、教程弹窗宽度、设置弹窗锁定语义和地图空白点击清空都已纳入 `GdUnit4`，`EventBus` 噪音也已清掉；但更多长链 UI 状态和真机视觉问题还没全覆盖
 - `产品化能力仍缺`：最小设置入口已落地，但更完整的选项页、导出配置、Steam 商店素材、教程引导都未完成
 - `Windows 真机体验验收仍未收口`：这轮已经补齐 Windows DLL 重编、Windows 无头与 smoke scene，但更长时的真机 UI / 体验验收还没补

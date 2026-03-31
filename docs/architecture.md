@@ -90,7 +90,11 @@ UI refresh / logs / dialogs / map feedback
 - `.github/workflows/doc-sync.yml`
   文档同步门禁
 - `.github/workflows/windows-validation.yml`
-  Windows CI
+  Windows 全量回归链（workflow name: `windows-full`）
+- `.github/workflows/windows-fast.yml`
+  Windows 快反馈链
+- `.github/workflows/windows-heavy-nightly.yml`
+  Windows 夜间重测链
 
 ## 主循环
 

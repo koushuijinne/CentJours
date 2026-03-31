@@ -1,0 +1,45 @@
+name: windows-heavy-nightly
+
+on:
+  schedule:
+    - cron: "0 8 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  windows-heavy-nightly:
+    runs-on: windows-latest
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust artifacts
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: cent-jours-core -> target
+
+      - name: Run heavy Monte Carlo regression pack
+        shell: pwsh
+        working-directory: cent-jours-core
+        run: |
+          cargo test simulation::monte_carlo::tests::coupled_systems_survive_1000_runs --lib
+          cargo test simulation::monte_carlo::tests::engine_simulated_win_rate_is_in_reasonable_range --lib
+          cargo test simulation::monte_carlo::tests::ney_defection_triggers_at_reasonable_frequency --lib
+          cargo test simulation::monte_carlo::tests::engine_simulation_outcome_counts_are_complete --lib
+
+      - name: Run large-sample property tests
+        shell: pwsh
+        working-directory: cent-jours-core
+        env:
+          PROPTEST_CASES: 1024
+        run: |
+          cargo test --test march_preview_contract
+          cargo test --test save_load_flow

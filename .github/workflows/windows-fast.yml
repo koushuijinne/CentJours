@@ -1,4 +1,4 @@
-name: windows-full
+name: windows-fast
 
 on:
   push:
@@ -13,8 +13,19 @@ on:
       - "project.godot"
       - "tools/run_gdunit_windows.cmd"
       - ".github/workflows/windows-fast.yml"
-      - ".github/workflows/windows-heavy-nightly.yml"
       - ".github/workflows/windows-validation.yml"
+      - ".github/workflows/windows-heavy-nightly.yml"
+  pull_request:
+    paths:
+      - "src/**"
+      - "cent-jours-core/**"
+      - "tests/**"
+      - "addons/**"
+      - "project.godot"
+      - "tools/run_gdunit_windows.cmd"
+      - ".github/workflows/windows-fast.yml"
+      - ".github/workflows/windows-validation.yml"
+      - ".github/workflows/windows-heavy-nightly.yml"
   workflow_dispatch:
 
 concurrency:
@@ -22,9 +33,9 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  windows-full:
+  windows-fast:
     runs-on: windows-latest
-    timeout-minutes: 60
+    timeout-minutes: 30
     env:
       GODOT_ZIP_URL: https://github.com/godotengine/godot/releases/download/4.6.1-stable/Godot_v4.6.1-stable_win64.exe.zip
 
@@ -55,29 +66,39 @@ jobs:
           "GODOT_BINARY=$exe" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           Write-Host "Using Godot binary: $exe"
 
-      - name: Windows Rust tests
+      - name: Windows fast Rust tests
         shell: pwsh
         working-directory: cent-jours-core
-        run: cargo test
+        run: >
+          cargo test --workspace --lib --tests --
+          --skip simulation::monte_carlo::tests::coupled_systems_survive_1000_runs
+          --skip simulation::monte_carlo::tests::engine_simulated_win_rate_is_in_reasonable_range
+          --skip simulation::monte_carlo::tests::ney_defection_triggers_at_reasonable_frequency
+          --skip simulation::monte_carlo::tests::engine_simulation_outcome_counts_are_complete
 
       - name: Build Windows GDExtension
         shell: pwsh
         working-directory: cent-jours-core
         run: cargo build --features godot-extension
 
-      - name: Run full Godot GdUnit4 regression suite
+      - name: Run core Godot GdUnit4 regression suite
         shell: cmd
-        run: tools\run_gdunit_windows.cmd "%GODOT_BINARY%" res://tests/godot
+        run: >
+          tools\run_gdunit_windows.cmd "%GODOT_BINARY%"
+          res://tests/godot/dialog_flow_test.gd
+          res://tests/godot/main_menu_flow_test.gd
+          res://tests/godot/map_controller_contract_test.gd
+          res://tests/godot/settings_manager_test.gd
 
-      - name: Verify smoke scene
+      - name: Verify headless project boot
         shell: pwsh
         run: |
-          & "$env:GODOT_BINARY" --headless --path "$env:GITHUB_WORKSPACE" --scene res://src/dev/engine_smoke_test_scene.tscn
+          & "$env:GODOT_BINARY" --headless --path "$env:GITHUB_WORKSPACE" --quit
 
-      - name: Upload full GdUnit reports
+      - name: Upload fast GdUnit reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: windows-full-gdunit-reports
+          name: windows-fast-gdunit-reports
           path: reports/
           if-no-files-found: warn

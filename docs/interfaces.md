@@ -337,26 +337,25 @@ E:\software\godot\Godot_v4.6.1-stable_win64_console.exe --headless --path E:\pro
   - `.github/workflows/`
 - 本地复用入口：`python3 tools/check_doc_sync.py --files ...`
 
-文件：`.github/workflows/windows-validation.yml`
+文件：
 
-当前触发范围：
+- `.github/workflows/windows-fast.yml`
+- `.github/workflows/windows-validation.yml`（workflow name: `windows-full`）
+- `.github/workflows/windows-heavy-nightly.yml`
 
-- `src/**`
-- `cent-jours-core/**`
-- `tests/**`
-- `addons/**`
-- `tools/run_gdunit_windows.cmd`
-- `.github/workflows/windows-validation.yml`
+当前分层：
 
-当前顺序：
+1. `windows-fast`
+   - 触发：开发分支 `push` / `pull_request`
+   - 内容：Rust 快速测试（跳过最慢的 Monte Carlo 长测）→ Windows GDExt build → 核心 `GdUnit4` → headless boot
+2. `windows-full`
+   - 触发：开发分支 `push` + `workflow_dispatch`
+   - 内容：全量 `cargo test` → Windows GDExt build → 全量 `GdUnit4` → smoke scene
+3. `windows-heavy-nightly`
+   - 触发：`schedule` + `workflow_dispatch`
+   - 内容：Monte Carlo 长测 + 大样本属性测试（`PROPTEST_CASES=1024`）
 
-1. Rust tests
-2. Windows GDExt build
-3. Godot `GdUnit4`
-4. headless boot
-5. smoke scene
-
-`windows-validation.yml` 已启用 `concurrency`，同分支新 run 会取消旧 run；同时改成白名单触发，避免文档和无关 workflow 改动占用 Windows runner。
+三条链都启用 `concurrency`，同一 workflow 的新 run 会取消旧 run。这样本地默认可以只跑最小验证，把慢的全量验证迁到云端。
 
 ## 10. 维护要求
 
