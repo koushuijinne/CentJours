@@ -92,6 +92,24 @@ func test_settings_popup_open_does_not_shift_main_layout_geometry() -> void:
 	await runner.simulate_frames(2)
 
 
+func test_settings_popup_uses_modal_lock_copy_instead_of_end_day_copy() -> void:
+	var runner := await _load_main_menu()
+	var scene := runner.scene()
+	var settings_button := scene.find_child("SettingsButton", true, false) as Button
+	var tray_hint := scene.find_child("TrayHint", true, false) as Label
+	var execute_button := scene.find_child("ExecuteActionButton", true, false) as Button
+	assert_object(settings_button).is_not_null()
+	assert_object(tray_hint).is_not_null()
+	assert_object(execute_button).is_not_null()
+
+	settings_button.pressed.emit()
+	await await_idle_frame()
+
+	assert_str(tray_hint.text).contains("设置已打开")
+	assert_bool("正在结束今天" not in tray_hint.text).is_true()
+	assert_str(execute_button.text).is_equal("执行当前动作")
+
+
 func test_settings_apply_persists_ui_scale() -> void:
 	var runner := await _load_main_menu()
 	var scene := runner.scene()

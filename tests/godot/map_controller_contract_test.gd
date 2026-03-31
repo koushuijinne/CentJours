@@ -151,6 +151,29 @@ func test_clicking_empty_canvas_clears_interaction_state() -> void:
 	assert_bool(hover_panel.visible).is_false()
 
 
+func test_mouse_motion_after_canvas_clear_restores_hover_preview() -> void:
+	var runner := await _load_main_menu()
+	var scene := runner.scene()
+	var controller = runner.get_property("_map_controller")
+	var hover_panel := scene.find_child("MapHoverPanel", true, false) as PanelContainer
+
+	controller.select_node("lyon")
+	await runner.simulate_frames(4)
+	controller.on_map_canvas_gui_input(_left_click_event())
+	await runner.simulate_frames(4)
+
+	assert_str(controller.get_hovered_node_id()).is_equal("")
+	assert_bool(hover_panel.visible).is_false()
+
+	var hotspot: Control = controller.get_map_node_controls_by_id().get("chalon", null)
+	assert_object(hotspot).is_not_null()
+	controller.on_map_node_gui_input(_mouse_motion_event(), "chalon", hotspot)
+	await runner.simulate_frames(2)
+
+	assert_str(controller.get_hovered_node_id()).is_equal("chalon")
+	assert_bool(hover_panel.visible).is_true()
+
+
 func test_clicking_locked_inspector_background_clears_interaction_state() -> void:
 	var runner := await _load_main_menu()
 	var scene := runner.scene()
@@ -209,3 +232,7 @@ func _right_click_event() -> InputEventMouseButton:
 	event.button_index = MOUSE_BUTTON_RIGHT
 	event.pressed = true
 	return event
+
+
+func _mouse_motion_event() -> InputEventMouseMotion:
+	return InputEventMouseMotion.new()

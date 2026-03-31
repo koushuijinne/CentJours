@@ -292,6 +292,9 @@ func test_glossary_popup_opens_from_topbar() -> void:
 	assert_object(body).is_not_null()
 	assert_str(body.text).contains("红 / 黑指数")
 	assert_str(body.text).contains("合法性")
+	assert_str(body.text).contains("如何提高合法性")
+	assert_str(body.text).contains("当前倾向")
+	assert_str(body.text).contains("每天会多 1 个决策点")
 
 
 func test_narrative_log_popup_replays_existing_entries() -> void:

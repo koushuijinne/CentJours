@@ -122,6 +122,16 @@ func set_tray_hint_texts(enabled_text: String, disabled_text: String) -> void:
 	_apply_tray_interactive_state()
 
 
+func set_enabled_hint_text(text: String) -> void:
+	_enabled_hint_text = text
+	_apply_tray_interactive_state()
+
+
+func set_disabled_hint_text(text: String) -> void:
+	_disabled_hint_text = text
+	_apply_tray_interactive_state()
+
+
 func set_tray_interactive(enabled: bool) -> void:
 	_awaiting_action = enabled
 	_apply_tray_interactive_state()

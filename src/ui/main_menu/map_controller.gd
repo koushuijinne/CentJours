@@ -88,6 +88,7 @@ var _march_mode_active: bool = false
 var _pending_march_target: String = ""
 var _map_zoom: float = 1.0
 var _pending_focus_node_id: String = ""
+var _suppress_hover_until_motion: bool = false
 
 # ── 渲染器 ────────────────────────────────────────────────────
 # 运行时加载渲染脚本，规避 preload 在当前解析链上的脚本类型报错。
@@ -547,6 +548,8 @@ func _finish_map_rebuild() -> void:
 # ── 鼠标事件处理 ─────────────────────────────────────────────
 
 func on_map_node_mouse_entered(node_id: String) -> void:
+	if _suppress_hover_until_motion:
+		return
 	if _selected_map_node_id != "" and _selected_map_node_id != node_id:
 		return
 	set_hovered_node_id(node_id)
@@ -561,18 +564,30 @@ func on_map_node_mouse_exited(node_id: String) -> void:
 
 
 func on_map_node_gui_input(event: InputEvent, node_id: String, hotspot: Control) -> void:
+	if event is InputEventMouseMotion:
+		if _suppress_hover_until_motion:
+			_suppress_hover_until_motion = false
+			set_hovered_node_id(node_id)
+		return
 	if not (event is InputEventMouseButton):
 		return
 	if event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		if hotspot != null:
 			hotspot.accept_event()
 		if _selected_map_node_id == node_id:
+			_suppress_hover_until_motion = true
 			clear_interaction_state()
 		else:
+			_suppress_hover_until_motion = false
 			select_node(node_id)
 
 
 func on_map_canvas_gui_input(event: InputEvent) -> void:
+	if event is InputEventMouseMotion:
+		if _suppress_hover_until_motion:
+			_suppress_hover_until_motion = false
+			clear_hover()
+		return
 	if not (event is InputEventMouseButton):
 		return
 	var mouse_event := event as InputEventMouseButton
@@ -592,6 +607,7 @@ func on_map_canvas_gui_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		return
 	if mouse_event.button_index == MOUSE_BUTTON_LEFT and (_selected_map_node_id != "" or _hovered_map_node_id != ""):
+		_suppress_hover_until_motion = true
 		clear_interaction_state()
 		get_viewport().set_input_as_handled()
 
@@ -606,6 +622,7 @@ func on_map_inspector_gui_input(event: InputEvent) -> void:
 		return
 	if _selected_map_node_id == "" and _hovered_map_node_id == "":
 		return
+	_suppress_hover_until_motion = true
 	clear_interaction_state()
 	get_viewport().set_input_as_handled()
 

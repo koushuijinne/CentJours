@@ -120,7 +120,7 @@ func is_modal_active() -> bool:
 
 func show_info_popup(popup_name: String, title_text: String, body_text: String, close_text: String = "关闭") -> void:
 	_close_info_popup()
-	_call_optional(CALLBACK_SET_TRAY_INTERACTIVE, [false])
+	_call_optional(CALLBACK_SET_TRAY_INTERACTIVE, [false, "modal"])
 
 	_info_popup = PopupPanel.new()
 	_info_popup.name = popup_name
@@ -171,7 +171,7 @@ func show_info_popup(popup_name: String, title_text: String, body_text: String, 
 
 func show_game_over(outcome: String, stats: Dictionary = {}) -> void:
 	_close_game_over_overlay()
-	_call_optional(CALLBACK_SET_TRAY_INTERACTIVE, [false])
+	_call_optional(CALLBACK_SET_TRAY_INTERACTIVE, [false, "game_over"])
 
 	_game_over_overlay = ColorRect.new()
 	_game_over_overlay.name = "GameOverOverlay"
@@ -482,7 +482,7 @@ func _display_game_over_day(day: int) -> int:
 
 func show_difficulty_selection() -> void:
 	_close_difficulty_popup()
-	_call_optional(CALLBACK_SET_TRAY_INTERACTIVE, [false])
+	_call_optional(CALLBACK_SET_TRAY_INTERACTIVE, [false, "modal"])
 
 	_difficulty_popup = PopupPanel.new()
 	_difficulty_popup.name = "DifficultyPopup"
@@ -545,7 +545,7 @@ func show_battle_popup(state: Dictionary = {}) -> void:
 	_close_popup(_battle_popup)
 	_battle_popup = PopupPanel.new()
 	_battle_popup.name = "BattlePopup"
-	_call_optional(CALLBACK_SET_TRAY_INTERACTIVE, [false])
+	_call_optional(CALLBACK_SET_TRAY_INTERACTIVE, [false, "modal"])
 
 	var vbox := VBoxContainer.new()
 	vbox.custom_minimum_size = Vector2(320, 300)
@@ -634,7 +634,7 @@ func show_boost_popup(state: Dictionary = {}) -> void:
 	_close_popup(_boost_popup)
 	_boost_popup = PopupPanel.new()
 	_boost_popup.name = "BoostPopup"
-	_call_optional(CALLBACK_SET_TRAY_INTERACTIVE, [false])
+	_call_optional(CALLBACK_SET_TRAY_INTERACTIVE, [false, "modal"])
 
 	var vbox := VBoxContainer.new()
 	vbox.custom_minimum_size = Vector2(300, 220)
@@ -686,7 +686,7 @@ func _confirm_battle(gen_opt: OptionButton, troop_slider: HSlider, terrain_opt: 
 	var troops: int = int(troop_slider.value)
 	var terrain: String = String(terrain_opt.get_item_metadata(terrain_opt.selected))
 	_close_battle_popup()
-	_call_optional(CALLBACK_SET_TRAY_INTERACTIVE, [false])
+	_call_optional(CALLBACK_SET_TRAY_INTERACTIVE, [false, "processing"])
 	var payload := {
 		"general_id": general_id,
 		"troops": troops,
@@ -701,7 +701,7 @@ func _confirm_battle(gen_opt: OptionButton, troop_slider: HSlider, terrain_opt: 
 func _confirm_boost(gen_opt: OptionButton) -> void:
 	var general_id: String = gen_opt.get_item_metadata(gen_opt.selected)
 	_close_boost_popup()
-	_call_optional(CALLBACK_SET_TRAY_INTERACTIVE, [false])
+	_call_optional(CALLBACK_SET_TRAY_INTERACTIVE, [false, "processing"])
 	var payload := {"general_id": general_id}
 	if not _call_optional(CALLBACK_SUBMIT_ACTION, [ACTION_BOOST_LOYALTY, payload]):
 		_call_optional(CALLBACK_SET_TRAY_INTERACTIVE, [true])

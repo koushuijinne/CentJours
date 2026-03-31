@@ -81,11 +81,19 @@ var _tray_controller = MainMenuTrayControllerScript.new()
 var _topbar_actions = TopbarActionsControllerScript.new()
 
 const MANEUVER_POLICY_IDS := ["rest", "march", "battle"]
+const TRAY_LOCK_NONE := ""
+const TRAY_LOCK_MODAL := "modal"
+const TRAY_LOCK_RESOLVING := "resolving"
+const TRAY_LOCK_PROCESSING := "processing"
+const TRAY_LOCK_GAME_OVER := "game_over"
 
 func _decision_policy_ids() -> Array[String]:
 	var ids: Array[String] = ["boost_loyalty"]
 	ids.append_array(MainMenuConfigData.PRIORITY_POLICY_IDS)
 	return ids
+
+var _tray_lock_reason: String = TRAY_LOCK_NONE
+var _game_over_active: bool = false
 
 func _ready() -> void:
 	# 统一入口主题，保证占位骨架先具备正式视觉语言。
@@ -102,6 +110,7 @@ func _ready() -> void:
 	add_child(_topbar_actions)
 	_topbar_actions.configure(self, _top_bar_row, {
 		"set_tray_interactive": Callable(self, "_set_tray_interactive"),
+		"get_tray_lock_reason": Callable(self, "_get_tray_lock_reason"),
 		"is_dialog_modal_active": Callable(_dialogs_controller, "is_modal_active"),
 		"restart_game": Callable(self, "_restart_game"),
 		"refresh_ui": Callable(self, "_refresh_ui"),
@@ -224,7 +233,7 @@ func _configure_sidebar_controller() -> void:
 
 func _configure_tray_controller() -> void:
 	_tray_controller.bind_nodes(_decision_row, _tray_hint, _confirm_button)
-	_tray_controller.set_tray_hint_texts("先机动，再决策。", "界面已锁定。")
+	_tray_controller.set_tray_hint_texts("先机动，再决策。", _tray_disabled_hint_text())
 	_tray_controller.set_confirm_button_text("执行当前动作")
 	if not _tray_controller.policy_selected.is_connected(_on_policy_selected):
 		_tray_controller.policy_selected.connect(_on_policy_selected)
@@ -295,6 +304,7 @@ func _on_difficulty_selected(difficulty_id: String) -> void:
 	_restart_game()
 
 func _restart_game() -> void:
+	_game_over_active = false
 	TurnManager.reset_engine()
 	_map_controller.clear_interaction_state()
 	_build_decision_cards()
@@ -304,16 +314,21 @@ func _restart_game() -> void:
 
 ## 引导第一回合：先同步晨间状态，再进入行动阶段等待玩家
 func _start_game() -> void:
+	_game_over_active = false
 	TurnManager.start_new_turn()
 	TurnManager.begin_action_phase()
-	_awaiting_action = true
 	_set_tray_interactive(true)
 	_init_narrative_panel()
 
 ## 控制托盘卡片与确认按钮的可交互状态
-func _set_tray_interactive(enabled: bool) -> void:
+func _set_tray_interactive(enabled: bool, lock_reason: String = TRAY_LOCK_NONE) -> void:
 	_awaiting_action = enabled
+	_tray_lock_reason = TRAY_LOCK_NONE if enabled else lock_reason
 	_sync_tray_state()
+
+
+func _get_tray_lock_reason() -> String:
+	return _tray_lock_reason
 
 
 func _connect_signals() -> void:
@@ -425,6 +440,7 @@ func _apply_rn_atmosphere() -> void:
 		overlay.color = tint["bg_tint"]
 
 func _sync_tray_state() -> void:
+	_tray_controller.set_disabled_hint_text(_tray_disabled_hint_text())
 	_tray_controller.set_tray_state(_tray_controller.get_selected_policy_id(), _awaiting_action)
 	_tray_controller.apply_policy_availability(_disabled_policy_ids_for_current_budget())
 	if _end_day_button != null:
@@ -465,8 +481,23 @@ func _refresh_logistics_guidance() -> void:
 		"可用" if GameState.maneuver_available else "已用",
 		GameState.actions_remaining
 	]
-	_tray_controller.set_tray_hint_texts("%s\n%s" % [budget_text, hint_text], "正在结束今天…")
+	_tray_controller.set_enabled_hint_text("%s\n%s" % [budget_text, hint_text])
+	_tray_controller.set_disabled_hint_text(_tray_disabled_hint_text())
 	_map_controller.set_context_subtitle(map_subtitle_text)
+
+
+func _tray_disabled_hint_text() -> String:
+	match _tray_lock_reason:
+		TRAY_LOCK_MODAL:
+			return "设置已打开，先关闭弹窗。"
+		TRAY_LOCK_RESOLVING:
+			return "正在结束今天…"
+		TRAY_LOCK_PROCESSING:
+			return "正在处理当前动作…"
+		TRAY_LOCK_GAME_OVER:
+			return "战局已结束，请查看结局或开始新局。"
+		_:
+			return "界面已锁定。"
 
 func _build_map_context_subtitle(hint_text: String) -> String:
 	var candidates := [
@@ -564,7 +595,7 @@ func _on_confirm_pressed() -> void:
 func _on_end_day_pressed() -> void:
 	if not _awaiting_action:
 		return
-	_set_tray_interactive(false)
+	_set_tray_interactive(false, TRAY_LOCK_RESOLVING)
 	if not TurnManager.end_day():
 		_set_tray_interactive(true)
 
@@ -668,12 +699,28 @@ func _build_strategy_goals_overview() -> String:
 
 
 func _build_glossary_overview() -> String:
+	var rn_tooltip := PoliticalSystem.get_rouge_noir_tooltip()
 	var lines: Array[String] = []
 	lines.append("红 / 黑指数")
-	lines.append("数值越偏正，说明你更依赖动员、强硬和短期压力；数值越偏负，说明你更依赖秩序、妥协和保守支持。它会影响部分政策的副作用和派系反应。")
+	lines.append("红越高，说明你更依赖动员、强硬和短期压力；黑越高，说明你更依赖秩序、妥协和保守支持。这个指数不会单独决定胜负，但会放大不同派系对政策的反应。")
+	lines.append("当前倾向：%s。" % String(rn_tooltip.get("label", "政治中立")))
+	var rn_effects: Array = rn_tooltip.get("effects", [])
+	if not rn_effects.is_empty():
+		var rn_effect_labels: Array[String] = []
+		for effect_variant in rn_effects:
+			rn_effect_labels.append(String(effect_variant))
+		lines.append("当前主要影响：%s。" % "；".join(rn_effect_labels))
+	else:
+		lines.append("当前主要影响：你还在中间区，两侧加成和副作用都不明显。")
 	lines.append("")
 	lines.append("合法性")
-	lines.append("合法性代表这个政权还能不能继续让法国承受战争。它会影响结局、部分行动门槛，以及你能否继续用政治方式稳住局面。")
+	lines.append("合法性是四个派系支持度的加权结果，代表这个政权还能不能继续让法国承受战争。它会影响每日决策点、部分行动门槛、结局判断，以及你还能不能用政治方式稳住局面。")
+	lines.append("合法性高于 70 时，每天会多 1 个决策点；低于 10 时，连“亲自接见将领”都会失效。")
+	lines.append("")
+	lines.append("如何提高合法性")
+	lines.append("最直接的方法是打胜仗、稳住军方和民众支持，并避免把某一派系长期压到危险线。")
+	lines.append("偏保守政策更容易稳住贵族和行政面，偏动员政策更容易拉升民众和军方，但两边走得太极端都会带来新的副作用。")
+	lines.append("接见将领会立刻消耗 5 点合法性；战败、补给崩盘和连续把派系推向敌对区，都会让合法性更难回升。")
 	lines.append("")
 	lines.append("补给")
 	lines.append("补给不是单纯库存。它还取决于你站在哪类节点、补给线是否接稳、有没有把区域走廊补成可持续链路。")
@@ -708,6 +755,8 @@ func _on_action_resolution_logged(event_type: String, description: String, effec
 	)
 
 func _on_game_over(outcome: String) -> void:
+	_game_over_active = true
+	_set_tray_interactive(false, TRAY_LOCK_GAME_OVER)
 	_dialogs_controller.show_game_over(outcome, _dialog_stats_snapshot())
 
 func _show_battle_popup() -> void:
@@ -738,7 +787,12 @@ func _on_march_feedback(text: String, color: Color) -> void:
 	_sidebar_controller.set_narrative_text(text, color)
 
 func _on_phase_changed(_phase: String) -> void:
-	_set_tray_interactive(_phase == "action")
+	if _phase == "action":
+		_set_tray_interactive(true)
+	elif _game_over_active:
+		_set_tray_interactive(false, TRAY_LOCK_GAME_OVER)
+	else:
+		_set_tray_interactive(false, TRAY_LOCK_PROCESSING)
 	_refresh_ui()
 
 func _on_legitimacy_changed(_old_value: float, _new_value: float) -> void:

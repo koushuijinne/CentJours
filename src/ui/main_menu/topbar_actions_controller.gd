@@ -29,8 +29,10 @@ var _settings_state: Dictionary = {}
 var _transient_modal_depth: int = 0
 var _tracked_transient_modals: Dictionary = {}
 var _tray_interactive_before_modal: bool = false
+var _tray_lock_reason_before_modal: String = ""
 
 var _on_set_tray_interactive: Callable = Callable()
+var _on_get_tray_lock_reason: Callable = Callable()
 var _on_is_dialog_modal_active: Callable = Callable()
 var _on_restart_game: Callable = Callable()
 var _on_refresh_ui: Callable = Callable()
@@ -47,6 +49,7 @@ func configure(
 	_host = host
 	_top_bar_row = top_bar_row
 	_on_set_tray_interactive = callbacks.get("set_tray_interactive", Callable())
+	_on_get_tray_lock_reason = callbacks.get("get_tray_lock_reason", Callable())
 	_on_is_dialog_modal_active = callbacks.get("is_dialog_modal_active", Callable())
 	_on_restart_game = callbacks.get("restart_game", Callable())
 	_on_refresh_ui = callbacks.get("refresh_ui", Callable())
@@ -488,10 +491,13 @@ func _open_transient_modal(popup: Window) -> void:
 		if _on_is_dialog_modal_active.is_valid():
 			awaiting = not _on_is_dialog_modal_active.call()
 		_tray_interactive_before_modal = awaiting
+		_tray_lock_reason_before_modal = ""
+		if _on_get_tray_lock_reason.is_valid():
+			_tray_lock_reason_before_modal = String(_on_get_tray_lock_reason.call())
 	_tracked_transient_modals[popup_id] = true
 	_transient_modal_depth += 1
 	if _on_set_tray_interactive.is_valid():
-		_on_set_tray_interactive.call(false)
+		_on_set_tray_interactive.call(false, "modal")
 	var visibility_changed_cb := Callable(self, "_on_transient_modal_visibility_changed").bind(popup)
 	if not popup.visibility_changed.is_connected(visibility_changed_cb):
 		popup.visibility_changed.connect(visibility_changed_cb)
@@ -524,4 +530,4 @@ func _on_transient_modal_closed() -> void:
 	if _on_is_dialog_modal_active.is_valid() and _on_is_dialog_modal_active.call():
 		return
 	if _on_set_tray_interactive.is_valid():
-		_on_set_tray_interactive.call(_tray_interactive_before_modal)
+		_on_set_tray_interactive.call(_tray_interactive_before_modal, _tray_lock_reason_before_modal)

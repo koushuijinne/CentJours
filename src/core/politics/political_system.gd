@@ -135,7 +135,7 @@ func get_faction_trends() -> Dictionary:
 	return trends
 
 ## 获取当前 Rouge/Noir 状态对应的效果描述（供 UI 工具提示）
-func get_rouge_noir_tooltip() -> Dictionary:
+static func get_rouge_noir_tooltip() -> Dictionary:
 	var rn: float = GameState.rouge_noir_index
 	var active_effects: Array = []
 

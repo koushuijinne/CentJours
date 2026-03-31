@@ -58,3 +58,24 @@
 - 待本轮统一提交
 下一步:
 - 继续扩长文本弹窗的版式回归与 Windows 真机观感清单，不把教程弹窗这一条护栏当成全量收口。
+
+## 2026-03-29 第 4 轮
+分支: `claude/review-project-status-05vxD`
+范围: 收口设置弹窗语义、百科解释深度与地图空白点击清空链，并用全量 Windows 验证兜底
+变更:
+- 在 [src/ui/main_menu.gd](../../../src/ui/main_menu.gd)、[src/ui/main_menu/tray_controller.gd](../../../src/ui/main_menu/tray_controller.gd)、[src/ui/main_menu/topbar_actions_controller.gd](../../../src/ui/main_menu/topbar_actions_controller.gd) 拆开 Tray 锁定原因，区分 `modal / resolving / processing / game_over`，修复“打开设置后托盘提示误写成正在结束今天”的问题。
+- 在 [src/ui/main_menu/dialogs_controller.gd](../../../src/ui/main_menu/dialogs_controller.gd) 给设置、信息、战斗、接见等弹窗统一标注锁定原因，避免 modal 复用结算态。
+- 在 [src/core/politics/political_system.gd](../../../src/core/politics/political_system.gd) 与 [src/ui/main_menu.gd](../../../src/ui/main_menu.gd) 扩写百科正文，明确红黑指数的当前倾向、合法性的作用、阈值收益和提高路径。
+- 在 [src/ui/main_menu/map_controller.gd](../../../src/ui/main_menu/map_controller.gd) 修掉“点击地图空白后 hover 立刻被鼠标停留位置吸回”的状态机 bug，增加 hover 抑制直到真实鼠标移动。
+- 在 [tests/godot/dialog_flow_test.gd](../../../tests/godot/dialog_flow_test.gd)、[tests/godot/main_menu_flow_test.gd](../../../tests/godot/main_menu_flow_test.gd)、[tests/godot/map_controller_contract_test.gd](../../../tests/godot/map_controller_contract_test.gd) 补对应回归；`map_controller_contract_test.gd` 新增“空白点击清空后，鼠标移动才能恢复 hover”用例。
+- 更新 [docs/plans/dev_plan.md](../../plans/dev_plan.md)、[docs/history/agent_handoff.md](../agent_handoff.md)、[docs/bugs/bug_validation_matrix_2026-03-28.md](../../bugs/bug_validation_matrix_2026-03-28.md)，把当前 P0、验证矩阵和基线同步到这轮真实结果。
+验证:
+- Windows `tools\\run_gdunit_windows.cmd ... res://tests/godot/map_controller_contract_test.gd` 通过：`10/10`
+- Windows `tools\\run_gdunit_windows.cmd ... res://tests/godot` 通过：`64/64`
+- Windows Godot 主项目无头启动通过
+- Windows smoke scene 通过
+- 未运行 Linux / WSL 侧测试
+提交/推送:
+- 待本轮统一提交
+下一步:
+- 继续收口 `S1-8` 行动面板禁用态与分区重排，并把百科第一版继续补到补给与结局关联。
