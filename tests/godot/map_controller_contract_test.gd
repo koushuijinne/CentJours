@@ -151,6 +151,24 @@ func test_clicking_empty_canvas_clears_interaction_state() -> void:
 	assert_bool(hover_panel.visible).is_false()
 
 
+func test_clicking_locked_inspector_background_clears_interaction_state() -> void:
+	var runner := await _load_main_menu()
+	var scene := runner.scene()
+	var controller = runner.get_property("_map_controller")
+	var inspector_panel := scene.find_child("MapInspectorPanel", true, false) as PanelContainer
+
+	controller.select_node("lyon")
+	await runner.simulate_frames(4)
+	assert_bool(inspector_panel.visible).is_true()
+
+	controller.on_map_inspector_gui_input(_left_click_event())
+	await runner.simulate_frames(4)
+
+	assert_str(controller.get_selected_node_id()).is_equal("")
+	assert_str(controller.get_hovered_node_id()).is_equal("")
+	assert_bool(inspector_panel.visible).is_false()
+
+
 func test_right_click_zoom_reset_preserves_locked_selection() -> void:
 	var runner := await _load_main_menu()
 	var scene := runner.scene()

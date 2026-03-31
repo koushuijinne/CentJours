@@ -327,7 +327,7 @@ layout_mode = 2
 [node name="TrayTitle" type="Label" parent="RootLayout/MainArea/LeftColumn/DecisionTray/TrayMargin/TrayContent/TrayHeader"]
 layout_mode = 2
 size_flags_horizontal = 3
-text = "当日行动"
+text = "机动与决策"
 
 [node name="TrayHint" type="Label" parent="RootLayout/MainArea/LeftColumn/DecisionTray/TrayMargin/TrayContent/TrayHeader"]
 layout_mode = 2

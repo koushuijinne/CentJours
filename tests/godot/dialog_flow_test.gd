@@ -61,6 +61,37 @@ func test_settings_popup_reflects_saved_values() -> void:
 	assert_bool(absf(float(ui_scale_option.get_item_metadata(ui_scale_option.get_selected_id())) - 1.25) < 0.001).is_true()
 
 
+func test_settings_popup_open_does_not_shift_main_layout_geometry() -> void:
+	var runner := await _load_main_menu()
+	var scene := runner.scene()
+	var settings_button := scene.find_child("SettingsButton", true, false) as Button
+	var decision_tray := scene.find_child("DecisionTray", true, false) as PanelContainer
+	var map_scroll := scene.find_child("MapScroll", true, false) as ScrollContainer
+	assert_object(settings_button).is_not_null()
+	assert_object(decision_tray).is_not_null()
+	assert_object(map_scroll).is_not_null()
+
+	var tray_rect_before := decision_tray.get_global_rect()
+	var map_rect_before := map_scroll.get_global_rect()
+
+	settings_button.pressed.emit()
+	await await_idle_frame()
+
+	var settings_popup := scene.find_child("SettingsPopup", true, false) as PopupPanel
+	var cancel_button := scene.find_child("SettingsCancelButton", true, false) as Button
+	assert_object(settings_popup).is_not_null()
+	assert_object(cancel_button).is_not_null()
+
+	var tray_rect_after := decision_tray.get_global_rect()
+	var map_rect_after := map_scroll.get_global_rect()
+	assert_bool(absf(tray_rect_before.size.y - tray_rect_after.size.y) < 1.0).is_true()
+	assert_bool(absf(map_rect_before.size.x - map_rect_after.size.x) < 1.0).is_true()
+	assert_bool(absf(map_rect_before.size.y - map_rect_after.size.y) < 1.0).is_true()
+
+	cancel_button.pressed.emit()
+	await runner.simulate_frames(2)
+
+
 func test_settings_apply_persists_ui_scale() -> void:
 	var runner := await _load_main_menu()
 	var scene := runner.scene()

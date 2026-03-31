@@ -15,6 +15,7 @@ signal card_selected(policy_id: String)
 @export var cost_actions: int = 1
 @export var on_cooldown: bool = false
 @export var cooldown_days: int = 0
+@export var is_disabled: bool = false
 
 # 效果列表，每项: {label, value, type} type = "positive"/"negative"/"rn"
 @export var effects: Array = []
@@ -24,6 +25,7 @@ var _style_normal:   StyleBoxFlat
 var _style_hover:    StyleBoxFlat
 var _style_selected: StyleBoxFlat
 var _style_cooldown: StyleBoxFlat
+var _style_disabled: StyleBoxFlat
 
 func _ready() -> void:
 	_build_styles()
@@ -71,6 +73,14 @@ func apply_cooldown_state(cooldown_remaining: int) -> void:
 	else:
 		_apply_current_style()
 
+
+func apply_availability_state(disabled: bool) -> void:
+	if is_disabled == disabled:
+		_apply_current_style()
+		return
+	is_disabled = disabled
+	_rebuild_ui()
+
 # ── UI 构建 ──────────────────────────────────────────
 
 func _build_styles() -> void:
@@ -96,6 +106,12 @@ func _build_styles() -> void:
 	_style_cooldown.border_color = Color(CentJoursTheme.COLOR["border_panel"].r,
 		CentJoursTheme.COLOR["border_panel"].g,
 		CentJoursTheme.COLOR["border_panel"].b, 0.4)
+
+	_style_disabled = _style_normal.duplicate()
+	_style_disabled.bg_color = Color(0.07, 0.07, 0.11, 0.55)
+	_style_disabled.border_color = Color(CentJoursTheme.COLOR["border_panel"].r,
+		CentJoursTheme.COLOR["border_panel"].g,
+		CentJoursTheme.COLOR["border_panel"].b, 0.28)
 
 	add_theme_stylebox_override("panel", _style_normal)
 
@@ -177,6 +193,13 @@ func _build_ui() -> void:
 		cooldown_overlay.add_theme_font_size_override("font_size", 10)
 		body.add_child(cooldown_overlay)
 		modulate = Color(1, 1, 1, 0.45)
+	elif is_disabled:
+		var disabled_overlay := Label.new()
+		disabled_overlay.text = "本日不可用"
+		disabled_overlay.add_theme_color_override("font_color", CentJoursTheme.COLOR["neutral"])
+		disabled_overlay.add_theme_font_size_override("font_size", 10)
+		body.add_child(disabled_overlay)
+		modulate = Color(1, 1, 1, 0.52)
 
 func _rebuild_ui() -> void:
 	for child in get_children():
@@ -188,7 +211,7 @@ func _rebuild_ui() -> void:
 # ── 事件处理 ──────────────────────────────────────────
 
 func _on_mouse_entered() -> void:
-	if on_cooldown or _is_selected:
+	if on_cooldown or is_disabled or _is_selected:
 		return
 	add_theme_stylebox_override("panel", _style_hover)
 	_animate_hover(true)
@@ -196,11 +219,16 @@ func _on_mouse_entered() -> void:
 func _on_mouse_exited() -> void:
 	if _is_selected:
 		return
-	add_theme_stylebox_override("panel", _style_normal if not on_cooldown else _style_cooldown)
+	if on_cooldown:
+		add_theme_stylebox_override("panel", _style_cooldown)
+	elif is_disabled:
+		add_theme_stylebox_override("panel", _style_disabled)
+	else:
+		add_theme_stylebox_override("panel", _style_normal)
 	_animate_hover(false)
 
 func _on_gui_input(event: InputEvent) -> void:
-	if on_cooldown:
+	if on_cooldown or is_disabled:
 		return
 	if event is InputEventMouseButton:
 		if event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
@@ -210,6 +238,8 @@ func _on_gui_input(event: InputEvent) -> void:
 func _apply_current_style() -> void:
 	if on_cooldown:
 		add_theme_stylebox_override("panel", _style_cooldown)
+	elif is_disabled:
+		add_theme_stylebox_override("panel", _style_disabled)
 	elif _is_selected:
 		add_theme_stylebox_override("panel", _style_selected)
 	else:

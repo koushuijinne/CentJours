@@ -161,6 +161,8 @@ func bind_nodes(
 		_map_hover_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	if _map_inspector_panel != null:
 		_map_inspector_panel.mouse_filter = Control.MOUSE_FILTER_STOP
+		if not _map_inspector_panel.gui_input.is_connected(on_map_inspector_gui_input):
+			_map_inspector_panel.gui_input.connect(on_map_inspector_gui_input)
 	if _map_canvas != null:
 		_map_canvas.mouse_filter = Control.MOUSE_FILTER_STOP
 	if _map_scroll != null and not _map_scroll.resized.is_connected(_on_map_scroll_resized):
@@ -591,6 +593,21 @@ func on_map_canvas_gui_input(event: InputEvent) -> void:
 		return
 	if mouse_event.button_index == MOUSE_BUTTON_LEFT and (_selected_map_node_id != "" or _hovered_map_node_id != ""):
 		clear_interaction_state()
+		get_viewport().set_input_as_handled()
+
+
+func on_map_inspector_gui_input(event: InputEvent) -> void:
+	if not (event is InputEventMouseButton):
+		return
+	var mouse_event := event as InputEventMouseButton
+	if mouse_event == null or not mouse_event.pressed:
+		return
+	if mouse_event.button_index != MOUSE_BUTTON_LEFT:
+		return
+	if _selected_map_node_id == "" and _hovered_map_node_id == "":
+		return
+	clear_interaction_state()
+	get_viewport().set_input_as_handled()
 
 
 # ── Inspector 面板 ────────────────────────────────────────────

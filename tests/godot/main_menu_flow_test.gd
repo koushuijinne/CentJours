@@ -277,6 +277,23 @@ func test_strategy_goals_popup_opens_from_topbar() -> void:
 	assert_str(body.text).contains("可达成结局")
 
 
+func test_glossary_popup_opens_from_topbar() -> void:
+	var runner := await _load_main_menu()
+	var scene := runner.scene()
+	var glossary_button := scene.find_child("GlossaryButton", true, false) as Button
+	assert_object(glossary_button).is_not_null()
+
+	glossary_button.pressed.emit()
+	await runner.simulate_frames(2)
+
+	var popup := scene.find_child("GlossaryPopup", true, false) as PopupPanel
+	var body := scene.find_child("GlossaryPopupBody", true, false) as Label
+	assert_object(popup).is_not_null()
+	assert_object(body).is_not_null()
+	assert_str(body.text).contains("红 / 黑指数")
+	assert_str(body.text).contains("合法性")
+
+
 func test_narrative_log_popup_replays_existing_entries() -> void:
 	var runner := await _load_main_menu()
 	var scene := runner.scene()
@@ -293,6 +310,44 @@ func test_narrative_log_popup_replays_existing_entries() -> void:
 	assert_object(popup).is_not_null()
 	assert_object(body).is_not_null()
 	assert_str(body.text).contains("测试结算描述")
+
+
+func test_exhausted_decision_points_disable_policy_cards_but_keep_maneuver_cards_live() -> void:
+	var runner := await _load_main_menu()
+	var scene := runner.scene()
+	var tray_controller = runner.get_property("_tray_controller")
+	var execute_button := scene.find_child("ExecuteActionButton", true, false) as Button
+	assert_object(execute_button).is_not_null()
+
+	for policy_id in ["public_speech", "constitutional_promise"]:
+		tray_controller.select_policy(policy_id)
+		await runner.simulate_frames(2)
+		runner.invoke("_on_confirm_pressed")
+		await runner.simulate_frames(6)
+
+	assert_int(GameState.actions_remaining).is_equal(0)
+	assert_bool(GameState.maneuver_available).is_true()
+
+	var speech_card := tray_controller.get_card("public_speech") as DecisionCard
+	var promise_card := tray_controller.get_card("constitutional_promise") as DecisionCard
+	var boost_card := tray_controller.get_card("boost_loyalty") as DecisionCard
+	var march_card := tray_controller.get_card("march") as DecisionCard
+	var battle_card := tray_controller.get_card("battle") as DecisionCard
+	assert_object(speech_card).is_not_null()
+	assert_object(promise_card).is_not_null()
+	assert_object(boost_card).is_not_null()
+	assert_object(march_card).is_not_null()
+	assert_object(battle_card).is_not_null()
+	assert_bool(speech_card.is_disabled).is_true()
+	assert_bool(promise_card.is_disabled).is_true()
+	assert_bool(boost_card.is_disabled).is_true()
+	assert_bool(march_card.is_disabled).is_false()
+	assert_bool(battle_card.is_disabled).is_false()
+
+	tray_controller.select_policy("public_speech")
+	await runner.simulate_frames(2)
+	assert_str(tray_controller.get_selected_policy_id()).is_equal("")
+	assert_bool(execute_button.disabled).is_false()
 
 
 func test_two_consecutive_days_rest_then_march() -> void:

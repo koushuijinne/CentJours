@@ -246,6 +246,14 @@ func apply_responsive_layout(viewport_size: Vector2 = Vector2.ZERO) -> void:
 	_set_margin(_tray_margin, "margin_bottom", tray_margin)
 	_set_container_separation(_tray_content, int(clampf(roundf(viewport.y * 0.008), 6.0, 8.0)))
 	_set_container_separation(_decision_row, int(clampf(roundf(viewport.x * 0.006), 8.0, 12.0)))
+	var tray_header_height := clampf(viewport.y * 0.074, 56.0, 64.0)
+	if _tray_header != null:
+		_tray_header.custom_minimum_size.y = tray_header_height
+	if _tray_hint != null:
+		_tray_hint.autowrap_mode = TextServer.AUTOWRAP_OFF
+		_tray_hint.clip_text = true
+		_tray_hint.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		_tray_hint.custom_minimum_size = Vector2(clampf(viewport.x * 0.29, 380.0, 520.0), tray_header_height)
 
 	var sidebar_width := clampf(viewport.x * 0.205, 252.0, 296.0)
 	if _sidebar != null:
@@ -345,9 +353,9 @@ func _compute_topbar_min_height(margin_top: int, margin_bottom: int) -> float:
 func _compute_tray_min_height(scroll_height: float, margin_vertical: int) -> float:
 	var header_height := 28.0
 	if _tray_header != null:
-		header_height = _tray_header.get_combined_minimum_size().y
+		header_height = maxf(header_height, _tray_header.custom_minimum_size.y)
 	if _tray_hint != null:
-		header_height = maxf(header_height, _tray_hint.get_combined_minimum_size().y)
+		header_height = maxf(header_height, _tray_hint.custom_minimum_size.y)
 	var gap := 0.0
 	if _tray_content != null:
 		gap = float(_tray_content.get_theme_constant("separation"))

@@ -80,6 +80,13 @@ var _sidebar_controller = MainMenuSidebarControllerScript.new()
 var _tray_controller = MainMenuTrayControllerScript.new()
 var _topbar_actions = TopbarActionsControllerScript.new()
 
+const MANEUVER_POLICY_IDS := ["rest", "march", "battle"]
+
+func _decision_policy_ids() -> Array[String]:
+	var ids: Array[String] = ["boost_loyalty"]
+	ids.append_array(MainMenuConfigData.PRIORITY_POLICY_IDS)
+	return ids
+
 func _ready() -> void:
 	# 统一入口主题，保证占位骨架先具备正式视觉语言。
 	theme = CentJoursTheme.create()
@@ -105,6 +112,7 @@ func _ready() -> void:
 	_topbar_actions.new_game_confirmed.connect(_on_new_game_flow)
 	_topbar_actions.strategy_goals_requested.connect(_show_strategy_goals_popup)
 	_topbar_actions.narrative_log_requested.connect(_show_narrative_log_popup)
+	_topbar_actions.glossary_requested.connect(_show_glossary_popup)
 	_dialogs_controller.difficulty_selected.connect(_on_difficulty_selected)
 	_topbar_actions.settings_applied.connect(func(_s): call_deferred("_apply_responsive_layout"))
 	_configure_layout_controller()
@@ -216,7 +224,7 @@ func _configure_sidebar_controller() -> void:
 
 func _configure_tray_controller() -> void:
 	_tray_controller.bind_nodes(_decision_row, _tray_hint, _confirm_button)
-	_tray_controller.set_tray_hint_texts("选择一项动作或政策。", "正在结束今天…")
+	_tray_controller.set_tray_hint_texts("先机动，再决策。", "界面已锁定。")
 	_tray_controller.set_confirm_button_text("执行当前动作")
 	if not _tray_controller.policy_selected.is_connected(_on_policy_selected):
 		_tray_controller.policy_selected.connect(_on_policy_selected)
@@ -418,9 +426,23 @@ func _apply_rn_atmosphere() -> void:
 
 func _sync_tray_state() -> void:
 	_tray_controller.set_tray_state(_tray_controller.get_selected_policy_id(), _awaiting_action)
+	_tray_controller.apply_policy_availability(_disabled_policy_ids_for_current_budget())
 	if _end_day_button != null:
 		_end_day_button.disabled = not _awaiting_action
 	_sync_march_preview()
+
+
+func _disabled_policy_ids_for_current_budget() -> Array:
+	var disabled: Array[String] = []
+	if not _awaiting_action:
+		disabled.append_array(MANEUVER_POLICY_IDS)
+		disabled.append_array(_decision_policy_ids())
+		return disabled
+	if not GameState.maneuver_available:
+		disabled.append_array(MANEUVER_POLICY_IDS)
+	if GameState.actions_remaining <= 0:
+		disabled.append_array(_decision_policy_ids())
+	return disabled
 
 func _refresh_logistics_guidance() -> void:
 	var hint_text := _build_tutorial_hint_text()
@@ -439,8 +461,8 @@ func _refresh_logistics_guidance() -> void:
 		elif GameState.logistics_focus_short.strip_edges() != "":
 			hint_text = GameState.logistics_focus_short
 	var map_subtitle_text := _build_map_context_subtitle(hint_text)
-	var budget_text := "今日节奏：%s，剩余决策点 %d。" % [
-		"机动仍可执行" if GameState.maneuver_available else "机动已执行",
+	var budget_text := "今日节奏：机动槽%s，剩余决策点 %d。" % [
+		"可用" if GameState.maneuver_available else "已用",
 		GameState.actions_remaining
 	]
 	_tray_controller.set_tray_hint_texts("%s\n%s" % [budget_text, hint_text], "正在结束今天…")
@@ -606,6 +628,14 @@ func _show_narrative_log_popup() -> void:
 	_dialogs_controller.show_info_popup("NarrativeLogPopup", "日志回看", body)
 
 
+func _show_glossary_popup() -> void:
+	_dialogs_controller.show_info_popup(
+		"GlossaryPopup",
+		"游戏内百科",
+		_build_glossary_overview()
+	)
+
+
 func _build_strategy_goals_overview() -> String:
 	var lines: Array[String] = []
 	lines.append("当前局势")
@@ -634,6 +664,31 @@ func _build_strategy_goals_overview() -> String:
 		lines.append("")
 	lines.append("当前建议")
 	lines.append("优先同时考虑机动节奏、合法性、补给和胜场，不要只盯一项数值。")
+	return "\n".join(lines)
+
+
+func _build_glossary_overview() -> String:
+	var lines: Array[String] = []
+	lines.append("红 / 黑指数")
+	lines.append("数值越偏正，说明你更依赖动员、强硬和短期压力；数值越偏负，说明你更依赖秩序、妥协和保守支持。它会影响部分政策的副作用和派系反应。")
+	lines.append("")
+	lines.append("合法性")
+	lines.append("合法性代表这个政权还能不能继续让法国承受战争。它会影响结局、部分行动门槛，以及你能否继续用政治方式稳住局面。")
+	lines.append("")
+	lines.append("补给")
+	lines.append("补给不是单纯库存。它还取决于你站在哪类节点、补给线是否接稳、有没有把区域走廊补成可持续链路。")
+	lines.append("")
+	lines.append("一天的节奏")
+	lines.append("当前日内模型是：1 次机动槽（行军 / 战役 / 休整）+ 2 次决策点。机动区和决策区分开看，通常先决定位置，再决定当天政策。")
+	lines.append("")
+	lines.append("当前局面提示")
+	lines.append("第 %d 天 · 合法性 %.1f · 补给 %.0f · 机动%s · 决策点 %d" % [
+		GameState.current_day,
+		GameState.legitimacy,
+		GameState.supply,
+		"可用" if GameState.maneuver_available else "已用",
+		GameState.actions_remaining
+	])
 	return "\n".join(lines)
 
 ## TODO(history): 当前事件源仍挂在原型期的 stendhal 信号上，后续要整体迁移到 Bertrand diary。

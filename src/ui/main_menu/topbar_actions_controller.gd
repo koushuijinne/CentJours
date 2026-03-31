@@ -13,11 +13,13 @@ signal new_game_confirmed
 signal settings_applied(settings: Dictionary)
 signal strategy_goals_requested
 signal narrative_log_requested
+signal glossary_requested
 
 var _host: Node = null
 var _top_bar_row: HBoxContainer = null
 var _strategy_btn: Button = null
 var _log_btn: Button = null
+var _glossary_btn: Button = null
 var _settings_btn: Button = null
 var _new_game_btn: Button = null
 var _save_btn: Button = null
@@ -74,6 +76,13 @@ func build_topbar_buttons() -> Dictionary:
 	log_btn.pressed.connect(func(): narrative_log_requested.emit())
 	_top_bar_row.add_child(log_btn)
 
+	var glossary_btn := Button.new()
+	glossary_btn.name = "GlossaryButton"
+	glossary_btn.text = "百科"
+	glossary_btn.custom_minimum_size = Vector2(60, 0)
+	glossary_btn.pressed.connect(func(): glossary_requested.emit())
+	_top_bar_row.add_child(glossary_btn)
+
 	var settings_btn := Button.new()
 	settings_btn.name = "SettingsButton"
 	settings_btn.text = "设置"
@@ -104,6 +113,7 @@ func build_topbar_buttons() -> Dictionary:
 
 	_strategy_btn = strategy_btn
 	_log_btn = log_btn
+	_glossary_btn = glossary_btn
 	_settings_btn = settings_btn
 	_new_game_btn = new_game_btn
 	_save_btn = save_btn
@@ -114,6 +124,7 @@ func build_topbar_buttons() -> Dictionary:
 		"settings_btn": settings_btn,
 		"strategy_btn": strategy_btn,
 		"log_btn": log_btn,
+		"glossary_btn": glossary_btn,
 		"new_game_btn": new_game_btn,
 		"save_btn": save_btn,
 		"load_btn": load_btn,
@@ -207,7 +218,7 @@ func _show_settings_popup() -> void:
 	popup.add_child(content)
 	_host.add_child(popup)
 	_open_transient_modal(popup)
-	popup.popup_centered()
+	popup.popup_centered(Vector2i(420, 360))
 
 
 func _build_settings_option_row(label_text: String, option_button: OptionButton) -> HBoxContainer:
@@ -260,16 +271,16 @@ func _apply_settings_from_popup(window_mode_option: OptionButton, ui_scale_optio
 	}
 	_settings_state = SettingsManagerScript.normalize_settings(settings)
 	SettingsManagerScript.save_settings(_settings_state)
-	SettingsManagerScript.apply_settings(_settings_state, _host.get_window())
 	_close_transient_popup(popup)
+	SettingsManagerScript.apply_settings(_settings_state, _host.get_window())
 	settings_applied.emit(_settings_state)
 
 
 func _reset_settings_from_popup(popup: PopupPanel) -> void:
 	_settings_state = SettingsManagerScript.default_settings()
 	SettingsManagerScript.save_settings(_settings_state)
-	SettingsManagerScript.apply_settings(_settings_state, _host.get_window())
 	_close_transient_popup(popup)
+	SettingsManagerScript.apply_settings(_settings_state, _host.get_window())
 	settings_applied.emit(_settings_state)
 
 
