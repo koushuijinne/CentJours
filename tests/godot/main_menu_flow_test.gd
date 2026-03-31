@@ -281,7 +281,9 @@ func test_glossary_popup_opens_from_topbar() -> void:
 	var runner := await _load_main_menu()
 	var scene := runner.scene()
 	var glossary_button := scene.find_child("GlossaryButton", true, false) as Button
+	var execute_button := scene.find_child("ExecuteActionButton", true, false) as Button
 	assert_object(glossary_button).is_not_null()
+	assert_object(execute_button).is_not_null()
 
 	glossary_button.pressed.emit()
 	await runner.simulate_frames(2)
@@ -290,11 +292,35 @@ func test_glossary_popup_opens_from_topbar() -> void:
 	var body := scene.find_child("GlossaryPopupBody", true, false) as Label
 	assert_object(popup).is_not_null()
 	assert_object(body).is_not_null()
+	assert_bool(execute_button.disabled).is_true()
 	assert_str(body.text).contains("红 / 黑指数")
 	assert_str(body.text).contains("合法性")
 	assert_str(body.text).contains("如何提高合法性")
 	assert_str(body.text).contains("当前倾向")
 	assert_str(body.text).contains("每天会多 1 个决策点")
+
+
+func test_glossary_popup_hidden_externally_restores_action_interactivity() -> void:
+	var runner := await _load_main_menu()
+	var scene := runner.scene()
+	var glossary_button := scene.find_child("GlossaryButton", true, false) as Button
+	var execute_button := scene.find_child("ExecuteActionButton", true, false) as Button
+	assert_object(glossary_button).is_not_null()
+	assert_object(execute_button).is_not_null()
+
+	glossary_button.pressed.emit()
+	await runner.simulate_frames(2)
+
+	var popup := scene.find_child("GlossaryPopup", true, false) as PopupPanel
+	assert_object(popup).is_not_null()
+	assert_bool(popup.exclusive).is_true()
+	assert_bool(execute_button.disabled).is_true()
+
+	popup.hide()
+	await runner.simulate_frames(2)
+
+	assert_object(scene.find_child("GlossaryPopup", true, false)).is_null()
+	assert_bool(execute_button.disabled).is_false()
 
 
 func test_narrative_log_popup_replays_existing_entries() -> void:

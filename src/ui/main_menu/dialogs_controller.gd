@@ -63,6 +63,8 @@ signal boost_confirmed(general_id: String)
 
 var _host: Node = null
 var _callbacks: Dictionary = {}
+var _tracked_modal_popups: Dictionary = {}
+var _suppress_modal_restore_ids: Dictionary = {}
 
 var _game_over_overlay: ColorRect = null
 var _difficulty_popup: PopupPanel = null
@@ -124,6 +126,7 @@ func show_info_popup(popup_name: String, title_text: String, body_text: String, 
 
 	_info_popup = PopupPanel.new()
 	_info_popup.name = popup_name
+	_info_popup.exclusive = true
 	var content := VBoxContainer.new()
 	content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	content.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -166,6 +169,7 @@ func show_info_popup(popup_name: String, title_text: String, body_text: String, 
 
 	_info_popup.add_child(content)
 	_host_or_self().add_child(_info_popup)
+	_track_modal_popup(_info_popup)
 	_info_popup.popup_centered(Vector2i(620, 480))
 
 
@@ -486,6 +490,7 @@ func show_difficulty_selection() -> void:
 
 	_difficulty_popup = PopupPanel.new()
 	_difficulty_popup.name = "DifficultyPopup"
+	_difficulty_popup.exclusive = true
 
 	var vbox := VBoxContainer.new()
 	vbox.custom_minimum_size = Vector2(380, 0)
@@ -523,6 +528,7 @@ func show_difficulty_selection() -> void:
 
 	_difficulty_popup.add_child(vbox)
 	_host_or_self().add_child(_difficulty_popup)
+	_track_modal_popup(_difficulty_popup)
 	_difficulty_popup.popup_centered()
 
 
@@ -538,13 +544,13 @@ func _close_difficulty_popup() -> void:
 
 func _dismiss_difficulty_popup() -> void:
 	_close_difficulty_popup()
-	_call_optional(CALLBACK_SET_TRAY_INTERACTIVE, [true])
 
 
 func show_battle_popup(state: Dictionary = {}) -> void:
 	_close_popup(_battle_popup)
 	_battle_popup = PopupPanel.new()
 	_battle_popup.name = "BattlePopup"
+	_battle_popup.exclusive = true
 	_call_optional(CALLBACK_SET_TRAY_INTERACTIVE, [false, "modal"])
 
 	var vbox := VBoxContainer.new()
@@ -627,6 +633,7 @@ func show_battle_popup(state: Dictionary = {}) -> void:
 
 	_battle_popup.add_child(vbox)
 	_host_or_self().add_child(_battle_popup)
+	_track_modal_popup(_battle_popup)
 	_battle_popup.popup_centered()
 
 
@@ -634,6 +641,7 @@ func show_boost_popup(state: Dictionary = {}) -> void:
 	_close_popup(_boost_popup)
 	_boost_popup = PopupPanel.new()
 	_boost_popup.name = "BoostPopup"
+	_boost_popup.exclusive = true
 	_call_optional(CALLBACK_SET_TRAY_INTERACTIVE, [false, "modal"])
 
 	var vbox := VBoxContainer.new()
@@ -678,6 +686,7 @@ func show_boost_popup(state: Dictionary = {}) -> void:
 
 	_boost_popup.add_child(vbox)
 	_host_or_self().add_child(_boost_popup)
+	_track_modal_popup(_boost_popup)
 	_boost_popup.popup_centered()
 
 
@@ -685,8 +694,9 @@ func _confirm_battle(gen_opt: OptionButton, troop_slider: HSlider, terrain_opt: 
 	var general_id: String = gen_opt.get_item_metadata(gen_opt.selected)
 	var troops: int = int(troop_slider.value)
 	var terrain: String = String(terrain_opt.get_item_metadata(terrain_opt.selected))
-	_close_battle_popup()
+	_suppress_modal_restore(_battle_popup)
 	_call_optional(CALLBACK_SET_TRAY_INTERACTIVE, [false, "processing"])
+	_close_battle_popup()
 	var payload := {
 		"general_id": general_id,
 		"troops": troops,
@@ -700,8 +710,9 @@ func _confirm_battle(gen_opt: OptionButton, troop_slider: HSlider, terrain_opt: 
 
 func _confirm_boost(gen_opt: OptionButton) -> void:
 	var general_id: String = gen_opt.get_item_metadata(gen_opt.selected)
-	_close_boost_popup()
+	_suppress_modal_restore(_boost_popup)
 	_call_optional(CALLBACK_SET_TRAY_INTERACTIVE, [false, "processing"])
+	_close_boost_popup()
 	var payload := {"general_id": general_id}
 	if not _call_optional(CALLBACK_SUBMIT_ACTION, [ACTION_BOOST_LOYALTY, payload]):
 		_call_optional(CALLBACK_SET_TRAY_INTERACTIVE, [true])
@@ -728,6 +739,7 @@ func _close_game_over_overlay() -> void:
 
 func _close_popup(popup: PopupPanel) -> void:
 	if popup != null:
+		popup.hide()
 		popup.queue_free()
 
 
@@ -748,16 +760,77 @@ func _close_info_popup() -> void:
 
 func _dismiss_battle_popup() -> void:
 	_close_battle_popup()
-	_call_optional(CALLBACK_SET_TRAY_INTERACTIVE, [true])
 
 
 func _dismiss_boost_popup() -> void:
 	_close_boost_popup()
-	_call_optional(CALLBACK_SET_TRAY_INTERACTIVE, [true])
 
 
 func _dismiss_info_popup() -> void:
 	_close_info_popup()
+
+
+func _track_modal_popup(popup: PopupPanel) -> void:
+	if popup == null:
+		return
+	var popup_id := popup.get_instance_id()
+	if _tracked_modal_popups.has(popup_id):
+		return
+	_tracked_modal_popups[popup_id] = true
+	var visibility_changed_cb := Callable(self, "_on_tracked_modal_visibility_changed").bind(popup)
+	if not popup.visibility_changed.is_connected(visibility_changed_cb):
+		popup.visibility_changed.connect(visibility_changed_cb)
+	var tree_exiting_cb := Callable(self, "_on_tracked_modal_tree_exiting").bind(popup)
+	if not popup.tree_exiting.is_connected(tree_exiting_cb):
+		popup.tree_exiting.connect(tree_exiting_cb)
+
+
+func _suppress_modal_restore(popup: PopupPanel) -> void:
+	if popup == null:
+		return
+	_suppress_modal_restore_ids[popup.get_instance_id()] = true
+
+
+func _on_tracked_modal_visibility_changed(popup: PopupPanel) -> void:
+	if popup != null and popup.visible:
+		return
+	if popup != null and is_instance_valid(popup) and not popup.is_queued_for_deletion():
+		popup.queue_free()
+		return
+	_finalize_tracked_modal_popup(popup)
+
+
+func _on_tracked_modal_tree_exiting(popup: PopupPanel) -> void:
+	_finalize_tracked_modal_popup(popup)
+
+
+func _finalize_tracked_modal_popup(popup: PopupPanel) -> void:
+	if popup == null:
+		return
+	var popup_id := popup.get_instance_id()
+	if not _tracked_modal_popups.has(popup_id):
+		return
+	_tracked_modal_popups.erase(popup_id)
+	var visibility_changed_cb := Callable(self, "_on_tracked_modal_visibility_changed").bind(popup)
+	if popup.visibility_changed.is_connected(visibility_changed_cb):
+		popup.visibility_changed.disconnect(visibility_changed_cb)
+	var tree_exiting_cb := Callable(self, "_on_tracked_modal_tree_exiting").bind(popup)
+	if popup.tree_exiting.is_connected(tree_exiting_cb):
+		popup.tree_exiting.disconnect(tree_exiting_cb)
+	if popup == _info_popup:
+		_info_popup = null
+	if popup == _difficulty_popup:
+		_difficulty_popup = null
+	if popup == _battle_popup:
+		_battle_popup = null
+	if popup == _boost_popup:
+		_boost_popup = null
+	var suppress_restore := _suppress_modal_restore_ids.has(popup_id)
+	_suppress_modal_restore_ids.erase(popup_id)
+	if suppress_restore:
+		return
+	if is_modal_active():
+		return
 	_call_optional(CALLBACK_SET_TRAY_INTERACTIVE, [true])
 
 

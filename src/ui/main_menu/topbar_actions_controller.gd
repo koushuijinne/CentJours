@@ -148,6 +148,7 @@ func _on_settings_pressed() -> void:
 func _show_settings_popup() -> void:
 	var popup := PopupPanel.new()
 	popup.name = "SettingsPopup"
+	popup.exclusive = true
 
 	var content := VBoxContainer.new()
 	content.name = "SettingsContent"
@@ -299,6 +300,7 @@ func _get_audio_manager() -> Node:
 func _on_new_game_pressed() -> void:
 	var confirm := ConfirmationDialog.new()
 	confirm.name = "NewGameConfirmDialog"
+	confirm.exclusive = true
 	confirm.dialog_text = "重新开始将丢失当前未保存进度，确定吗？"
 	confirm.ok_button_text = "确认新开一局"
 	confirm.cancel_button_text = "取消"
@@ -325,6 +327,7 @@ func _on_load_pressed() -> void:
 func _show_slot_picker(mode: String) -> void:
 	var popup := PopupPanel.new()
 	popup.name = "SaveSlotPickerPopup" if mode == "save" else "LoadSlotPickerPopup"
+	popup.exclusive = true
 	var content := VBoxContainer.new()
 	content.name = "SlotPickerContent"
 	content.custom_minimum_size = Vector2(320, 0)
@@ -400,6 +403,7 @@ func _load_from_slot(slot_id: int, popup: PopupPanel) -> void:
 	_close_transient_popup(popup)
 	var confirm := ConfirmationDialog.new()
 	confirm.name = "LoadConfirmDialog"
+	confirm.exclusive = true
 	confirm.dialog_text = "读档将覆盖当前进度，确定读取槽位 %d 吗？" % slot_id
 	confirm.ok_button_text = "确认读档"
 	confirm.cancel_button_text = "取消"
@@ -428,6 +432,7 @@ func _confirm_save_overwrite(slot_id: int, popup: PopupPanel) -> void:
 	_close_transient_popup(popup)
 	var confirm := ConfirmationDialog.new()
 	confirm.name = "SaveOverwriteConfirmDialog"
+	confirm.exclusive = true
 	confirm.dialog_text = "槽位 %d 已有存档（%s），确定覆盖吗？" % [slot_id, _slot_meta_summary(slot_id)]
 	confirm.ok_button_text = "确认覆盖"
 	confirm.cancel_button_text = "取消"
@@ -447,6 +452,7 @@ func _confirm_delete_save(slot_id: int, popup: PopupPanel) -> void:
 	_close_transient_popup(popup)
 	var confirm := ConfirmationDialog.new()
 	confirm.name = "DeleteSaveConfirmDialog"
+	confirm.exclusive = true
 	confirm.dialog_text = "确定删除槽位 %d（%s）吗？" % [slot_id, _slot_meta_summary(slot_id)]
 	confirm.ok_button_text = "确认删除"
 	confirm.cancel_button_text = "取消"
@@ -501,6 +507,9 @@ func _open_transient_modal(popup: Window) -> void:
 	var visibility_changed_cb := Callable(self, "_on_transient_modal_visibility_changed").bind(popup)
 	if not popup.visibility_changed.is_connected(visibility_changed_cb):
 		popup.visibility_changed.connect(visibility_changed_cb)
+	var tree_exiting_cb := Callable(self, "_on_transient_modal_tree_exiting").bind(popup)
+	if not popup.tree_exiting.is_connected(tree_exiting_cb):
+		popup.tree_exiting.connect(tree_exiting_cb)
 
 
 func _close_transient_popup(popup: Window) -> void:
@@ -513,6 +522,17 @@ func _close_transient_popup(popup: Window) -> void:
 func _on_transient_modal_visibility_changed(popup: Window) -> void:
 	if popup != null and popup.visible:
 		return
+	if popup != null and is_instance_valid(popup) and not popup.is_queued_for_deletion():
+		popup.queue_free()
+		return
+	_finalize_transient_modal_close(popup)
+
+
+func _on_transient_modal_tree_exiting(popup: Window) -> void:
+	_finalize_transient_modal_close(popup)
+
+
+func _finalize_transient_modal_close(popup: Window) -> void:
 	var popup_id := popup.get_instance_id() if popup != null else 0
 	if not _tracked_transient_modals.has(popup_id):
 		return
@@ -520,6 +540,9 @@ func _on_transient_modal_visibility_changed(popup: Window) -> void:
 	var visibility_changed_cb := Callable(self, "_on_transient_modal_visibility_changed").bind(popup)
 	if popup != null and popup.visibility_changed.is_connected(visibility_changed_cb):
 		popup.visibility_changed.disconnect(visibility_changed_cb)
+	var tree_exiting_cb := Callable(self, "_on_transient_modal_tree_exiting").bind(popup)
+	if popup != null and popup.tree_exiting.is_connected(tree_exiting_cb):
+		popup.tree_exiting.disconnect(tree_exiting_cb)
 	_on_transient_modal_closed()
 
 

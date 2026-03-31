@@ -110,6 +110,29 @@ func test_settings_popup_uses_modal_lock_copy_instead_of_end_day_copy() -> void:
 	assert_str(execute_button.text).is_equal("执行当前动作")
 
 
+func test_settings_popup_hidden_externally_restores_action_interactivity() -> void:
+	var runner := await _load_main_menu()
+	var scene := runner.scene()
+	var settings_button := scene.find_child("SettingsButton", true, false) as Button
+	var execute_button := scene.find_child("ExecuteActionButton", true, false) as Button
+	assert_object(settings_button).is_not_null()
+	assert_object(execute_button).is_not_null()
+
+	settings_button.pressed.emit()
+	await await_idle_frame()
+
+	var settings_popup := scene.find_child("SettingsPopup", true, false) as PopupPanel
+	assert_object(settings_popup).is_not_null()
+	assert_bool(settings_popup.exclusive).is_true()
+	assert_bool(execute_button.disabled).is_true()
+
+	settings_popup.hide()
+	await runner.simulate_frames(2)
+
+	assert_object(scene.find_child("SettingsPopup", true, false)).is_null()
+	assert_bool(execute_button.disabled).is_false()
+
+
 func test_settings_apply_persists_ui_scale() -> void:
 	var runner := await _load_main_menu()
 	var scene := runner.scene()

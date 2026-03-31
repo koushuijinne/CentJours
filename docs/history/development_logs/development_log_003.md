@@ -97,3 +97,23 @@
 - 待本轮统一提交
 下一步:
 - 观察首轮 `windows-fast / windows-full / windows-heavy-nightly` 的云端稳定性，再继续推进 `S1-8` 的行动面板语义重排。
+
+## 2026-03-29 第 6 轮
+分支: `claude/review-project-status-05vxD`
+范围: 修复真人试玩 `05` 的 modal 外部关闭灰态残留，并把回归护栏补到设置 / 百科两条链
+变更:
+- 在 [src/ui/main_menu/topbar_actions_controller.gd](../../../src/ui/main_menu/topbar_actions_controller.gd) 给设置、新局、存读档和确认弹窗补 `exclusive = true`，并把 transient modal 的 `visibility_changed + tree_exiting` 收尾链补齐，避免外部 hide 后残留 modal 深度。
+- 在 [src/ui/main_menu/dialogs_controller.gd](../../../src/ui/main_menu/dialogs_controller.gd) 给信息、难度、战役、接见弹窗统一接入 tracked modal 回收；外部 hide 会自动恢复 Tray，提交型关闭则通过 suppress 标记避免误把 processing 态恢复成可交互。
+- 在 [tests/godot/dialog_flow_test.gd](../../../tests/godot/dialog_flow_test.gd) 新增 `test_settings_popup_hidden_externally_restores_action_interactivity`，验证设置弹窗被外部关闭后不会留下灰态按钮。
+- 在 [tests/godot/main_menu_flow_test.gd](../../../tests/godot/main_menu_flow_test.gd) 新增 `test_glossary_popup_hidden_externally_restores_action_interactivity`，验证百科弹窗同样具备恢复链。
+- 更新 [docs/plans/dev_plan.md](../../plans/dev_plan.md)、[docs/history/agent_handoff.md](../agent_handoff.md)、[docs/bugs/bug_validation_matrix_2026-03-28.md](../../bugs/bug_validation_matrix_2026-03-28.md)，同步最新真人试玩 `05` 的修复状态和验证入口。
+验证:
+- Windows `tools\\run_gdunit_windows.cmd ... res://tests/godot/dialog_flow_test.gd res://tests/godot/main_menu_flow_test.gd` 通过：`37/37`
+- Windows `tools\\run_gdunit_windows.cmd ... res://tests/godot` 通过：`66/66`
+- Windows Godot 主项目无头启动通过
+- Windows smoke scene 通过
+- 未运行 Linux / WSL 侧测试
+提交/推送:
+- 待本轮统一提交
+下一步:
+- 继续推进 `S1-8` 行动面板禁用态与分区重排，并补更多 modal 组合链的 Windows 真机验收。

@@ -17,7 +17,7 @@
 |------|------|
 | 入口 | `src/ui/main_menu.tscn`，主循环 `TurnManager → CentJoursEngine → GameState → UI` 已接通 |
 | 数据 | 15 角色 / 41 地图节点 / 58 历史事件 (major 16 / normal 35 / minor 7) |
-| 测试 | Windows `cargo test 215/215` + GdUnit4 `64/64` + Windows CI + smoke |
+| 测试 | Windows `cargo test 215/215` + GdUnit4 `66/66` + Windows CI + smoke |
 | 存档 | Save v4 兼容路径，旧 `fontainebleau_eve` → `tuileries_eve` 迁移 |
 | 分支 | `claude/review-project-status-05vxD`（已合并 `auto/gameplay_update`） |
 
@@ -30,6 +30,7 @@
 - **音频框架**: AudioManager autoload (BGM 交叉淡入 + SFX 池 + 音量持久化)，缺音频资产
 - **设置系统**: 窗口模式 + UI 缩放 + 音频滑条，设置弹窗进 GdUnit4 回归
 - **设置锁定语义**: 设置弹窗不再复用“正在结束今天”提示，Tray 锁定原因已拆成 modal / resolving / processing / game_over
+- **弹窗恢复链**: 设置 / 百科弹窗即使被外部点击或引擎 hide 关闭，也会回收 modal 锁定，不再留下灰态政策按钮
 - **地图交互**: MapScroll + 滚轮缩放 + hover 预览 / click 锁定详情两层，补给角色/枢纽/粮秣站标注
 - **前端拆分**: main_menu.gd 1025→684 行，拆出 map / layout / tray / sidebar / dialogs / topbar_actions 6 个子控制器
 - **弹窗状态机**: modal 统一锁定 DecisionTray，存读档/设置/战斗/接见/结局弹窗均有 GdUnit4 回归
@@ -66,7 +67,7 @@
 - `文本 QA 未收口`：剩余事件仍需统一史实锚点、信息密度和句式风格
 - `前端发布级 polish 未完成`：主菜单主要 bug 已清一轮，但仍需 Windows 真机继续看地图缩放、hover 预览和存读档弹窗的最终体验
 - `Windows CI 仍需继续收口`：三层链路已经落地，但还要继续观察 `fast / full / nightly` 的稳定性、取消行为和 runner 占用
-- `前端自动回归仍不够宽`：存读档、设置、音频滑条、地图交互边界、战斗/接见失败恢复与成功推进、行军主流程、休整行动、政策冷却、连续两日行动、教程 modal 干扰链、读档后一致性、难度恢复、教程弹窗宽度、设置弹窗锁定语义和地图空白点击清空都已纳入 `GdUnit4`，`EventBus` 噪音也已清掉；但更多长链 UI 状态和真机视觉问题还没全覆盖
+- `前端自动回归仍不够宽`：存读档、设置、音频滑条、地图交互边界、战斗/接见失败恢复与成功推进、行军主流程、休整行动、政策冷却、连续两日行动、教程 modal 干扰链、读档后一致性、难度恢复、教程弹窗宽度、设置弹窗锁定语义、地图空白点击清空，以及设置/百科弹窗外部关闭恢复都已纳入 `GdUnit4`，`EventBus` 噪音也已清掉；但更多长链 UI 状态和真机视觉问题还没全覆盖
 - `产品化能力仍缺`：最小设置入口已落地，但更完整的选项页、导出配置、Steam 商店素材、教程引导都未完成
 - `Windows 真机体验验收仍未收口`：这轮已经补齐 Windows DLL 重编、Windows 无头与 smoke scene，但更长时的真机 UI / 体验验收还没补
 - `最终资产仍是占位`：地图底图、肖像、插图、BGM、SFX、结局画面还没替换
