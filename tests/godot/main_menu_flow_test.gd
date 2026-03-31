@@ -34,10 +34,11 @@ func test_main_menu_bootstraps_primary_controls() -> void:
 	assert_object(narrative_body).is_not_null()
 
 	assert_str(day_label.text).is_equal("第 1 天")
-	assert_str(tray_hint.text).contains("今日节奏：")
+	assert_str(tray_hint.text).contains("今天还能做：1 次机动，2 次决策")
 	assert_str(tray_hint.text).contains("前10天教程：")
 	assert_bool(map_subtitle.text != tray_hint.text).is_true()
 	assert_bool(execute_button.disabled).is_false()
+	assert_str(execute_button.text).is_equal("先选择动作")
 	assert_bool(end_day_button.disabled).is_false()
 	assert_bool(load_button.disabled).is_true()
 	assert_str(narrative_body.text).contains("第 1 天")
@@ -175,6 +176,7 @@ func test_march_confirm_without_target_shows_selection_guidance() -> void:
 
 	tray_controller.select_policy("march")
 	await runner.simulate_frames(2)
+	assert_str(execute_button.text).is_equal("执行机动")
 	runner.invoke("_on_confirm_pressed")
 	await runner.simulate_frames(2)
 
@@ -300,6 +302,45 @@ func test_glossary_popup_opens_from_topbar() -> void:
 	assert_str(body.text).contains("每天会多 1 个决策点")
 
 
+func test_selecting_policy_updates_confirm_button_copy_to_decision() -> void:
+	var runner := await _load_main_menu()
+	var scene := runner.scene()
+	var tray_controller = runner.get_property("_tray_controller")
+	var execute_button := scene.find_child("ExecuteActionButton", true, false) as Button
+	assert_object(execute_button).is_not_null()
+
+	tray_controller.select_policy("public_speech")
+	await runner.simulate_frames(2)
+
+	assert_str(execute_button.text).is_equal("执行决策")
+
+
+func test_action_budget_copy_updates_when_only_maneuver_remains() -> void:
+	var runner := await _load_main_menu()
+	var scene := runner.scene()
+	var tray_controller = runner.get_property("_tray_controller")
+	var tray_hint := scene.find_child("TrayHint", true, false) as Label
+	var execute_button := scene.find_child("ExecuteActionButton", true, false) as Button
+	assert_object(tray_hint).is_not_null()
+	assert_object(execute_button).is_not_null()
+
+	for policy_id in ["public_speech", "constitutional_promise"]:
+		tray_controller.select_policy(policy_id)
+		await runner.simulate_frames(2)
+		runner.invoke("_on_confirm_pressed")
+		await runner.simulate_frames(6)
+
+	assert_int(GameState.actions_remaining).is_equal(0)
+	assert_str(tray_hint.text).contains("决策点已用尽")
+	assert_str(tray_hint.text).contains("今天还能做：1 次机动，0 次决策")
+	assert_str(execute_button.text).is_equal("先选择动作")
+
+	var boost_card := tray_controller.get_card("boost_loyalty") as DecisionCard
+	assert_object(boost_card).is_not_null()
+	assert_bool(boost_card.is_disabled).is_true()
+	assert_str(boost_card.disabled_reason).is_equal("决策点已用尽")
+
+
 func test_glossary_popup_hidden_externally_restores_action_interactivity() -> void:
 	var runner := await _load_main_menu()
 	var scene := runner.scene()
@@ -372,6 +413,7 @@ func test_exhausted_decision_points_disable_policy_cards_but_keep_maneuver_cards
 	assert_bool(boost_card.is_disabled).is_true()
 	assert_bool(march_card.is_disabled).is_false()
 	assert_bool(battle_card.is_disabled).is_false()
+	assert_str(boost_card.disabled_reason).is_equal("决策点已用尽")
 
 	tray_controller.select_policy("public_speech")
 	await runner.simulate_frames(2)

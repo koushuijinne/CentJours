@@ -117,3 +117,25 @@
 - 待本轮统一提交
 下一步:
 - 继续推进 `S1-8` 行动面板禁用态与分区重排，并补更多 modal 组合链的 Windows 真机验收。
+
+## 2026-03-29 第 7 轮
+分支: `claude/review-project-status-05vxD`
+范围: 落第一版 `S1-8` 行动面板语义包，并用全量 Windows `GdUnit4` 重新立基线
+变更:
+- 在 [src/ui/main_menu.gd](../../../src/ui/main_menu.gd) 把 Tray 提示改成状态驱动：直接说明今天还剩多少机动 / 决策预算，并按预算切换说明文案。
+- 在 [src/ui/main_menu.gd](../../../src/ui/main_menu.gd) 和 [src/ui/main_menu/tray_controller.gd](../../../src/ui/main_menu/tray_controller.gd) 让确认按钮按当前选择切换“先选择动作 / 执行机动 / 执行决策”，不再用一条固定文案覆盖所有动作。
+- 在 [src/ui/main_menu/tray_controller.gd](../../../src/ui/main_menu/tray_controller.gd) 给托盘补了显式“机动 / 决策”分区，并把禁用态从布尔值升级成“带原因的禁用状态”。
+- 在 [src/ui/components/decision_card.gd](../../../src/ui/components/decision_card.gd) 增加 `disabled_reason`，决策点耗尽时卡片会直接显示“决策点已用尽”，机动已用时会显示“今日机动已用”。
+- 在 [tests/godot/main_menu_flow_test.gd](../../../tests/godot/main_menu_flow_test.gd) 新增行动预算提示、确认按钮语义和禁用原因断言；在 [tests/godot/dialog_flow_test.gd](../../../tests/godot/dialog_flow_test.gd) 同步设置弹窗下按钮文案的最新口径。
+- 更新 [docs/plans/dev_plan.md](../../plans/dev_plan.md)、[docs/history/agent_handoff.md](../agent_handoff.md)、[docs/bugs/bug_validation_matrix_2026-03-28.md](../../bugs/bug_validation_matrix_2026-03-28.md)，把 `S1-8` 状态和 `68/68` 基线同步为当前真值。
+验证:
+- Windows `tools\\run_gdunit_windows.cmd ... res://tests/godot/main_menu_flow_test.gd` 通过：`19/19`
+- Windows `tools\\run_gdunit_windows.cmd ... res://tests/godot/dialog_flow_test.gd` 通过：`20/20`
+- Windows `tools\\run_gdunit_windows.cmd ... res://tests/godot` 通过：`68/68`
+- Windows Godot 主项目无头启动通过
+- Windows smoke scene 通过
+- 未运行 Linux / WSL 侧测试
+提交/推送:
+- 待本轮统一提交
+下一步:
+- 继续把 `S1-8` 从“语义清楚”推进到“视觉层级更清楚”，优先补真机观感和更强的机动 / 决策区分。

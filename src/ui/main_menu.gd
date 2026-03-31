@@ -233,8 +233,8 @@ func _configure_sidebar_controller() -> void:
 
 func _configure_tray_controller() -> void:
 	_tray_controller.bind_nodes(_decision_row, _tray_hint, _confirm_button)
-	_tray_controller.set_tray_hint_texts("先机动，再决策。", _tray_disabled_hint_text())
-	_tray_controller.set_confirm_button_text("执行当前动作")
+	_tray_controller.set_tray_hint_texts("今天还能做：1 次机动，2 次决策。", _tray_disabled_hint_text())
+	_tray_controller.set_confirm_button_text("先选择动作")
 	if not _tray_controller.policy_selected.is_connected(_on_policy_selected):
 		_tray_controller.policy_selected.connect(_on_policy_selected)
 	if not _tray_controller.confirm_requested.is_connected(_on_confirm_requested):
@@ -442,22 +442,28 @@ func _apply_rn_atmosphere() -> void:
 func _sync_tray_state() -> void:
 	_tray_controller.set_disabled_hint_text(_tray_disabled_hint_text())
 	_tray_controller.set_tray_state(_tray_controller.get_selected_policy_id(), _awaiting_action)
-	_tray_controller.apply_policy_availability(_disabled_policy_ids_for_current_budget())
+	_tray_controller.apply_policy_availability(_disabled_policy_state_for_current_budget())
+	_tray_controller.set_confirm_button_text(_tray_confirm_button_text())
 	if _end_day_button != null:
 		_end_day_button.disabled = not _awaiting_action
 	_sync_march_preview()
 
 
-func _disabled_policy_ids_for_current_budget() -> Array:
-	var disabled: Array[String] = []
+func _disabled_policy_state_for_current_budget() -> Dictionary:
+	var disabled := {}
 	if not _awaiting_action:
-		disabled.append_array(MANEUVER_POLICY_IDS)
-		disabled.append_array(_decision_policy_ids())
+		var lock_reason := _tray_card_lock_reason_text()
+		for policy_id in MANEUVER_POLICY_IDS:
+			disabled[policy_id] = lock_reason
+		for policy_id in _decision_policy_ids():
+			disabled[policy_id] = lock_reason
 		return disabled
 	if not GameState.maneuver_available:
-		disabled.append_array(MANEUVER_POLICY_IDS)
+		for policy_id in MANEUVER_POLICY_IDS:
+			disabled[policy_id] = "今日机动已用"
 	if GameState.actions_remaining <= 0:
-		disabled.append_array(_decision_policy_ids())
+		for policy_id in _decision_policy_ids():
+			disabled[policy_id] = "决策点已用尽"
 	return disabled
 
 func _refresh_logistics_guidance() -> void:
@@ -477,11 +483,7 @@ func _refresh_logistics_guidance() -> void:
 		elif GameState.logistics_focus_short.strip_edges() != "":
 			hint_text = GameState.logistics_focus_short
 	var map_subtitle_text := _build_map_context_subtitle(hint_text)
-	var budget_text := "今日节奏：机动槽%s，剩余决策点 %d。" % [
-		"可用" if GameState.maneuver_available else "已用",
-		GameState.actions_remaining
-	]
-	_tray_controller.set_enabled_hint_text("%s\n%s" % [budget_text, hint_text])
+	_tray_controller.set_enabled_hint_text("%s\n%s" % [_build_action_budget_hint_text(), hint_text])
 	_tray_controller.set_disabled_hint_text(_tray_disabled_hint_text())
 	_map_controller.set_context_subtitle(map_subtitle_text)
 
@@ -498,6 +500,39 @@ func _tray_disabled_hint_text() -> String:
 			return "战局已结束，请查看结局或开始新局。"
 		_:
 			return "界面已锁定。"
+
+
+func _tray_card_lock_reason_text() -> String:
+	match _tray_lock_reason:
+		TRAY_LOCK_MODAL:
+			return "先关闭弹窗"
+		TRAY_LOCK_RESOLVING:
+			return "正在结束今天"
+		TRAY_LOCK_PROCESSING:
+			return "正在处理"
+		TRAY_LOCK_GAME_OVER:
+			return "战局已结束"
+		_:
+			return "界面已锁定"
+
+
+func _build_action_budget_hint_text() -> String:
+	if GameState.maneuver_available and GameState.actions_remaining > 0:
+		return "今天还能做：1 次机动，%d 次决策。通常先决定位置，再安排政策。" % GameState.actions_remaining
+	if GameState.maneuver_available and GameState.actions_remaining <= 0:
+		return "今天还能做：1 次机动，0 次决策。决策点已用尽，先决定是否机动，或直接结束今天。"
+	if not GameState.maneuver_available and GameState.actions_remaining > 0:
+		return "今天还能做：0 次机动，%d 次决策。机动已完成，接下来专注安排政策。" % GameState.actions_remaining
+	return "今天的机动和决策都已排完，直接结束今天。"
+
+
+func _tray_confirm_button_text() -> String:
+	var selected_policy_id := _tray_controller.get_selected_policy_id()
+	if selected_policy_id == "":
+		return "先选择动作"
+	if MANEUVER_POLICY_IDS.has(selected_policy_id):
+		return "执行机动"
+	return "执行决策"
 
 func _build_map_context_subtitle(hint_text: String) -> String:
 	var candidates := [

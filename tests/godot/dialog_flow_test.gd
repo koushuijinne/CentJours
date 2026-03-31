@@ -107,7 +107,7 @@ func test_settings_popup_uses_modal_lock_copy_instead_of_end_day_copy() -> void:
 
 	assert_str(tray_hint.text).contains("设置已打开")
 	assert_bool("正在结束今天" not in tray_hint.text).is_true()
-	assert_str(execute_button.text).is_equal("执行当前动作")
+	assert_str(execute_button.text).is_equal("先选择动作")
 
 
 func test_settings_popup_hidden_externally_restores_action_interactivity() -> void:

@@ -25,6 +25,7 @@
 | 点击地图空白后锁定详情虽消失，但 hover 会被鼠标停留位置立刻吸回 | `tests/godot/map_controller_contract_test.gd` | 空白点击后清空选中与 hover，直到下一次真实鼠标移动才恢复 hover 预览 |
 | 百科只有入口，没有说明红黑指数 / 合法性的实际作用和提高路径 | `tests/godot/main_menu_flow_test.gd` | 百科正文必须包含“当前倾向”“如何提高合法性”“每天会多 1 个决策点”等关键说明 |
 | 点击空白区域关闭设置 / 百科弹窗后，政策按钮仍然灰掉 | `tests/godot/dialog_flow_test.gd` + `tests/godot/main_menu_flow_test.gd` | modal 被外部 hide 后也会回收锁定，设置 / 百科不会留下灰态 Tray |
+| 今天还能做什么不清楚；行动点用尽后政策和机动语义仍混在一起 | `tests/godot/main_menu_flow_test.gd` | Tray 直接显示机动 / 决策预算，确认按钮按“机动 / 决策”切换，政策卡在决策点耗尽时显示禁用原因 |
 
 ## 仍需 Windows 真机
 

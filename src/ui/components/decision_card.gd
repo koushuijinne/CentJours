@@ -16,6 +16,7 @@ signal card_selected(policy_id: String)
 @export var on_cooldown: bool = false
 @export var cooldown_days: int = 0
 @export var is_disabled: bool = false
+@export var disabled_reason: String = ""
 
 # 效果列表，每项: {label, value, type} type = "positive"/"negative"/"rn"
 @export var effects: Array = []
@@ -74,11 +75,12 @@ func apply_cooldown_state(cooldown_remaining: int) -> void:
 		_apply_current_style()
 
 
-func apply_availability_state(disabled: bool) -> void:
-	if is_disabled == disabled:
+func apply_availability_state(disabled: bool, reason: String = "") -> void:
+	if is_disabled == disabled and disabled_reason == reason:
 		_apply_current_style()
 		return
 	is_disabled = disabled
+	disabled_reason = reason
 	_rebuild_ui()
 
 # ── UI 构建 ──────────────────────────────────────────
@@ -195,7 +197,7 @@ func _build_ui() -> void:
 		modulate = Color(1, 1, 1, 0.45)
 	elif is_disabled:
 		var disabled_overlay := Label.new()
-		disabled_overlay.text = "本日不可用"
+		disabled_overlay.text = disabled_reason if disabled_reason.strip_edges() != "" else "本日不可用"
 		disabled_overlay.add_theme_color_override("font_color", CentJoursTheme.COLOR["neutral"])
 		disabled_overlay.add_theme_font_size_override("font_size", 10)
 		body.add_child(disabled_overlay)

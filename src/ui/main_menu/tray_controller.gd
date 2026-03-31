@@ -15,6 +15,7 @@ var _confirm_button: Button = null
 var _card_specs: Array[Dictionary] = []
 var _cards_by_policy_id: Dictionary = {}
 var _disabled_policy_ids: Dictionary = {}
+var _disabled_policy_reasons: Dictionary = {}
 var _selected_policy_id: String = ""
 var _awaiting_action: bool = false
 
@@ -178,13 +179,22 @@ func get_selected_card() -> DecisionCard:
 	return get_card(_selected_policy_id)
 
 
-func apply_policy_availability(disabled_policy_ids: Array = []) -> void:
+func apply_policy_availability(disabled_policy_data: Variant = []) -> void:
 	_disabled_policy_ids.clear()
-	for policy_id_variant in disabled_policy_ids:
-		var policy_id := String(policy_id_variant)
-		if policy_id == "":
-			continue
-		_disabled_policy_ids[policy_id] = true
+	_disabled_policy_reasons.clear()
+	if disabled_policy_data is Dictionary:
+		for policy_id_variant in disabled_policy_data.keys():
+			var policy_id := String(policy_id_variant)
+			if policy_id == "":
+				continue
+			_disabled_policy_ids[policy_id] = true
+			_disabled_policy_reasons[policy_id] = String(disabled_policy_data.get(policy_id_variant, ""))
+	else:
+		for policy_id_variant in disabled_policy_data:
+			var policy_id := String(policy_id_variant)
+			if policy_id == "":
+				continue
+			_disabled_policy_ids[policy_id] = true
 	if _disabled_policy_ids.has(_selected_policy_id):
 		_selected_policy_id = ""
 	_apply_selected_state()
@@ -227,6 +237,11 @@ func build_default_card_specs(
 	boost_meta: Dictionary
 ) -> Array[Dictionary]:
 	var specs: Array[Dictionary] = []
+	specs.append({
+		"section_break": true,
+		"label": "机动",
+		"label_only": true
+	})
 	specs.append(_make_card_spec(rest_meta))
 	specs.append(_make_card_spec(march_meta))
 	specs.append(_make_card_spec(battle_meta))
@@ -280,7 +295,18 @@ func _build_section_break(spec: Dictionary) -> Control:
 	container.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	container.alignment = BoxContainer.ALIGNMENT_CENTER
 	container.add_theme_constant_override("separation", 6)
-	container.custom_minimum_size = Vector2(44, 0)
+	container.custom_minimum_size = Vector2(48, 0)
+
+	if bool(spec.get("label_only", false)):
+		var start_label := Label.new()
+		start_label.text = String(spec.get("label", ""))
+		start_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		start_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		start_label.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		start_label.add_theme_color_override("font_color", CentJoursTheme.COLOR["gold_dim"])
+		start_label.add_theme_font_size_override("font_size", 10)
+		container.add_child(start_label)
+		return container
 
 	var separator := VSeparator.new()
 	separator.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -343,7 +369,8 @@ func _refresh_policy_availability_state() -> void:
 		return
 	for child in _decision_row.get_children():
 		if child is DecisionCard:
-			child.apply_availability_state(_disabled_policy_ids.has(child.policy_id))
+			var reason := String(_disabled_policy_reasons.get(child.policy_id, ""))
+			child.apply_availability_state(_disabled_policy_ids.has(child.policy_id), reason)
 
 
 func _apply_tray_interactive_state() -> void:
