@@ -43,6 +43,25 @@ func test_main_menu_bootstraps_primary_controls() -> void:
 	assert_str(narrative_body.text).contains("第 1 天")
 
 
+func test_tutorial_popup_keeps_readable_width_for_long_chinese_copy() -> void:
+	var runner := scene_runner(MAIN_MENU_SCENE)
+	await runner.simulate_frames(12)
+	var scene := runner.scene()
+	var popup := scene.find_child("TutorialPopup", true, false) as PopupPanel
+	var scroll := scene.find_child("TutorialPopupScroll", true, false) as ScrollContainer
+	var body := scene.find_child("TutorialPopupBody", true, false) as Label
+
+	assert_object(popup).is_not_null()
+	assert_object(scroll).is_not_null()
+	assert_object(body).is_not_null()
+	assert_int(int(roundf(popup.size.x))).is_greater_equal(600)
+	assert_int(int(roundf(scroll.size.x))).is_greater_equal(520)
+	assert_int(int(roundf(body.size.x))).is_greater_equal(500)
+	assert_str(body.text).contains("前10天教程")
+
+	await _dismiss_tutorial_popup_if_present(scene, runner)
+
+
 func test_policy_action_stays_in_same_day_until_end_day() -> void:
 	var runner := await _load_main_menu()
 	var scene := runner.scene()

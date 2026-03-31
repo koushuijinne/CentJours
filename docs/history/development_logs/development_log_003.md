@@ -37,3 +37,24 @@
 - 待本轮统一提交
 下一步:
 - 继续做 S1 第二轮 polish，优先补中文 UI 残留、地图真机可读性和弹窗文案密度。
+
+## 2026-03-29 第 3 轮
+分支: `claude/review-project-status-05vxD`
+范围: 收口 `P0-A + P0-B + P0-C`，把最新真人试玩里的教程版式回归转成自动化护栏
+变更:
+- 在 [src/ui/main_menu/dialogs_controller.gd](../../../src/ui/main_menu/dialogs_controller.gd) 给统一信息弹窗补了固定宽度、滚动区最小宽度和正文最小宽度，避免长中文内容被挤成竖排窄列。
+- 在 [tests/godot/main_menu_flow_test.gd](../../../tests/godot/main_menu_flow_test.gd) 新增教程弹窗宽度断言，把“前10天教程正文被压窄”的问题正式转成 `GdUnit4` 回归。
+- 在 [src/ui/main_menu/layout_controller.gd](../../../src/ui/main_menu/layout_controller.gd) 做地图优先布局第二轮压缩：继续缩小右侧栏和 hover/锁定详情面板，让地图主区域更大。
+- 在 [src/ui/main_menu.tscn](../../../src/ui/main_menu.tscn) 和 [src/ui/main_menu.gd](../../../src/ui/main_menu.gd) 清掉主菜单玩家可见英文占位，`Stendhal` 显示口径改为中性中文“日记摘录”，不改变后续 Bertrand 迁移 TODO。
+- 更新 [docs/plans/dev_plan.md](../../plans/dev_plan.md)、[docs/history/agent_handoff.md](../agent_handoff.md)、[docs/bugs/bug_validation_matrix_2026-03-28.md](../../bugs/bug_validation_matrix_2026-03-28.md)，同步 `58/58` 基线和新护栏。
+验证:
+- Windows `cargo build --features godot-extension` 通过
+- Windows `cargo test` 通过：`215/215`
+- Windows `GdUnit4` 通过：`58/58`
+- Windows Godot 主项目无头启动通过
+- Windows smoke scene 通过
+- 未运行 Linux / WSL 侧测试
+提交/推送:
+- 待本轮统一提交
+下一步:
+- 继续扩长文本弹窗的版式回归与 Windows 真机观感清单，不把教程弹窗这一条护栏当成全量收口。

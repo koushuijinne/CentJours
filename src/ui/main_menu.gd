@@ -636,9 +636,9 @@ func _build_strategy_goals_overview() -> String:
 	lines.append("优先同时考虑机动节奏、合法性、补给和胜场，不要只盯一项数值。")
 	return "\n".join(lines)
 
-## TODO(history): 当前标题仍是原型期的 Stendhal 文案，后续要改成 Bertrand diary 的展示口径。
+## TODO(history): 当前事件源仍挂在原型期的 stendhal 信号上，后续要整体迁移到 Bertrand diary。
 func _on_stendhal_entry(day: int, text: String) -> void:
-	_append_narrative("第 %d 天 — Stendhal\n%s" % [day, text], CentJoursTheme.COLOR["gold_dim"])
+	_append_narrative("第 %d 天 — 日记摘录\n%s" % [day, text], CentJoursTheme.COLOR["gold_dim"])
 
 ## 行动后果微叙事：进入滚动日志（ADR-004）
 func _on_micro_narrative(action_type: String, consequence: String) -> void:

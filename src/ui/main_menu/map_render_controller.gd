@@ -498,11 +498,11 @@ func _add_map_label(candidate: Dictionary, rect: Rect2) -> void:
 	name_label.add_theme_color_override("font_color", _node_label_color(is_focus, is_selected, is_hovered, is_march_target))
 	label_box.add_child(name_label)
 
-	# 拿破仑所在节点额外显示 "Napoléon" 状态文字
+	# 拿破仑所在节点额外显示状态文字
 	if is_focus:
 		var status := Label.new()
 		status.position = Vector2(MainMenuConfigData.MAP_LABEL_PADDING_X, float(candidate.get("font_size", 9)) + 2.0)
-		status.text = "Napoléon"
+		status.text = "拿破仑"
 		status.add_theme_font_size_override("font_size", 8)
 		status.add_theme_color_override("font_color", CentJoursTheme.COLOR["gold_dim"])
 		label_box.add_child(status)

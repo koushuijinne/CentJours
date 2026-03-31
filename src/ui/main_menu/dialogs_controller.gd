@@ -125,7 +125,9 @@ func show_info_popup(popup_name: String, title_text: String, body_text: String, 
 	_info_popup = PopupPanel.new()
 	_info_popup.name = popup_name
 	var content := VBoxContainer.new()
-	content.custom_minimum_size = Vector2(460, 0)
+	content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	content.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	content.custom_minimum_size = Vector2(580, 0)
 	content.add_theme_constant_override("separation", 10)
 
 	var title := Label.new()
@@ -138,7 +140,9 @@ func show_info_popup(popup_name: String, title_text: String, body_text: String, 
 
 	var scroll := ScrollContainer.new()
 	scroll.name = "%sScroll" % popup_name
-	scroll.custom_minimum_size = Vector2(0, 340)
+	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.custom_minimum_size = Vector2(540, 340)
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 	content.add_child(scroll)
@@ -146,19 +150,23 @@ func show_info_popup(popup_name: String, title_text: String, body_text: String, 
 	var body := Label.new()
 	body.name = "%sBody" % popup_name
 	body.text = body_text
+	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	body.custom_minimum_size = Vector2(520, 0)
 	body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	body.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	body.add_theme_color_override("font_color", CentJoursTheme.COLOR["text_primary"])
 	scroll.add_child(body)
 
 	var close_button := Button.new()
 	close_button.name = "%sCloseButton" % popup_name
 	close_button.text = close_text
+	close_button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	close_button.pressed.connect(_dismiss_info_popup)
 	content.add_child(close_button)
 
 	_info_popup.add_child(content)
 	_host_or_self().add_child(_info_popup)
-	_info_popup.popup_centered()
+	_info_popup.popup_centered(Vector2i(620, 480))
 
 
 func show_game_over(outcome: String, stats: Dictionary = {}) -> void:

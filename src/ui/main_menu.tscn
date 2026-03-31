@@ -59,7 +59,7 @@ text = "第 1 天"
 
 [node name="PhaseLabel" type="Label" parent="RootLayout/TopBar/TopBarMargin/TopBarRow/DayBlock"]
 layout_mode = 2
-text = "Aube · 情报阶段"
+text = "清晨 · 情报阶段"
 
 [node name="RNBlock" type="VBoxContainer" parent="RootLayout/TopBar/TopBarMargin/TopBarRow"]
 layout_mode = 2
@@ -331,7 +331,7 @@ text = "当日行动"
 
 [node name="TrayHint" type="Label" parent="RootLayout/MainArea/LeftColumn/DecisionTray/TrayMargin/TrayContent/TrayHeader"]
 layout_mode = 2
-text = "Priority A placeholder cards"
+text = "正在整理今日行动建议……"
 
 [node name="DecisionScroll" type="ScrollContainer" parent="RootLayout/MainArea/LeftColumn/DecisionTray/TrayMargin/TrayContent"]
 layout_mode = 2
@@ -394,7 +394,7 @@ size_flags_vertical = 3
 [node name="SituationBody" type="Label" parent="RootLayout/MainArea/Sidebar/SidebarMargin/SidebarContent/SituationPanel/SituationMargin/SituationBox/SituationScroll"]
 layout_mode = 2
 size_flags_horizontal = 3
-text = "Loading..."
+text = "正在汇总当前局势……"
 
 [node name="LoyaltyPanel" type="PanelContainer" parent="RootLayout/MainArea/Sidebar/SidebarMargin/SidebarContent"]
 layout_mode = 2
@@ -450,4 +450,4 @@ size_flags_vertical = 3
 [node name="NarrativeBody" type="Label" parent="RootLayout/MainArea/Sidebar/SidebarMargin/SidebarContent/NarrativePanel/NarrativeMargin/NarrativeBox/NarrativeScroll"]
 layout_mode = 2
 size_flags_horizontal = 3
-text = "Loading..."
+text = "等待新的历史记录……"
