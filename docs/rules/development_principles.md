@@ -1,9 +1,10 @@
 # Cent Jours — 开发原则
 
-> **更新**: 2026-03-28
-> **执行检查清单**: [execution_checklist.md](execution_checklist.md)
+> **更新**: 2026-04-01
+> **硬约束摘要**: 已内联到项目根目录 `CLAUDE.md`，AI agent 优先读 `CLAUDE.md` 即可。
+> **执行检查清单**: [execution_checklist.md](execution_checklist.md)（人类参考）
 
-本文件沉淀长期稳定的项目原则。不承载短期任务、实现步骤或优先级排序。
+本文件沉淀长期稳定的项目原则（27 条）。不承载短期任务、实现步骤或优先级排序。
 
 ---
 
@@ -151,7 +152,7 @@ Windows Godot 1280x720 运行截图是前端布局问题的默认收口标准。
 
 ### 5.7 交接文档随轮次同步
 
-完成一轮后同步更新 `agent_handoff.md`。新会话启动方式变化时同步 `agent_session_prompts.md`。
+完成一轮后同步更新 `agent_handoff.md`。
 
 ---
 
@@ -173,6 +174,6 @@ Windows Godot 1280x720 运行截图是前端布局问题的默认收口标准。
 | `docs/plans/product_plan.md` | 产品里程碑与阶段目标 |
 | `docs/plans/dev_plan.md` | 当前技术优先级与扫描结果 |
 | `docs/history/agent_handoff.md` | 当前项目状态与接手约束 |
-| `docs/rules/agent_session_prompts.md` | 新会话首条提示词模板 |
-| `docs/rules/execution_checklist.md` | 开工前/提交前执行检查清单 |
+| `docs/rules/execution_checklist.md` | 开工前/提交前执行检查清单（人类参考） |
 | `docs/rules/development_principles.md` | 本文件：长期稳定的项目原则 |
+| `CLAUDE.md` | AI agent 唯一入口（硬约束 + 基线 + 流程） |
