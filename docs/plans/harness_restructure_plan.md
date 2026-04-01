@@ -210,7 +210,160 @@ difficulty_levels: 3
 
 ---
 
-## 六、风险与取舍
+## 六、连续自动执行（Autonomous Loop）
+
+现有的 `agent_autonomous_workflow.md` 写了"不要停"，但 AI 能否遵守取决于上下文窗口和"意愿"。Harness 用 hooks 把"自觉"变成"机制"。
+
+### 6.1 Stop Hook：拦截停机
+
+Claude Code 支持 `Stop` 事件 hook——AI 试图结束对话时触发。exit code 2 = 阻止停机，stderr 内容会作为反馈注入对话。
+
+```bash
+# .claude/hooks/auto-continue.sh
+#!/bin/bash
+INPUT=$(cat)
+
+# 防止无限循环：如果已经被拦过一次，放行
+if [ "$(echo "$INPUT" | jq -r '.stop_hook_active')" = "true" ]; then
+  exit 0
+fi
+
+# 检查是否还有未推送的改动
+UNPUSHED=$(git log origin/$(git branch --show-current)..HEAD --oneline 2>/dev/null | wc -l)
+if [ "$UNPUSHED" -gt 0 ]; then
+  echo "还有 $UNPUSHED 个未推送的 commit，请先 push。" >&2
+  exit 2
+fi
+
+# 检查是否还有未提交的改动
+if ! git diff --quiet || ! git diff --cached --quiet; then
+  echo "工作区有未提交的改动，请先 commit 和 push。" >&2
+  exit 2
+fi
+
+# 检查是否有未跟踪的新文件（排除常见忽略项）
+UNTRACKED=$(git ls-files --others --exclude-standard | grep -v '__pycache__' | head -5)
+if [ -n "$UNTRACKED" ]; then
+  echo "有未跟踪的新文件需要处理：$UNTRACKED" >&2
+  exit 2
+fi
+
+# 一切干净，允许停机
+exit 0
+```
+
+### 6.2 PreCommit Hook：文档同步门禁
+
+```bash
+# .claude/hooks/doc-sync-check.sh
+#!/bin/bash
+INPUT=$(cat)
+
+# 获取 staged 文件列表
+STAGED=$(git diff --cached --name-only)
+
+# 如果改了代码但没改文档，拦截
+CODE_CHANGED=$(echo "$STAGED" | grep -E '^(src/|cent-jours-core/|tests/)' | head -1)
+DOC_CHANGED=$(echo "$STAGED" | grep -E '^(docs/|README\.md|CLAUDE\.md)' | head -1)
+
+if [ -n "$CODE_CHANGED" ] && [ -z "$DOC_CHANGED" ]; then
+  echo "代码改动了但没有同步文档。请更新 docs/ 或 CLAUDE.md。" >&2
+  exit 2
+fi
+
+exit 0
+```
+
+### 6.3 settings.json 配置
+
+```json
+{
+  "hooks": {
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/auto-continue.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/doc-sync-check.sh",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+### 6.4 外部编排（跨 session 连续执行）
+
+Claude Code 支持 `-p` 模式（非交互）+ `--continue` 续接上一个 session：
+
+```bash
+#!/bin/bash
+# tools/auto-dev-loop.sh
+# 外部循环：每次 session 结束后自动续接
+
+MAX_ROUNDS=10
+SESSION_ID=""
+
+for i in $(seq 1 $MAX_ROUNDS); do
+  echo "=== Round $i / $MAX_ROUNDS ==="
+
+  if [ -z "$SESSION_ID" ]; then
+    # 第一轮：新 session
+    OUTPUT=$(claude -p "读取 CLAUDE.md，按 dev_plan.md 当前 P0 继续开发。完成后 commit 和 push。" \
+      --output-format json 2>&1)
+    SESSION_ID=$(echo "$OUTPUT" | jq -r '.session_id // empty')
+  else
+    # 后续轮：续接
+    OUTPUT=$(claude --resume "$SESSION_ID" -p "继续下一个 P0 任务。" \
+      --output-format json 2>&1)
+  fi
+
+  # 检查是否所有 P0 都完成了
+  if echo "$OUTPUT" | grep -q "所有 P0 已完成"; then
+    echo "全部完成，退出循环。"
+    break
+  fi
+
+  sleep 5
+done
+```
+
+### 6.5 三种方案对比
+
+| 方案 | 可靠性 | 实现成本 | 适用场景 |
+|------|--------|----------|----------|
+| Stop Hook 拦截 | 中 | 低（1 个脚本） | 单 session 内防止过早停机 |
+| 外部编排循环 | 高 | 中（wrapper 脚本） | 跨 session 连续开发 |
+| 两者结合 | 最高 | 中 | 长时间自动开发 |
+
+### 6.6 与现有 agent_autonomous_workflow.md 的关系
+
+现有文件变为"策略文档"（描述 AI 应该做什么），hooks 变为"执行机制"（强制 AI 做到）：
+
+```
+agent_autonomous_workflow.md  →  描述意图（"不要停"）
+.claude/hooks/auto-continue.sh  →  强制执行（exit 2 拦截）
+tools/auto-dev-loop.sh  →  跨 session 保障（外部循环）
+```
+
+---
+
+## 七、风险与取舍
 
 | 风险 | 缓解 |
 |------|------|
