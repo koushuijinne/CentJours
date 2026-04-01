@@ -12,6 +12,7 @@ signal card_selected(policy_id: String)
 @export var policy_id: String = ""
 @export var policy_name: String = "政策名称"
 @export var thumbnail_emoji: String = "📜"  # M5阶段替换为实际纹理
+@export var card_category: String = "decision"
 @export var cost_actions: int = 1
 @export var on_cooldown: bool = false
 @export var cooldown_days: int = 0
@@ -86,15 +87,22 @@ func apply_availability_state(disabled: bool, reason: String = "") -> void:
 # ── UI 构建 ──────────────────────────────────────────
 
 func _build_styles() -> void:
+	var accent_color := _category_accent_color()
+	var accent_fill := accent_color.darkened(0.72)
 	_style_normal = StyleBoxFlat.new()
 	_style_normal.bg_color = Color(0.1, 0.1, 0.18, 0.9)
-	_style_normal.border_color = CentJoursTheme.COLOR["border_panel"]
+	_style_normal.border_color = accent_color
 	_style_normal.set_border_width_all(1)
 	_style_normal.set_corner_radius_all(4)
 
 	_style_hover = _style_normal.duplicate()
-	_style_hover.border_color = CentJoursTheme.COLOR["gold_dim"]
-	_style_hover.bg_color = Color(0.14, 0.13, 0.22, 0.9)
+	_style_hover.border_color = accent_color.lightened(0.18)
+	_style_hover.bg_color = Color(
+		minf(accent_fill.r + 0.04, 0.20),
+		minf(accent_fill.g + 0.04, 0.18),
+		minf(accent_fill.b + 0.05, 0.24),
+		0.92
+	)
 
 	_style_selected = _style_normal.duplicate()
 	_style_selected.border_color = CentJoursTheme.COLOR["gold"]
@@ -105,15 +113,11 @@ func _build_styles() -> void:
 
 	_style_cooldown = _style_normal.duplicate()
 	_style_cooldown.bg_color = Color(0.08, 0.08, 0.14, 0.5)
-	_style_cooldown.border_color = Color(CentJoursTheme.COLOR["border_panel"].r,
-		CentJoursTheme.COLOR["border_panel"].g,
-		CentJoursTheme.COLOR["border_panel"].b, 0.4)
+	_style_cooldown.border_color = Color(accent_color.r, accent_color.g, accent_color.b, 0.35)
 
 	_style_disabled = _style_normal.duplicate()
 	_style_disabled.bg_color = Color(0.07, 0.07, 0.11, 0.55)
-	_style_disabled.border_color = Color(CentJoursTheme.COLOR["border_panel"].r,
-		CentJoursTheme.COLOR["border_panel"].g,
-		CentJoursTheme.COLOR["border_panel"].b, 0.28)
+	_style_disabled.border_color = Color(accent_color.r, accent_color.g, accent_color.b, 0.24)
 
 	add_theme_stylebox_override("panel", _style_normal)
 
@@ -164,8 +168,8 @@ func _build_ui() -> void:
 
 	# 行动点消耗
 	var cost_label := Label.new()
-	cost_label.text = "· %d 行动点" % cost_actions
-	cost_label.add_theme_color_override("font_color", CentJoursTheme.COLOR["neutral"])
+	cost_label.text = "%s · %d 行动点" % [_category_display_name(), cost_actions]
+	cost_label.add_theme_color_override("font_color", _category_accent_color())
 	cost_label.add_theme_font_size_override("font_size", 9)
 	body.add_child(cost_label)
 
@@ -254,3 +258,13 @@ func _animate_hover(enter: bool) -> void:
 	tween.set_trans(Tween.TRANS_BACK)
 	tween.tween_property(self, "scale",
 		Vector2(1.04, 1.04) if enter else Vector2.ONE, 0.12)
+
+
+func _category_display_name() -> String:
+	return "机动" if card_category == "maneuver" else "决策"
+
+
+func _category_accent_color() -> Color:
+	if card_category == "maneuver":
+		return CentJoursTheme.COLOR["gold_dim"]
+	return CentJoursTheme.COLOR["border_panel"]
