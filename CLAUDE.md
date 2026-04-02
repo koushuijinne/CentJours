@@ -1,101 +1,115 @@
-# Cent Jours — Claude Code 强制流程规则
+# Cent Jours — 项目 Harness
 
-> 本文件在每次会话开始时自动加载。所有规则为**强制执行**，不可跳过。
+> 本文件是 Claude Code 自动读取的唯一入口。所有硬约束内联于此，不再需要跳转其他规则文件。
 
----
+## 项目
 
-## 代码注释强制规则
+Godot 4 + Rust GDExtension 策略游戏：扮演 1815 年拿破仑，100 天内从厄尔巴岛重建帝国。
 
-- [ ] 所有新增或修改的代码必须加上清晰、简短的**中文注释**，便于理解和维护
-- [ ] 如果文件格式不支持注释（例如某些配置/资源文件），在回复中说明原因，并用清晰命名或结构代替
+## 架构
 
----
+```
+UI (GDScript Scene/Controller)
+  → TurnManager (回合协调)
+    → CentJoursEngine (Rust GDExtension 规则引擎)
+      → GameState (UI 只读缓存)
+        → UI refresh
+```
 
-## 每次完成任何代码任务后，必须执行以下清单
+- 规则真值在 Rust (`cent-jours-core/`)
+- GDScript 是薄层：场景装配 + 交互 + 展示
+- 数据流单向：Engine → TurnManager → GameState → UI
 
-完成一个独立功能、Bug 修复、或重构后，**在提交之前**执行：
+## 基线
 
-### 1. 更新计划文档（按改动类型选择，缺一不可）
+```yaml
+godot: 4.6.1
+rust: stable
+characters: 15
+map_nodes: 41
+events: 58 / 100+
+outcomes: 7  # NapoleonVictory DiplomaticSettlement MilitaryDominance WaterlooHistorical WaterlooDefeat PoliticalCollapse MilitaryAnnihilation
+difficulty: 3  # Elba Borodino Austerlitz
+save_version: v4
+tests_rust: 215
+tests_gdunit4: 68
+ci: windows-fast / windows-full / windows-heavy-nightly
+```
 
-> **文档职责区分**（必须严格遵守，不可混用）：
->
-> | 文件 | 只记录什么 |
-> |------|-----------|
-> | `docs/dev_plan.md` | Rust 层、架构层、GDExtension 接口、测试覆盖、技术债 |
-> | `docs/frontend_dev_plan.md` | Godot 场景、GDScript UI、前端进度快照、前端阻塞点 |
-> | `plan.md` | 产品里程碑、里程碑通过条件、对外可见的版本状态 |
->
-> ❌ 禁止把前端进度写进 `dev_plan.md`；❌ 禁止把 Rust 技术债写进 `frontend_dev_plan.md`
+## 硬约束（不可违反）
 
-#### `docs/dev_plan.md`（技术/架构优先级计划）— **仅 Rust/架构改动时更新**
-- [ ] 将已完成的任务标记为 ✅，从优先级列表移至"已完成模块清单"
-- [ ] 更新进度快照（进度条 + 百分比 + 状态描述）
-- [ ] 更新文档顶部版本号（v_N → v_N+1）和日期
-- [ ] **重新扫描代码库**，找出新的违规或技术债
-- [ ] **重排下一轮优先级**，确保 Priority A 始终是"现在就能做"的最高价值任务
+1. 规则真值在 Rust，不在 GDScript 复制
+2. GameState 是只读缓存，不自行推导状态
+3. 数据流单向：Engine → TurnManager → GameState → UI
+4. 代码改动必须同步文档（CI 门禁 `doc-sync.yml`）
+5. Windows 是默认验证平台，不用 Linux/WSL 结果补位
+6. 不为写实牺牲可读性和公平感
+7. 不在核心循环未验证前堆砌外围复杂度
+8. 文案遵守 ADR-008：直写、可考据、不 reframe
+9. `historical_note` 和联军/外交动态用第三人称档案体
 
-#### `docs/frontend_dev_plan.md`（前端优先级计划）— **仅 Godot/GDScript 改动时更新**
-- [ ] 更新进度快照（F0–F5 进度条 + 百分比）
-- [ ] 更新文档顶部版本号（v_N → v_N+1）和日期
-- [ ] 划除已解决的阻塞点，补充新发现的前端问题
-- [ ] 更新 F-GATE 里程碑勾选状态
+## 做事流程
 
-#### `plan.md`（产品里程碑计划，根目录）
-- [ ] 更新顶部 Version（v_N → v_N+1）和日期
-- [ ] 更新 Status 行（里程碑进度百分比）
-- [ ] 在对应里程碑（M3/M4/…）下补充本轮完成的内容（含最新测试数量）
+1. 读本文件（CLAUDE.md）了解约束和基线
+2. 读 `docs/plans/dev_plan.md` 确认当前优先级
+3. 读 `docs/history/agent_handoff.md` 了解动态状态
+4. 改代码前先读相关源文件
+5. 改完跑测试：Rust → `cd cent-jours-core && cargo test` | GDScript → GdUnit4
+6. 代码和文档同一个 commit，不拆开
+7. 更新 `agent_handoff.md`，按需更新 `dev_plan.md`
 
-### 2. 代码质量自查
+## 禁止
 
-- [ ] 检查新增代码是否违反 DRY（同一逻辑是否已在别处存在）
-- [ ] 检查 GDScript 文件是否包含业务逻辑（违反薄层原则）
-- [ ] 检查是否有新的 `Dictionary` 接口缺少键名契约注释
+- 先提交代码再单独补文档
+- GDScript 复制 Rust 已有的规则逻辑
+- 修改规则层不补测试
+- 用 Linux/WSL 测试结果补位 Windows
+- 默认启用自动工作流（需用户明确要求）
+- 在 GDScript 里自行推导合法性、冷却或战斗结果
 
-### 3. 测试验证
+## 阻塞处理
 
-- [ ] Rust 修改：`cargo test` 全部通过后才能提交
-- [ ] GDScript 修改：确认无明显语法错误（无 Godot 环境时肉眼检查）
+- **软阻塞**（编译/测试失败）：立即修复，不切任务
+- **中阻塞**（依赖 Windows 真机）：记录后切到不依赖的任务
+- **硬阻塞**（产品方向/外部资源）：问用户
 
-### 4. 提交规范
+## 关键目录
 
-- [ ] `docs/dev_plan.md` 和 `plan.md` 的更新**与代码变更放在同一次 commit**，不拆开
-- [ ] commit message 格式：`feat/fix/refactor/docs(模块): 描述`
-- [ ] 立即 push，不积累多个 commit 后再推
-
----
-
-## 禁止行为
-
-- ❌ 完成前端代码后只更新 `dev_plan.md` 而不更新 `frontend_dev_plan.md`
-- ❌ 把前端进度（F0–F5、F-GATE）写入 `dev_plan.md`（职责混用）
-- ❌ 完成代码后不同时更新对应计划文档和 `plan.md` 就提交
-- ❌ 先提交代码，再单独提交文档更新
-- ❌ 在 GDScript 层写业务逻辑（判断标准：无 UI 时逻辑仍有意义 → 不该在 GDScript）
-- ❌ 修改战斗/政治规则时只改 Rust 或只改 GDScript，不同步另一侧
-- ❌ `cargo test` 未通过就提交 Rust 代码
-
----
-
-## 开发原则快速参考
-
-| 原则 | 判断标准 |
-|------|---------|
-| **DRY** | 修改一条规则需要改两个文件？→ 违规 |
-| **GDScript 薄层** | 无 Godot UI 时这段逻辑仍有意义？→ 不该在 GDScript |
-| **单一状态源** | GDScript 在自行计算引擎已有的值？→ 违规 |
-| **YAGNI** | 这个功能当前迭代需要吗？→ 不需要就不做 |
-| **KISS** | 能用 3 行解决就不用 10 行 |
-
----
-
-## 核心文件位置
-
-| 文件 | 用途 |
+| 路径 | 职责 |
 |------|------|
-| `plan.md` | 产品里程碑计划，**每次完成任务必须更新**（根目录） |
-| `docs/dev_plan.md` | **Rust/架构**技术优先级计划，Rust 或架构改动时更新 |
-| `docs/frontend_dev_plan.md` | **Godot/GDScript** 前端优先级计划，前端改动时更新 |
-| `docs/decisions/` | ADR 架构决策记录 |
-| `cent-jours-core/src/` | Rust 游戏逻辑（唯一业务逻辑层） |
-| `src/core/` | GDScript 薄层（只允许 UI 驱动和信号） |
-| `src/data/` | 静态游戏数据（JSON） |
+| `cent-jours-core/src/` | Rust 规则引擎（战斗/行军/政治/事件/补给） |
+| `cent-jours-core/src/lib.rs` | GDExtension 暴露入口 |
+| `src/core/` | GDScript 核心层（TurnManager, GameState, SaveManager, AudioManager） |
+| `src/ui/main_menu.gd` | 主场景装配 |
+| `src/ui/main_menu/` | 子控制器（map, layout, tray, sidebar, dialogs, topbar_actions） |
+| `src/data/` | 静态游戏数据（characters, events, map_nodes） |
+| `tests/godot/` | GdUnit4 前端回归 |
+| `docs/decisions/` | [ADR 汇总表](docs/decisions/README.md) — 12 篇架构决策记录 |
+
+## 测试命令
+
+```bash
+# Rust（必跑）
+cd cent-jours-core && cargo test
+
+# GDExtension 构建（改 lib.rs / API 时）
+cd cent-jours-core && cargo build --features godot-extension
+
+# GdUnit4（改 GDScript 时，Windows 侧）
+tools\run_gdunit_windows.cmd <godot_path> res://tests/godot
+
+# Windows 无头启动
+<godot_path> --headless --path <project_path> --quit
+```
+
+## 按需阅读
+
+- `docs/plans/dev_plan.md` — 当前计划和 Steam 上线优先级
+- `docs/history/agent_handoff.md` — 动态项目状态（已完成系统、当前缺口、写入边界）
+- `docs/decisions/README.md` — 12 篇 ADR 架构决策汇总
+- `docs/rules/development_principles.md` — 完整 27 条原则（人类参考）
+- `docs/rules/optional/agent_autonomous_workflow.md` — 仅在用户要求时启用
+
+## 当前总目标
+
+按 [ADR-011](docs/decisions/ADR-011-core-loop-systemization-and-historical-depth.md) 收口核心玩法，达到 Steam 可上线级别。

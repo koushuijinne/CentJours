@@ -59,6 +59,30 @@ const POLICY_META: Dictionary = {
 		"rouge_noir_hint": "+4 Rouge",
 		"summary": "大幅提升军队支持，削弱自由派，经济重度损耗"
 	},
+	"requisition_supplies": {
+		"name": "征用沿线仓储",
+		"cost": 1,
+		"rouge_noir_hint": "+4 Rouge",
+		"summary": "快速回补补给，代价是激怒沿线民众与自由派"
+	},
+	"stabilize_supply_lines": {
+		"name": "整顿驿站运输",
+		"cost": 1,
+		"rouge_noir_hint": "-2 Noir",
+		"summary": "短期整顿运输线，立刻小幅回补补给，并在接下来数日提高补给线效率"
+	},
+	"establish_forward_depot": {
+		"name": "建立前沿粮秣站",
+		"cost": 1,
+		"rouge_noir_hint": "-1 Noir",
+		"summary": "在当前驻地建立临时粮秣站，立刻小幅回补补给，并在接下来数日提高该节点的本地仓储容量"
+	},
+	"secure_regional_corridor": {
+		"name": "巩固区域走廊",
+		"cost": 1,
+		"rouge_noir_hint": "-1 Noir",
+		"summary": "同步保线并加固当前驻地，把一段脆弱路线先稳成可持续走廊"
+	},
 	"secret_diplomacy": {
 		"name": "秘密外交（分化反法同盟）",
 		"cost": 2,
@@ -111,7 +135,7 @@ func get_faction_trends() -> Dictionary:
 	return trends
 
 ## 获取当前 Rouge/Noir 状态对应的效果描述（供 UI 工具提示）
-func get_rouge_noir_tooltip() -> Dictionary:
+static func get_rouge_noir_tooltip() -> Dictionary:
 	var rn: float = GameState.rouge_noir_index
 	var active_effects: Array = []
 

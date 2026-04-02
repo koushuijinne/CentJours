@@ -1,5 +1,5 @@
 ## TurnManager — 回合流程控制器（v2，接入 CentJoursEngine）
-## 管理 Dawn → Action → Dusk 三段式回合结构
+## 管理晨间 → 行动 → 黄昏 三段式回合结构
 ## 所有游戏逻辑通过 CentJoursEngine（Rust GDExtension）执行
 ## GDScript 层只负责驱动 UI 信号
 
@@ -28,11 +28,12 @@ func _ready() -> void:
 
 func start_new_turn() -> void:
 	_ensure_engine()
+	engine.begin_day()
 	var day := engine.current_day()
 	EventBus.turn_started.emit(day)
 	_run_dawn_phase()
 
-## Dawn Phase：同步状态、显示情报、通知 UI 等待玩家确认
+## 晨间阶段：同步状态、显示情报、通知 UI 等待玩家确认
 func _run_dawn_phase() -> void:
 	current_phase = Phase.DAWN
 	GameState.current_phase = PHASE_NAMES[Phase.DAWN]
@@ -41,61 +42,145 @@ func _run_dawn_phase() -> void:
 	# 同步引擎状态到 GameState 单例（供 UI 读取）
 	_sync_state_from_engine()
 
-	# 发射新触发的历史事件信号（引擎在 Dawn 阶段内部自动触发）
-	_emit_new_triggered_events()
-
 	# UI 调用 begin_action_phase() 后进入下一段
 
-## Action Phase：等待玩家做出决策
+## 行动阶段：等待玩家做出决策
 func begin_action_phase() -> void:
 	current_phase = Phase.ACTION
 	GameState.current_phase = PHASE_NAMES[Phase.ACTION]
 	EventBus.phase_changed.emit("action")
 
 ## 玩家提交行动
-## action_type: "battle" | "policy" | "boost_loyalty" | "rest"
+## action_type: "battle" | "march" | "policy" | "boost_loyalty" | "rest"
 ## params 契约（来自 lib.rs CentJoursEngine 各 process_day_* 方法）:
 ##   battle        → { general_id(String), troops(int), terrain(String) }
+##   march         → { target_node(String) }
 ##   policy        → { policy_id(String) }
 ##   boost_loyalty → { general_id(String) }
 ##   rest          → {}
-func submit_action(action_type: String, params: Dictionary = {}) -> void:
+## 返回 true 表示已接受日内动作；false 表示当前阶段不允许提交。
+func submit_action(action_type: String, params: Dictionary = {}) -> bool:
 	if current_phase != Phase.ACTION:
-		push_warning("[TurnManager] 不在 Action Phase，无法提交行动")
-		return
-	_run_dusk_phase(action_type, params)
+		push_warning("[TurnManager] 当前不在行动阶段，无法提交行动")
+		return false
+	_run_action_step(action_type, params)
+	return true
 
-## Dusk Phase：调用 Rust 引擎执行行动，同步结果，触发叙事
-func _run_dusk_phase(action_type: String, params: Dictionary) -> void:
+## 玩家结束今天：若未使用机动槽，引擎会自动按休整结算。
+func end_day() -> bool:
+	if current_phase != Phase.ACTION:
+		push_warning("[TurnManager] 当前不在行动阶段，无法结束今天")
+		return false
+	_run_day_end()
+	return true
+
+## 只读预览一次普通行军，不修改真实状态。
+## 返回值契约（来自 lib.rs CentJoursEngine::preview_march）:
+##   valid(bool)
+##   reason(String)
+##   target_node(String)
+##   fatigue_delta(float)
+##   morale_delta(float)
+##   supply_delta(float)
+##   projected_fatigue(float)
+##   projected_morale(float)
+##   projected_supply(float)
+##   supply_capacity(int)
+##   base_supply_capacity(int)
+##   temporary_capacity_bonus(int)
+##   supply_demand(float)
+##   supply_available(float)
+##   line_efficiency(float)
+##   supply_role(String)
+##   supply_role_label(String)
+##   supply_hub_name(String)
+##   supply_hub_distance(int)
+##   supply_runway_days(int)
+##   follow_up_total_options(int)
+##   follow_up_safe_options(int)
+##   follow_up_risky_options(int)
+##   follow_up_status_id(String)
+##   follow_up_status_label(String)
+##   follow_up_best_target(String)
+##   follow_up_best_target_label(String)
+##   follow_up_best_runway_days(int)
+func get_march_preview(target_node: String) -> Dictionary:
 	_ensure_engine()
-	current_phase = Phase.DUSK
-	GameState.current_phase = PHASE_NAMES[Phase.DUSK]
-	EventBus.phase_changed.emit("dusk")
+	if target_node.strip_edges() == "":
+		return {
+			"valid": false,
+			"reason": "缺少目标节点。",
+			"target_node": "",
+			"fatigue_delta": 0.0,
+			"morale_delta": 0.0,
+			"supply_delta": 0.0,
+			"projected_fatigue": GameState.avg_fatigue,
+			"projected_morale": GameState.avg_morale,
+			"projected_supply": GameState.supply,
+			"supply_capacity": 0,
+			"base_supply_capacity": 0,
+			"temporary_capacity_bonus": 0,
+			"supply_demand": 0.0,
+			"supply_available": 0.0,
+			"line_efficiency": 0.0,
+			"supply_role": "",
+			"supply_role_label": "",
+			"supply_hub_name": "",
+			"supply_hub_distance": 0,
+			"supply_runway_days": -1,
+			"follow_up_total_options": 0,
+			"follow_up_safe_options": 0,
+			"follow_up_risky_options": 0,
+			"follow_up_status_id": "",
+			"follow_up_status_label": "",
+			"follow_up_best_target": "",
+			"follow_up_best_target_label": "",
+			"follow_up_best_runway_days": -1
+		}
+	return Dictionary(engine.preview_march(target_node))
 
-	# ── 调用 Rust 引擎处理完整一天 ──────────────────────
+## 在当前日内执行一次动作，不推进日期。
+func _run_action_step(action_type: String, params: Dictionary) -> void:
+	_ensure_engine()
+	current_phase = Phase.ACTION
+	GameState.current_phase = PHASE_NAMES[Phase.ACTION]
+	var previous_location: String = GameState.napoleon_location
+	var previous_victories: int = GameState.victories
+	# GameState 当前只缓存胜场，不缓存败场；败场归因需通过引擎状态回读。
+	var previous_defeats: int = int(engine.get_state().get("defeats", 0))
+
+	# ── 调用 Rust 引擎处理当前日内动作 ──────────────────
 	match action_type:
 		"battle":
-			engine.process_day_battle(
+			engine.execute_day_battle(
 				params.get("general_id", ""),
 				int(params.get("troops", 0)),
 				params.get("terrain", "plains")
 			)
+		"march":
+			var target_node: String = params.get("target_node", "")
+			engine.execute_day_march(target_node)
 		"policy":
 			var policy_id: String = params.get("policy_id", "")
-			engine.process_day_policy(policy_id)
-			EventBus.policy_enacted.emit(policy_id)
+			engine.execute_day_policy(policy_id)
 		"boost_loyalty":
-			engine.process_day_boost_loyalty(params.get("general_id", ""))
+			engine.execute_day_boost_loyalty(params.get("general_id", ""))
 		_:  # "rest" 及未知类型
-			engine.process_day_rest()
+			engine.execute_day_rest()
 
 	# ── 同步状态 ─────────────────────────────────────
 	_sync_state_from_engine()
+	# ── 记录关键决策（失败归因用） ───────────────────
+	_record_key_decision(action_type, params, previous_location, previous_victories)
+	_emit_last_action_events()
+	if action_type == "march" and previous_location != GameState.napoleon_location:
+		EventBus.unit_moved.emit("napoleon_main_force", previous_location, GameState.napoleon_location)
 
 	# ── 叙事报告 ─────────────────────────────────────
 	# engine.get_last_report() 返回键（来自 lib.rs CentJoursEngine::get_last_report）:
 	#   day(int)           — 发生该叙事的天数
 	#   has_narrative(bool)— 本回合是否有叙事内容
+	# TODO(history): `stendhal` 字段是早期原型命名，后续迁移为 Bertrand diary，并同步改 GDExt / UI / 存档口径。
 	#   stendhal(String)   — 日记体叙事文本（可为空串）
 	#   consequence(String)— 行动后果文本（可为空串）
 	var report := engine.get_last_report()
@@ -106,7 +191,13 @@ func _run_dusk_phase(action_type: String, params: Dictionary) -> void:
 			EventBus.stendhal_diary_entry.emit(day, stendhal)
 		var consequence: String = report.get("consequence", "")
 		if consequence != "":
-			EventBus.micro_narrative_shown.emit(action_type, consequence)
+			var narrative_category := _resolve_report_category(
+				action_type,
+				params,
+				previous_victories,
+				previous_defeats
+			)
+			EventBus.micro_narrative_shown.emit(narrative_category, consequence)
 
 	# ── 检查游戏结束 ─────────────────────────────────
 	if engine.is_over():
@@ -115,7 +206,21 @@ func _run_dusk_phase(action_type: String, params: Dictionary) -> void:
 		var state := engine.get_state()
 		EventBus.game_over.emit(state.get("outcome", "unknown"))
 		return
+	EventBus.phase_changed.emit("action")
 
+## 黄昏阶段：结束今天，推进到下一天。
+func _run_day_end() -> void:
+	_ensure_engine()
+	current_phase = Phase.DUSK
+	GameState.current_phase = PHASE_NAMES[Phase.DUSK]
+	EventBus.phase_changed.emit("dusk")
+	engine.end_day()
+	_sync_state_from_engine()
+	_emit_last_action_events()
+	if engine.is_over():
+		var state := engine.get_state()
+		EventBus.game_over.emit(state.get("outcome", "unknown"))
+		return
 	GameState.current_day = engine.current_day()
 	EventBus.turn_ended.emit(GameState.current_day)
 
@@ -129,7 +234,51 @@ func _run_dusk_phase(action_type: String, params: Dictionary) -> void:
 ##   troops(int)      — 当前总兵力
 ##   morale(float)    — 平均士气 0-100
 ##   fatigue(float)   — 平均疲劳 0-100
+##   supply(float)    — 当前补给值 0-100（兼容读取，若 Rust 尚未暴露则使用上次缓存）
 ##   victories(int)   — 已赢得战役场次
+##   napoleon_location(String) — 拿破仑当前所在地图节点
+##   logistics_posture_id(String)
+##   logistics_posture_label(String)
+##   logistics_focus_title(String)
+##   logistics_focus_detail(String)
+##   logistics_focus_short(String)
+##   logistics_objective_id(String)
+##   logistics_objective_label(String)
+##   logistics_objective_target_role(String)
+##   logistics_objective_target_role_label(String)
+##   logistics_objective_detail(String)
+##   logistics_objective_short(String)
+##   logistics_action_plan_title(String)
+##   logistics_action_plan_detail(String)
+##   logistics_action_plan_short(String)
+##   logistics_primary_action_id(String)
+##   logistics_primary_action_label(String)
+##   logistics_primary_action_reason(String)
+##   logistics_primary_action_target(String)
+##   logistics_primary_action_target_label(String)
+##   logistics_secondary_action_id(String)
+##   logistics_secondary_action_label(String)
+##   logistics_secondary_action_reason(String)
+##   logistics_tempo_plan_title(String)
+##   logistics_tempo_plan_detail(String)
+##   logistics_tempo_plan_short(String)
+##   logistics_route_chain_title(String)
+##   logistics_route_chain_detail(String)
+##   logistics_route_chain_short(String)
+##   logistics_regional_pressure_id(String)
+##   logistics_regional_pressure_label(String)
+##   logistics_regional_pressure_title(String)
+##   logistics_regional_pressure_detail(String)
+##   logistics_regional_pressure_short(String)
+##   logistics_regional_task_id(String)
+##   logistics_regional_task_label(String)
+##   logistics_regional_task_title(String)
+##   logistics_regional_task_detail(String)
+##   logistics_regional_task_short(String)
+##   logistics_regional_task_progress_label(String)
+##   logistics_regional_task_reward_label(String)
+##   logistics_runway_days(int)
+##   logistics_runway_label(String)
 ##   is_over(bool)    — 游戏是否结束
 ##   outcome(String)  — 结局标识（游戏进行中为 "in_progress"）
 ##   factions(Dictionary) — { faction_id(String): support(float) }
@@ -141,15 +290,69 @@ func _sync_state_from_engine() -> void:
 	var state := engine.get_state()
 
 	var old_legit: float = GameState.legitimacy
-	var old_rn: float    = GameState.rouge_noir_index
 
+	# 这里保持“Rust Dictionary -> GameState 扁平缓存”的单向同步，不在 TurnManager 里再做业务推导。
+	# 目的有两点：一是让 UI 只消费一份权威快照；二是读档/新局后能用同一入口把所有面板一起复位。
 	GameState.current_day      = engine.current_day()
 	GameState.legitimacy       = float(state.get("legitimacy", GameState.legitimacy))
 	GameState.rouge_noir_index = float(state.get("rouge_noir", GameState.rouge_noir_index))
 	GameState.total_troops     = int(state.get("troops",    0))
 	GameState.avg_morale       = float(state.get("morale",  70.0))
 	GameState.avg_fatigue      = float(state.get("fatigue", 20.0))
+	GameState.supply           = float(state.get("supply", GameState.supply))
 	GameState.victories        = int(state.get("victories", 0))
+	GameState.actions_remaining = int(state.get("actions_remaining", GameState.actions_remaining))
+	GameState.maneuver_available = bool(state.get("maneuver_available", true))
+	GameState.difficulty       = String(state.get("difficulty", GameState.difficulty))
+	GameState.napoleon_location = String(state.get("napoleon_location", GameState.napoleon_location))
+	GameState.forward_depot_location = String(state.get("forward_depot_location", ""))
+	GameState.forward_depot_capacity_bonus = int(state.get("forward_depot_capacity_bonus", 0))
+	GameState.forward_depot_days = int(state.get("forward_depot_days", 0))
+	GameState.logistics_posture_id = String(state.get("logistics_posture_id", ""))
+	GameState.logistics_posture_label = String(state.get("logistics_posture_label", ""))
+	GameState.logistics_focus_title = String(state.get("logistics_focus_title", ""))
+	GameState.logistics_focus_detail = String(state.get("logistics_focus_detail", ""))
+	GameState.logistics_focus_short = String(state.get("logistics_focus_short", ""))
+	GameState.logistics_objective_id = String(state.get("logistics_objective_id", ""))
+	GameState.logistics_objective_label = String(state.get("logistics_objective_label", ""))
+	GameState.logistics_objective_target_role = String(state.get("logistics_objective_target_role", ""))
+	GameState.logistics_objective_target_role_label = String(state.get("logistics_objective_target_role_label", ""))
+	GameState.logistics_objective_detail = String(state.get("logistics_objective_detail", ""))
+	GameState.logistics_objective_short = String(state.get("logistics_objective_short", ""))
+	GameState.logistics_action_plan_title = String(state.get("logistics_action_plan_title", ""))
+	GameState.logistics_action_plan_detail = String(state.get("logistics_action_plan_detail", ""))
+	GameState.logistics_action_plan_short = String(state.get("logistics_action_plan_short", ""))
+	GameState.logistics_primary_action_id = String(state.get("logistics_primary_action_id", ""))
+	GameState.logistics_primary_action_label = String(state.get("logistics_primary_action_label", ""))
+	GameState.logistics_primary_action_reason = String(state.get("logistics_primary_action_reason", ""))
+	GameState.logistics_primary_action_target = String(state.get("logistics_primary_action_target", ""))
+	GameState.logistics_primary_action_target_label = String(state.get("logistics_primary_action_target_label", ""))
+	GameState.logistics_secondary_action_id = String(state.get("logistics_secondary_action_id", ""))
+	GameState.logistics_secondary_action_label = String(state.get("logistics_secondary_action_label", ""))
+	GameState.logistics_secondary_action_reason = String(state.get("logistics_secondary_action_reason", ""))
+	GameState.logistics_tempo_plan_title = String(state.get("logistics_tempo_plan_title", ""))
+	GameState.logistics_tempo_plan_detail = String(state.get("logistics_tempo_plan_detail", ""))
+	GameState.logistics_tempo_plan_short = String(state.get("logistics_tempo_plan_short", ""))
+	GameState.logistics_route_chain_title = String(state.get("logistics_route_chain_title", ""))
+	GameState.logistics_route_chain_detail = String(state.get("logistics_route_chain_detail", ""))
+	GameState.logistics_route_chain_short = String(state.get("logistics_route_chain_short", ""))
+	GameState.logistics_regional_pressure_id = String(state.get("logistics_regional_pressure_id", ""))
+	GameState.logistics_regional_pressure_label = String(state.get("logistics_regional_pressure_label", ""))
+	GameState.logistics_regional_pressure_title = String(state.get("logistics_regional_pressure_title", ""))
+	GameState.logistics_regional_pressure_detail = String(state.get("logistics_regional_pressure_detail", ""))
+	GameState.logistics_regional_pressure_short = String(state.get("logistics_regional_pressure_short", ""))
+	GameState.logistics_regional_task_id = String(state.get("logistics_regional_task_id", ""))
+	GameState.logistics_regional_task_label = String(state.get("logistics_regional_task_label", ""))
+	GameState.logistics_regional_task_title = String(state.get("logistics_regional_task_title", ""))
+	GameState.logistics_regional_task_detail = String(state.get("logistics_regional_task_detail", ""))
+	GameState.logistics_regional_task_short = String(state.get("logistics_regional_task_short", ""))
+	GameState.logistics_regional_task_progress_label = String(state.get("logistics_regional_task_progress_label", ""))
+	GameState.logistics_regional_task_reward_label = String(state.get("logistics_regional_task_reward_label", ""))
+	GameState.logistics_runway_days = int(state.get("logistics_runway_days", -1))
+	GameState.logistics_runway_label = String(state.get("logistics_runway_label", ""))
+	GameState.available_march_targets.clear()
+	for node_id in Array(engine.get_adjacent_nodes()):
+		GameState.available_march_targets.append(String(node_id))
 
 	# 同步政策冷却（来自 Rust PoliticsState.cooldowns）
 	GameState.policy_cooldowns = state.get("cooldowns", {})
@@ -177,23 +380,125 @@ func _sync_state_from_engine() -> void:
 				GameState.characters[char_id]["loyalty"] = new_loyalty
 				EventBus.loyalty_changed.emit(char_id, old_loyalty, new_loyalty)
 
-## 发射本次 Dawn 阶段新触发的历史事件信号
-## engine.get_triggered_events() 返回 Array[String]（事件 ID 列表，与 events/pool.rs 一致）
+## 发射本回合新触发的历史事件详情
+## engine.get_last_triggered_events() 返回 Array[Dictionary]，每项键：
+##   id(String)              — 事件 ID
+##   label(String)           — 展示标题
+##   tier(String)            — major | normal | minor
+##   narrative(String)       — 本次抽到的叙事正文
+##   historical_note(String) — 史实注释
 func _emit_new_triggered_events() -> void:
 	_ensure_engine()
-	var all_triggered: Array = Array(engine.get_triggered_events())
-	for event_id in all_triggered:
+	var triggered_details: Array = Array(engine.get_last_triggered_events())
+	for event_variant in triggered_details:
+		var event_data: Dictionary = Dictionary(event_variant)
+		var event_id: String = String(event_data.get("id", ""))
+		if event_id == "":
+			continue
 		if not GameState.triggered_events.has(event_id):
 			GameState.triggered_events.append(event_id)
-			EventBus.historical_event_triggered.emit(event_id)
+			EventBus.historical_event_triggered.emit(event_id, event_data)
+
+## 发射最近一次玩家行动的结算记录
+## engine.get_last_action_events() 返回 Array[Dictionary]，每项键：
+##   day(int)                — 事件发生日
+##   event_type(String)      — policy | battle | march | rest | *_failed
+##   description(String)     — 主描述文本
+##   effects(Array[String])  — 影响摘要
+func _emit_last_action_events() -> void:
+	_ensure_engine()
+	var action_details: Array = Array(engine.get_last_action_events())
+	for event_variant in action_details:
+		var event_data: Dictionary = Dictionary(event_variant)
+		var event_type: String = String(event_data.get("event_type", ""))
+		var description: String = String(event_data.get("description", "")).strip_edges()
+		var effects: Array = Array(event_data.get("effects", []))
+		if event_type == "" and description == "":
+			continue
+		EventBus.action_resolution_logged.emit(event_type, description, effects)
+
+## 根据本回合实际结算结果为微叙事选择可读类别。
+## policy 需要展开到具体 policy_id，battle 需要区分胜负结果。
+func _resolve_report_category(
+	action_type: String,
+	params: Dictionary,
+	previous_victories: int,
+	previous_defeats: int
+) -> String:
+	match action_type:
+		"policy":
+			return String(params.get("policy_id", "policy"))
+		"battle":
+			if GameState.victories > previous_victories:
+				return "battle_victory"
+			var current_defeats := int(engine.get_state().get("defeats", previous_defeats))
+			if current_defeats > previous_defeats:
+				return "battle_defeat"
+			return "battle"
+		"boost_loyalty":
+			return "boost_loyalty"
+		_:
+			return action_type
+
+## 从存档加载引擎状态（供 Save/Load UI 调用）
+## 成功返回 true，失败返回 false
+func load_from_save(slot_id: int = 1) -> bool:
+	_ensure_engine()
+	if not SaveManager.load_game(engine, slot_id):
+		return false
+	current_phase = Phase.ACTION
+	GameState.current_phase = PHASE_NAMES[Phase.ACTION]
+	GameState.triggered_events.clear()
+	# 从引擎读取已触发事件列表
+	for event_id in Array(engine.get_triggered_events()):
+		GameState.triggered_events.append(String(event_id))
+	_sync_state_from_engine()
+	EventBus.phase_changed.emit("action")
+	return true
+
+## 记录关键决策点，用于游戏结束时的失败归因
+func _record_key_decision(action_type: String, params: Dictionary, prev_location: String, prev_victories: int) -> void:
+	var day := GameState.current_day
+	# 战斗结果是关键决策
+	if action_type == "battle":
+		if GameState.victories > prev_victories:
+			GameState.record_key_decision(day, "battle_won", "在 %s 赢得一场战役" % params.get("terrain", ""))
+		else:
+			GameState.record_key_decision(day, "battle_lost", "在 %s 战败" % params.get("terrain", ""))
+	# 行军决策
+	elif action_type == "march" and prev_location != GameState.napoleon_location:
+		if GameState.supply < 40.0:
+			GameState.record_key_decision(day, "risky_march", "在补给 %.0f 时行军到 %s" % [GameState.supply, GameState.napoleon_location])
+	# 政治危机点
+	if GameState.legitimacy < 20.0:
+		GameState.record_key_decision(day, "legitimacy_crisis", "合法性跌到 %.0f" % GameState.legitimacy)
+	# 补给危机点
+	if GameState.supply < 30.0:
+		GameState.record_key_decision(day, "supply_crisis", "补给跌到 %.0f" % GameState.supply)
+
+
+## 保存当前引擎状态到存档
+func save_to_file(slot_id: int = 1) -> bool:
+	_ensure_engine()
+	return SaveManager.save_game(engine, slot_id)
+
+## 设置难度（在 reset_engine 之前调用）
+func set_difficulty(difficulty_id: String) -> void:
+	_pending_difficulty = difficulty_id
+
+var _pending_difficulty: String = ""
 
 ## 重置引擎，用于重新开始游戏
 func reset_engine() -> void:
 	engine = CentJoursEngine.new()
+	if _pending_difficulty != "":
+		engine.set_difficulty(_pending_difficulty)
+		_pending_difficulty = ""
 	current_phase = Phase.DAWN
 	# 重新加载角色数据
 	GameState._load_all_data()
 	GameState.triggered_events.clear()
+	GameState.clear_key_decisions()
 
 ## 确保 TurnManager 生命周期内始终复用同一个原生引擎实例。
 func _ensure_engine() -> void:

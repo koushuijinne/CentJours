@@ -2,18 +2,20 @@
 //! 动态关系矩阵 + 忠诚度更新 + 历史事件触发条件
 //! 纯Rust，无Godot依赖
 
-use std::collections::HashMap;
-use serde::Deserialize;
 use crate::battle::resolver::BattleResult;
+use serde::Deserialize;
+use std::collections::HashMap;
 
 // ── characters.json 反序列化结构 ──────────────────────
 
 #[derive(Debug, Deserialize)]
 struct CharacterEntry {
-    pub id:             String,
-    pub loyalty:        f64,
+    pub id: String,
+    pub name: String,
+    pub display_name: Option<String>,
+    pub loyalty: f64,
     pub military_skill: f64,
-    pub relationships:  HashMap<String, f64>,
+    pub relationships: HashMap<String, f64>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -37,11 +39,11 @@ const DAILY_RELATIONSHIP_DECAY: f64 = 0.05;
 /// 战斗结果 → 参战将领忠诚度变化
 pub fn loyalty_delta_from_battle(result: BattleResult) -> f64 {
     match result {
-        BattleResult::DecisiveVictory  =>  12.0,
-        BattleResult::MarginalVictory  =>   6.0,
-        BattleResult::Stalemate        =>   0.0,
-        BattleResult::MarginalDefeat   =>  -6.0,
-        BattleResult::DecisiveDefeat   => -15.0,
+        BattleResult::DecisiveVictory => 12.0,
+        BattleResult::MarginalVictory => 6.0,
+        BattleResult::Stalemate => 0.0,
+        BattleResult::MarginalDefeat => -6.0,
+        BattleResult::DecisiveDefeat => -15.0,
     }
 }
 
@@ -50,9 +52,9 @@ pub fn loyalty_delta_from_battle(result: BattleResult) -> f64 {
 /// 内伊倒戈检查：内伊对拿破仑的bond高于其当前任务忠诚
 /// 历史背景：路易十八派内伊去逮捕拿破仑，但见面后立即倒戈
 pub struct NeyDefectionCondition {
-    pub ney_loyalty_to_bourbon: f64,   // 对旧政权的忠诚（越低越可能倒戈）
+    pub ney_loyalty_to_bourbon: f64, // 对旧政权的忠诚（越低越可能倒戈）
     pub ney_relationship_napoleon: f64, // 与拿破仑的历史情感纽带
-    pub napoleon_reputation: f64,       // 拿破仑当时的声望（民众支持/胜绩）
+    pub napoleon_reputation: f64,    // 拿破仑当时的声望（民众支持/胜绩）
 }
 
 impl NeyDefectionCondition {
@@ -94,10 +96,10 @@ impl GrouchyArrivalCondition {
 
 #[derive(Debug, Clone)]
 pub struct RelationshipEvent {
-    pub day:    u32,
-    pub from:   String,
-    pub to:     String,
-    pub delta:  f64,
+    pub day: u32,
+    pub from: String,
+    pub to: String,
+    pub delta: f64,
     pub reason: &'static str,
 }
 
@@ -105,10 +107,10 @@ pub struct RelationshipEvent {
 
 #[derive(Debug, Clone)]
 pub struct LoyaltyEvent {
-    pub day:       u32,
+    pub day: u32,
     pub general_id: String,
-    pub delta:     f64,
-    pub reason:    &'static str,
+    pub delta: f64,
+    pub reason: &'static str,
 }
 
 // ── 核心结构 ──────────────────────────────────────────
@@ -118,12 +120,14 @@ pub struct LoyaltyEvent {
 pub struct CharacterNetwork {
     /// 各将领当前忠诚度（0-100）
     pub loyalty: HashMap<String, f64>,
+    /// 各将领展示名（来自 characters.json）
+    pub names: HashMap<String, String>,
     /// 各将领军事技能（0-100），从 characters.json 加载，唯一来源
     pub skills: HashMap<String, f64>,
     /// 双向关系强度（-100..100），key=(id_a, id_b)，a<b字典序
     pub relationships: HashMap<(String, String), f64>,
     /// 审计日志
-    pub loyalty_log:      Vec<LoyaltyEvent>,
+    pub loyalty_log: Vec<LoyaltyEvent>,
     pub relationship_log: Vec<RelationshipEvent>,
 }
 
@@ -135,8 +139,22 @@ impl CharacterNetwork {
 
     /// 添加将领（初始忠诚度，技能值默认60）
     pub fn add_general(&mut self, id: &str, initial_loyalty: f64) {
-        self.loyalty.insert(id.to_string(), initial_loyalty.clamp(0.0, 100.0));
+        self.loyalty
+            .insert(id.to_string(), initial_loyalty.clamp(0.0, 100.0));
         self.skills.entry(id.to_string()).or_insert(60.0);
+    }
+
+    /// 设置将领展示名
+    pub fn set_display_name(&mut self, id: &str, name: &str) {
+        self.names.insert(id.to_string(), name.to_string());
+    }
+
+    /// 获取将领展示名（优先使用 characters.json，缺失时回退到友好化 ID）
+    pub fn display_name(&self, id: &str) -> String {
+        self.names
+            .get(id)
+            .cloned()
+            .unwrap_or_else(|| humanize_identifier(id))
     }
 
     /// 获取将领军事技能（唯一来源：characters.json，未知将领返回60）
@@ -180,9 +198,9 @@ impl CharacterNetwork {
             let reason = match result {
                 BattleResult::DecisiveVictory => "decisive_victory",
                 BattleResult::MarginalVictory => "marginal_victory",
-                BattleResult::Stalemate       => "stalemate",
-                BattleResult::MarginalDefeat  => "marginal_defeat",
-                BattleResult::DecisiveDefeat  => "decisive_defeat",
+                BattleResult::Stalemate => "stalemate",
+                BattleResult::MarginalDefeat => "marginal_defeat",
+                BattleResult::DecisiveDefeat => "decisive_defeat",
             };
             self.modify_loyalty(general_id, delta, day, reason);
         }
@@ -203,7 +221,7 @@ impl CharacterNetwork {
         self.relationship_log.push(RelationshipEvent {
             day,
             from: a.to_string(),
-            to:   b.to_string(),
+            to: b.to_string(),
             delta,
             reason,
         });
@@ -216,6 +234,32 @@ impl CharacterNetwork {
                 *value -= value.signum() * DAILY_RELATIONSHIP_DECAY;
             }
         }
+    }
+
+    /// 计算将领执行命令的偏差系数（命令偏差系统 Tier 3.1）。
+    /// 返回 0.80–1.20 之间的乘数（1.0 = 完美执行）。
+    /// 偏差幅度由忠诚度决定，方向由随机数决定。
+    ///
+    /// 规则：
+    /// - 忠诚度 ≥ 80：偏差 ±5%（绝对忠诚，几乎完美执行）
+    /// - 忠诚度 60–79：偏差 ±10%
+    /// - 忠诚度 40–59：偏差 ±15%
+    /// - 忠诚度 < 40：偏差 ±20%（危机忠诚度，大幅偏差）
+    pub fn calculate_deviation<R: rand::Rng>(&self, general_id: &str, rng: &mut R) -> f64 {
+        let loyalty = self.loyalty(general_id);
+        // 根据忠诚度区间确定最大偏差幅度
+        let max_deviation = if loyalty >= LOYALTY_ABSOLUTE_THRESHOLD {
+            0.05
+        } else if loyalty >= 60.0 {
+            0.10
+        } else if loyalty >= 40.0 {
+            0.15
+        } else {
+            0.20
+        };
+        // 在 [-max_deviation, +max_deviation] 范围内随机取值
+        let deviation = rng.gen_range(-max_deviation..=max_deviation);
+        (1.0_f64 + deviation).clamp(0.80, 1.20)
     }
 
     /// 将领是否处于危机忠诚度（可能拒绝命令）
@@ -236,9 +280,9 @@ impl CharacterNetwork {
     /// 计算内伊倒戈的触发状态
     pub fn ney_defection_condition(&self) -> NeyDefectionCondition {
         NeyDefectionCondition {
-            ney_loyalty_to_bourbon:    100.0 - self.loyalty("ney"),  // 反转：对拿破仑忠诚高 → 对波旁低
+            ney_loyalty_to_bourbon: 100.0 - self.loyalty("ney"), // 反转：对拿破仑忠诚高 → 对波旁低
             ney_relationship_napoleon: self.relationship("ney", "napoleon"),
-            napoleon_reputation:       self.loyalty("napoleon"),  // 借用napoleon字段表示声望
+            napoleon_reputation: self.loyalty("napoleon"), // 借用napoleon字段表示声望
         }
     }
 
@@ -261,7 +305,12 @@ impl CharacterNetwork {
         // 先添加所有将领的忠诚度和技能值
         for ch in &data.characters {
             net.add_general(&ch.id, ch.loyalty);
-            net.skills.insert(ch.id.clone(), ch.military_skill.clamp(0.0, 100.0));
+            net.names.insert(
+                ch.id.clone(),
+                ch.display_name.clone().unwrap_or_else(|| ch.name.clone()),
+            );
+            net.skills
+                .insert(ch.id.clone(), ch.military_skill.clamp(0.0, 100.0));
         }
 
         // 再设置关系
@@ -276,7 +325,11 @@ impl CharacterNetwork {
     }
 
     /// 从 characters.json 数据填充网络（简化版，接收(id, loyalty)对列表）
-    pub fn populate_from_data(&mut self, generals: &[(&str, f64)], relationships: &[(&str, &str, f64)]) {
+    pub fn populate_from_data(
+        &mut self,
+        generals: &[(&str, f64)],
+        relationships: &[(&str, &str, f64)],
+    ) {
         for &(id, loyalty) in generals {
             self.add_general(id, loyalty);
         }
@@ -300,17 +353,36 @@ fn relationship_key(a: &str, b: &str) -> (String, String) {
 /// 创建百日王朝开始时的历史将领网络（Day 1 初始状态）
 /// 数据来源：`src/data/characters.json`
 pub fn historical_network_day1() -> CharacterNetwork {
-    const CHARACTERS_JSON: &str =
-        include_str!("../../../src/data/characters.json");
+    const CHARACTERS_JSON: &str = include_str!("../../../src/data/characters.json");
 
-    let mut net = CharacterNetwork::from_json(CHARACTERS_JSON)
-        .expect("characters.json parse error");
+    let mut net =
+        CharacterNetwork::from_json(CHARACTERS_JSON).expect("characters.json parse error");
 
     // napoleon 字段用于存储"拿破仑声望"，初始值100
     // （characters.json 中无此条目，需手动添加）
     net.add_general("napoleon", 100.0);
+    net.set_display_name("napoleon", "拿破仑");
 
     net
+}
+
+fn humanize_identifier(id: &str) -> String {
+    id.split('_')
+        .filter(|part| !part.is_empty())
+        .map(|part| {
+            let mut chars = part.chars();
+            match chars.next() {
+                Some(first) => {
+                    let mut out = String::new();
+                    out.extend(first.to_uppercase());
+                    out.push_str(chars.as_str());
+                    out
+                }
+                None => String::new(),
+            }
+        })
+        .collect::<Vec<_>>()
+        .join(" ")
 }
 
 // ── 单元测试 ──────────────────────────────────────────
@@ -320,6 +392,7 @@ mod tests {
     use super::*;
     use approx::assert_abs_diff_eq;
 
+    // 中文语义继续保留在注释和断言里，测试函数名统一改成英文便于工具过滤。
     fn make_historical_net() -> CharacterNetwork {
         historical_network_day1()
     }
@@ -327,14 +400,16 @@ mod tests {
     // ── 基础操作 ──────────────────────────────────────
 
     #[test]
-    fn 添加将领并查询忠诚度() {
+    // 添加将领并查询忠诚度
+    fn add_general_and_query_loyalty() {
         let mut net = CharacterNetwork::new();
         net.add_general("ney", 65.0);
         assert_abs_diff_eq!(net.loyalty("ney"), 65.0, epsilon = 0.001);
     }
 
     #[test]
-    fn 忠诚度钳制在0到100() {
+    // 忠诚度钳制在 0–100
+    fn loyalty_clamped_0_to_100() {
         let mut net = CharacterNetwork::new();
         net.add_general("ney", 65.0);
         net.modify_loyalty("ney", 200.0, 1, "test");
@@ -344,7 +419,8 @@ mod tests {
     }
 
     #[test]
-    fn 关系值双向查询一致() {
+    // 关系值双向查询一致
+    fn relationship_symmetric() {
         let net = make_historical_net();
         assert_abs_diff_eq!(
             net.relationship("ney", "napoleon"),
@@ -354,7 +430,8 @@ mod tests {
     }
 
     #[test]
-    fn 未知将领默认忠诚度50() {
+    // 未知将领默认忠诚度 50
+    fn unknown_general_default_loyalty_50() {
         let net = CharacterNetwork::new();
         assert_abs_diff_eq!(net.loyalty("unknown"), 50.0, epsilon = 0.001);
     }
@@ -362,7 +439,8 @@ mod tests {
     // ── 战斗结果影响 ──────────────────────────────────
 
     #[test]
-    fn 决定性胜利大幅提升忠诚度() {
+    // 决定性胜利大幅提升忠诚度
+    fn decisive_victory_boosts_loyalty() {
         let mut net = make_historical_net();
         let before = net.loyalty("ney");
         net.apply_battle_outcome("ney", BattleResult::DecisiveVictory, 10);
@@ -370,7 +448,8 @@ mod tests {
     }
 
     #[test]
-    fn 决定性失败大幅降低忠诚度() {
+    // 决定性失败大幅降低忠诚度
+    fn decisive_defeat_drops_loyalty() {
         let mut net = make_historical_net();
         let before = net.loyalty("ney");
         net.apply_battle_outcome("ney", BattleResult::DecisiveDefeat, 10);
@@ -378,7 +457,8 @@ mod tests {
     }
 
     #[test]
-    fn 战平不影响忠诚度() {
+    // 战平不影响忠诚度
+    fn stalemate_no_loyalty_change() {
         let mut net = make_historical_net();
         let before = net.loyalty("ney");
         net.apply_battle_outcome("ney", BattleResult::Stalemate, 10);
@@ -388,7 +468,8 @@ mod tests {
     // ── 关系衰减 ──────────────────────────────────────
 
     #[test]
-    fn 每日衰减使正向关系逐渐减弱() {
+    // 每日衰减使正向关系逐渐减弱
+    fn daily_decay_positive_relationship() {
         let mut net = make_historical_net();
         let initial = net.relationship("napoleon", "davout"); // 85.0
         for _ in 0..10 {
@@ -398,7 +479,8 @@ mod tests {
     }
 
     #[test]
-    fn 每日衰减使负向关系逐渐减弱() {
+    // 每日衰减使负向关系向零靠近
+    fn daily_decay_negative_relationship() {
         let mut net = make_historical_net();
         let initial = net.relationship("ney", "grouchy"); // -30.0
         for _ in 0..10 {
@@ -411,20 +493,23 @@ mod tests {
     // ── 危机判断 ──────────────────────────────────────
 
     #[test]
-    fn 忠诚度低于阈值为危机状态() {
+    // 忠诚度低于阈值为危机状态
+    fn low_loyalty_is_crisis() {
         let mut net = CharacterNetwork::new();
         net.add_general("fouche", 25.0);
         assert!(net.is_loyalty_crisis("fouche"));
     }
 
     #[test]
-    fn 达武高忠诚度为绝对忠诚() {
+    // 达武高忠诚度为绝对忠诚
+    fn davout_absolutely_loyal() {
         let net = make_historical_net();
         assert!(net.is_absolutely_loyal("davout"));
     }
 
     #[test]
-    fn 内伊和格鲁希历史敌意() {
+    // 内伊和格鲁希历史敌意
+    fn ney_grouchy_hostile() {
         let net = make_historical_net();
         assert!(net.are_hostile("ney", "grouchy"));
     }
@@ -432,35 +517,38 @@ mod tests {
     // ── 内伊倒戈场景 ──────────────────────────────────
 
     #[test]
-    fn 内伊倒戈概率与关系正相关() {
+    // 内伊倒戈概率与关系正相关
+    fn ney_defection_prob_correlates_with_relationship() {
         // 拿破仑声望高 + 内伊与拿破仑关系深 → 高倒戈概率
         let cond_high = NeyDefectionCondition {
-            ney_loyalty_to_bourbon:     20.0,
-            ney_relationship_napoleon:  85.0,
-            napoleon_reputation:        80.0,
+            ney_loyalty_to_bourbon: 20.0,
+            ney_relationship_napoleon: 85.0,
+            napoleon_reputation: 80.0,
         };
         // 声望低 + 关系一般 → 低倒戈概率
         let cond_low = NeyDefectionCondition {
-            ney_loyalty_to_bourbon:     70.0,
-            ney_relationship_napoleon:  55.0,
-            napoleon_reputation:        40.0,
+            ney_loyalty_to_bourbon: 70.0,
+            ney_relationship_napoleon: 55.0,
+            napoleon_reputation: 40.0,
         };
         assert!(cond_high.defection_probability() > cond_low.defection_probability());
         assert!(cond_high.defection_probability() > 0.5);
     }
 
     #[test]
-    fn 内伊关系不足时不会倒戈() {
+    // 内伊关系不足时不会倒戈
+    fn ney_low_relationship_no_defection() {
         let cond = NeyDefectionCondition {
-            ney_loyalty_to_bourbon:     10.0,
-            ney_relationship_napoleon:  40.0, // 低于50阈值
-            napoleon_reputation:        90.0,
+            ney_loyalty_to_bourbon: 10.0,
+            ney_relationship_napoleon: 40.0, // 低于50阈值
+            napoleon_reputation: 90.0,
         };
         assert_abs_diff_eq!(cond.defection_probability(), 0.0, epsilon = 0.001);
     }
 
     #[test]
-    fn 历史网络内伊倒戈场景概率合理() {
+    // 历史网络下内伊倒戈概率合理
+    fn historical_ney_defection_prob_reasonable() {
         let net = make_historical_net();
         let cond = net.ney_defection_condition();
         let prob = cond.defection_probability();
@@ -471,21 +559,23 @@ mod tests {
     // ── 格鲁希增援场景 ────────────────────────────────
 
     #[test]
-    fn 格鲁希距离过远无法及时增援() {
+    // 格鲁希距离过远无法增援
+    fn grouchy_too_far_no_arrival() {
         let cond = GrouchyArrivalCondition {
-            grouchy_loyalty:        72.0,
-            communication_distance: 6,   // 超过4节点上限
-            day:                    94,
+            grouchy_loyalty: 72.0,
+            communication_distance: 6, // 超过4节点上限
+            day: 94,
         };
         assert_abs_diff_eq!(cond.arrival_probability(), 0.0, epsilon = 0.001);
     }
 
     #[test]
-    fn 格鲁希近距离高忠诚有一定增援概率() {
+    // 格鲁希近距离高忠诚有增援概率
+    fn grouchy_close_high_loyalty_may_arrive() {
         let cond = GrouchyArrivalCondition {
-            grouchy_loyalty:        90.0,
+            grouchy_loyalty: 90.0,
             communication_distance: 2,
-            day:                    93,
+            day: 93,
         };
         assert!(cond.arrival_probability() > 0.0);
     }
@@ -493,7 +583,7 @@ mod tests {
     // ── 审计日志 ──────────────────────────────────────
 
     #[test]
-    fn 忠诚度变化被记录到日志() {
+    fn loyalty_changes_are_recorded_in_audit_log() {
         let mut net = make_historical_net();
         net.modify_loyalty("ney", 5.0, 10, "battle_victory");
         assert_eq!(net.loyalty_log.len(), 1);
@@ -504,15 +594,19 @@ mod tests {
     // ── from_json 测试 ────────────────────────────────
 
     #[test]
-    fn json加载15个人物成功() {
+    fn json_loads_fifteen_characters() {
         const JSON: &str = include_str!("../../../src/data/characters.json");
         let net = CharacterNetwork::from_json(JSON).expect("parse error");
         // 15个人物均已加载
-        assert!(net.loyalty.len() >= 15, "应加载至少15个将领，实际: {}", net.loyalty.len());
+        assert!(
+            net.loyalty.len() >= 15,
+            "应加载至少15个将领，实际: {}",
+            net.loyalty.len()
+        );
     }
 
     #[test]
-    fn json加载后内伊忠诚度正确() {
+    fn json_loads_correct_ney_loyalty() {
         const JSON: &str = include_str!("../../../src/data/characters.json");
         let net = CharacterNetwork::from_json(JSON).expect("parse error");
         use approx::assert_abs_diff_eq;
@@ -521,16 +615,26 @@ mod tests {
     }
 
     #[test]
-    fn json加载后内伊格鲁希为敌对关系() {
+    fn json_loads_correct_ney_display_name() {
         const JSON: &str = include_str!("../../../src/data/characters.json");
         let net = CharacterNetwork::from_json(JSON).expect("parse error");
-        // 两侧都设为-30，取最后写入的值（后写覆盖先写）
-        assert!(net.relationship("ney", "grouchy") < 0.0,
-            "内伊格鲁希关系应为负值，实际: {}", net.relationship("ney", "grouchy"));
+        assert_eq!(net.display_name("ney"), "内伊");
     }
 
     #[test]
-    fn json解析失败返回错误() {
+    fn json_loads_negative_ney_grouchy_relationship() {
+        const JSON: &str = include_str!("../../../src/data/characters.json");
+        let net = CharacterNetwork::from_json(JSON).expect("parse error");
+        // 两侧都设为-30，取最后写入的值（后写覆盖先写）
+        assert!(
+            net.relationship("ney", "grouchy") < 0.0,
+            "内伊格鲁希关系应为负值，实际: {}",
+            net.relationship("ney", "grouchy")
+        );
+    }
+
+    #[test]
+    fn json_parse_failure_returns_error() {
         let result = CharacterNetwork::from_json("{invalid json}");
         assert!(result.is_err());
     }
@@ -538,7 +642,7 @@ mod tests {
     // ── 军事技能加载（数据驱动化）────────────────────────
 
     #[test]
-    fn json加载后达武技能值正确() {
+    fn json_loads_correct_davout_skill() {
         // characters.json: davout.military_skill = 92（非 state.rs 硬编码的 82）
         const JSON: &str = include_str!("../../../src/data/characters.json");
         let net = CharacterNetwork::from_json(JSON).expect("parse error");
@@ -547,7 +651,7 @@ mod tests {
     }
 
     #[test]
-    fn json加载后内伊技能值正确() {
+    fn json_loads_correct_ney_skill() {
         const JSON: &str = include_str!("../../../src/data/characters.json");
         let net = CharacterNetwork::from_json(JSON).expect("parse error");
         use approx::assert_abs_diff_eq;
@@ -555,7 +659,7 @@ mod tests {
     }
 
     #[test]
-    fn json加载后苏尔特技能值正确() {
+    fn json_loads_correct_soult_skill() {
         // characters.json: soult.military_skill = 80（非 state.rs 硬编码的 72）
         const JSON: &str = include_str!("../../../src/data/characters.json");
         let net = CharacterNetwork::from_json(JSON).expect("parse error");
@@ -564,22 +668,87 @@ mod tests {
     }
 
     #[test]
-    fn 未知将领默认技能值60() {
+    fn unknown_character_defaults_to_skill_60() {
         let net = CharacterNetwork::new();
         use approx::assert_abs_diff_eq;
         assert_abs_diff_eq!(net.skill("unknown_general"), 60.0, epsilon = 0.001);
     }
 
-    fn 危机将领列表正确识别() {
+    #[test]
+    fn crisis_character_list_is_detected() {
         let mut net = CharacterNetwork::new();
         net.add_general("fouche", 25.0); // 危机
         net.add_general("davout", 88.0); // 正常
-        net.add_general("ney",    28.0); // 危机
+        net.add_general("ney", 28.0); // 危机
 
         let crisis = net.crisis_generals();
         assert_eq!(crisis.len(), 2);
         let ids: Vec<&str> = crisis.iter().map(|&(id, _)| id).collect();
         assert!(ids.contains(&"fouche"));
         assert!(ids.contains(&"ney"));
+    }
+
+    // ── 命令偏差系统（Tier 3.1）──────────────────────────
+
+    #[test]
+    fn high_loyalty_generals_have_small_deviation() {
+        let mut net = CharacterNetwork::new();
+        net.add_general("davout", 90.0); // 绝对忠诚
+        let mut rng = rand::thread_rng();
+        // 跑 100 次取最大偏差
+        let mut max_dev = 0.0_f64;
+        for _ in 0..100 {
+            let d = net.calculate_deviation("davout", &mut rng);
+            max_dev = max_dev.max((d - 1.0).abs());
+        }
+        // 忠诚度 ≥80，最大偏差应 ≤5%
+        assert!(max_dev <= 0.051, "高忠诚偏差超限: {:.3}", max_dev);
+    }
+
+    #[test]
+    fn low_loyalty_generals_can_have_large_deviation() {
+        let mut net = CharacterNetwork::new();
+        net.add_general("fouche", 20.0); // 危机忠诚
+        let mut rng = rand::thread_rng();
+        let mut found_large = false;
+        for _ in 0..200 {
+            let d = net.calculate_deviation("fouche", &mut rng);
+            if (d - 1.0).abs() > 0.10 {
+                found_large = true;
+                break;
+            }
+        }
+        // 忠诚度 <40，应在 200 次内出现 >10% 偏差
+        assert!(found_large, "低忠诚将领应产生大偏差");
+    }
+
+    #[test]
+    fn deviation_factor_stays_in_legal_range() {
+        let mut net = CharacterNetwork::new();
+        net.add_general("test", 10.0); // 极低忠诚
+        let mut rng = rand::thread_rng();
+        for _ in 0..500 {
+            let d = net.calculate_deviation("test", &mut rng);
+            assert!(d >= 0.80, "偏差低于下限: {:.3}", d);
+            assert!(d <= 1.20, "偏差超出上限: {:.3}", d);
+        }
+    }
+
+    #[test]
+    fn deviation_affects_actual_committed_troops() {
+        let mut net = CharacterNetwork::new();
+        net.add_general("ney", 55.0); // 中等忠诚，偏差 ±15%
+        let mut rng = rand::thread_rng();
+        let commanded = 20000_u32;
+        let mut seen_diff = false;
+        for _ in 0..50 {
+            let d = net.calculate_deviation("ney", &mut rng);
+            let actual = ((commanded as f64) * d).round() as u32;
+            if actual != commanded {
+                seen_diff = true;
+                break;
+            }
+        }
+        assert!(seen_diff, "中等忠诚将领应至少偶尔产生兵力偏差");
     }
 }

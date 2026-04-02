@@ -4,6 +4,7 @@
     {
       "id": "ney",
       "name": "Michel Ney",
+      "display_name": "内伊",
       "title": "埃尔辛根公爵，比萨克托斯王子",
       "role": "marshal",
       "loyalty": 55,
@@ -27,6 +28,7 @@
     {
       "id": "grouchy",
       "name": "Emmanuel de Grouchy",
+      "display_name": "格鲁希",
       "title": "格鲁希侯爵",
       "role": "marshal",
       "loyalty": 75,
@@ -50,6 +52,7 @@
     {
       "id": "davout",
       "name": "Louis-Nicolas Davout",
+      "display_name": "达武",
       "title": "奥尔施泰特公爵，埃克米尔王子",
       "role": "marshal",
       "loyalty": 95,
@@ -73,6 +76,7 @@
     {
       "id": "soult",
       "name": "Nicolas Jean-de-Dieu Soult",
+      "display_name": "苏尔特",
       "title": "达尔马提亚公爵",
       "role": "marshal",
       "loyalty": 60,
@@ -96,6 +100,7 @@
     {
       "id": "drouet",
       "name": "Jean-Baptiste Drouet",
+      "display_name": "德鲁埃",
       "title": "埃尔隆伯爵",
       "role": "general",
       "loyalty": 78,
@@ -118,6 +123,7 @@
     {
       "id": "reille",
       "name": "Honoré Charles Reille",
+      "display_name": "雷耶",
       "title": "雷耶伯爵",
       "role": "general",
       "loyalty": 72,
@@ -139,6 +145,7 @@
     {
       "id": "lobau",
       "name": "Georges Mouton",
+      "display_name": "洛博",
       "title": "洛博伯爵",
       "role": "general",
       "loyalty": 82,
@@ -159,6 +166,7 @@
     {
       "id": "jerome",
       "name": "Jérôme Bonaparte",
+      "display_name": "热罗姆",
       "title": "威斯特伐利亚前国王",
       "role": "general",
       "loyalty": 90,
@@ -180,6 +188,7 @@
     {
       "id": "bertrand",
       "name": "Henri-Gatien Bertrand",
+      "display_name": "贝特朗",
       "title": "卡斯提格利昂伯爵",
       "role": "general",
       "loyalty": 98,
@@ -201,6 +210,7 @@
     {
       "id": "cambronne",
       "name": "Pierre Cambronne",
+      "display_name": "康布罗讷",
       "title": "老近卫军指挥官",
       "role": "general",
       "loyalty": 99,
@@ -222,6 +232,7 @@
     {
       "id": "fouche",
       "name": "Joseph Fouché",
+      "display_name": "富歇",
       "title": "奥特朗托公爵",
       "role": "politician",
       "loyalty": 20,
@@ -244,6 +255,7 @@
     {
       "id": "carnot",
       "name": "Lazare Carnot",
+      "display_name": "卡尔诺",
       "title": "胜利的组织者",
       "role": "politician",
       "loyalty": 70,
@@ -266,6 +278,7 @@
     {
       "id": "lafayette",
       "name": "Gilbert du Motier",
+      "display_name": "拉法耶特",
       "title": "拉法耶特侯爵",
       "role": "politician",
       "loyalty": 35,
@@ -288,6 +301,7 @@
     {
       "id": "lavalette",
       "name": "Antoine Marie Chamans de Lavalette",
+      "display_name": "拉瓦莱特",
       "title": "邮政总长",
       "role": "advisor",
       "loyalty": 88,
@@ -309,6 +323,7 @@
     {
       "id": "flahaut",
       "name": "Charles de Flahaut",
+      "display_name": "弗拉奥",
       "title": "弗拉奥伯爵",
       "role": "advisor",
       "loyalty": 80,

@@ -17,7 +17,11 @@ var _rn_block: VBoxContainer = null
 var _rn_slot: Control = null
 var _legitimacy_bar: ProgressBar = null
 var _situation_body: Label = null
+var _situation_scroll: ScrollContainer = null
 var _narrative_body: Label = null
+var _map_hover_panel: PanelContainer = null
+var _map_hover_title: Label = null
+var _map_hover_meta: Label = null
 var _map_inspector_title: Label = null
 var _map_inspector_meta: Label = null
 var _map_inspector_stats: Label = null
@@ -32,6 +36,7 @@ var _loyalty_scroll: ScrollContainer = null
 var _loyalty_list: VBoxContainer = null
 var _narrative_panel: PanelContainer = null
 var _narrative_box: VBoxContainer = null
+var _narrative_scroll: ScrollContainer = null
 var _decision_tray: PanelContainer = null
 var _tray_margin: MarginContainer = null
 var _tray_content: VBoxContainer = null
@@ -59,7 +64,11 @@ func bind_nodes(nodes: Dictionary, tray_controller: MainMenuTrayController = nul
 	_rn_slot = nodes.get("rn_slot", _rn_slot)
 	_legitimacy_bar = nodes.get("legitimacy_bar", _legitimacy_bar)
 	_situation_body = nodes.get("situation_body", _situation_body)
+	_situation_scroll = nodes.get("situation_scroll", _situation_scroll)
 	_narrative_body = nodes.get("narrative_body", _narrative_body)
+	_map_hover_panel = nodes.get("map_hover_panel", _map_hover_panel)
+	_map_hover_title = nodes.get("map_hover_title", _map_hover_title)
+	_map_hover_meta = nodes.get("map_hover_meta", _map_hover_meta)
 	_map_inspector_title = nodes.get("map_inspector_title", _map_inspector_title)
 	_map_inspector_meta = nodes.get("map_inspector_meta", _map_inspector_meta)
 	_map_inspector_stats = nodes.get("map_inspector_stats", _map_inspector_stats)
@@ -74,6 +83,7 @@ func bind_nodes(nodes: Dictionary, tray_controller: MainMenuTrayController = nul
 	_loyalty_list = nodes.get("loyalty_list", _loyalty_list)
 	_narrative_panel = nodes.get("narrative_panel", _narrative_panel)
 	_narrative_box = nodes.get("narrative_box", _narrative_box)
+	_narrative_scroll = nodes.get("narrative_scroll", _narrative_scroll)
 	_decision_tray = nodes.get("decision_tray", _decision_tray)
 	_tray_margin = nodes.get("tray_margin", _tray_margin)
 	_tray_content = nodes.get("tray_content", _tray_content)
@@ -91,11 +101,21 @@ func set_tray_controller(tray_controller: MainMenuTrayController) -> void:
 func configure_static_ui() -> void:
 	_style_heading(_day_label, 24, CentJoursTheme.COLOR["text_heading"])
 	_style_heading(_phase_label, 11, CentJoursTheme.COLOR["gold_dim"])
+	_style_heading(_map_hover_title, 11, CentJoursTheme.COLOR["text_heading"])
 	_style_heading(_map_inspector_title, 12, CentJoursTheme.COLOR["text_heading"])
 	if _legitimacy_bar != null:
 		_legitimacy_bar.show_percentage = false
 		_legitimacy_bar.max_value = 100.0
-	for label in [_situation_body, _narrative_body, _map_inspector_meta, _map_inspector_stats, _map_inspector_history]:
+	if _decision_scroll != null:
+		_decision_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_ALWAYS
+		_decision_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	if _situation_scroll != null:
+		_situation_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+		_situation_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	if _narrative_scroll != null:
+		_narrative_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+		_narrative_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	for label in [_situation_body, _narrative_body, _map_hover_meta, _map_inspector_meta, _map_inspector_stats, _map_inspector_history]:
 		if label != null:
 			label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 
@@ -115,6 +135,11 @@ func apply_panel_styles() -> void:
 		_map_area.add_theme_stylebox_override(
 			"panel",
 			_make_panel_style(Color("#111821"), CentJoursTheme.COLOR["gold_dim"], 0.34)
+		)
+	if _map_hover_panel != null:
+		_map_hover_panel.add_theme_stylebox_override(
+			"panel",
+			_make_panel_style(Color(0.08, 0.09, 0.14, 0.96), CentJoursTheme.COLOR["border_panel"], 0.18)
 		)
 	if _map_inspector_panel != null:
 		_map_inspector_panel.add_theme_stylebox_override(
@@ -221,10 +246,40 @@ func apply_responsive_layout(viewport_size: Vector2 = Vector2.ZERO) -> void:
 	_set_margin(_tray_margin, "margin_bottom", tray_margin)
 	_set_container_separation(_tray_content, int(clampf(roundf(viewport.y * 0.008), 6.0, 8.0)))
 	_set_container_separation(_decision_row, int(clampf(roundf(viewport.x * 0.006), 8.0, 12.0)))
+	var tray_header_height := clampf(viewport.y * 0.074, 56.0, 64.0)
+	if _tray_header != null:
+		_tray_header.custom_minimum_size.y = tray_header_height
+	if _tray_hint != null:
+		_tray_hint.autowrap_mode = TextServer.AUTOWRAP_OFF
+		_tray_hint.clip_text = true
+		_tray_hint.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		_tray_hint.custom_minimum_size = Vector2(clampf(viewport.x * 0.29, 380.0, 520.0), tray_header_height)
 
-	var sidebar_width := clampf(viewport.x * 0.27, 332.0, 372.0)
+	var sidebar_width := clampf(viewport.x * 0.205, 252.0, 296.0)
 	if _sidebar != null:
 		_sidebar.custom_minimum_size.x = sidebar_width
+	var detail_panel_width := clampf(viewport.x * 0.232, 284.0, 332.0)
+	var detail_panel_height := clampf(viewport.y * 0.31, 208.0, 280.0)
+	var detail_panel_top := clampf(viewport.y * 0.10, 72.0, 92.0)
+	if _map_hover_panel != null:
+		# hover 预览与锁定详情共用一组几何锚点，避免两层面板来回跳位。
+		_map_hover_panel.custom_minimum_size = Vector2(detail_panel_width, detail_panel_height)
+		_map_hover_panel.offset_left = -detail_panel_width - 4.0
+		_map_hover_panel.offset_top = detail_panel_top
+		_map_hover_panel.offset_right = -4.0
+		_map_hover_panel.offset_bottom = detail_panel_top + detail_panel_height
+		if _map_hover_meta != null:
+			_map_hover_meta.custom_minimum_size.x = detail_panel_width - 28.0
+	if _map_inspector_panel != null:
+		_map_inspector_panel.custom_minimum_size = Vector2(detail_panel_width, detail_panel_height)
+		_map_inspector_panel.offset_left = -detail_panel_width - 4.0
+		_map_inspector_panel.offset_top = detail_panel_top
+		_map_inspector_panel.offset_right = -4.0
+		_map_inspector_panel.offset_bottom = detail_panel_top + detail_panel_height
+		for label in [_map_inspector_meta, _map_inspector_stats, _map_inspector_history]:
+			if label != null:
+				label.custom_minimum_size.x = detail_panel_width - 28.0
+	_sync_map_detail_panel_anchor()
 
 	var card_size := Vector2(
 		clampf(viewport.x * 0.102, 124.0, 140.0),
@@ -232,19 +287,34 @@ func apply_responsive_layout(viewport_size: Vector2 = Vector2.ZERO) -> void:
 	)
 	apply_decision_card_metrics(card_size)
 
-	var scroll_safe_bottom := _compute_decision_scroll_safe_bottom()
+	var hover_padding := _compute_decision_hover_padding(card_size.y)
+	var row_height := _compute_decision_row_height(card_size.y)
+	var scroll_safe_bottom := _compute_decision_scroll_safe_bottom() + hover_padding
+	_set_margin(_decision_scroll_content, "margin_top", int(roundf(hover_padding)))
 	_set_margin(_decision_scroll_content, "margin_bottom", int(roundf(scroll_safe_bottom)))
-	var scroll_height := card_size.y + scroll_safe_bottom
+	if _decision_scroll_content != null:
+		_decision_scroll_content.custom_minimum_size.y = row_height + hover_padding + scroll_safe_bottom
+	if _decision_row != null:
+		_decision_row.custom_minimum_size.y = row_height
+	var scroll_height := row_height + hover_padding + scroll_safe_bottom
 	if _decision_scroll != null:
 		_decision_scroll.custom_minimum_size = Vector2(0.0, scroll_height)
 	if _decision_tray != null:
 		_decision_tray.size_flags_vertical = 0
 		_decision_tray.custom_minimum_size.y = _compute_tray_min_height(scroll_height, tray_margin)
 
-	if _situation_panel != null and _situation_box != null:
-		_situation_panel.custom_minimum_size.y = _panel_min_height(_situation_box, 20.0, 100.0)
-	if _narrative_panel != null and _narrative_box != null:
-		_narrative_panel.custom_minimum_size.y = _panel_min_height(_narrative_box, 24.0, 148.0)
+	if _situation_panel != null:
+		_situation_panel.custom_minimum_size.y = clampf(viewport.y * 0.27, 176.0, 248.0)
+	if _situation_scroll != null:
+		_situation_scroll.custom_minimum_size = Vector2(0.0, clampf(viewport.y * 0.19, 116.0, 176.0))
+		_situation_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		_situation_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	if _narrative_panel != null:
+		_narrative_panel.custom_minimum_size.y = clampf(viewport.y * 0.21, 152.0, 208.0)
+	if _narrative_scroll != null:
+		_narrative_scroll.custom_minimum_size = Vector2(0.0, clampf(viewport.y * 0.16, 104.0, 156.0))
+		_narrative_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		_narrative_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	if _loyalty_panel != null:
 		_loyalty_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	if _loyalty_scroll != null:
@@ -283,9 +353,9 @@ func _compute_topbar_min_height(margin_top: int, margin_bottom: int) -> float:
 func _compute_tray_min_height(scroll_height: float, margin_vertical: int) -> float:
 	var header_height := 28.0
 	if _tray_header != null:
-		header_height = _tray_header.get_combined_minimum_size().y
+		header_height = maxf(header_height, _tray_header.custom_minimum_size.y)
 	if _tray_hint != null:
-		header_height = maxf(header_height, _tray_hint.get_combined_minimum_size().y)
+		header_height = maxf(header_height, _tray_hint.custom_minimum_size.y)
 	var gap := 0.0
 	if _tray_content != null:
 		gap = float(_tray_content.get_theme_constant("separation"))
@@ -302,6 +372,17 @@ func _compute_decision_scroll_safe_bottom() -> float:
 	return maxf(fallback, h_scroll_bar.get_combined_minimum_size().y + 4.0)
 
 
+func _compute_decision_row_height(card_height: float) -> float:
+	var row_height := card_height
+	if _decision_row != null:
+		row_height = maxf(row_height, _decision_row.get_combined_minimum_size().y)
+	return row_height
+
+
+func _compute_decision_hover_padding(card_height: float) -> float:
+	return maxf(4.0, ceilf(card_height * 0.04))
+
+
 func _panel_min_height(content: Control, breathing_room: float, floor_value: float) -> float:
 	if content == null:
 		return floor_value
@@ -313,6 +394,20 @@ func _compute_loyalty_content_width(sidebar_width: float) -> float:
 	if scroll_width <= 0.0:
 		scroll_width = sidebar_width - 52.0
 	return maxf(scroll_width - 6.0, 240.0)
+
+
+func _sync_map_detail_panel_anchor() -> void:
+	if _map_hover_panel == null or _map_inspector_panel == null:
+		return
+	_map_hover_panel.anchor_left = _map_inspector_panel.anchor_left
+	_map_hover_panel.anchor_top = _map_inspector_panel.anchor_top
+	_map_hover_panel.anchor_right = _map_inspector_panel.anchor_right
+	_map_hover_panel.anchor_bottom = _map_inspector_panel.anchor_bottom
+	_map_hover_panel.offset_left = _map_inspector_panel.offset_left
+	_map_hover_panel.offset_top = _map_inspector_panel.offset_top
+	_map_hover_panel.offset_right = _map_inspector_panel.offset_right
+	_map_hover_panel.offset_bottom = _map_inspector_panel.offset_bottom
+	_map_hover_panel.custom_minimum_size = _map_inspector_panel.custom_minimum_size
 
 
 func _style_heading(label: Label, font_size: int, font_color: Color) -> void:

@@ -1,0 +1,83 @@
+name: windows-full
+
+on:
+  push:
+    branches:
+      - auto/gameplay_update
+      - claude/review-project-status-05vxD
+    paths:
+      - "src/**"
+      - "cent-jours-core/**"
+      - "tests/**"
+      - "addons/**"
+      - "project.godot"
+      - "tools/run_gdunit_windows.cmd"
+      - ".github/workflows/windows-fast.yml"
+      - ".github/workflows/windows-heavy-nightly.yml"
+      - ".github/workflows/windows-validation.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  windows-full:
+    runs-on: windows-latest
+    timeout-minutes: 60
+    env:
+      GODOT_ZIP_URL: https://github.com/godotengine/godot/releases/download/4.6.1-stable/Godot_v4.6.1-stable_win64.exe.zip
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust artifacts
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: cent-jours-core -> target
+
+      - name: Download Godot Windows binary
+        shell: pwsh
+        run: |
+          $godotDir = Join-Path $env:RUNNER_TEMP "godot"
+          New-Item -ItemType Directory -Force -Path $godotDir | Out-Null
+          $zipPath = Join-Path $godotDir "godot_win64.zip"
+          Invoke-WebRequest -Uri $env:GODOT_ZIP_URL -OutFile $zipPath
+          Expand-Archive -Path $zipPath -DestinationPath $godotDir -Force
+          $exe = Get-ChildItem -Path $godotDir -Filter "Godot_v*_win64.exe" -Recurse | Select-Object -First 1 -ExpandProperty FullName
+          if (-not $exe) {
+            throw "Godot Windows binary not found after extraction."
+          }
+          "GODOT_BINARY=$exe" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          Write-Host "Using Godot binary: $exe"
+
+      - name: Windows Rust tests
+        shell: pwsh
+        working-directory: cent-jours-core
+        run: cargo test
+
+      - name: Build Windows GDExtension
+        shell: pwsh
+        working-directory: cent-jours-core
+        run: cargo build --features godot-extension
+
+      - name: Run full Godot GdUnit4 regression suite
+        shell: cmd
+        run: tools\run_gdunit_windows.cmd "%GODOT_BINARY%" res://tests/godot
+
+      - name: Verify smoke scene
+        shell: pwsh
+        run: |
+          & "$env:GODOT_BINARY" --headless --path "$env:GITHUB_WORKSPACE" --scene res://src/dev/engine_smoke_test_scene.tscn
+
+      - name: Upload full GdUnit reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-full-gdunit-reports
+          path: reports/
+          if-no-files-found: warn

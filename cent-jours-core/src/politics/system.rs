@@ -4,7 +4,7 @@ use std::collections::HashMap;
 
 // ── 常量 ──────────────────────────────────────────────
 
-pub const CRISIS_THRESHOLD:    f64 = 10.0;   // 任何势力跌破此值 → 政治危机风险
+pub const CRISIS_THRESHOLD: f64 = 10.0; // 任何势力跌破此值 → 政治危机风险
 pub const FACTION_IDS: [&str; 4] = ["liberals", "nobility", "populace", "military"];
 
 /// 各势力自然均衡值（无外力时每日缓慢向此靠拢）
@@ -23,72 +23,230 @@ pub const FACTION_WEIGHTS: [(&str, f64); 4] = [
     ("military", 0.25),
 ];
 
-pub const FACTION_RECOVERY_RATE: f64 = 0.8;   // 每日均衡恢复速率（提升：帮助军事策略恢复政治稳定）
+pub const FACTION_RECOVERY_RATE: f64 = 0.8; // 每日均衡恢复速率（提升：帮助军事策略恢复政治稳定）
 
 // ── 政策结构 ──────────────────────────────────────────
 
 /// 一个政策行动的效果定义
 #[derive(Debug, Clone)]
 pub struct PolicyEffect {
-    pub id:              &'static str,
-    pub name:            &'static str,
-    pub cost_actions:    u8,
+    pub id: &'static str,
+    pub name: &'static str,
+    pub cost_actions: u8,
     pub rouge_noir_delta: f64,
-    pub faction_deltas:  HashMap<&'static str, f64>,
-    pub economic_delta:  f64,
-    pub cooldown_days:   u8,
+    pub faction_deltas: HashMap<&'static str, f64>,
+    pub economic_delta: f64,
+    pub supply_delta: f64,
+    pub supply_line_bonus: f64,
+    pub supply_line_bonus_days: u8,
+    pub local_supply_capacity_bonus: u32,
+    pub local_supply_capacity_bonus_days: u8,
+    pub cooldown_days: u8,
 }
 
 /// 内置政策表
 pub fn default_policies() -> Vec<PolicyEffect> {
     vec![
         PolicyEffect {
-            id: "conscription", name: "颁布征兵令", cost_actions: 1,
+            id: "conscription",
+            name: "颁布征兵令",
+            cost_actions: 1,
             rouge_noir_delta: 5.0,
-            faction_deltas: [("military", 10.0), ("populace", -8.0), ("liberals", -3.0)].iter().cloned().collect(),
-            economic_delta: -5.0, cooldown_days: 5,
+            faction_deltas: [("military", 10.0), ("populace", -8.0), ("liberals", -3.0)]
+                .iter()
+                .cloned()
+                .collect(),
+            economic_delta: -5.0,
+            supply_delta: 0.0,
+            supply_line_bonus: 0.0,
+            supply_line_bonus_days: 0,
+            local_supply_capacity_bonus: 0,
+            local_supply_capacity_bonus_days: 0,
+            cooldown_days: 5,
         },
         PolicyEffect {
-            id: "constitutional_promise", name: "承诺宪政改革", cost_actions: 1,
+            id: "constitutional_promise",
+            name: "承诺宪政改革",
+            cost_actions: 1,
             rouge_noir_delta: -8.0,
-            faction_deltas: [("liberals", 15.0), ("nobility", -5.0), ("populace", 5.0)].iter().cloned().collect(),
-            economic_delta: 0.0, cooldown_days: 10,
+            faction_deltas: [("liberals", 15.0), ("nobility", -5.0), ("populace", 5.0)]
+                .iter()
+                .cloned()
+                .collect(),
+            economic_delta: 0.0,
+            supply_delta: 0.0,
+            supply_line_bonus: 0.0,
+            supply_line_bonus_days: 0,
+            local_supply_capacity_bonus: 0,
+            local_supply_capacity_bonus_days: 0,
+            cooldown_days: 10,
         },
         PolicyEffect {
-            id: "public_speech", name: "发表公开演说", cost_actions: 1,
+            id: "public_speech",
+            name: "发表公开演说",
+            cost_actions: 1,
             rouge_noir_delta: 3.0,
-            faction_deltas: [("populace", 12.0), ("nobility", -3.0)].iter().cloned().collect(),
-            economic_delta: 0.0, cooldown_days: 3,
+            faction_deltas: [("populace", 12.0), ("nobility", -3.0)]
+                .iter()
+                .cloned()
+                .collect(),
+            economic_delta: 0.0,
+            supply_delta: 0.0,
+            supply_line_bonus: 0.0,
+            supply_line_bonus_days: 0,
+            local_supply_capacity_bonus: 0,
+            local_supply_capacity_bonus_days: 0,
+            cooldown_days: 3,
         },
         PolicyEffect {
-            id: "grant_titles", name: "授予贵族头衔", cost_actions: 1,
+            id: "grant_titles",
+            name: "授予贵族头衔",
+            cost_actions: 1,
             rouge_noir_delta: -5.0,
-            faction_deltas: [("nobility", 12.0), ("liberals", -5.0), ("populace", -3.0)].iter().cloned().collect(),
-            economic_delta: 0.0, cooldown_days: 7,
+            faction_deltas: [("nobility", 12.0), ("liberals", -5.0), ("populace", -3.0)]
+                .iter()
+                .cloned()
+                .collect(),
+            economic_delta: 0.0,
+            supply_delta: 0.0,
+            supply_line_bonus: 0.0,
+            supply_line_bonus_days: 0,
+            local_supply_capacity_bonus: 0,
+            local_supply_capacity_bonus_days: 0,
+            cooldown_days: 7,
         },
         PolicyEffect {
-            id: "reduce_taxes", name: "减税措施", cost_actions: 1,
+            id: "reduce_taxes",
+            name: "减税措施",
+            cost_actions: 1,
             rouge_noir_delta: 0.0,
-            faction_deltas: [("populace", 10.0), ("liberals", 3.0)].iter().cloned().collect(),
-            economic_delta: -8.0, cooldown_days: 8,
+            faction_deltas: [("populace", 10.0), ("liberals", 3.0)]
+                .iter()
+                .cloned()
+                .collect(),
+            economic_delta: -8.0,
+            supply_delta: 0.0,
+            supply_line_bonus: 0.0,
+            supply_line_bonus_days: 0,
+            local_supply_capacity_bonus: 0,
+            local_supply_capacity_bonus_days: 0,
+            cooldown_days: 8,
         },
         PolicyEffect {
-            id: "increase_military_budget", name: "增加军费", cost_actions: 1,
+            id: "increase_military_budget",
+            name: "增加军费",
+            cost_actions: 1,
             rouge_noir_delta: 4.0,
-            faction_deltas: [("military", 15.0), ("liberals", -5.0)].iter().cloned().collect(),
-            economic_delta: -10.0, cooldown_days: 5,
+            faction_deltas: [("military", 15.0), ("liberals", -5.0)]
+                .iter()
+                .cloned()
+                .collect(),
+            economic_delta: -10.0,
+            supply_delta: 0.0,
+            supply_line_bonus: 0.0,
+            supply_line_bonus_days: 0,
+            local_supply_capacity_bonus: 0,
+            local_supply_capacity_bonus_days: 0,
+            cooldown_days: 5,
         },
         PolicyEffect {
-            id: "secret_diplomacy", name: "秘密外交", cost_actions: 2,
+            id: "requisition_supplies",
+            name: "征用沿线仓储",
+            cost_actions: 1,
+            rouge_noir_delta: 4.0,
+            faction_deltas: [("military", 6.0), ("populace", -6.0), ("liberals", -4.0)]
+                .iter()
+                .cloned()
+                .collect(),
+            economic_delta: -3.0,
+            supply_delta: 18.0,
+            supply_line_bonus: 0.0,
+            supply_line_bonus_days: 0,
+            local_supply_capacity_bonus: 0,
+            local_supply_capacity_bonus_days: 0,
+            cooldown_days: 6,
+        },
+        PolicyEffect {
+            id: "stabilize_supply_lines",
+            name: "整顿驿站运输",
+            cost_actions: 1,
+            rouge_noir_delta: -2.0,
+            faction_deltas: [("military", 5.0), ("liberals", -2.0), ("populace", -3.0)]
+                .iter()
+                .cloned()
+                .collect(),
+            economic_delta: -2.0,
+            supply_delta: 6.0,
+            supply_line_bonus: 0.18,
+            supply_line_bonus_days: 3,
+            local_supply_capacity_bonus: 0,
+            local_supply_capacity_bonus_days: 0,
+            cooldown_days: 6,
+        },
+        PolicyEffect {
+            id: "establish_forward_depot",
+            name: "建立前沿粮秣站",
+            cost_actions: 1,
+            rouge_noir_delta: -1.0,
+            faction_deltas: [("military", 4.0), ("populace", -2.0), ("liberals", -1.0)]
+                .iter()
+                .cloned()
+                .collect(),
+            economic_delta: -3.0,
+            supply_delta: 4.0,
+            supply_line_bonus: 0.0,
+            supply_line_bonus_days: 0,
+            local_supply_capacity_bonus: 4,
+            local_supply_capacity_bonus_days: 4,
+            cooldown_days: 6,
+        },
+        PolicyEffect {
+            id: "secure_regional_corridor",
+            name: "巩固区域走廊",
+            cost_actions: 1,
+            rouge_noir_delta: -1.0,
+            faction_deltas: [("military", 5.0), ("populace", -4.0), ("liberals", -2.0)]
+                .iter()
+                .cloned()
+                .collect(),
+            economic_delta: -4.0,
+            supply_delta: 8.0,
+            supply_line_bonus: 0.12,
+            supply_line_bonus_days: 4,
+            local_supply_capacity_bonus: 3,
+            local_supply_capacity_bonus_days: 4,
+            cooldown_days: 7,
+        },
+        PolicyEffect {
+            id: "secret_diplomacy",
+            name: "秘密外交",
+            cost_actions: 2,
             rouge_noir_delta: -3.0,
             faction_deltas: HashMap::new(),
-            economic_delta: 0.0, cooldown_days: 15,
+            economic_delta: 0.0,
+            supply_delta: 0.0,
+            supply_line_bonus: 0.0,
+            supply_line_bonus_days: 0,
+            local_supply_capacity_bonus: 0,
+            local_supply_capacity_bonus_days: 0,
+            cooldown_days: 15,
         },
         PolicyEffect {
-            id: "print_money", name: "印钞应急", cost_actions: 1,
+            id: "print_money",
+            name: "印钞应急",
+            cost_actions: 1,
             rouge_noir_delta: 8.0,
-            faction_deltas: [("populace", -5.0), ("liberals", -8.0), ("nobility", -5.0)].iter().cloned().collect(),
-            economic_delta: 15.0, cooldown_days: 20,
+            faction_deltas: [("populace", -5.0), ("liberals", -8.0), ("nobility", -5.0)]
+                .iter()
+                .cloned()
+                .collect(),
+            economic_delta: 15.0,
+            supply_delta: 0.0,
+            supply_line_bonus: 0.0,
+            supply_line_bonus_days: 0,
+            local_supply_capacity_bonus: 0,
+            local_supply_capacity_bonus_days: 0,
+            cooldown_days: 20,
         },
     ]
 }
@@ -135,7 +293,8 @@ impl Default for PoliticsState {
 impl PoliticsState {
     /// 重新计算合法性（调用任何改变势力支持度的操作后调用）
     pub fn recalculate_legitimacy(&mut self) {
-        self.legitimacy = FACTION_WEIGHTS.iter()
+        self.legitimacy = FACTION_WEIGHTS
+            .iter()
             .map(|(id, w)| self.faction_support.get(*id).copied().unwrap_or(0.0) * w)
             .sum();
     }
@@ -156,7 +315,10 @@ impl PoliticsState {
     /// 执行政策（返回执行成功与否及原因）
     pub fn enact_policy(&mut self, policy: &PolicyEffect) -> Result<(), String> {
         if self.actions_remaining < policy.cost_actions {
-            return Err(format!("行动点不足（需要{}，剩余{}）", policy.cost_actions, self.actions_remaining));
+            return Err(format!(
+                "行动点不足（需要{}，剩余{}）",
+                policy.cost_actions, self.actions_remaining
+            ));
         }
         if self.cooldowns.get(policy.id).copied().unwrap_or(0) > 0 {
             return Err(format!("政策冷却中（剩余{}天）", self.cooldowns[policy.id]));
@@ -172,7 +334,8 @@ impl PoliticsState {
             self.modify_faction(faction_id, modified_delta);
         }
         self.economic_index = (self.economic_index + policy.economic_delta).clamp(0.0, 100.0);
-        self.cooldowns.insert(policy.id.to_string(), policy.cooldown_days);
+        self.cooldowns
+            .insert(policy.id.to_string(), policy.cooldown_days);
 
         Ok(())
     }
@@ -209,7 +372,11 @@ impl PoliticsState {
         self.recalculate_legitimacy();
 
         // 经济自然微弱恢复（Rouge过高时受损）
-        let eco_drift = if self.rouge_noir_index > 30.0 { 0.2 } else { 0.5 };
+        let eco_drift = if self.rouge_noir_index > 30.0 {
+            0.2
+        } else {
+            0.5
+        };
         self.economic_index = (self.economic_index + eco_drift).min(100.0);
 
         // 重置行动点
@@ -223,8 +390,11 @@ impl PoliticsState {
 
     /// 检测危机：返回跌破 CRISIS_THRESHOLD 的势力列表
     pub fn critical_factions(&self) -> Vec<&str> {
-        FACTION_IDS.iter()
-            .filter(|id| self.faction_support.get(**id).copied().unwrap_or(100.0) < CRISIS_THRESHOLD)
+        FACTION_IDS
+            .iter()
+            .filter(|id| {
+                self.faction_support.get(**id).copied().unwrap_or(100.0) < CRISIS_THRESHOLD
+            })
             .copied()
             .collect()
     }
@@ -241,6 +411,7 @@ impl PoliticsState {
 mod tests {
     use super::*;
 
+    // 政治系统测试统一采用英文函数名，中文说明继续由注释和断言承载。
     fn fresh_state() -> PoliticsState {
         PoliticsState::default()
     }
@@ -250,14 +421,14 @@ mod tests {
     }
 
     #[test]
-    fn 初始合法性计算正确() {
+    fn initial_legitimacy_is_correct() {
         let s = fresh_state();
         // 0.25*45 + 0.20*30 + 0.30*65 + 0.25*70 = 11.25+6+19.5+17.5 = 54.25
         assert!((s.legitimacy - 54.25).abs() < 0.01);
     }
 
     #[test]
-    fn 征兵令提升军方降低民众() {
+    fn conscription_raises_military_and_lowers_populace() {
         let mut s = fresh_state();
         let p = policy("conscription");
         s.enact_policy(&p).unwrap();
@@ -267,9 +438,9 @@ mod tests {
     }
 
     #[test]
-    fn 宪政承诺降低rouge_noir() {
+    fn constitutional_promise_lowers_rouge_noir() {
         let mut s = fresh_state();
-        s.shift_rouge_noir(20.0);  // 先让Rouge偏高
+        s.shift_rouge_noir(20.0); // 先让Rouge偏高
         let p = policy("constitutional_promise");
         s.enact_policy(&p).unwrap();
         assert!(s.rouge_noir_index < 20.0);
@@ -277,7 +448,7 @@ mod tests {
     }
 
     #[test]
-    fn 行动点不足时政策失败() {
+    fn policy_fails_without_action_points() {
         let mut s = fresh_state();
         s.actions_remaining = 0;
         let p = policy("conscription");
@@ -285,12 +456,12 @@ mod tests {
     }
 
     #[test]
-    fn 政策冷却生效() {
+    fn policy_cooldown_is_applied() {
         let mut s = fresh_state();
-        let p = policy("public_speech");  // 冷却3天
+        let p = policy("public_speech"); // 冷却3天
         s.enact_policy(&p).unwrap();
-        assert!(s.enact_policy(&p).is_err());  // 立即再执行应失败
-        // 过3天后可再次执行
+        assert!(s.enact_policy(&p).is_err()); // 立即再执行应失败
+                                              // 过3天后可再次执行
         s.daily_tick();
         s.daily_tick();
         s.daily_tick();
@@ -298,7 +469,51 @@ mod tests {
     }
 
     #[test]
-    fn 派系支持不超出0到100范围() {
+    fn requisition_supplies_is_defined_as_supply_policy() {
+        let p = policy("requisition_supplies");
+        assert_eq!(p.supply_delta, 18.0);
+        assert_eq!(p.cooldown_days, 6);
+        assert!(p.faction_deltas["military"] > 0.0);
+        assert!(p.faction_deltas["populace"] < 0.0);
+    }
+
+    #[test]
+    fn stabilize_supply_lines_is_defined_as_supply_line_policy() {
+        let p = policy("stabilize_supply_lines");
+        assert_eq!(p.supply_delta, 6.0);
+        assert_eq!(p.supply_line_bonus, 0.18);
+        assert_eq!(p.supply_line_bonus_days, 3);
+        assert_eq!(p.cooldown_days, 6);
+        assert!(p.faction_deltas["military"] > 0.0);
+        assert!(p.faction_deltas["populace"] < 0.0);
+    }
+
+    #[test]
+    fn forward_depot_is_defined_as_local_capacity_policy() {
+        let p = policy("establish_forward_depot");
+        assert_eq!(p.supply_delta, 4.0);
+        assert_eq!(p.local_supply_capacity_bonus, 4);
+        assert_eq!(p.local_supply_capacity_bonus_days, 4);
+        assert_eq!(p.cooldown_days, 6);
+        assert!(p.faction_deltas["military"] > 0.0);
+        assert!(p.faction_deltas["populace"] < 0.0);
+    }
+
+    #[test]
+    fn regional_corridor_is_defined_as_composite_supply_policy() {
+        let p = policy("secure_regional_corridor");
+        assert_eq!(p.supply_delta, 8.0);
+        assert_eq!(p.supply_line_bonus, 0.12);
+        assert_eq!(p.supply_line_bonus_days, 4);
+        assert_eq!(p.local_supply_capacity_bonus, 3);
+        assert_eq!(p.local_supply_capacity_bonus_days, 4);
+        assert_eq!(p.cooldown_days, 7);
+        assert!(p.faction_deltas["military"] > 0.0);
+        assert!(p.faction_deltas["populace"] < 0.0);
+    }
+
+    #[test]
+    fn faction_support_stays_within_bounds() {
         let mut s = fresh_state();
         s.modify_faction("liberals", 200.0);
         assert_eq!(s.faction_support["liberals"], 100.0);
@@ -307,17 +522,17 @@ mod tests {
     }
 
     #[test]
-    fn 两派崩溃触发政治崩溃() {
+    fn two_collapsed_factions_trigger_political_collapse() {
         let mut s = fresh_state();
-        s.modify_faction("liberals", -45.0);  // → 0
-        s.modify_faction("nobility", -30.0);  // → 0
+        s.modify_faction("liberals", -45.0); // → 0
+        s.modify_faction("nobility", -30.0); // → 0
         assert!(s.is_collapsed());
     }
 
     #[test]
-    fn 每日自然恢复向均衡值靠拢() {
+    fn daily_recovery_moves_toward_balance() {
         let mut s = fresh_state();
-        s.modify_faction("populace", -30.0);  // → 35 (均衡50)
+        s.modify_faction("populace", -30.0); // → 35 (均衡50)
         let before = s.faction_support["populace"];
         s.daily_tick();
         let after = s.faction_support["populace"];
@@ -325,20 +540,23 @@ mod tests {
     }
 
     #[test]
-    fn rouge_偏高时民众效果放大() {
+    fn high_rouge_bias_amplifies_populace_effect() {
         let mut s_neutral = fresh_state();
-        let mut s_rouge   = fresh_state();
-        s_rouge.shift_rouge_noir(60.0);  // 强烈偏Rouge
+        let mut s_rouge = fresh_state();
+        s_rouge.shift_rouge_noir(60.0); // 强烈偏Rouge
 
-        let p = policy("public_speech");  // 含 populace +12
+        let p = policy("public_speech"); // 含 populace +12
 
         let pop_before_neutral = s_neutral.faction_support["populace"];
-        let pop_before_rouge   = s_rouge.faction_support["populace"];
+        let pop_before_rouge = s_rouge.faction_support["populace"];
         s_neutral.enact_policy(&p).unwrap();
         s_rouge.enact_policy(&p).unwrap();
 
         let pop_gain_neutral = s_neutral.faction_support["populace"] - pop_before_neutral;
-        let pop_gain_rouge   = s_rouge.faction_support["populace"]   - pop_before_rouge;
-        assert!(pop_gain_rouge > pop_gain_neutral, "Rouge状态下民众效果应放大");
+        let pop_gain_rouge = s_rouge.faction_support["populace"] - pop_before_rouge;
+        assert!(
+            pop_gain_rouge > pop_gain_neutral,
+            "Rouge状态下民众效果应放大"
+        );
     }
 }

@@ -1,5 +1,5 @@
 {
-  "_comment": "Cent Jours — Design Tokens v0.2 (对应 plan.md §3.7.2 + §3.7.5)",
+  "_comment": "Cent Jours — Design Tokens v0.2 (对应 docs/plans/product_plan.md §3.7.2 + §3.7.5)",
   "_usage": "此文件是 Godot theme、HTML/CSS prototype、AI prompt 的单一来源",
 
   "color": {

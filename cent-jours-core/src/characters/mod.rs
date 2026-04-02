@@ -1,14 +1,12 @@
-pub mod order_deviation;
 pub mod network;
+pub mod order_deviation;
 
-pub use order_deviation::{
-    Temperament, GeneralData, DeviationResult,
-    calculate_deviation, DEFECTION_THRESHOLD,
-    ney_waterloo_general, grouchy_wavre_general,
-};
 pub use network::{
-    CharacterNetwork, NeyDefectionCondition, GrouchyArrivalCondition,
-    LoyaltyEvent, RelationshipEvent,
-    historical_network_day1, loyalty_delta_from_battle,
-    LOYALTY_CRISIS_THRESHOLD, LOYALTY_ABSOLUTE_THRESHOLD,
+    historical_network_day1, loyalty_delta_from_battle, CharacterNetwork, GrouchyArrivalCondition,
+    LoyaltyEvent, NeyDefectionCondition, RelationshipEvent, LOYALTY_ABSOLUTE_THRESHOLD,
+    LOYALTY_CRISIS_THRESHOLD,
+};
+pub use order_deviation::{
+    calculate_deviation, grouchy_wavre_general, ney_waterloo_general, DeviationResult, GeneralData,
+    Temperament, DEFECTION_THRESHOLD,
 };

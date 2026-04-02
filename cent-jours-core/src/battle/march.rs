@@ -1,30 +1,30 @@
 //! 行军系统模块
 //! 节点移动、强行军、疲劳恢复、补给管理、Dijkstra路径查找
 
-use std::collections::{HashMap, BinaryHeap, HashSet};
-use std::cmp::Reverse;
-use serde::Deserialize;
 use super::resolver::Terrain;
+use serde::Deserialize;
+use std::cmp::Reverse;
+use std::collections::{BinaryHeap, HashMap, HashSet};
 
 // ── 地图数据结构 ──────────────────────────────────────
 
 /// 从 map_nodes.json 反序列化的单个节点
 #[derive(Debug, Clone, Deserialize)]
 pub struct MapNode {
-    pub id:               String,
-    pub name:             String,
-    pub terrain:          String,
-    pub defense_bonus:    f64,
-    pub supply_capacity:  u32,
-    pub connections:      Vec<String>,
+    pub id: String,
+    pub name: String,
+    pub terrain: String,
+    pub defense_bonus: f64,
+    pub supply_capacity: u32,
+    pub connections: Vec<String>,
 }
 
 /// 从 map_nodes.json 反序列化的边（用于加权路径查找）
 #[derive(Debug, Clone, Deserialize)]
 pub struct MapEdge {
-    pub from:         String,
-    pub to:           String,
-    pub distance:     u32,
+    pub from: String,
+    pub to: String,
+    pub distance: u32,
     pub road_quality: String,
 }
 
@@ -36,11 +36,17 @@ pub struct MapGraph {
 }
 
 impl MapGraph {
+    /// 获取某节点的直接相邻节点列表（供 UI 与行军校验复用）
+    pub fn neighbors_of(&self, node_id: &str) -> Vec<String> {
+        self.edges
+            .get(node_id)
+            .map(|neighbors| neighbors.iter().map(|(id, _)| id.clone()).collect())
+            .unwrap_or_default()
+    }
+
     pub fn new(nodes: Vec<MapNode>, edges: Vec<MapEdge>) -> Self {
-        let node_map: HashMap<String, MapNode> = nodes
-            .into_iter()
-            .map(|n| (n.id.clone(), n))
-            .collect();
+        let node_map: HashMap<String, MapNode> =
+            nodes.into_iter().map(|n| (n.id.clone(), n)).collect();
 
         let mut adj: HashMap<String, Vec<(String, u32)>> = HashMap::new();
         for edge in &edges {
@@ -52,30 +58,43 @@ impl MapGraph {
                 .or_default()
                 .push((edge.from.clone(), edge.distance));
         }
-        Self { nodes: node_map, edges: adj }
+        Self {
+            nodes: node_map,
+            edges: adj,
+        }
     }
 
     /// 获取节点地形
     pub fn terrain_of(&self, node_id: &str) -> Terrain {
-        let t = self.nodes.get(node_id)
+        let t = self
+            .nodes
+            .get(node_id)
             .map(|n| n.terrain.as_str())
             .unwrap_or("plains");
         match t {
-            "mountains"     => Terrain::Mountains,
-            "hills"         => Terrain::Hills,
-            "forest"        => Terrain::Forest,
-            "urban"         => Terrain::Urban,
-            "ridgeline"     => Terrain::Ridgeline,
-            "river_junction"=> Terrain::RiverJunction,
-            "coastal"       => Terrain::Coastal,
-            "fortress"      => Terrain::Fortress,
-            _               => Terrain::Plains,
+            "mountains" => Terrain::Mountains,
+            "hills" => Terrain::Hills,
+            "forest" => Terrain::Forest,
+            "urban" => Terrain::Urban,
+            "ridgeline" => Terrain::Ridgeline,
+            "river_junction" => Terrain::RiverJunction,
+            "coastal" => Terrain::Coastal,
+            "fortress" => Terrain::Fortress,
+            _ => Terrain::Plains,
         }
+    }
+
+    pub fn node_name(&self, node_id: &str) -> String {
+        self.nodes
+            .get(node_id)
+            .map(|node| node.name.clone())
+            .unwrap_or_else(|| node_id.to_string())
     }
 
     /// 节点是否相邻（直接连接）
     pub fn is_adjacent(&self, from: &str, to: &str) -> bool {
-        self.edges.get(from)
+        self.edges
+            .get(from)
             .map(|neighbors| neighbors.iter().any(|(n, _)| n == to))
             .unwrap_or(false)
     }
@@ -118,7 +137,9 @@ impl MapGraph {
     /// 两节点间节点距离（边数，不含权重）
     pub fn node_distance(&self, from: &str, to: &str) -> u32 {
         // BFS
-        if from == to { return 0; }
+        if from == to {
+            return 0;
+        }
         let mut queue = std::collections::VecDeque::new();
         let mut visited = HashSet::new();
         queue.push_back((from.to_string(), 0u32));
@@ -126,7 +147,9 @@ impl MapGraph {
         while let Some((node, dist)) = queue.pop_front() {
             if let Some(neighbors) = self.edges.get(&node) {
                 for (n, _) in neighbors {
-                    if n == to { return dist + 1; }
+                    if n == to {
+                        return dist + 1;
+                    }
                     if !visited.contains(n) {
                         visited.insert(n.clone());
                         queue.push_back((n.clone(), dist + 1));
@@ -134,54 +157,95 @@ impl MapGraph {
                 }
             }
         }
-        u32::MAX  // 不可达
+        u32::MAX // 不可达
     }
 
     pub fn supply_capacity_of(&self, node_id: &str) -> u32 {
-        self.nodes.get(node_id).map(|n| n.supply_capacity).unwrap_or(1)
+        self.nodes
+            .get(node_id)
+            .map(|n| n.supply_capacity)
+            .unwrap_or(1)
+    }
+
+    pub fn supply_role_of(&self, node_id: &str) -> &'static str {
+        self.nodes
+            .get(node_id)
+            .map(|n| supply_role_for_capacity(n.supply_capacity))
+            .unwrap_or("frontline_outpost")
+    }
+
+    pub fn supply_role_label_of(&self, node_id: &str) -> &'static str {
+        supply_role_label(self.supply_role_of(node_id))
+    }
+}
+
+pub fn supply_role_for_capacity(capacity: u32) -> &'static str {
+    match capacity {
+        0..=2 => "frontline_outpost",
+        3..=5 => "transit_stop",
+        6..=9 => "regional_depot",
+        _ => "strategic_depot",
+    }
+}
+
+pub fn supply_role_label(role: &str) -> &'static str {
+    match role {
+        "frontline_outpost" => "前沿消耗点",
+        "transit_stop" => "沿线转运点",
+        "regional_depot" => "区域整补点",
+        "strategic_depot" => "战略大仓",
+        _ => "前沿消耗点",
     }
 }
 
 // ── 行军参数常量 ──────────────────────────────────────
 
-pub const BASE_MOVEMENT:            u32 = 1;
-pub const FORCED_MARCH_BONUS:       u32 = 1;
-pub const FORCED_MARCH_FATIGUE:     f64 = 20.0;
-pub const FORCED_MARCH_MORALE:      f64 = -10.0;
-pub const NORMAL_FATIGUE_RECOVERY:  f64 = 15.0;
-pub const REST_FATIGUE_RECOVERY:    f64 = 30.0;
-pub const SUPPLY_CONSUMPTION_RATE:  f64 = 0.1;   // 每日消耗/兵力比
+pub const BASE_MOVEMENT: u32 = 1;
+pub const FORCED_MARCH_BONUS: u32 = 1;
+pub const FORCED_MARCH_FATIGUE: f64 = 20.0;
+pub const FORCED_MARCH_MORALE: f64 = -10.0;
+pub const NORMAL_FATIGUE_RECOVERY: f64 = 15.0;
+pub const REST_FATIGUE_RECOVERY: f64 = 30.0;
+pub const SUPPLY_OK_THRESHOLD: f64 = 45.0;
+pub const SUPPLY_TROOP_STEP: f64 = 12_000.0;
+pub const MIN_SUPPLY_DEMAND: f64 = 4.0;
+pub const BASE_LINE_SUPPLY: f64 = 2.0;
+pub const SUPPLY_BALANCE_MULTIPLIER: f64 = 4.0;
+pub const MAX_DAILY_SUPPLY_GAIN: f64 = 12.0;
+pub const MAX_DAILY_SUPPLY_LOSS: f64 = -15.0;
 
 // ── 行军输入/输出 ─────────────────────────────────────
 
 #[derive(Debug, Clone)]
 pub struct ArmyState {
-    pub id:       String,
+    pub id: String,
     pub location: String,
-    pub troops:   u32,
-    pub morale:   f64,
-    pub fatigue:  f64,
-    pub supply:   f64,
+    pub troops: u32,
+    pub morale: f64,
+    pub fatigue: f64,
+    pub supply: f64,
 }
 
 #[derive(Debug, Clone)]
 pub struct MoveResult {
-    pub success:       bool,
-    pub reason:        Option<String>,
-    pub new_location:  String,
+    pub success: bool,
+    pub reason: Option<String>,
+    pub new_location: String,
     pub fatigue_delta: f64,
-    pub morale_delta:  f64,
-    pub new_fatigue:   f64,
-    pub new_morale:    f64,
-    pub forced_march:  bool,
+    pub morale_delta: f64,
+    pub new_fatigue: f64,
+    pub new_morale: f64,
+    pub forced_march: bool,
 }
 
 #[derive(Debug, Clone)]
 pub struct SupplyResult {
-    pub supply_ok:    bool,
+    pub supply_ok: bool,
     pub supply_delta: f64,
-    pub demand:       f64,
-    pub available:    f64,
+    pub demand: f64,
+    pub available: f64,
+    pub new_supply: f64,
+    pub line_efficiency: f64,
 }
 
 // ── 核心行军函数 ──────────────────────────────────────
@@ -192,12 +256,7 @@ pub struct SupplyResult {
 /// - `target_node`：目标节点 id
 /// - `forced`：是否强行军
 /// - `map`：地图图结构
-pub fn move_army(
-    army: &ArmyState,
-    target_node: &str,
-    forced: bool,
-    map: &MapGraph,
-) -> MoveResult {
+pub fn move_army(army: &ArmyState, target_node: &str, forced: bool, map: &MapGraph) -> MoveResult {
     // 验证相邻
     if !map.is_adjacent(&army.location, target_node) {
         return MoveResult {
@@ -205,9 +264,9 @@ pub fn move_army(
             reason: Some(format!("{} 与 {} 不相邻", army.location, target_node)),
             new_location: army.location.clone(),
             fatigue_delta: 0.0,
-            morale_delta:  0.0,
+            morale_delta: 0.0,
             new_fatigue: army.fatigue,
-            new_morale:  army.morale,
+            new_morale: army.morale,
             forced_march: false,
         };
     }
@@ -222,7 +281,7 @@ pub fn move_army(
     };
 
     let new_fatigue = (army.fatigue + fatigue_delta).clamp(0.0, 100.0);
-    let new_morale  = (army.morale  + morale_delta ).clamp(0.0, 100.0);
+    let new_morale = (army.morale + morale_delta).clamp(0.0, 100.0);
 
     MoveResult {
         success: true,
@@ -239,25 +298,50 @@ pub fn move_army(
 /// 驻扎休整（不移动）
 pub fn rest_army(army: &ArmyState) -> (f64, f64) {
     // 返回 (fatigue_recovery, morale_recovery)
-    let fat_rec = if army.supply > 50.0 {
+    let fat_rec = if army.supply > SUPPLY_OK_THRESHOLD {
         REST_FATIGUE_RECOVERY + 10.0
     } else {
         REST_FATIGUE_RECOVERY
     };
-    let mor_rec = if army.supply > 50.0 { 10.0 } else { 5.0 };
+    let mor_rec = if army.supply > SUPPLY_OK_THRESHOLD {
+        10.0
+    } else {
+        5.0
+    };
     (fat_rec, mor_rec)
 }
 
 /// 更新补给状态
-pub fn update_supply(army: &ArmyState, supply_lines_intact: bool, map: &MapGraph) -> SupplyResult {
-    let capacity  = map.supply_capacity_of(&army.location) as f64;
-    let demand    = army.troops as f64 * SUPPLY_CONSUMPTION_RATE;
-    let available = capacity * if supply_lines_intact { 1.0 } else { 0.3 };
+pub fn update_supply(army: &ArmyState, line_efficiency: f64, map: &MapGraph) -> SupplyResult {
+    update_supply_with_capacity(
+        army,
+        line_efficiency,
+        map.supply_capacity_of(&army.location),
+    )
+}
 
-    let supply_ok    = available >= demand * 0.5;
-    let supply_delta = available.min(demand) - army.supply;
+pub fn update_supply_with_capacity(
+    army: &ArmyState,
+    line_efficiency: f64,
+    supply_capacity: u32,
+) -> SupplyResult {
+    let capacity = supply_capacity as f64;
+    let demand = (army.troops as f64 / SUPPLY_TROOP_STEP).max(MIN_SUPPLY_DEMAND)
+        * (1.0 + army.fatigue / 250.0);
+    let available = capacity * line_efficiency.clamp(0.2, 1.2) + BASE_LINE_SUPPLY;
+    let supply_delta = ((available - demand) * SUPPLY_BALANCE_MULTIPLIER)
+        .clamp(MAX_DAILY_SUPPLY_LOSS, MAX_DAILY_SUPPLY_GAIN);
+    let new_supply = (army.supply + supply_delta).clamp(0.0, 100.0);
+    let supply_ok = new_supply >= SUPPLY_OK_THRESHOLD;
 
-    SupplyResult { supply_ok, supply_delta, demand, available }
+    SupplyResult {
+        supply_ok,
+        supply_delta,
+        demand,
+        available,
+        new_supply,
+        line_efficiency,
+    }
 }
 
 // ── 单元测试 ──────────────────────────────────────────
@@ -266,60 +350,108 @@ pub fn update_supply(army: &ArmyState, supply_lines_intact: bool, map: &MapGraph
 mod tests {
     use super::*;
 
+    // 行军测试函数名统一成英文，中文业务含义继续留在注释和断言里。
     fn simple_map() -> MapGraph {
         let nodes = vec![
             MapNode {
-                id: "paris".into(), name: "Paris".into(),
-                terrain: "urban".into(), defense_bonus: 1.5,
-                supply_capacity: 20, connections: vec!["laon".into(), "fontainebleau".into()],
+                id: "paris".into(),
+                name: "Paris".into(),
+                terrain: "urban".into(),
+                defense_bonus: 1.5,
+                supply_capacity: 20,
+                connections: vec!["laon".into(), "fontainebleau".into()],
             },
             MapNode {
-                id: "laon".into(), name: "Laon".into(),
-                terrain: "hills".into(), defense_bonus: 1.4,
-                supply_capacity: 5, connections: vec!["paris".into(), "maubeuge".into()],
+                id: "laon".into(),
+                name: "Laon".into(),
+                terrain: "hills".into(),
+                defense_bonus: 1.4,
+                supply_capacity: 5,
+                connections: vec!["paris".into(), "maubeuge".into()],
             },
             MapNode {
-                id: "fontainebleau".into(), name: "Fontainebleau".into(),
-                terrain: "forest".into(), defense_bonus: 1.2,
-                supply_capacity: 4, connections: vec!["paris".into()],
+                id: "fontainebleau".into(),
+                name: "Fontainebleau".into(),
+                terrain: "forest".into(),
+                defense_bonus: 1.2,
+                supply_capacity: 4,
+                connections: vec!["paris".into()],
             },
             MapNode {
-                id: "maubeuge".into(), name: "Maubeuge".into(),
-                terrain: "plains".into(), defense_bonus: 1.5,
-                supply_capacity: 5, connections: vec!["laon".into(), "charleroi".into()],
+                id: "maubeuge".into(),
+                name: "Maubeuge".into(),
+                terrain: "plains".into(),
+                defense_bonus: 1.5,
+                supply_capacity: 5,
+                connections: vec!["laon".into(), "charleroi".into()],
             },
             MapNode {
-                id: "charleroi".into(), name: "Charleroi".into(),
-                terrain: "plains".into(), defense_bonus: 1.2,
-                supply_capacity: 6, connections: vec!["maubeuge".into(), "waterloo".into()],
+                id: "charleroi".into(),
+                name: "Charleroi".into(),
+                terrain: "plains".into(),
+                defense_bonus: 1.2,
+                supply_capacity: 6,
+                connections: vec!["maubeuge".into(), "waterloo".into()],
             },
             MapNode {
-                id: "waterloo".into(), name: "Waterloo".into(),
-                terrain: "ridgeline".into(), defense_bonus: 1.3,
-                supply_capacity: 2, connections: vec!["charleroi".into()],
+                id: "waterloo".into(),
+                name: "Waterloo".into(),
+                terrain: "ridgeline".into(),
+                defense_bonus: 1.3,
+                supply_capacity: 2,
+                connections: vec!["charleroi".into()],
             },
         ];
         let edges = vec![
-            MapEdge { from: "paris".into(),       to: "laon".into(),         distance: 2, road_quality: "royal_road".into() },
-            MapEdge { from: "paris".into(),       to: "fontainebleau".into(),distance: 1, road_quality: "royal_road".into() },
-            MapEdge { from: "laon".into(),        to: "maubeuge".into(),     distance: 2, road_quality: "secondary_road".into() },
-            MapEdge { from: "maubeuge".into(),    to: "charleroi".into(),    distance: 1, road_quality: "secondary_road".into() },
-            MapEdge { from: "charleroi".into(),   to: "waterloo".into(),     distance: 2, road_quality: "dirt_road".into() },
+            MapEdge {
+                from: "paris".into(),
+                to: "laon".into(),
+                distance: 2,
+                road_quality: "royal_road".into(),
+            },
+            MapEdge {
+                from: "paris".into(),
+                to: "fontainebleau".into(),
+                distance: 1,
+                road_quality: "royal_road".into(),
+            },
+            MapEdge {
+                from: "laon".into(),
+                to: "maubeuge".into(),
+                distance: 2,
+                road_quality: "secondary_road".into(),
+            },
+            MapEdge {
+                from: "maubeuge".into(),
+                to: "charleroi".into(),
+                distance: 1,
+                road_quality: "secondary_road".into(),
+            },
+            MapEdge {
+                from: "charleroi".into(),
+                to: "waterloo".into(),
+                distance: 2,
+                road_quality: "dirt_road".into(),
+            },
         ];
         MapGraph::new(nodes, edges)
     }
 
     fn army_at(loc: &str) -> ArmyState {
         ArmyState {
-            id: "test_army".into(), location: loc.into(),
-            troops: 60_000, morale: 80.0, fatigue: 20.0, supply: 70.0,
+            id: "test_army".into(),
+            location: loc.into(),
+            troops: 60_000,
+            morale: 80.0,
+            fatigue: 20.0,
+            supply: 70.0,
         }
     }
 
     #[test]
-    fn 普通行军到相邻节点() {
-        let map   = simple_map();
-        let army  = army_at("paris");
+    fn regular_march_to_adjacent_node() {
+        let map = simple_map();
+        let army = army_at("paris");
         let result = move_army(&army, "laon", false, &map);
         assert!(result.success);
         assert_eq!(result.new_location, "laon");
@@ -327,26 +459,26 @@ mod tests {
     }
 
     #[test]
-    fn 强行军增加疲劳() {
-        let map  = simple_map();
+    fn forced_march_increases_fatigue() {
+        let map = simple_map();
         let army = army_at("paris");
         let normal = move_army(&army, "laon", false, &map);
-        let forced = move_army(&army, "laon", true,  &map);
+        let forced = move_army(&army, "laon", true, &map);
         assert!(forced.new_fatigue > normal.new_fatigue);
         assert!(forced.morale_delta < 0.0);
     }
 
     #[test]
-    fn 不相邻节点无法直接移动() {
-        let map  = simple_map();
+    fn non_adjacent_nodes_cannot_move_directly() {
+        let map = simple_map();
         let army = army_at("paris");
         let result = move_army(&army, "waterloo", false, &map);
         assert!(!result.success);
     }
 
     #[test]
-    fn dijkstra路径查找_巴黎到滑铁卢() {
-        let map  = simple_map();
+    fn dijkstra_finds_path_from_paris_to_waterloo() {
+        let map = simple_map();
         let path = map.find_path("paris", "waterloo");
         assert!(path.is_some());
         let (nodes, cost) = path.unwrap();
@@ -358,7 +490,7 @@ mod tests {
     }
 
     #[test]
-    fn 节点距离_巴黎到滑铁卢() {
+    fn node_distance_from_paris_to_waterloo() {
         let map = simple_map();
         let dist = map.node_distance("paris", "waterloo");
         // paris → laon → maubeuge → charleroi → waterloo = 4 跳
@@ -366,34 +498,85 @@ mod tests {
     }
 
     #[test]
-    fn 补给线断裂时供应减少() {
-        let map  = simple_map();
-        let army = army_at("waterloo");  // 远离补给线
-        let intact  = update_supply(&army, true,  &map);
-        let severed = update_supply(&army, false, &map);
+    fn broken_supply_line_reduces_supply() {
+        let map = simple_map();
+        let army = army_at("waterloo"); // 远离补给线
+        let intact = update_supply(&army, 0.9, &map);
+        let severed = update_supply(&army, 0.3, &map);
         assert!(severed.available < intact.available);
+        assert!(severed.new_supply < intact.new_supply);
+    }
+
+    #[test]
+    fn frontline_low_capacity_nodes_consume_supply() {
+        let map = simple_map();
+        let army = army_at("waterloo");
+        let result = update_supply(&army, 0.7, &map);
+
+        assert!(result.supply_delta < 0.0, "滑铁卢低容量节点应难以维持补给");
+        assert!(result.new_supply < army.supply);
+    }
+
+    #[test]
+    fn high_capacity_nodes_restore_supply() {
+        let map = simple_map();
+        let mut army = army_at("paris");
+        army.supply = 40.0;
+        let result = update_supply(&army, 1.1, &map);
+
+        assert!(result.supply_delta > 0.0, "巴黎应具备明显补给恢复能力");
+        assert!(result.new_supply > army.supply);
+    }
+
+    #[test]
+    fn node_capacity_maps_to_supply_role() {
+        let map = simple_map();
+        assert_eq!(map.supply_role_of("waterloo"), "frontline_outpost");
+        assert_eq!(map.supply_role_label_of("waterloo"), "前沿消耗点");
+        assert_eq!(map.supply_role_of("laon"), "transit_stop");
+        assert_eq!(map.supply_role_of("charleroi"), "regional_depot");
+        assert_eq!(map.supply_role_of("paris"), "strategic_depot");
+    }
+
+    #[test]
+    fn temporary_capacity_bonus_changes_supply_result() {
+        let army = army_at("waterloo");
+        let baseline = update_supply_with_capacity(&army, 0.7, 2);
+        let boosted = update_supply_with_capacity(&army, 0.7, 6);
+        assert!(boosted.available > baseline.available);
+        assert!(boosted.new_supply > baseline.new_supply);
     }
 
     // ── rest_army() 直接单元测试 ─────────────────────
 
     #[test]
-    fn 补给充足时休整疲劳恢复40士气恢复10() {
+    fn rest_with_good_supply_recovers_forty_fatigue_and_ten_morale() {
         let army = ArmyState {
-            id: "test".into(), location: "paris".into(),
-            troops: 50_000, morale: 70.0, fatigue: 60.0,
-            supply: 80.0,  // > 50
+            id: "test".into(),
+            location: "paris".into(),
+            troops: 50_000,
+            morale: 70.0,
+            fatigue: 60.0,
+            supply: 80.0, // > 阈值
         };
         let (fat_rec, mor_rec) = rest_army(&army);
-        assert_eq!(fat_rec, REST_FATIGUE_RECOVERY + 10.0, "充足补给疲劳恢复应为40");
+        assert_eq!(
+            fat_rec,
+            REST_FATIGUE_RECOVERY + 10.0,
+            "充足补给疲劳恢复应为40"
+        );
         assert_eq!(mor_rec, 10.0, "充足补给士气恢复应为10");
     }
 
     #[test]
-    fn 补给不足时休整疲劳恢复30士气恢复5() {
+    fn rest_with_low_supply_recovers_thirty_fatigue_and_five_morale() {
         let army = ArmyState {
-            id: "test".into(), location: "waterloo".into(),
-            troops: 50_000, morale: 70.0, fatigue: 60.0,
-            supply: 30.0,  // ≤ 50
+            id: "test".into(),
+            location: "waterloo".into(),
+            troops: 50_000,
+            morale: 70.0,
+            fatigue: 60.0,
+            supply: 30.0, // ≤ 阈值
         };
         let (fat_rec, mor_rec) = rest_army(&army);
         assert_eq!(fat_rec, REST_FATIGUE_RECOVERY, "不足补给疲劳恢复应为30");
@@ -401,25 +584,34 @@ mod tests {
     }
 
     #[test]
-    fn 补给恰好50时取低档() {
-        // supply = 50.0，条件 supply > 50.0 为 false → 低档
+    fn threshold_supply_uses_lower_recovery_tier() {
+        // supply = 阈值，条件 supply > 阈值 为 false → 低档
         let army = ArmyState {
-            id: "test".into(), location: "paris".into(),
-            troops: 50_000, morale: 70.0, fatigue: 60.0,
-            supply: 50.0,
+            id: "test".into(),
+            location: "paris".into(),
+            troops: 50_000,
+            morale: 70.0,
+            fatigue: 60.0,
+            supply: SUPPLY_OK_THRESHOLD,
         };
         let (fat_rec, mor_rec) = rest_army(&army);
-        assert_eq!(fat_rec, REST_FATIGUE_RECOVERY, "supply=50时应取低档疲劳恢复");
-        assert_eq!(mor_rec, 5.0, "supply=50时应取低档士气恢复");
+        assert_eq!(
+            fat_rec, REST_FATIGUE_RECOVERY,
+            "supply=阈值时应取低档疲劳恢复"
+        );
+        assert_eq!(mor_rec, 5.0, "supply=阈值时应取低档士气恢复");
     }
 
     #[test]
-    fn 休整恢复量高于强行军消耗() {
+    fn rest_recovery_exceeds_forced_march_cost() {
         // 休整疲劳恢复(30+) 应远大于强行军消耗(20)
         let army = ArmyState {
-            id: "test".into(), location: "paris".into(),
-            troops: 50_000, morale: 70.0, fatigue: 60.0,
-            supply: 20.0,  // 低档
+            id: "test".into(),
+            location: "paris".into(),
+            troops: 50_000,
+            morale: 70.0,
+            fatigue: 60.0,
+            supply: 20.0, // 低档
         };
         let (fat_rec, _) = rest_army(&army);
         assert!(

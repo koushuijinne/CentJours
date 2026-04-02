@@ -27,11 +27,60 @@ var current_phase: String = "dawn"  # dawn / action / dusk
 var armies: Dictionary = {}         # army_id -> ArmyData
 var map_control: Dictionary = {}    # node_id -> controller ("napoleon" / "enemy" / "neutral")
 var napoleon_location: String = "golfe_juan"
+var available_march_targets: Array[String] = []
+var forward_depot_location: String = ""
+var forward_depot_capacity_bonus: int = 0
+var forward_depot_days: int = 0
+# 下面这组字段是 Rust `get_state()` 暴露给前端的扁平后勤摘要缓存。
+# 约束很明确：GameState 只缓存，不在 GDScript 侧二次推导，避免不同 UI 面板各自重算后漂移。
+var logistics_posture_id: String = ""
+var logistics_posture_label: String = ""
+var logistics_focus_title: String = ""
+var logistics_focus_detail: String = ""
+var logistics_focus_short: String = ""
+var logistics_objective_id: String = ""
+var logistics_objective_label: String = ""
+var logistics_objective_target_role: String = ""
+var logistics_objective_target_role_label: String = ""
+var logistics_objective_detail: String = ""
+var logistics_objective_short: String = ""
+var logistics_action_plan_title: String = ""
+var logistics_action_plan_detail: String = ""
+var logistics_action_plan_short: String = ""
+var logistics_primary_action_id: String = ""
+var logistics_primary_action_label: String = ""
+var logistics_primary_action_reason: String = ""
+var logistics_primary_action_target: String = ""
+var logistics_primary_action_target_label: String = ""
+var logistics_secondary_action_id: String = ""
+var logistics_secondary_action_label: String = ""
+var logistics_secondary_action_reason: String = ""
+var logistics_tempo_plan_title: String = ""
+var logistics_tempo_plan_detail: String = ""
+var logistics_tempo_plan_short: String = ""
+var logistics_route_chain_title: String = ""
+var logistics_route_chain_detail: String = ""
+var logistics_route_chain_short: String = ""
+var logistics_regional_pressure_id: String = ""
+var logistics_regional_pressure_label: String = ""
+var logistics_regional_pressure_title: String = ""
+var logistics_regional_pressure_detail: String = ""
+var logistics_regional_pressure_short: String = ""
+var logistics_regional_task_id: String = ""
+var logistics_regional_task_label: String = ""
+var logistics_regional_task_title: String = ""
+var logistics_regional_task_detail: String = ""
+var logistics_regional_task_short: String = ""
+var logistics_regional_task_progress_label: String = ""
+var logistics_regional_task_reward_label: String = ""
+var logistics_runway_days: int = -1
+var logistics_runway_label: String = ""
 
 # 军队摘要（从 CentJoursEngine.get_state() 同步，只读缓存）
 var total_troops: int   = 6000   # 当前总兵力
 var avg_morale:   float = 70.0   # 平均士气 0-100
 var avg_fatigue:  float = 20.0   # 平均疲劳 0-100
+var supply:       float = 60.0   # 当前补给值 0-100
 var victories:    int   = 0      # 已赢得的战役场次
 
 # ── 政治状态 ──────────────────────────────────────────
@@ -48,17 +97,32 @@ var faction_support: Dictionary = {
 var legitimacy: float = 50.0        # 整体合法性，来自四势力的加权平均
 var economic_index: float = 50.0    # 经济状况，影响民心和军费
 var actions_remaining: int = 2      # 每回合可执行的政策行动数
+var maneuver_available: bool = true # 今日是否还可执行一次行军/战役/休整
 var policy_cooldowns: Dictionary = {}  # 政策冷却缓存（policy_id → 剩余天数），由 TurnManager 从引擎同步
 
 # ── 将领状态 ──────────────────────────────────────────
 var characters: Dictionary = {}     # character_id -> CharacterData（运行时状态）
 
 # ── 叙事状态 ──────────────────────────────────────────
-var stendhal_diary: Array = []      # 每日记录
+var stendhal_diary: Array = []      # TODO(history): 迁移为 Bertrand 宫廷总管日记后同步改字段名
 var triggered_events: Array = []    # 已触发的历史事件 id 列表
 
 # ── 难度 ──────────────────────────────────────────────
 var difficulty: String = "borodino"  # elba / borodino / austerlitz
+
+# ── 决策追踪（用于失败归因） ─────────────────────────
+# 记录关键决策节点，在游戏结束时用于复盘
+# 每条记录格式: { "day": int, "type": String, "desc": String }
+var key_decisions: Array = []
+const MAX_KEY_DECISIONS: int = 20
+
+func record_key_decision(day: int, decision_type: String, description: String) -> void:
+	key_decisions.append({"day": day, "type": decision_type, "desc": description})
+	if key_decisions.size() > MAX_KEY_DECISIONS:
+		key_decisions.pop_front()
+
+func clear_key_decisions() -> void:
+	key_decisions.clear()
 
 # ── 初始化 ────────────────────────────────────────────
 func _ready() -> void:
@@ -93,7 +157,7 @@ func _load_map() -> void:
 	if err != OK:
 		push_error("map_nodes.json 解析失败")
 		return
-	# 初始化地图控制权
+	# 初始化地图控制权。这里仍是前端默认值；正式局内控制权以后续引擎同步为准。
 	for node_data in json.data["nodes"]:
 		var nid: String = node_data["id"]
 		# 法国境内初始为拿破仑/中立，比利时境内为敌方

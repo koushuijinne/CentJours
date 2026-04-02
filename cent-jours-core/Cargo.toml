@@ -30,3 +30,4 @@ godot-extension = ["godot"]
 [dev-dependencies]
 # 浮点数近似比较（测试用）
 approx = "0.5"
+proptest = "1.6"
