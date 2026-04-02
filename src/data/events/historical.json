@@ -1189,5 +1189,156 @@
     ],
     "historical_note": "1815年6月16日，德尔隆第一军因命令往复在利尼与四臂村之间机动，最终两场战斗都未形成决定性介入。这是比利时战役中最著名的指挥失灵之一。",
     "tier": "normal"
+  },
+  {
+    "id": "golfe_juan_landing",
+    "label": "戛纳湾登陆",
+    "day_range": [1, 1],
+    "trigger": {
+      "napoleon_reputation_min": 40
+    },
+    "effects": {
+      "legitimacy_delta": 5,
+      "military_support_delta": 8,
+      "populace_support_delta": 5,
+      "military_available_troops_delta": 1100
+    },
+    "narratives": [
+      "1815年3月1日傍晚，拿破仑率约一千人在戛纳湾登岸。没有仪仗，没有号角，只有靴子踩上湿沙的声音。",
+      "岸上没有一个人预料到这件事。几个渔民看见船队靠岸，以为是走私船。等他们认出三色旗时，士兵已经在列队了。",
+      "他带了不到一千一百人、几门小炮和一面鹰旗。从厄尔巴岛到法兰西海岸，整个计划押在一个判断上：法国士兵不会向他开枪。"
+    ],
+    "historical_note": "1815年3月1日，拿破仑率约1100名士兵从厄尔巴岛出发，在法国南部戛纳附近的儒昂湾登陆。这是百日王朝的起点。登陆未遭到任何抵抗。",
+    "tier": "major"
+  },
+  {
+    "id": "grenoble_printer_broadsheets",
+    "label": "格勒诺布尔印刷厂的传单",
+    "day_range": [8, 14],
+    "trigger": {
+      "napoleon_reputation_min": 40
+    },
+    "effects": {
+      "populace_support_delta": 4,
+      "legitimacy_delta": 3,
+      "rouge_noir_delta": 2
+    },
+    "narratives": [
+      "格勒诺布尔的印刷厂连夜赶印宣言。墨还没干就有人在街角分发，内容只有一句话的变体：他回来了。",
+      "传单上的措辞经过仔细斟酌：不提复仇，不提旧账，只说和平、宪法和人民的权利。有人信，有人将信将疑，但没有人不看。"
+    ],
+    "historical_note": "拿破仑北上途中在格勒诺布尔获得第一座城市的支持，当地印刷厂随即大量印制拿破仑的宣言和告法国人民书，这些传单沿驿路向北扩散，比军队走得更快。",
+    "tier": "minor"
+  },
+  {
+    "id": "lyon_silk_workers_cheer",
+    "label": "里昂丝绸工人的欢呼",
+    "day_range": [11, 15],
+    "trigger": {
+      "napoleon_reputation_min": 45
+    },
+    "effects": {
+      "populace_support_delta": 6,
+      "legitimacy_delta": 2
+    },
+    "narratives": [
+      "里昂的丝绸工人是最早走上街头的。他们不关心王朝更替的法理，只记得帝国时期订单是满的。",
+      "工坊区的人群自发聚集在白莱果广场，有人举着旧的三色帽徽，有人只是站在那里等着看会发生什么。"
+    ],
+    "historical_note": "里昂是法国第二大城市和工业中心。拿破仑于3月10日进入里昂时受到工人阶层的热烈欢迎。里昂的支持对北上行军具有关键的后勤和政治意义。",
+    "tier": "minor"
+  },
+  {
+    "id": "prefect_loyalty_declarations",
+    "label": "各省省长的效忠电报",
+    "day_range": [18, 28],
+    "trigger": {
+      "napoleon_reputation_min": 50
+    },
+    "effects": {
+      "legitimacy_delta": 5,
+      "political_stability_bonus": 4,
+      "nobility_support_delta": 3
+    },
+    "narratives": [
+      "省长们的效忠声明像潮水一样涌入巴黎。有些是真心归附，有些只是在等最后一个坏消息不来就表态。",
+      "行政机器的转向比军队更安静，也更关键。省长签字的那一刻，税收、征兵和邮路就跟着转了方向。",
+      "并非所有省长都立刻表态。西部几个省的沉默比任何反对宣言都更让巴黎不安。"
+    ],
+    "historical_note": "拿破仑进入巴黎后，大部分省长在数日内宣布效忠新政权。行政系统的迅速归顺使帝国能够恢复税收和征兵体系，但西部旺代地区和南部部分省份的态度始终暧昧。",
+    "tier": "normal"
+  },
+  {
+    "id": "caulaincourt_diplomatic_mission",
+    "label": "科兰古的外交使命",
+    "day_range": [22, 40],
+    "trigger": {
+      "napoleon_reputation_min": 45,
+      "day_min": 22
+    },
+    "effects": {
+      "legitimacy_delta": 4,
+      "diplomatic_progress_delta": 15
+    },
+    "narratives": [
+      "科兰古被派往维也纳方向试探和谈可能。他带着一封措辞谨慎的信函：拿破仑愿意承认维也纳条约的大部分条款，只要求法国的主权完整。",
+      "这位前驻俄大使知道自己的使命几乎不可能成功，但外交的价值有时不在结果，而在于向欧洲表明法国不是只想打仗。",
+      "科兰古出发时，拿破仑叮嘱他：不要乞求，但也不要威胁。让他们知道我们更愿意谈，但不怕打。"
+    ],
+    "historical_note": "科兰古（Caulaincourt）是拿破仑最信赖的外交官之一，曾任驻俄大使。百日王朝期间，拿破仑试图通过外交渠道打破第七次反法同盟，但维也纳会议已于3月13日将拿破仑宣布为公敌。",
+    "tier": "normal"
+  },
+  {
+    "id": "soldiers_wives_petition",
+    "label": "军人妻子的请愿书",
+    "day_range": [25, 40],
+    "trigger": {},
+    "effects": {
+      "populace_support_delta": -3,
+      "rouge_noir_delta": -2
+    },
+    "narratives": [
+      "一份请愿书在巴黎东区流传，签名的都是军人的妻子和母亲。她们不反对皇帝，只是问：这一次，能不能不打那么远？",
+      "没有人把这份请愿书送到杜伊勒里宫。它在洗衣房和面包铺之间传了一圈，然后不知被谁收了起来。"
+    ],
+    "historical_note": "百日王朝期间，巴黎民间对战争的态度复杂。虽然拿破仑获得了民众的初步支持，但经历了二十年几乎不间断的战争后，厌战情绪在城市底层广泛存在。",
+    "tier": "minor"
+  },
+  {
+    "id": "metternich_hesitation",
+    "label": "梅特涅的犹豫",
+    "day_range": [30, 50],
+    "trigger": {
+      "napoleon_reputation_min": 50,
+      "day_min": 30
+    },
+    "effects": {
+      "diplomatic_progress_delta": 12,
+      "legitimacy_delta": 3,
+      "coalition_troops_bonus": -2000
+    },
+    "narratives": [
+      "截获的外交密函显示，梅特涅在维也纳的立场并非铁板一块。奥地利的利益不总是和英国完全一致。",
+      "密函中提到：如果法国表现出对和平的诚意，奥地利不排除单独谈判的可能。但这句话后面还有一句：前提是其他盟国不反对。",
+      "梅特涅的犹豫不是善意，是计算。拿破仑的前妻玛丽·路易丝是奥地利公主，这让维也纳的立场比伦敦和柏林更微妙。"
+    ],
+    "historical_note": "梅特涅（Metternich）是奥地利外交大臣和维也纳会议的主导者。虽然联军最终统一了对拿破仑的立场，但奥地利因拿破仑之子（罗马王）和玛丽·路易丝的关系，在联盟内部始终保持了一定的独立外交空间。",
+    "tier": "normal"
+  },
+  {
+    "id": "paris_cafe_debates",
+    "label": "巴黎咖啡馆的争论",
+    "day_range": [20, 45],
+    "trigger": {},
+    "effects": {
+      "rouge_noir_delta": 3,
+      "liberals_support_delta": 2
+    },
+    "narratives": [
+      "普罗科普咖啡馆里，一个律师和一个退伍军官为同一个问题争到拍桌子：皇帝这次会不会真的给宪法？",
+      "咖啡馆是巴黎的第二个议会。在这里，每个人都有自己的外交方案，每杯咖啡都泡着一个政治立场。"
+    ],
+    "historical_note": "百日王朝期间巴黎的咖啡馆是政治舆论的主要发酵场所。自由派知识分子和波旁复辟的支持者在这里公开争论，气氛既兴奋又焦虑。普罗科普咖啡馆（Café Procope）是巴黎最古老的咖啡馆之一。",
+    "tier": "minor"
   }
 ]
