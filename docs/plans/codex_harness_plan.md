@@ -60,7 +60,20 @@
   - 把 Codex 当前本地 harness 状态变成显式信息
   - 便于 round 开始前和准备提交前快速检查
 
-### 5. 验证范围规划与轻量守卫
+### 5. 下一任务选择与回合摘要
+
+- 新增 [tools/codex_pick_next_task.py](../../tools/codex_pick_next_task.py)
+- 新增 [tools/codex_round_summary.py](../../tools/codex_round_summary.py)
+- 新增 [tools/codex_cycle.sh](../../tools/codex_cycle.sh)
+- 行为：
+  - 从 `dev_plan.md` 和 `agent_handoff.md` 读取当前优先级
+  - 按 focus 选择下一条任务
+  - 输出当前基线、当前 P0 和 handoff 优先级压缩摘要
+- 作用：
+  - 补上 Codex harness 原来缺失的“下一轮该做什么”和“本轮结束后怎么压缩上下文”
+  - 把执行层从纯手动判断推进到脚本辅助判断
+
+### 6. 验证范围规划与轻量守卫
 
 - 新增 [tools/codex_validation_scope.py](../../tools/codex_validation_scope.py)
 - 新增 [tools/codex_light_guard.sh](../../tools/codex_light_guard.sh)
@@ -73,7 +86,7 @@
   - 把“这轮至少该验证什么”从人工记忆变成脚本输出
   - 避免 `pre-push` 直接强行启动 Godot 或跑全量 Rust 长测
 
-### 6. 可安装 git hooks
+### 7. 可安装 git hooks
 
 - 新增 [tools/install_codex_git_hooks.sh](../../tools/install_codex_git_hooks.sh)
 - 新增 [.githooks/pre-commit](../../.githooks/pre-commit)
@@ -98,6 +111,7 @@ bash tools/install_codex_git_hooks.sh
 - 回合收口有了显式检查脚本
 - Codex 现在可以显式查看本地 harness 状态，并在 push 前有一层本地门禁
 - push 前可以自动得到“本地最小验证 + 推荐云端链”的分类结果，而不是靠人工判断
+- Codex 现在也可以脚本化地拿到“下一条任务”和“当前压缩摘要”
 
 ### 没有伪装成已解决
 
@@ -131,6 +145,12 @@ bash tools/codex_harness_status.sh
 bash tools/codex_light_guard.sh
 ```
 
+8. 需要进入下一轮时跑：
+
+```bash
+bash tools/codex_cycle.sh --focus harness
+```
+
 ### 安装本地 hooks
 
 ```bash
@@ -145,6 +165,6 @@ bash tools/codex_round_check.sh
 
 ## 后续可选增强
 
-1. 为 `codex_round_check.sh` 增加压缩摘要模板输出
-2. 在 `codex_light_guard.sh` 里继续细化 Godot 与 Rust 的定向最小验证映射
+1. 在 `codex_light_guard.sh` 里继续细化 Godot 与 Rust 的定向最小验证映射
+2. 让 `codex_pick_next_task.py` 进一步识别“已完成 / 进行中 / 阻塞”的状态
 3. 若后续 Codex 暴露仓库级 hook 接口，再把这套脚本接回自动事件触发

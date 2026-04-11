@@ -17,7 +17,7 @@
 - GitHub Actions 已新增文档同步门禁：代码路径改动必须伴随 `README.md` 或 `docs/` 更新。
 - 当前总目标已按 [ADR-011](docs/decisions/ADR-011-core-loop-systemization-and-historical-depth.md) 固定为：核心玩法优化完成，并达到 Steam 可上线级别。
 - `auto/gameplay_update` 分支的后勤系统、主菜单修复、GdUnit4 测试拆分和开发者文档已合并到本分支。
-- Codex harness 已有独立入口与本地门禁：`AGENTS.md`、文档同步守卫、round check、harness status、validation scope、light guard、可安装 `pre-commit + pre-push` hooks。
+- Codex harness 已有独立入口与本地门禁：`AGENTS.md`、文档同步守卫、round check、harness status、task picker、round summary、cycle、validation scope、light guard、可安装 `pre-commit + pre-push` hooks。
 - 本轮新增：日内行动节奏改为“1 次机动槽 + 2 次决策点 + 手动结束今天”，前 10 天教程/历史事件/结局目标入口已弹窗化并可回看，玩家可见主 UI 文本继续向中文收口，地图区域占比已抬高；最新四轮又补了教程弹窗固定宽度护栏、侧栏第二轮压缩、设置弹窗锁定语义拆分、百科内容扩写、“点击空白清空地图详情”的自动化护栏、设置/百科弹窗被外部关闭后的 Tray 恢复链，以及行动面板的预算提示 / 确认按钮 / 禁用原因 / 分区语义第一版。
 
 ---
@@ -93,7 +93,7 @@
 | S0-1 | 继续收口三层 Windows GitHub Actions 验证链 | P0 | M | 已拆成 `fast / full / heavy-nightly`，后续继续观察稳定性与队列占用 |
 | S0-2 | 把 `docs/bugs` 中的关键问题继续转成可重复验证 | P0 | M | 进行中 |
 | S0-3 | 继续扩 Godot `GdUnit4` 覆盖面（存读档一致性、更多边界） | P0 | M | 进行中 |
-| S0-4 | Codex harness engineering | P0 | M | 已落地 `AGENTS.md`、doc sync 守卫、round check、harness status、validation scope、light guard 与 `pre-push` 门禁；下一步补按文件类型的更细定向验证映射 |
+| S0-4 | Codex harness engineering | P0 | M | 已落地 `AGENTS.md`、doc sync 守卫、round check、harness status、task picker、round summary、cycle、validation scope、light guard 与 `pre-push` 门禁；下一步补更细的模块 -> 最小验证映射 |
 
 ### 阶段 1: 真人试玩核心修复（最新最高优先级）
 
@@ -257,7 +257,7 @@ tools\run_gdunit_windows.cmd E:\software\godot\Godot_v4.6.1-stable_win64_console
 - 教程正文宽度异常收缩、长中文段落竖排化的问题现在已有专门断言，但其余长文本弹窗还没有同等级别护栏。
 - `EventBus` 的 `unused_signal` 噪音已精准屏蔽。
 - `.github/workflows/windows-fast.yml`、`.github/workflows/windows-validation.yml`（`windows-full`）、`.github/workflows/windows-heavy-nightly.yml` 和 `tools/run_gdunit_windows.cmd` 已落地；`project.godot` 变更现在会触发对应的快反馈或全量云端验证链。
-- Codex harness 当前已具备 `AGENTS.md`、`codex_doc_sync_guard.sh`、`codex_round_check.sh`、`codex_harness_status.sh`、`codex_validation_scope.py`、`codex_light_guard.sh` 与可安装的 `pre-commit + pre-push`；后续还需继续补更细的按文件类型定向验证映射。
+- Codex harness 当前已具备 `AGENTS.md`、`codex_doc_sync_guard.sh`、`codex_round_check.sh`、`codex_harness_status.sh`、`codex_pick_next_task.py`、`codex_round_summary.py`、`codex_cycle.sh`、`codex_validation_scope.py`、`codex_light_guard.sh` 与可安装的 `pre-commit + pre-push`；后续还需继续补更细的模块 -> 定向验证映射。
 
 ---
 

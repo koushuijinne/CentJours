@@ -204,3 +204,23 @@
 - 待本轮统一提交
 下一步:
 - 继续把 validation scope 从“粗粒度分类”推进到“具体模块 -> 对应 GdUnit4 / Rust 最小验证”的映射表。
+
+## 2026-04-02 第 4 轮
+分支: `claude/review-project-status-05vxD`
+范围: 给 Codex harness 补执行层脚本，并继续把验证范围从文件类型推进到具体模块建议
+变更:
+- 新增 [tools/codex_pick_next_task.py](../../../tools/codex_pick_next_task.py)，从 [dev_plan.md](../../plans/dev_plan.md) 和 [agent_handoff.md](../agent_handoff.md) 读取当前优先级，并按 `--focus harness/gameplay/content` 选下一条任务。
+- 新增 [tools/codex_round_summary.py](../../../tools/codex_round_summary.py)，输出当前分支、基线、当前 P0 和 handoff 优先级的 JSON 压缩摘要。
+- 新增 [tools/codex_cycle.sh](../../../tools/codex_cycle.sh)，顺序执行 harness status、next task 和 round summary，作为 Codex 一轮开始前的统一入口。
+- 增强 [tools/codex_validation_scope.py](../../../tools/codex_validation_scope.py)，把 Godot 主菜单、地图、弹窗、存读档链路映射到更具体的 `GdUnit4` 建议；把 `lib.rs`、`project.godot` 和 Rust 路径映射到更具体的本地/云端验证建议。
+- 更新 [tools/install_codex_git_hooks.sh](../../../tools/install_codex_git_hooks.sh)、[AGENTS.md](../../../AGENTS.md)、[README.md](../../../README.md)、[docs/plans/codex_harness_plan.md](../../plans/codex_harness_plan.md)、[docs/plans/dev_plan.md](../../plans/dev_plan.md)、[docs/history/agent_handoff.md](../agent_handoff.md)，同步 Codex harness 当前结构。
+验证:
+- `bash -n tools/codex_cycle.sh`
+- `python3 -m py_compile tools/codex_pick_next_task.py tools/codex_round_summary.py tools/codex_validation_scope.py`
+- `bash tools/codex_light_guard.sh <changed_files>`
+- `bash tools/codex_cycle.sh --focus harness`
+- 未运行 Linux / WSL 侧测试
+提交/推送:
+- 待本轮统一提交
+下一步:
+- 继续让 `codex_pick_next_task.py` 理解“进行中 / 已完成 / 阻塞”，并把 `validation_scope` 拆成独立映射配置，便于持续维护。

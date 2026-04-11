@@ -82,7 +82,7 @@ E:\software\godot\Godot_v4.6.1-stable_win64_console.exe --headless --path E:\pro
   - `windows-fast`：快反馈，跑 Rust 快速测试、GDExt build、核心 `GdUnit4`、headless boot
   - `windows-full`：全量回归，跑完整 `cargo test`、完整 `GdUnit4`、smoke scene
   - `windows-heavy-nightly`：夜间 / 手动重测，跑 Monte Carlo 长测和大样本属性测试
-- Codex harness 现已提供 `codex_validation_scope.py` 和 `codex_light_guard.sh`，用于在本地 push 前给出最小验证和推荐云端链
+- Codex harness 现已提供 `codex_pick_next_task.py`、`codex_round_summary.py`、`codex_cycle.sh`、`codex_validation_scope.py` 和 `codex_light_guard.sh`，用于给出下一任务、压缩摘要和本地最小验证建议
 - 玩家设置会写入 `user://cent_jours_settings.cfg`，默认管理窗口模式与界面缩放
 
 ## Roadmap

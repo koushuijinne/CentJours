@@ -5,6 +5,60 @@ import argparse
 import json
 from pathlib import Path
 
+WINDOWS_GODOT = r"E:\software\godot\Godot_v4.6.1-stable_win64_console.exe"
+
+MAIN_MENU_FILES = {
+    "src/ui/main_menu.gd",
+    "src/ui/main_menu.tscn",
+    "src/ui/main_menu/tray_controller.gd",
+    "src/ui/main_menu/topbar_actions_controller.gd",
+    "src/ui/components/decision_card.gd",
+}
+
+DIALOG_FILES = {
+    "src/ui/main_menu/dialogs_controller.gd",
+    "src/core/settings_manager.gd",
+}
+
+MAP_FILES = {
+    "src/ui/main_menu/map_controller.gd",
+    "src/ui/main_menu/map_render_controller.gd",
+    "src/ui/main_menu/layout_controller.gd",
+    "src/ui/main_menu/sidebar_controller.gd",
+    "src/ui/main_menu/ui_formatters.gd",
+}
+
+SAVE_FLOW_FILES = {
+    "src/core/save_manager.gd",
+    "src/core/game_state.gd",
+    "src/core/turn_manager.gd",
+    "src/core/event_bus.gd",
+}
+
+MAIN_MENU_GDUNIT = (
+    fr"tools\run_gdunit_windows.cmd {WINDOWS_GODOT} "
+    r"res://tests/godot/main_menu_flow_test.gd"
+)
+DIALOG_GDUNIT = (
+    fr"tools\run_gdunit_windows.cmd {WINDOWS_GODOT} "
+    r"res://tests/godot/dialog_flow_test.gd"
+)
+MAP_GDUNIT = (
+    fr"tools\run_gdunit_windows.cmd {WINDOWS_GODOT} "
+    r"res://tests/godot/map_controller_contract_test.gd"
+)
+SAVE_GDUNIT = (
+    fr"tools\run_gdunit_windows.cmd {WINDOWS_GODOT} "
+    r"res://tests/godot/save_load_flow_test.gd"
+)
+SETTINGS_GDUNIT = (
+    fr"tools\run_gdunit_windows.cmd {WINDOWS_GODOT} "
+    r"res://tests/godot/settings_manager_test.gd"
+)
+WINDOWS_HEADLESS_BOOT = (
+    fr"{WINDOWS_GODOT} --headless --path E:\projects\CentJours --quit"
+)
+
 
 def unique(items: list[str]) -> list[str]:
     seen: set[str] = set()
@@ -58,6 +112,7 @@ def classify(files: list[str]) -> dict[str, object]:
             buckets["rust"] = True
             local_checks.append("cargo fmt --check --manifest-path cent-jours-core/Cargo.toml")
             cloud_lanes.extend(["windows-fast", "windows-full"])
+            notes.append("Rust 改动至少过对应模块的定向 cargo test 或 windows-full。")
 
         if normalized == "cent-jours-core/src/lib.rs":
             buckets["rust_gdext"] = True
@@ -69,6 +124,18 @@ def classify(files: list[str]) -> dict[str, object]:
             cloud_lanes.extend(["windows-fast", "windows-full"])
             notes.append("Godot UI / 场景改动至少过核心 GdUnit4 与 headless boot。")
 
+        if normalized in MAIN_MENU_FILES:
+            local_checks.append(MAIN_MENU_GDUNIT)
+
+        if normalized in DIALOG_FILES:
+            local_checks.extend([DIALOG_GDUNIT, SETTINGS_GDUNIT])
+
+        if normalized in MAP_FILES:
+            local_checks.extend([MAP_GDUNIT, MAIN_MENU_GDUNIT])
+
+        if normalized in SAVE_FLOW_FILES:
+            local_checks.extend([SAVE_GDUNIT, MAIN_MENU_GDUNIT])
+
         if normalized == "project.godot":
             buckets["godot_project"] = True
             cloud_lanes.extend(["windows-fast", "windows-full"])
@@ -77,6 +144,9 @@ def classify(files: list[str]) -> dict[str, object]:
         if normalized.startswith("tests/godot/"):
             buckets["godot_tests"] = True
             cloud_lanes.extend(["windows-fast", "windows-full"])
+            local_checks.append(
+                fr"tools\run_gdunit_windows.cmd {WINDOWS_GODOT} res://{normalized}"
+            )
 
         if "monte_carlo" in normalized or "proptest" in normalized:
             buckets["heavy_validation"] = True
@@ -86,7 +156,7 @@ def classify(files: list[str]) -> dict[str, object]:
     if buckets["godot_ui"] or buckets["godot_project"] or buckets["godot_tests"]:
         local_checks.extend([
             "Windows 定向 GdUnit4（按改动模块选择）",
-            "Windows Godot headless boot",
+            WINDOWS_HEADLESS_BOOT,
         ])
 
     if buckets["rust"] and not buckets["rust_gdext"]:

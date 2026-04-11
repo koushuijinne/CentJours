@@ -34,7 +34,7 @@ save_version: v4
 tests_rust: 215
 tests_gdunit4: 68
 ci: windows-fast / windows-full / windows-heavy-nightly
-harness: AGENTS.md / doc-sync guard / round check / harness status / validation scope / light guard / optional git hooks
+harness: AGENTS.md / doc-sync guard / round check / harness status / task picker / round summary / cycle / validation scope / light guard / optional git hooks
 ```
 
 ## 不可违反的硬约束
@@ -58,6 +58,7 @@ harness: AGENTS.md / doc-sync guard / round check / harness status / validation 
 6. 代码和文档放在同一个 commit，不拆开。
 7. 一轮结束前运行 `tools/codex_doc_sync_guard.sh`；需要看当前门禁状态时运行 `tools/codex_harness_status.sh`；准备停在某个 round 时运行 `tools/codex_round_check.sh`。
 8. 改动较大或准备 push 前，运行 `tools/codex_light_guard.sh` 查看最小本地守卫和推荐云端验证链。
+9. 需要进入下一轮时，先用 `tools/codex_pick_next_task.py` 选任务，再用 `tools/codex_round_summary.py` 输出压缩摘要；需要一键查看时运行 `tools/codex_cycle.sh --focus <focus>`。
 
 ## 默认验证口径
 
@@ -92,6 +93,12 @@ tools/run_gdunit_windows.cmd <godot_path> res://tests/godot
   - 回合结束前检查工作区是否干净、是否有未推送提交。
 - `tools/codex_harness_status.sh`
   - 输出当前分支、ahead/behind、hooksPath、worktree 洁净度和文档变更状态。
+- `tools/codex_pick_next_task.py`
+  - 从 `dev_plan.md` 和 `agent_handoff.md` 里选下一条任务，可加 `--focus harness/gameplay/content`。
+- `tools/codex_round_summary.py`
+  - 输出当前分支、基线、当前 P0 和 handoff 优先级的压缩摘要。
+- `tools/codex_cycle.sh`
+  - 顺序执行 harness status、next task 和 round summary。
 - `tools/codex_validation_scope.py`
   - 按改动文件类型输出最小本地验证和推荐云端验证链。
 - `tools/codex_light_guard.sh`
