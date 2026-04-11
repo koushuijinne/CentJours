@@ -161,3 +161,27 @@
 - 待本轮统一提交
 下一步:
 - 若要把 Codex harness 真正变成默认本地门禁，执行 `bash tools/install_codex_git_hooks.sh` 安装 `.githooks/pre-commit`。
+
+## 2026-04-02 第 2 轮
+分支: `claude/review-project-status-05vxD`
+范围: 把历史事件扩量降到最低优先级，并继续补 Codex harness 的状态摘要与 push 前门禁
+变更:
+- 更新 [docs/plans/dev_plan.md](../../plans/dev_plan.md)，把 `S2-1 历史事件扩到 100+ 条` 从 `P0` 降到 `P3`，并把当前真实事件基线修正到 `66` 条，同时新增 `S0-4 Codex harness engineering` 为当前 `P0`。
+- 更新 [docs/history/agent_handoff.md](../agent_handoff.md)，把当前最高优先级改成 `S0-1` 到 `S0-4` 的验证链与 Codex harness 主线，并同步事件总数和 tier 分布。
+- 新增 [tools/codex_harness_status.sh](../../../tools/codex_harness_status.sh)，输出分支、ahead/behind、hooksPath、worktree 洁净度和文档变更状态。
+- 增强 [tools/codex_round_check.sh](../../../tools/codex_round_check.sh)，新增 `--pre-push` 模式；push 前会检查工作区、远端落后情况，并对待推送改动重新跑 doc sync 守卫。
+- 新增 [.githooks/pre-push](../../../.githooks/pre-push)，并更新 [tools/install_codex_git_hooks.sh](../../../tools/install_codex_git_hooks.sh) 为安装 `pre-commit + pre-push` 两层门禁。
+- 更新 [AGENTS.md](../../../AGENTS.md)、[README.md](../../../README.md)、[docs/plans/codex_harness_plan.md](../../plans/codex_harness_plan.md)，把 Codex harness 当前结构和使用方式同步到入口文档。
+验证:
+- `bash -n tools/codex_doc_sync_guard.sh`
+- `bash -n tools/codex_harness_status.sh`
+- `bash -n tools/codex_round_check.sh`
+- `bash -n tools/install_codex_git_hooks.sh`
+- `bash -n .githooks/pre-commit`
+- `bash -n .githooks/pre-push`
+- `bash tools/codex_doc_sync_guard.sh AGENTS.md README.md docs/plans/dev_plan.md docs/history/agent_handoff.md docs/plans/codex_harness_plan.md docs/history/development_logs/development_log_003.md tools/codex_harness_status.sh tools/codex_round_check.sh tools/install_codex_git_hooks.sh .githooks/pre-push`
+- 未运行 Linux / WSL 侧测试
+提交/推送:
+- 待本轮统一提交
+下一步:
+- 继续把 Codex harness 从“状态与门禁”推进到“按文件类型挂最小验证”的 push 前护栏。

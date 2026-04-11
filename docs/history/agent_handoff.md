@@ -13,7 +13,7 @@
 | 维度 | 状态 |
 |------|------|
 | 入口 | `src/ui/main_menu.tscn`，主循环 `TurnManager → CentJoursEngine → GameState → UI` 已接通 |
-| 数据 | 15 角色 / 41 地图节点 / 58 历史事件 (major 16 / normal 35 / minor 7) |
+| 数据 | 15 角色 / 41 地图节点 / 66 历史事件 (major 17 / normal 38 / minor 11) |
 | 测试 | Windows `cargo test 215/215` + GdUnit4 `68/68` + Windows CI + smoke |
 | 存档 | Save v4 兼容路径，旧 `fontainebleau_eve` → `tuileries_eve` 迁移 |
 | 分支 | `claude/review-project-status-05vxD`（已合并 `auto/gameplay_update`） |
@@ -35,22 +35,23 @@
 - **百科入口**: 红黑指数、合法性、系统影响解释
 - **日内行动节奏**: 1 机动槽 + 2 决策点 + 手动结束今天
 - **多结局系统**: 7 种 GameOutcome + 外交进度 (0-100) + UI OUTCOME_TEXT 7 套文本
-- **Codex harness**: 新增根 `AGENTS.md`、`tools/codex_doc_sync_guard.sh`、`tools/codex_round_check.sh` 和可安装 `.githooks/pre-commit`
+- **Codex harness**: 新增根 `AGENTS.md`、`tools/codex_doc_sync_guard.sh`、`tools/codex_round_check.sh`、`tools/codex_harness_status.sh` 和可安装 `.githooks/pre-commit + pre-push`
 
 ## 当前最高优先级
 
-1. `S1-1` 到 `S1-11` 作为真人试玩修复包同步推进
-2. `S2-1` 历史事件扩到 100+ 条
-3. 持续维持 Windows CI + Rust 测试 + GdUnit4 回归
+1. `S0-1` 到 `S0-4` 作为默认验证链和 Codex harness 主线持续推进
+2. `S1-1` 到 `S1-11` 作为真人试玩修复包同步推进
+3. `S2-1` 历史事件扩到 100+ 条已降为最低优先级，暂不抢占主线
 
 ## 当前已知缺口
 
-- 事件池距离 `100+` 目标还差 `42` 条
+- 事件池距离 `100+` 目标还差 `34` 条，但当前不作为主线优先级
 - 补给教学和区域运营感仍需加深
 - 文本 QA 未收口（史实锚点、句式风格）
 - 前端发布级 polish 和 Windows 真机验收未完成
 - 最终资产仍是占位（地图底图、肖像、BGM、SFX）
 - 叙事系统需从"司汤达日记"迁移为"贝特朗日记"（18 文件 96 处引用）
+- Codex harness 仍缺“按文件类型挂最小验证”的 push 前门禁，目前只做到文档同步和分支状态检查
 
 ## 写入边界
 

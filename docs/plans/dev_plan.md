@@ -11,18 +11,20 @@
 ## 当前技术基线
 
 - 项目已经有可玩的纵向切片，正式入口仍是 `src/ui/main_menu.tscn`，主链路 `TurnManager -> CentJoursEngine -> GameState -> UI` 已跑通。
-- 当前内容规模为 `15` 名角色、`41` 个地图节点、`58` 条历史事件；补给、政治、历史日志、存档读档和主菜单主循环都已接通。
+- 当前内容规模为 `15` 名角色、`41` 个地图节点、`66` 条历史事件；补给、政治、历史日志、存档读档和主菜单主循环都已接通。
 - Save / Load 已进入 `v4` 兼容阶段；最近一次权威回归基线是 Windows `cargo test 215/215`、Windows `GdUnit4 68/68`、Windows Godot 主项目无头和 smoke scene。
 - Rust 规则层的正式集成测试和属性测试已经落地；Godot 前端 `GdUnit4` 回归已扩到主菜单日内状态机、弹窗取消链、存读档一致性与地图交互边界；Windows GitHub Actions 已拆成 `fast / full / heavy-nightly` 三层。
 - GitHub Actions 已新增文档同步门禁：代码路径改动必须伴随 `README.md` 或 `docs/` 更新。
 - 当前总目标已按 [ADR-011](docs/decisions/ADR-011-core-loop-systemization-and-historical-depth.md) 固定为：核心玩法优化完成，并达到 Steam 可上线级别。
 - `auto/gameplay_update` 分支的后勤系统、主菜单修复、GdUnit4 测试拆分和开发者文档已合并到本分支。
+- Codex harness 已有独立入口与本地门禁：`AGENTS.md`、文档同步守卫、round check、harness status、可安装 `pre-commit + pre-push` hooks。
 - 本轮新增：日内行动节奏改为“1 次机动槽 + 2 次决策点 + 手动结束今天”，前 10 天教程/历史事件/结局目标入口已弹窗化并可回看，玩家可见主 UI 文本继续向中文收口，地图区域占比已抬高；最新四轮又补了教程弹窗固定宽度护栏、侧栏第二轮压缩、设置弹窗锁定语义拆分、百科内容扩写、“点击空白清空地图详情”的自动化护栏、设置/百科弹窗被外部关闭后的 Tray 恢复链，以及行动面板的预算提示 / 确认按钮 / 禁用原因 / 分区语义第一版。
 
 ---
 
 ## 当前 P0（基于 2026-03-29 真人试玩）
 
+- `P0-H1` Codex harness engineering：把 `AGENTS.md`、本地门禁、git hooks、round 收口检查和状态摘要变成可直接执行的默认开发护栏。
 - `P0-1` 行动经济重构：把“一天一张牌”改成“至少一次行军 + 2 到 3 次决策”的日内节奏。
 - `P0-2` 教程 / 事件弹窗化：关键事件和前 10 天教学改成弹窗展示，并可在日志中反复打开。
 - `P0-3` 结局目标入口：提供“结局 / 战略目标”入口，明确当前局可追求的结果方向。
@@ -66,7 +68,7 @@
 |------|--------|------|
 | 核心玩法引擎 | 95% | Rust 规则层 + GDScript 前端主循环已跑通 |
 | 存读档系统 | 100% | v4 兼容迁移已落地 |
-| 历史事件内容 | 58% | 58/100+ 条，需补 42+ 条 |
+| 历史事件内容 | 66% | 66/100+ 条，需补 34+ 条 |
 | 教程/引导 | 10% | 仅有前 10 天 hint 文本，无正式教程流 |
 | 结局系统 | 85% | 7 种结局路径已实现（NapoleonVictory / DiplomaticSettlement / MilitaryDominance / WaterlooHistorical / WaterlooDefeat / PoliticalCollapse / MilitaryAnnihilation），含外交进度系统、失败归因、难度标记、UI 文本和变体选择 |
 | 音频 | 10% | AudioManager 框架已建立，缺音频资产文件 |
@@ -91,6 +93,7 @@
 | S0-1 | 继续收口三层 Windows GitHub Actions 验证链 | P0 | M | 已拆成 `fast / full / heavy-nightly`，后续继续观察稳定性与队列占用 |
 | S0-2 | 把 `docs/bugs` 中的关键问题继续转成可重复验证 | P0 | M | 进行中 |
 | S0-3 | 继续扩 Godot `GdUnit4` 覆盖面（存读档一致性、更多边界） | P0 | M | 进行中 |
+| S0-4 | Codex harness engineering | P0 | M | 已落地 `AGENTS.md`、doc sync 守卫、round check；当前继续补 harness status 与 `pre-push` 门禁 |
 
 ### 阶段 1: 真人试玩核心修复（最新最高优先级）
 
@@ -117,7 +120,7 @@
 
 | ID | 任务 | 优先级 | 规模 | 说明 |
 |----|------|--------|------|------|
-| S2-1 | 历史事件扩到 100+ 条 | P0 | XL | 当前 58 条，需补中期政治/外交/社会事件 42+ 条，按 ADR-008 分级 |
+| S2-1 | 历史事件扩到 100+ 条 | P3 | XL | 当前 66 条，需补中期政治/外交/社会事件 34+ 条；已降为最低优先级，待核心玩法 / harness / 发布链收口后再恢复 |
 | S2-2 | ~~完成多结局系统~~ | P0 | L | **已完成** — 7 种结局路径 (NapoleonVictory / DiplomaticSettlement / MilitaryDominance / WaterlooHistorical / WaterlooDefeat / PoliticalCollapse / MilitaryAnnihilation)，含外交进度系统、Rust check_outcome() 多路径逻辑、UI OUTCOME_TEXT + 变体选择 |
 | S2-3 | 前 10 天新手教程流 | P0 | L | 引导玩家理解补给、政治、命令偏差三大核心，用场景内提示而非独立教程关 |
 | S2-4 | 中期张力补强 (Day 20-80) | P1 | L | 增加定时危机事件、派系叛变窗口、联军集结压力曲线，避免重复行动感 |
@@ -186,7 +189,7 @@
 
 - 阶段 0 是一切的前提，必须持续维护
 - 阶段 1 是当前真人试玩最高优先级，`S1-1` 到 `S1-5` 要同步推进，不修掉这组问题就不适合继续堆内容
-- 阶段 2 是玩法核心，不达标则其他都无意义
+- 阶段 2 里的 `S2-1` 已主动降到最低优先级；当前先收口 harness、验证链和真人试玩修复，再恢复内容扩量
 - 阶段 3 和 4 可以与阶段 2 并行推进（音频/美术不依赖代码逻辑）
 - 阶段 5 依赖前两阶段的文本和 UI 结构稳定后才能开始翻译
 - 阶段 6 是最终收口，依赖前五阶段基本完成
@@ -250,10 +253,11 @@ tools\run_gdunit_windows.cmd E:\software\godot\Godot_v4.6.1-stable_win64_console
 ## 测试现状概览
 
 - Rust 自动化包含模块内单元测试、`cent-jours-core/tests/` 集成测试和 `proptest` 属性测试，Windows `cargo test` 当前基线合计 `215` tests。
-- Godot 前端 `GdUnit4` `66/66` 回归，覆盖主菜单初始化、日内行动、结束今天、教程弹窗、日志回看、存读档、难度恢复、设置音频滑条、战斗/接见/休整、政策冷却、地图交互、教程弹窗宽度回归、设置弹窗锁定语义、地图空白点击清空链，以及设置/百科弹窗外部关闭后的恢复链等核心路径。
+- Godot 前端 `GdUnit4` `68/68` 回归，覆盖主菜单初始化、日内行动、结束今天、教程弹窗、日志回看、存读档、难度恢复、设置音频滑条、战斗/接见/休整、政策冷却、地图交互、教程弹窗宽度回归、设置弹窗锁定语义、地图空白点击清空链，以及设置/百科弹窗外部关闭后的恢复链等核心路径。
 - 教程正文宽度异常收缩、长中文段落竖排化的问题现在已有专门断言，但其余长文本弹窗还没有同等级别护栏。
 - `EventBus` 的 `unused_signal` 噪音已精准屏蔽。
 - `.github/workflows/windows-fast.yml`、`.github/workflows/windows-validation.yml`（`windows-full`）、`.github/workflows/windows-heavy-nightly.yml` 和 `tools/run_gdunit_windows.cmd` 已落地；`project.godot` 变更现在会触发对应的快反馈或全量云端验证链。
+- Codex harness 当前已具备 `AGENTS.md`、`codex_doc_sync_guard.sh`、`codex_round_check.sh`、`codex_harness_status.sh` 与可安装的 `pre-commit + pre-push`；后续还需继续补更细的按文件类型最小验证门禁。
 
 ---
 

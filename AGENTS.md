@@ -34,6 +34,7 @@ save_version: v4
 tests_rust: 215
 tests_gdunit4: 68
 ci: windows-fast / windows-full / windows-heavy-nightly
+harness: AGENTS.md / doc-sync guard / round check / harness status / optional git hooks
 ```
 
 ## 不可违反的硬约束
@@ -55,7 +56,7 @@ ci: windows-fast / windows-full / windows-heavy-nightly
 4. 改代码前先读相关源文件，不凭文档猜实现。
 5. 改完先跑对应验证，再更新文档。
 6. 代码和文档放在同一个 commit，不拆开。
-7. 一轮结束前运行 `tools/codex_doc_sync_guard.sh`；准备停在某个 round 时运行 `tools/codex_round_check.sh`。
+7. 一轮结束前运行 `tools/codex_doc_sync_guard.sh`；需要看当前门禁状态时运行 `tools/codex_harness_status.sh`；准备停在某个 round 时运行 `tools/codex_round_check.sh`。
 
 ## 默认验证口径
 
@@ -88,8 +89,10 @@ tools/run_gdunit_windows.cmd <godot_path> res://tests/godot
   - 本地文档同步检查；优先读 staged 文件，没有 staged 时读 working tree 变更。
 - `tools/codex_round_check.sh`
   - 回合结束前检查工作区是否干净、是否有未推送提交。
+- `tools/codex_harness_status.sh`
+  - 输出当前分支、ahead/behind、hooksPath、worktree 洁净度和文档变更状态。
 - `tools/install_codex_git_hooks.sh`
-  - 把仓库内 `.githooks/` 安装为当前 repo 的 git hooks。
+  - 把仓库内 `.githooks/` 安装为当前 repo 的 git hooks（`pre-commit + pre-push`）。
 
 ## 禁止
 

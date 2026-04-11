@@ -88,6 +88,7 @@ E:\software\godot\Godot_v4.6.1-stable_win64_console.exe --headless --path E:\pro
 
 ### 当前优先级
 
+- 继续推进 Codex harness、Windows CI 和本地门禁，让默认开发链尽量靠机制而不是记忆维持
 - 继续收口三层 Windows CI、文档同步门禁与 Godot 前端自动回归
 - 把 `docs/bugs` 里的关键问题持续转成自动化验证
 - 在测试护栏稳定后继续推进补给玩法产品化与教学链
@@ -95,7 +96,7 @@ E:\software\godot\Godot_v4.6.1-stable_win64_console.exe --headless --path E:\pro
 ### 中期目标
 
 - 补给玩法继续产品化，强化教学链和失败归因
-- 历史事件池扩到 `100+`
+- 历史事件池扩到 `100+`，但当前已降为低优先级
 - 继续清理主菜单状态机和发布级交互问题
 
 ### 最终目标
