@@ -139,3 +139,25 @@
 - 待本轮统一提交
 下一步:
 - 继续把 `S1-8` 从“语义清楚”推进到“视觉层级更清楚”，优先补真机观感和更强的机动 / 决策区分。
+
+## 2026-04-02 第 1 轮
+分支: `claude/review-project-status-05vxD`
+范围: 新增 Codex 版 harness，不改动现有 Claude 版入口与 hooks
+变更:
+- 新增根 [AGENTS.md](../../../AGENTS.md)，作为 Codex 默认单入口，内联项目基线、硬约束、验证口径和默认工作流。
+- 新增 [docs/plans/codex_harness_plan.md](../../plans/codex_harness_plan.md)，解释为什么 `CLAUDE.md + .claude/hooks` 不能直接复用给 Codex，以及 Codex 版替代结构。
+- 新增 [tools/codex_doc_sync_guard.sh](../../../tools/codex_doc_sync_guard.sh)，复用 `check_doc_sync.py` 做本地文档同步守卫。
+- 新增 [tools/codex_round_check.sh](../../../tools/codex_round_check.sh)，在 round 结束前检查工作区是否干净、是否存在未推送提交。
+- 新增 [tools/install_codex_git_hooks.sh](../../../tools/install_codex_git_hooks.sh) 与 [.githooks/pre-commit](../../../.githooks/pre-commit)，用于把文档同步检查安装为仓库级本地 git hook。
+- 更新 [docs/history/agent_handoff.md](../agent_handoff.md)，把 Codex harness 入口写入当前状态。
+验证:
+- `bash -n tools/codex_doc_sync_guard.sh`
+- `bash -n tools/codex_round_check.sh`
+- `bash -n tools/install_codex_git_hooks.sh`
+- `bash -n .githooks/pre-commit`
+- `bash tools/codex_doc_sync_guard.sh AGENTS.md tools/codex_doc_sync_guard.sh tools/codex_round_check.sh tools/install_codex_git_hooks.sh .githooks/pre-commit docs/plans/codex_harness_plan.md`
+- 未运行 Linux / WSL 侧测试
+提交/推送:
+- 待本轮统一提交
+下一步:
+- 若要把 Codex harness 真正变成默认本地门禁，执行 `bash tools/install_codex_git_hooks.sh` 安装 `.githooks/pre-commit`。

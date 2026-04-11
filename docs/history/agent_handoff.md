@@ -2,6 +2,7 @@
 
 > **更新**: 2026-04-01
 > **约束和流程**: 见 `CLAUDE.md`（项目根目录，Claude Code 自动读取）
+> **Codex 入口**: 见 `AGENTS.md`（项目根目录，Codex 默认读取）
 > **开发历史**: 见 [docs/history/development_logs/](docs/history/development_logs/)
 > **可选自动工作流**: 仅在用户明确要求时使用 [docs/rules/optional/agent_autonomous_workflow.md](docs/rules/optional/agent_autonomous_workflow.md)
 
@@ -34,6 +35,7 @@
 - **百科入口**: 红黑指数、合法性、系统影响解释
 - **日内行动节奏**: 1 机动槽 + 2 决策点 + 手动结束今天
 - **多结局系统**: 7 种 GameOutcome + 外交进度 (0-100) + UI OUTCOME_TEXT 7 套文本
+- **Codex harness**: 新增根 `AGENTS.md`、`tools/codex_doc_sync_guard.sh`、`tools/codex_round_check.sh` 和可安装 `.githooks/pre-commit`
 
 ## 当前最高优先级
 
@@ -64,4 +66,5 @@
 
 - 本文件只保留当前状态和动态信息
 - 硬约束和做事流程已合并到 `CLAUDE.md`
+- Codex 使用根 `AGENTS.md`，不依赖 Claude 专用 `.claude/` hooks
 - 多轮开发历史写入 [docs/history/development_logs/](docs/history/development_logs/)
