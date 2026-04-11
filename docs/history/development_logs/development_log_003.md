@@ -194,6 +194,7 @@
 - 新增 [tools/codex_light_guard.sh](../../../tools/codex_light_guard.sh)，在 push 前运行 `doc-sync`、shell/python 语法、Rust `fmt --check`，并打印本轮推荐的本地最小验证和云端链路。
 - 更新 [.githooks/pre-push](../../../.githooks/pre-push)，现在会先跑 `codex_round_check.sh --pre-push`，再跑 `codex_light_guard.sh`。
 - 更新 [tools/install_codex_git_hooks.sh](../../../tools/install_codex_git_hooks.sh)、[AGENTS.md](../../../AGENTS.md)、[README.md](../../../README.md)、[docs/plans/codex_harness_plan.md](../../plans/codex_harness_plan.md)、[docs/plans/dev_plan.md](../../plans/dev_plan.md)、[docs/history/agent_handoff.md](../agent_handoff.md)，同步 Codex harness 当前结构。
+- 补了一次 `light_guard` 的 clean-worktree 回退逻辑：当 push 前工作区已干净时，脚本会改看 `origin/<branch>...HEAD`，避免只在“手动未提交改动”场景下才有效。
 验证:
 - `bash -n tools/codex_light_guard.sh`
 - `python3 -m py_compile tools/codex_validation_scope.py`

@@ -13,6 +13,14 @@ else
   if (( ${#changed_files[@]} == 0 )); then
     mapfile -t changed_files < <(git diff --name-only)
   fi
+  if (( ${#changed_files[@]} == 0 )); then
+    branch="$(git branch --show-current)"
+    if [[ -n "${branch}" ]] && git rev-parse --verify "origin/${branch}" >/dev/null 2>&1; then
+      mapfile -t changed_files < <(git diff --name-only "origin/${branch}...HEAD")
+    else
+      mapfile -t changed_files < <(git show --pretty='' --name-only HEAD)
+    fi
+  fi
 fi
 
 if (( ${#changed_files[@]} == 0 )); then

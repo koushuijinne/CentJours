@@ -68,6 +68,7 @@
   - 按改动文件判断是 `docs / rust / rust_gdext / godot_ui / godot_tests / ci_or_harness / heavy_validation`
   - 输出建议的本地最小验证和对应云端链路
   - 本地只执行轻量守卫：`doc-sync`、shell/python 语法、Rust `fmt --check`
+  - 若工作区已干净，会自动回退到 `origin/<branch>...HEAD`，继续检查待推送 commit 的改动范围
 - 作用：
   - 把“这轮至少该验证什么”从人工记忆变成脚本输出
   - 避免 `pre-push` 直接强行启动 Godot 或跑全量 Rust 长测
