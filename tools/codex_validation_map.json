@@ -1,0 +1,37 @@
+{
+  "windows_godot": "E:\\software\\godot\\Godot_v4.6.1-stable_win64_console.exe",
+  "file_sets": {
+    "main_menu": [
+      "src/ui/main_menu.gd",
+      "src/ui/main_menu.tscn",
+      "src/ui/main_menu/tray_controller.gd",
+      "src/ui/main_menu/topbar_actions_controller.gd",
+      "src/ui/components/decision_card.gd"
+    ],
+    "dialogs": [
+      "src/ui/main_menu/dialogs_controller.gd",
+      "src/core/settings_manager.gd"
+    ],
+    "map": [
+      "src/ui/main_menu/map_controller.gd",
+      "src/ui/main_menu/map_render_controller.gd",
+      "src/ui/main_menu/layout_controller.gd",
+      "src/ui/main_menu/sidebar_controller.gd",
+      "src/ui/main_menu/ui_formatters.gd"
+    ],
+    "save_flow": [
+      "src/core/save_manager.gd",
+      "src/core/game_state.gd",
+      "src/core/turn_manager.gd",
+      "src/core/event_bus.gd"
+    ]
+  },
+  "gdunit_targets": {
+    "main_menu": "res://tests/godot/main_menu_flow_test.gd",
+    "dialogs": "res://tests/godot/dialog_flow_test.gd",
+    "map": "res://tests/godot/map_controller_contract_test.gd",
+    "save_flow": "res://tests/godot/save_load_flow_test.gd",
+    "settings": "res://tests/godot/settings_manager_test.gd"
+  },
+  "headless_boot": "{windows_godot} --headless --path E:\\projects\\CentJours --quit"
+}

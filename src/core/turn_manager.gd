@@ -301,6 +301,7 @@ func _sync_state_from_engine() -> void:
 	GameState.avg_fatigue      = float(state.get("fatigue", 20.0))
 	GameState.supply           = float(state.get("supply", GameState.supply))
 	GameState.victories        = int(state.get("victories", 0))
+	GameState.diplomatic_progress = int(state.get("diplomatic_progress", GameState.diplomatic_progress))
 	GameState.actions_remaining = int(state.get("actions_remaining", GameState.actions_remaining))
 	GameState.maneuver_available = bool(state.get("maneuver_available", true))
 	GameState.difficulty       = String(state.get("difficulty", GameState.difficulty))

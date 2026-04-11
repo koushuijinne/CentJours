@@ -224,3 +224,26 @@
 - 待本轮统一提交
 下一步:
 - 继续让 `codex_pick_next_task.py` 理解“进行中 / 已完成 / 阻塞”，并把 `validation_scope` 拆成独立映射配置，便于持续维护。
+
+## 2026-04-02 第 5 轮
+分支: `claude/review-project-status-05vxD`
+范围: 把结局目标、百科、日志回看和终局复盘收口成同一层可读内容，并补外交进度前端同步
+变更:
+- 在 [src/core/game_state.gd](../../../src/core/game_state.gd) 与 [src/core/turn_manager.gd](../../../src/core/turn_manager.gd) 同步 Rust 已有的 `diplomatic_progress`，让前端不再只知道“有外交结局”，而是能看到当前进度。
+- 在 [src/ui/main_menu.gd](../../../src/ui/main_menu.gd) 重写“结局与战略目标”弹窗：新增“当前最接近的路线”“当前状态”“达成要点”“要避开”“下一步”，并把外交进度纳入当前局势摘要。
+- 在 [src/ui/main_menu.gd](../../../src/ui/main_menu.gd) 扩写百科：补上外交进度、结局怎么读、红黑指数的解释层，把“定义”提升为“影响 + 用法 + 风险”。
+- 在 [src/ui/main_menu.gd](../../../src/ui/main_menu.gd) 重写日志回看开头，加入“日志说明”和“当前局势快照”，让教程、历史事件和行动余波不再只是长文本堆叠。
+- 在 [src/ui/main_menu/dialogs_controller.gd](../../../src/ui/main_menu/dialogs_controller.gd) 给终局复盘和最终统计补上外交进度，结局弹窗和结局目标入口的解释口径保持一致。
+- 在 [src/ui/main_menu/main_menu_config.gd](../../../src/ui/main_menu/main_menu_config.gd) 为 7 条结局路线补了 `goal_line / watch_for / next_step` 内容，并清掉残留英文表述。
+- 在 [tests/godot/main_menu_flow_test.gd](../../../tests/godot/main_menu_flow_test.gd) 加强断言，要求结局入口、百科和日志回看都包含新的关键内容。
+- 更新 [docs/plans/dev_plan.md](../../plans/dev_plan.md)、[docs/history/agent_handoff.md](../agent_handoff.md)、[docs/bugs/bug_validation_matrix_2026-03-28.md](../../bugs/bug_validation_matrix_2026-03-28.md)，把这一轮内容层进展与验证入口同步为真值。
+验证:
+- `python3 -m py_compile tools/codex_pick_next_task.py tools/codex_validation_scope.py`
+- Windows `tools\\run_gdunit_windows.cmd ... res://tests/godot` 通过：`68/68`
+- Windows Godot 主项目无头启动通过
+- Windows smoke scene 通过
+- 未运行 Linux / WSL 侧测试
+提交/推送:
+- 待本轮统一提交
+下一步:
+- 继续把补给、派系和结局之间的中盘因果解释补进同一套指导层，并开始做更强的地图 / 侧栏视觉层级。

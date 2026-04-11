@@ -82,6 +82,7 @@ var avg_morale:   float = 70.0   # 平均士气 0-100
 var avg_fatigue:  float = 20.0   # 平均疲劳 0-100
 var supply:       float = 60.0   # 当前补给值 0-100
 var victories:    int   = 0      # 已赢得的战役场次
+var diplomatic_progress: int = 0 # 外交进度 0-100，仅由 Rust 引擎推进
 
 # ── 政治状态 ──────────────────────────────────────────
 ## rouge_noir: -100（极端革命）到 +100（极端保守），0为均衡

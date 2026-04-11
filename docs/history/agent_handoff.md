@@ -32,7 +32,7 @@
 - **前端拆分**: main_menu.gd 1025→684 行，6 个子控制器
 - **弹窗状态机**: modal 统一锁定，存读档/设置/战斗/接见/结局弹窗有 GdUnit4 回归
 - **教程链**: 前 10 天弹窗 + 侧栏双层呈现 + 日志回看 + 版式护栏
-- **百科入口**: 红黑指数、合法性、系统影响解释
+- **百科与目标入口**: 红黑指数、合法性、外交进度、系统影响、结局路线和提高路径解释
 - **日内行动节奏**: 1 机动槽 + 2 决策点 + 手动结束今天
 - **多结局系统**: 7 种 GameOutcome + 外交进度 (0-100) + UI OUTCOME_TEXT 7 套文本
 - **Codex harness**: 新增根 `AGENTS.md`、`tools/codex_doc_sync_guard.sh`、`tools/codex_round_check.sh`、`tools/codex_harness_status.sh`、`tools/codex_pick_next_task.py`、`tools/codex_round_summary.py`、`tools/codex_cycle.sh`、`tools/codex_validation_scope.py`、`tools/codex_light_guard.sh` 和可安装 `.githooks/pre-commit + pre-push`
@@ -52,6 +52,7 @@
 - 最终资产仍是占位（地图底图、肖像、BGM、SFX）
 - 叙事系统需从"司汤达日记"迁移为"贝特朗日记"（18 文件 96 处引用）
 - Codex harness 已能输出“下一条任务 / 压缩摘要 / 最小本地验证 / 推荐云端链”，但更细的文件到测试映射还没收口
+- 补给、派系和结局之间的长期因果解释仍偏分散，当前已覆盖百科/结局/日志第一版，但还没形成完整的中盘指导层
 
 ## 写入边界
 

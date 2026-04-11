@@ -276,7 +276,9 @@ func test_strategy_goals_popup_opens_from_topbar() -> void:
 	assert_object(popup).is_not_null()
 	assert_object(body).is_not_null()
 	assert_bool(execute_button.disabled).is_true()
-	assert_str(body.text).contains("可达成结局")
+	assert_str(body.text).contains("当前最接近的路线")
+	assert_str(body.text).contains("外交进度")
+	assert_str(body.text).contains("达成要点")
 
 
 func test_glossary_popup_opens_from_topbar() -> void:
@@ -298,6 +300,8 @@ func test_glossary_popup_opens_from_topbar() -> void:
 	assert_str(body.text).contains("红 / 黑指数")
 	assert_str(body.text).contains("合法性")
 	assert_str(body.text).contains("如何提高合法性")
+	assert_str(body.text).contains("外交进度")
+	assert_str(body.text).contains("结局怎么读")
 	assert_str(body.text).contains("当前倾向")
 	assert_str(body.text).contains("每天会多 1 个决策点")
 
@@ -379,6 +383,9 @@ func test_narrative_log_popup_replays_existing_entries() -> void:
 	var body := scene.find_child("NarrativeLogPopupBody", true, false) as Label
 	assert_object(popup).is_not_null()
 	assert_object(body).is_not_null()
+	assert_str(body.text).contains("日志说明")
+	assert_str(body.text).contains("当前局势快照")
+	assert_str(body.text).contains("外交进度")
 	assert_str(body.text).contains("测试结算描述")
 
 

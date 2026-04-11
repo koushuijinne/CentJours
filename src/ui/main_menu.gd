@@ -688,9 +688,7 @@ func _show_strategy_goals_popup() -> void:
 
 
 func _show_narrative_log_popup() -> void:
-	var body := _narrative_body.text.strip_edges()
-	if body == "":
-		body = "当前还没有可回看的日志。"
+	var body := _build_narrative_log_overview()
 	_dialogs_controller.show_info_popup("NarrativeLogPopup", "日志回看", body)
 
 
@@ -704,15 +702,20 @@ func _show_glossary_popup() -> void:
 
 func _build_strategy_goals_overview() -> String:
 	var lines: Array[String] = []
-	lines.append("当前局势")
-	lines.append("第 %d 天 · 合法性 %.1f · 胜场 %d · 补给 %.0f" % [
+	lines.append("当前战局")
+	lines.append("第 %d 天 · 合法性 %.1f · 胜场 %d · 外交进度 %d/100 · 补给 %.0f" % [
 		GameState.current_day,
 		GameState.legitimacy,
 		GameState.victories,
+		GameState.diplomatic_progress,
 		GameState.supply
 	])
 	lines.append("")
-	lines.append("可达成结局")
+	lines.append("当前最接近的路线")
+	for summary in _build_strategy_priority_lines():
+		lines.append("• %s" % summary)
+	lines.append("")
+	lines.append("结局路线")
 	for outcome_id in [
 		"napoleon_victory",
 		"diplomatic_settlement",
@@ -725,11 +728,28 @@ func _build_strategy_goals_overview() -> String:
 		var info: Dictionary = MainMenuConfigData.OUTCOME_TEXT.get(outcome_id, {})
 		if info.is_empty():
 			continue
-		lines.append("• %s" % String(info.get("title", outcome_id)))
-		lines.append(String(info.get("review_hint", "暂无说明。")))
+		lines.append("【%s】" % String(info.get("title", outcome_id)))
+		lines.append(String(info.get("desc", "暂无说明。")))
+		var status_lines := _build_strategy_status_lines(outcome_id)
+		if not status_lines.is_empty():
+			lines.append("当前状态")
+			for status_line in status_lines:
+				lines.append("- %s" % status_line)
+		var goal_line := String(info.get("goal_line", "")).strip_edges()
+		if goal_line != "":
+			lines.append("达成要点")
+			lines.append(goal_line)
+		var watch_for := String(info.get("watch_for", "")).strip_edges()
+		if watch_for != "":
+			lines.append("要避开")
+			lines.append(watch_for)
+		var next_step := String(info.get("next_step", "")).strip_edges()
+		if next_step != "":
+			lines.append("下一步")
+			lines.append(next_step)
 		lines.append("")
 	lines.append("当前建议")
-	lines.append("优先同时考虑机动节奏、合法性、补给和胜场，不要只盯一项数值。")
+	lines.append("优先同时考虑机动节奏、合法性、补给、外交进度和胜场，不要只盯一项数值。")
 	return "\n".join(lines)
 
 
@@ -747,6 +767,7 @@ func _build_glossary_overview() -> String:
 		lines.append("当前主要影响：%s。" % "；".join(rn_effect_labels))
 	else:
 		lines.append("当前主要影响：你还在中间区，两侧加成和副作用都不明显。")
+	lines.append("怎么理解：红不是绝对正确，黑也不是绝对安全。红线更容易换来短期兵力和动员，黑线更容易稳住秩序与保守支持，但两边走得太极端都会让另一头的派系代价越来越高。")
 	lines.append("")
 	lines.append("合法性")
 	lines.append("合法性是四个派系支持度的加权结果，代表这个政权还能不能继续让法国承受战争。它会影响每日决策点、部分行动门槛、结局判断，以及你还能不能用政治方式稳住局面。")
@@ -757,20 +778,94 @@ func _build_glossary_overview() -> String:
 	lines.append("偏保守政策更容易稳住贵族和行政面，偏动员政策更容易拉升民众和军方，但两边走得太极端都会带来新的副作用。")
 	lines.append("接见将领会立刻消耗 5 点合法性；战败、补给崩盘和连续把派系推向敌对区，都会让合法性更难回升。")
 	lines.append("")
+	lines.append("外交进度")
+	lines.append("外交进度代表你是否把联军逼到了谈判桌前。它不会自己增长，必须靠外交相关的政策、事件和中盘政治信誉慢慢积累。")
+	lines.append("当前外交进度：%d / 100。外交线不是临门一脚，它要求你在第 60 天之后仍然保持足够高的合法性，同时把外交进度推满。" % GameState.diplomatic_progress)
+	lines.append("")
 	lines.append("补给")
 	lines.append("补给不是单纯库存。它还取决于你站在哪类节点、补给线是否接稳、有没有把区域走廊补成可持续链路。")
 	lines.append("")
 	lines.append("一天的节奏")
 	lines.append("当前日内模型是：1 次机动槽（行军 / 战役 / 休整）+ 2 次决策点。机动区和决策区分开看，通常先决定位置，再决定当天政策。")
 	lines.append("")
+	lines.append("结局怎么读")
+	lines.append("最佳结局要求政治线和军事线一起成立；外交结局要求中后盘持续经营；军事霸权允许政治基础一般，但要拿到压倒性战果。若合法性或兵力先崩，游戏会提前结束，不会等到百日终盘。")
+	lines.append("")
 	lines.append("当前局面提示")
-	lines.append("第 %d 天 · 合法性 %.1f · 补给 %.0f · 机动%s · 决策点 %d" % [
+	lines.append("第 %d 天 · 合法性 %.1f · 补给 %.0f · 外交进度 %d/100 · 机动%s · 决策点 %d" % [
 		GameState.current_day,
 		GameState.legitimacy,
 		GameState.supply,
+		GameState.diplomatic_progress,
 		"可用" if GameState.maneuver_available else "已用",
 		GameState.actions_remaining
 	])
+	return "\n".join(lines)
+
+
+func _build_strategy_priority_lines() -> Array[String]:
+	var lines: Array[String] = []
+	if GameState.legitimacy < 15.0:
+		lines.append("政治线已经接近即时失败区，先稳合法性和派系支持，再谈其他路线。")
+	if GameState.total_troops < 12000:
+		lines.append("兵力已明显见底，继续高损耗换位置会更接近军事覆灭。")
+	if GameState.current_day >= 60 and GameState.legitimacy > 65.0 and GameState.diplomatic_progress >= 70:
+		lines.append("你已经接近外交线兑现窗口，优先保住合法性并继续推进外交进度。")
+	if GameState.victories >= 2 and GameState.legitimacy > 45.0:
+		lines.append("政治线和军事线都还站得住，当前最值得争取的是把中盘优势滚成改写历史的胜局。")
+	elif GameState.victories >= 3 or (GameState.victories >= 2 and GameState.legitimacy <= 45.0):
+		lines.append("战场线已有起色，但政治基础仍偏薄。若继续只靠硬打，更容易落到军事霸权而非最佳结局。")
+	if GameState.supply < 45.0:
+		lines.append("补给已经进入危险区。无论你想追哪条结局线，都要先把前线续航拉回安全值。")
+	if lines.is_empty():
+		lines.append("当前局面还在塑形期。先决定今天的位置和补给节奏，再决定要押政治、外交还是战场。")
+	return lines
+
+
+func _build_strategy_status_lines(outcome_id: String) -> Array[String]:
+	var lines: Array[String] = []
+	match outcome_id:
+		"napoleon_victory":
+			lines.append("政治线：当前合法性 %.1f。它需要你把巴黎的支持撑到终盘。" % GameState.legitimacy)
+			lines.append("战场线：当前胜场 %d。你需要的不只是活到终盘，而是把关键战役转成有效胜利。" % GameState.victories)
+		"diplomatic_settlement":
+			lines.append("时间线：外交结局只会在第 60 天之后真正兑现，现在是第 %d 天。" % GameState.current_day)
+			lines.append("外交线：当前进度 %d/100。若中盘不持续经营，这条线不会自己长出来。" % GameState.diplomatic_progress)
+			lines.append("政治线：当前合法性 %.1f。外交解法要求你一直像个还能谈判的政权。" % GameState.legitimacy)
+		"military_dominance":
+			lines.append("战场线：当前胜场 %d。它接受政治基础一般，但要求你把战果滚成碾压态势。" % GameState.victories)
+			lines.append("风险线：当前合法性 %.1f。若政治线再掉得太狠，军队再强也可能先被内部否决。" % GameState.legitimacy)
+		"waterloo_historical":
+			lines.append("这是拖到终盘但没改写历史的路线。当前胜场 %d、合法性 %.1f，都还不够让局面彻底翻盘。" % [GameState.victories, GameState.legitimacy])
+		"waterloo_defeat":
+			lines.append("这条线代表政治和军事都没守住。当前胜场 %d、合法性 %.1f，若继续一起下滑就会落到这里。" % [GameState.victories, GameState.legitimacy])
+		"political_collapse":
+			lines.append("即时失败风险：当前合法性 %.1f。它越低，巴黎越可能先于前线否决整场战争。" % GameState.legitimacy)
+		"military_annihilation":
+			lines.append("即时失败风险：当前兵力 %d、补给 %.0f。若连续高损耗并硬顶低补给，军队会先崩。" % [GameState.total_troops, GameState.supply])
+	return lines
+
+
+func _build_narrative_log_overview() -> String:
+	var log_body := _narrative_body.text.strip_edges()
+	var lines: Array[String] = []
+	lines.append("日志说明")
+	lines.append("这里会保留教程、历史事件、行动结算和日记摘录。你可以把它当成回看窗口：先看当前局势，再往下翻最近发生了什么。")
+	lines.append("")
+	lines.append("当前局势快照")
+	lines.append("第 %d 天 · 合法性 %.1f · 胜场 %d · 外交进度 %d/100 · 补给 %.0f" % [
+		GameState.current_day,
+		GameState.legitimacy,
+		GameState.victories,
+		GameState.diplomatic_progress,
+		GameState.supply
+	])
+	lines.append("")
+	lines.append("最近记录")
+	if log_body == "":
+		lines.append("当前还没有可回看的日志。")
+	else:
+		lines.append(log_body)
 	return "\n".join(lines)
 
 ## TODO(history): 当前事件源仍挂在原型期的 stendhal 信号上，后续要整体迁移到 Bertrand diary。
@@ -868,6 +963,7 @@ func _dialog_stats_snapshot() -> Dictionary:
 		MainMenuDialogsControllerScript.STATE_KEY_CURRENT_DAY: GameState.current_day,
 		MainMenuDialogsControllerScript.STATE_KEY_LEGITIMACY: GameState.legitimacy,
 		MainMenuDialogsControllerScript.STATE_KEY_VICTORIES: GameState.victories,
+		MainMenuDialogsControllerScript.STATE_KEY_DIPLOMATIC_PROGRESS: GameState.diplomatic_progress,
 		MainMenuDialogsControllerScript.STATE_KEY_TOTAL_TROOPS: GameState.total_troops,
 		MainMenuDialogsControllerScript.STATE_KEY_AVG_MORALE: GameState.avg_morale,
 		MainMenuDialogsControllerScript.STATE_KEY_SUPPLY: GameState.supply,

@@ -23,6 +23,7 @@ const STATE_KEY_CURRENT_DAY := "current_day"
 const STATE_KEY_DAY := "day"
 const STATE_KEY_LEGITIMACY := "legitimacy"
 const STATE_KEY_VICTORIES := "victories"
+const STATE_KEY_DIPLOMATIC_PROGRESS := "diplomatic_progress"
 const STATE_KEY_TOTAL_TROOPS := "total_troops"
 const STATE_KEY_AVG_MORALE := "avg_morale"
 const STATE_KEY_SUPPLY := "supply"
@@ -42,6 +43,7 @@ const DEFAULT_GAME_OVER_STATE := {
 	STATE_KEY_CURRENT_DAY: 1,
 	STATE_KEY_LEGITIMACY: 0.0,
 	STATE_KEY_VICTORIES: 0,
+	STATE_KEY_DIPLOMATIC_PROGRESS: 0,
 	STATE_KEY_TOTAL_TROOPS: 0,
 	STATE_KEY_AVG_MORALE: 0.0,
 	STATE_KEY_SUPPLY: 0.0,
@@ -93,6 +95,7 @@ func build_game_over_state(stats: Dictionary = {}) -> Dictionary:
 	normalized[STATE_KEY_CURRENT_DAY] = _get_int_stat(stats, STATE_KEY_CURRENT_DAY, _get_int_stat(stats, STATE_KEY_DAY, int(DEFAULT_GAME_OVER_STATE[STATE_KEY_CURRENT_DAY])))
 	normalized[STATE_KEY_LEGITIMACY] = _get_float_stat(stats, STATE_KEY_LEGITIMACY, float(DEFAULT_GAME_OVER_STATE[STATE_KEY_LEGITIMACY]))
 	normalized[STATE_KEY_VICTORIES] = _get_int_stat(stats, STATE_KEY_VICTORIES, int(DEFAULT_GAME_OVER_STATE[STATE_KEY_VICTORIES]))
+	normalized[STATE_KEY_DIPLOMATIC_PROGRESS] = _get_int_stat(stats, STATE_KEY_DIPLOMATIC_PROGRESS, int(DEFAULT_GAME_OVER_STATE[STATE_KEY_DIPLOMATIC_PROGRESS]))
 	normalized[STATE_KEY_TOTAL_TROOPS] = _get_int_stat(stats, STATE_KEY_TOTAL_TROOPS, int(DEFAULT_GAME_OVER_STATE[STATE_KEY_TOTAL_TROOPS]))
 	normalized[STATE_KEY_AVG_MORALE] = _get_float_stat(stats, STATE_KEY_AVG_MORALE, float(DEFAULT_GAME_OVER_STATE[STATE_KEY_AVG_MORALE]))
 	normalized[STATE_KEY_SUPPLY] = _get_float_stat(stats, STATE_KEY_SUPPLY, float(DEFAULT_GAME_OVER_STATE[STATE_KEY_SUPPLY]))
@@ -220,6 +223,7 @@ func show_game_over(outcome: String, stats: Dictionary = {}) -> void:
 	var current_day := _display_game_over_day(int(game_over_state[STATE_KEY_CURRENT_DAY]))
 	var legitimacy := float(game_over_state[STATE_KEY_LEGITIMACY])
 	var victories := int(game_over_state[STATE_KEY_VICTORIES])
+	var diplomatic_progress := int(game_over_state[STATE_KEY_DIPLOMATIC_PROGRESS])
 	var total_troops := int(game_over_state[STATE_KEY_TOTAL_TROOPS])
 	var avg_morale := float(game_over_state[STATE_KEY_AVG_MORALE])
 	var supply := float(game_over_state[STATE_KEY_SUPPLY])
@@ -233,9 +237,10 @@ func show_game_over(outcome: String, stats: Dictionary = {}) -> void:
 
 	var stats_label := Label.new()
 	stats_label.name = "GameOverStatsLabel"
-	stats_label.text = "\n最终统计\n天数: %d  |  合法性: %.0f\n胜场: %d  |  兵力: %d  |  士气: %.0f  |  补给: %.0f" % [
+	stats_label.text = "\n最终统计\n天数: %d  |  合法性: %.0f  |  外交进度: %d\n胜场: %d  |  兵力: %d  |  士气: %.0f  |  补给: %.0f" % [
 		current_day,
 		legitimacy,
+		diplomatic_progress,
 		victories,
 		total_troops,
 		avg_morale,
@@ -301,6 +306,7 @@ func _build_game_over_review(outcome: String, game_over_state: Dictionary, info:
 	var current_day := _display_game_over_day(int(game_over_state[STATE_KEY_CURRENT_DAY]))
 	var legitimacy := float(game_over_state[STATE_KEY_LEGITIMACY])
 	var victories := int(game_over_state[STATE_KEY_VICTORIES])
+	var diplomatic_progress := int(game_over_state[STATE_KEY_DIPLOMATIC_PROGRESS])
 	var total_troops := int(game_over_state[STATE_KEY_TOTAL_TROOPS])
 	var avg_morale := float(game_over_state[STATE_KEY_AVG_MORALE])
 	var supply := float(game_over_state[STATE_KEY_SUPPLY])
@@ -318,7 +324,7 @@ func _build_game_over_review(outcome: String, game_over_state: Dictionary, info:
 		"napoleon_victory":
 			lines.append("你把政权撑到了终局，还拿下了 %d 场有效胜利。政治线和军事线都没有先失手。" % victories)
 		"diplomatic_settlement":
-			lines.append("你在第 %d 天通过外交途径达成了停火，合法性 %.0f 和外交进程共同促成了这个结局。" % [current_day, legitimacy])
+			lines.append("你在第 %d 天通过外交途径达成了停火，合法性 %.0f 和 %d 点外交进程共同促成了这个结局。" % [current_day, legitimacy, diplomatic_progress])
 		"military_dominance":
 			lines.append("你拿下了 %d 场胜利，以压倒性军事优势结束了百日。但合法性只有 %.0f，帝国靠剑而立。" % [victories, legitimacy])
 		"waterloo_historical":
@@ -334,6 +340,8 @@ func _build_game_over_review(outcome: String, game_over_state: Dictionary, info:
 		lines.append("有效胜场只有 %d 场，军事窗口没有被扩大成决定性优势。" % victories)
 	if legitimacy < 35.0:
 		lines.append("终局合法性只剩 %.0f，政治支持已经不足以继续承担战争。" % legitimacy)
+	if diplomatic_progress >= 70 and outcome != "diplomatic_settlement":
+		lines.append("你把外交进度推到了 %d，但没有把它兑现成停火，说明政治基础或时间窗口仍没守住。" % diplomatic_progress)
 	if supply < 45.0:
 		lines.append("终局补给只剩 %.0f，说明你在最后几步里已经把库存压进了前线惩罚区。" % supply)
 	if total_troops < 20000:

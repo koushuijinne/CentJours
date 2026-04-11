@@ -35,9 +35,21 @@ def load_tasks() -> list[dict[str, str]]:
                 "scale": scale,
                 "detail": detail,
                 "section": current_section,
+                "status": infer_status(title, detail),
             }
         )
     return tasks
+
+
+def infer_status(title: str, detail: str) -> str:
+    haystack = f"{title} {detail}"
+    if "已完成" in haystack or "~~" in haystack:
+        return "completed"
+    if "进行中" in haystack or "继续" in haystack or "后续" in haystack:
+        return "in_progress"
+    if "阻塞" in haystack or "未开始" in haystack:
+        return "blocked"
+    return "planned"
 
 
 def priority_rank(priority: str) -> int:
@@ -76,12 +88,15 @@ def score_task(task: dict[str, str], focus: str) -> tuple[int, int, int]:
     if focus == "content" and "历史事件" in haystack:
         focus_bonus -= 20
 
-    completed_penalty = 0
-    if "已完成" in task["detail"]:
-        completed_penalty = 100
+    status_score = {
+        "in_progress": -5,
+        "planned": 0,
+        "blocked": 20,
+        "completed": 100,
+    }[task["status"]]
 
     return (
-        priority_rank(task["priority"]) * 10 + section_bonus + focus_bonus + completed_penalty,
+        priority_rank(task["priority"]) * 10 + section_bonus + focus_bonus + status_score,
         {"S": 0, "M": 1, "L": 2, "XL": 3}.get(task["scale"], 9),
         int(task["id"].split("-")[1]),
     )
@@ -130,13 +145,13 @@ def main() -> int:
         if next_task:
             print(
                 f"Selected: {next_task['id']} | {next_task['title']} | "
-                f"{next_task['priority']} | {next_task['section']}"
+                f"{next_task['priority']} | {next_task['status']} | {next_task['section']}"
             )
             print(f"Detail: {next_task['detail']}")
         print("\nTop candidates:")
         for task in payload["top_candidates"]:
             print(
-                f"  - {task['id']} | {task['title']} | {task['priority']} | "
+                f"  - {task['id']} | {task['title']} | {task['priority']} | {task['status']} | "
                 f"{task['section']}"
             )
     return 0
