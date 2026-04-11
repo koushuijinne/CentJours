@@ -34,7 +34,7 @@ save_version: v4
 tests_rust: 215
 tests_gdunit4: 68
 ci: windows-fast / windows-full / windows-heavy-nightly
-harness: AGENTS.md / doc-sync guard / round check / harness status / optional git hooks
+harness: AGENTS.md / doc-sync guard / round check / harness status / validation scope / light guard / optional git hooks
 ```
 
 ## 不可违反的硬约束
@@ -57,6 +57,7 @@ harness: AGENTS.md / doc-sync guard / round check / harness status / optional gi
 5. 改完先跑对应验证，再更新文档。
 6. 代码和文档放在同一个 commit，不拆开。
 7. 一轮结束前运行 `tools/codex_doc_sync_guard.sh`；需要看当前门禁状态时运行 `tools/codex_harness_status.sh`；准备停在某个 round 时运行 `tools/codex_round_check.sh`。
+8. 改动较大或准备 push 前，运行 `tools/codex_light_guard.sh` 查看最小本地守卫和推荐云端验证链。
 
 ## 默认验证口径
 
@@ -91,6 +92,10 @@ tools/run_gdunit_windows.cmd <godot_path> res://tests/godot
   - 回合结束前检查工作区是否干净、是否有未推送提交。
 - `tools/codex_harness_status.sh`
   - 输出当前分支、ahead/behind、hooksPath、worktree 洁净度和文档变更状态。
+- `tools/codex_validation_scope.py`
+  - 按改动文件类型输出最小本地验证和推荐云端验证链。
+- `tools/codex_light_guard.sh`
+  - 运行 doc sync、shell/python 语法、Rust fmt，并打印本轮验证范围建议。
 - `tools/install_codex_git_hooks.sh`
   - 把仓库内 `.githooks/` 安装为当前 repo 的 git hooks（`pre-commit + pre-push`）。
 

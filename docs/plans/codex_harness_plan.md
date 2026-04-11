@@ -60,7 +60,19 @@
   - 把 Codex 当前本地 harness 状态变成显式信息
   - 便于 round 开始前和准备提交前快速检查
 
-### 5. 可安装 git hooks
+### 5. 验证范围规划与轻量守卫
+
+- 新增 [tools/codex_validation_scope.py](../../tools/codex_validation_scope.py)
+- 新增 [tools/codex_light_guard.sh](../../tools/codex_light_guard.sh)
+- 行为：
+  - 按改动文件判断是 `docs / rust / rust_gdext / godot_ui / godot_tests / ci_or_harness / heavy_validation`
+  - 输出建议的本地最小验证和对应云端链路
+  - 本地只执行轻量守卫：`doc-sync`、shell/python 语法、Rust `fmt --check`
+- 作用：
+  - 把“这轮至少该验证什么”从人工记忆变成脚本输出
+  - 避免 `pre-push` 直接强行启动 Godot 或跑全量 Rust 长测
+
+### 6. 可安装 git hooks
 
 - 新增 [tools/install_codex_git_hooks.sh](../../tools/install_codex_git_hooks.sh)
 - 新增 [.githooks/pre-commit](../../.githooks/pre-commit)
@@ -74,7 +86,7 @@ bash tools/install_codex_git_hooks.sh
 - 结果：
   - 当前仓库会把 `core.hooksPath` 指向 `.githooks/`
   - 每次 `git commit` 前自动跑文档同步检查
-  - 每次 `git push` 前自动跑 `codex_round_check.sh --pre-push`
+  - 每次 `git push` 前自动跑 `codex_round_check.sh --pre-push` 与 `codex_light_guard.sh`
 
 ## 这套方案的边界
 
@@ -84,6 +96,7 @@ bash tools/install_codex_git_hooks.sh
 - 文档同步从“靠记忆”变成“可执行脚本 + 可安装 hook”
 - 回合收口有了显式检查脚本
 - Codex 现在可以显式查看本地 harness 状态，并在 push 前有一层本地门禁
+- push 前可以自动得到“本地最小验证 + 推荐云端链”的分类结果，而不是靠人工判断
 
 ### 没有伪装成已解决
 
@@ -111,6 +124,12 @@ bash tools/codex_doc_sync_guard.sh
 bash tools/codex_harness_status.sh
 ```
 
+7. 需要看本轮改动该走哪些验证时跑：
+
+```bash
+bash tools/codex_light_guard.sh
+```
+
 ### 安装本地 hooks
 
 ```bash
@@ -126,5 +145,5 @@ bash tools/codex_round_check.sh
 ## 后续可选增强
 
 1. 为 `codex_round_check.sh` 增加压缩摘要模板输出
-2. 在 `pre-push` 里按文件类型挂最小验证，而不只检查分支状态和文档同步
+2. 在 `codex_light_guard.sh` 里继续细化 Godot 与 Rust 的定向最小验证映射
 3. 若后续 Codex 暴露仓库级 hook 接口，再把这套脚本接回自动事件触发

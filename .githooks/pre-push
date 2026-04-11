@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-exec tools/codex_round_check.sh --pre-push
+tools/codex_round_check.sh --pre-push
+exec tools/codex_light_guard.sh

@@ -35,7 +35,7 @@
 - **百科入口**: 红黑指数、合法性、系统影响解释
 - **日内行动节奏**: 1 机动槽 + 2 决策点 + 手动结束今天
 - **多结局系统**: 7 种 GameOutcome + 外交进度 (0-100) + UI OUTCOME_TEXT 7 套文本
-- **Codex harness**: 新增根 `AGENTS.md`、`tools/codex_doc_sync_guard.sh`、`tools/codex_round_check.sh`、`tools/codex_harness_status.sh` 和可安装 `.githooks/pre-commit + pre-push`
+- **Codex harness**: 新增根 `AGENTS.md`、`tools/codex_doc_sync_guard.sh`、`tools/codex_round_check.sh`、`tools/codex_harness_status.sh`、`tools/codex_validation_scope.py`、`tools/codex_light_guard.sh` 和可安装 `.githooks/pre-commit + pre-push`
 
 ## 当前最高优先级
 
@@ -51,7 +51,7 @@
 - 前端发布级 polish 和 Windows 真机验收未完成
 - 最终资产仍是占位（地图底图、肖像、BGM、SFX）
 - 叙事系统需从"司汤达日记"迁移为"贝特朗日记"（18 文件 96 处引用）
-- Codex harness 仍缺“按文件类型挂最小验证”的 push 前门禁，目前只做到文档同步和分支状态检查
+- Codex harness 已能在 push 前输出“最小本地验证 + 推荐云端链”，但更细的文件到测试映射还没收口
 
 ## 写入边界
 

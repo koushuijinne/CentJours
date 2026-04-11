@@ -185,3 +185,21 @@
 - 待本轮统一提交
 下一步:
 - 继续把 Codex harness 从“状态与门禁”推进到“按文件类型挂最小验证”的 push 前护栏。
+
+## 2026-04-02 第 3 轮
+分支: `claude/review-project-status-05vxD`
+范围: 为 Codex harness 增加按改动类型输出验证范围的 planner 和本地 light guard
+变更:
+- 新增 [tools/codex_validation_scope.py](../../../tools/codex_validation_scope.py)，按改动文件输出 `docs_only / rust / rust_gdext / godot_ui / godot_tests / ci_or_harness / heavy_validation` 分类。
+- 新增 [tools/codex_light_guard.sh](../../../tools/codex_light_guard.sh)，在 push 前运行 `doc-sync`、shell/python 语法、Rust `fmt --check`，并打印本轮推荐的本地最小验证和云端链路。
+- 更新 [.githooks/pre-push](../../../.githooks/pre-push)，现在会先跑 `codex_round_check.sh --pre-push`，再跑 `codex_light_guard.sh`。
+- 更新 [tools/install_codex_git_hooks.sh](../../../tools/install_codex_git_hooks.sh)、[AGENTS.md](../../../AGENTS.md)、[README.md](../../../README.md)、[docs/plans/codex_harness_plan.md](../../plans/codex_harness_plan.md)、[docs/plans/dev_plan.md](../../plans/dev_plan.md)、[docs/history/agent_handoff.md](../agent_handoff.md)，同步 Codex harness 当前结构。
+验证:
+- `bash -n tools/codex_light_guard.sh`
+- `python3 -m py_compile tools/codex_validation_scope.py`
+- `bash tools/codex_light_guard.sh <changed_files>`
+- 未运行 Linux / WSL 侧测试
+提交/推送:
+- 待本轮统一提交
+下一步:
+- 继续把 validation scope 从“粗粒度分类”推进到“具体模块 -> 对应 GdUnit4 / Rust 最小验证”的映射表。
