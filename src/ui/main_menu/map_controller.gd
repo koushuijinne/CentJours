@@ -437,9 +437,11 @@ func clear_interaction_state() -> void:
 	var changed := _hovered_map_node_id != "" or _selected_map_node_id != ""
 	_hovered_map_node_id = ""
 	_selected_map_node_id = ""
+	_pending_march_target = ""
 	if changed:
 		hovered_node_changed.emit("")
 		selected_node_changed.emit("")
+		EventBus.node_selection_cleared.emit()
 		refresh_map_inspector()
 		request_map_rebuild()
 

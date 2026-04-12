@@ -838,7 +838,23 @@ func _maybe_show_daily_tutorial_popup() -> void:
 func _show_tutorial_popup(title: String, body: String) -> void:
 	_dialogs_controller.show_info_popup("TutorialPopup", title, body)
 
+func _show_strategy_goals_popup() -> void:
+	var strategy_text := _build_strategy_goals_overview()
+	_dialogs_controller.show_info_popup("StrategyGoalsPopup", "当前战略目标", strategy_text)
 
+func _show_glossary_popup() -> void:
+	var glossary_text := _build_glossary_overview()
+	_dialogs_controller.show_info_popup("GlossaryPopup", "游戏百科", glossary_text)
+
+func _show_narrative_log_popup() -> void:
+	var log_text := _build_narrative_log_overview()
+	_dialogs_controller.show_info_popup("NarrativeLogPopup", "历史日志", log_text)
+
+func _build_strategy_goals_overview() -> String:
+	var lines: Array[String] = []
+	lines.append("当前局势概览")
+	lines.append("第 %d 天 · 合法性 %.1f · 胜场 %d · 外交进度 %d/100 · 补给 %.0f" % [
+		GameState.current_day,
 		GameState.legitimacy,
 		GameState.victories,
 		GameState.diplomatic_progress,
@@ -917,13 +933,20 @@ func _build_glossary_overview() -> String:
 	lines.append("当前外交进度：%d / 100。外交线不是临门一脚，它要求你在第 60 天之后仍然保持足够高的合法性，同时把外交进度推满。" % GameState.diplomatic_progress)
 	lines.append("")
 	lines.append("补给")
-	lines.append("补给不是单纯库存。它还取决于你站在哪类节点、补给线是否接稳、有没有把区域走廊补成可持续链路。")
+	lines.append("补给不是单纯库存，而是你维持帝国战争机器的“生命线”。它取决于你当前节点容量、补给线稳定性，以及区域走廊的链路质量。")
+	lines.append("影响：补给充足时（>60），行军损耗更低，战斗有加成；补给匮乏时（<45），不仅战斗力受损，还会引发合法性持续流失，甚至导致军队逃兵。")
+	lines.append("补救方法：在容量高的城市节点“休整”，或使用补给相关政策牌。不要在低容量的前沿节点长期逗留。")
 	lines.append("")
 	lines.append("一天的节奏")
 	lines.append("当前日内模型是：1 次机动槽（行军 / 战役 / 休整）+ 2 次决策点。机动区和决策区分开看，通常先决定位置，再决定当天政策。")
 	lines.append("")
 	lines.append("结局怎么读")
-	lines.append("最佳结局要求政治线和军事线一起成立；外交结局要求中后盘持续经营；军事霸权允许政治基础一般，但要拿到压倒性战果。若合法性或兵力先崩，游戏会提前结束，不会等到百日终盘。")
+	lines.append("结局是政治、军事与外交共同博弈的结果：")
+	lines.append("• 军事覆灭：补给或兵力降至极值，军队将先于政权瓦解。")
+	lines.append("• 政治崩溃：合法性跌破临界点，巴黎将由于内部动荡强制你退位。")
+	lines.append("• 外交调停：第 60 天后，高合法性搭配满额的外交进度，可达成体面的停火。")
+	lines.append("• 拿破仑胜利：胜场足够多且国内政局稳定，历史将由你改写。")
+	lines.append("若合法性或兵力先崩，游戏会提前结束，不会等到百日终盘。")
 	lines.append("")
 	lines.append("当前局面提示")
 	lines.append("第 %d 天 · 合法性 %.1f · 补给 %.0f · 外交进度 %d/100 · 机动%s · 决策点 %d" % [

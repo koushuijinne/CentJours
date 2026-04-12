@@ -174,6 +174,8 @@ func show_info_popup(popup_name: String, title_text: String, body_text: String, 
 	_host_or_self().add_child(_info_popup)
 	_track_modal_popup(_info_popup)
 	_info_popup.popup_centered(Vector2i(620, 480))
+	_info_popup.about_to_popup.connect(func(): _call_optional(CALLBACK_SET_TRAY_INTERACTIVE, [false, popup_name]))
+	_info_popup.popup_hide.connect(func(): _call_optional(CALLBACK_SET_TRAY_INTERACTIVE, [true, ""]))
 
 
 func show_game_over(outcome: String, stats: Dictionary = {}) -> void:

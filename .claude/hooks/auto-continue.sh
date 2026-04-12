@@ -5,11 +5,13 @@
 INPUT=$(cat)
 
 # 防止无限循环：如果已经被拦过一次，放行
-if [ "$(echo "$INPUT" | jq -r '.stop_hook_active // false')" = "true" ]; then
+if echo "$INPUT" | grep -q '"stop_hook_active"[[:space:]]*:[[:space:]]*true'; then
   exit 0
 fi
 
-cd "$(echo "$INPUT" | jq -r '.cwd // "."')" 2>/dev/null || exit 0
+# 提取 cwd（不依赖 jq，用 grep+sed）
+CWD=$(echo "$INPUT" | grep -o '"cwd"[[:space:]]*:[[:space:]]*"[^"]*"' | sed 's/.*"cwd"[[:space:]]*:[[:space:]]*"//;s/"$//')
+cd "${CWD:-.}" 2>/dev/null || exit 0
 
 # 检查是否有未提交的改动
 if ! git diff --quiet 2>/dev/null || ! git diff --cached --quiet 2>/dev/null; then

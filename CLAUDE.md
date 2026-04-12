@@ -96,6 +96,7 @@ cd cent-jours-core && cargo test
 cd cent-jours-core && cargo build --features godot-extension
 
 # GdUnit4（改 GDScript 时，Windows 侧）
+# 权威 Godot 路径：..\..\software\godot\Godot_v4.6.1-stable_win64_console.exe
 tools\run_gdunit_windows.cmd <godot_path> res://tests/godot
 
 # Windows 无头启动

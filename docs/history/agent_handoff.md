@@ -1,6 +1,6 @@
 # Agent 交接
 
-> **更新**: 2026-04-01
+> **更新**: 2026-04-13
 > **约束和流程**: 见 `CLAUDE.md`（项目根目录，Claude Code 自动读取）
 > **Codex 入口**: 见 `AGENTS.md`（项目根目录，Codex 默认读取）
 > **开发历史**: 见 [docs/history/development_logs/](docs/history/development_logs/)
@@ -15,6 +15,7 @@
 | 入口 | `src/ui/main_menu.tscn`，主循环 `TurnManager → CentJoursEngine → GameState → UI` 已接通 |
 | 数据 | 15 角色 / 41 地图节点 / 66 历史事件 (major 17 / normal 38 / minor 11) |
 | 测试 | Windows `cargo test 215/215` + GdUnit4 `69/69` + Windows CI + smoke |
+| 自动工作流 | 已启用（2026-04-13），权限配置 `Bash(*)`，hook 已修复 jq 依赖 |
 | 存档 | Save v4 兼容路径，旧 `fontainebleau_eve` → `tuileries_eve` 迁移 |
 | 分支 | `claude/review-project-status-05vxD`（已合并 `auto/gameplay_update`） |
 

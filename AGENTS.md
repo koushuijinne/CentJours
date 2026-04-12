@@ -44,7 +44,7 @@ harness: AGENTS.md / doc-sync guard / round check / harness status / task picker
 3. 数据流保持单向：Engine -> TurnManager -> GameState -> UI。
 4. 代码改动必须同步文档；提交前跑文档同步检查。
 5. **绝对验证平台约束**：所有验证（Rust 单元测试、GdUnit4 前端测试、冒烟测试）**必须且只能**在 Windows 真机环境下执行。严禁使用 Linux / WSL 结果作为权威结论。
-6. **权威 Godot 路径**：Windows 验证环境下的 Godot 路径固定为 `E:\software\godot`。
+6. **权威 Godot 路径**：Windows 验证环境下的 Godot 路径固定为 `..\..\software\godot\Godot_v4.6.1-stable_win64_console.exe`。
 7. 修改规则层必须补测试；修改前端状态流必须补 `GdUnit4` 或 Windows 真机验证记录。
 8. 不为写实牺牲可读性、反馈清晰度和玩家公平感。
 9. 文案遵守 ADR-008：直写、可考据、不 reframe。
