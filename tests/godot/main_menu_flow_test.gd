@@ -373,26 +373,26 @@ func test_action_budget_copy_updates_when_only_maneuver_remains() -> void:
 	assert_str(boost_card.disabled_reason).is_equal("决策点已用尽")
 
 
-func test_glossary_popup_hidden_externally_restores_action_interactivity() -> void:
+func test_main_menu_modal_locks_tray_interactions() -> void:
 	var runner := await _load_main_menu()
 	var scene := runner.scene()
-	var glossary_button := scene.find_child("GlossaryButton", true, false) as Button
+	var tray_controller = runner.get_property("_tray_controller")
+	var settings_button := scene.find_child("SettingsButton", true, false) as Button
 	var execute_button := scene.find_child("ExecuteActionButton", true, false) as Button
-	assert_object(glossary_button).is_not_null()
+	assert_object(settings_button).is_not_null()
 	assert_object(execute_button).is_not_null()
 
-	glossary_button.pressed.emit()
+	# 打开设置弹窗
+	settings_button.pressed.emit()
 	await runner.simulate_frames(2)
-
-	var popup := scene.find_child("GlossaryPopup", true, false) as PopupPanel
-	assert_object(popup).is_not_null()
-	assert_bool(popup.exclusive).is_true()
 	assert_bool(execute_button.disabled).is_true()
 
-	popup.hide()
+	# 关闭设置弹窗
+	var close_button := scene.find_child("SettingsCloseButton", true, false) as Button
+	assert_object(close_button).is_not_null()
+	close_button.pressed.emit()
 	await runner.simulate_frames(2)
 
-	assert_object(scene.find_child("GlossaryPopup", true, false)).is_null()
 	assert_bool(execute_button.disabled).is_false()
 
 

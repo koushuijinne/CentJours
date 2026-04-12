@@ -90,8 +90,8 @@
 
 | ID | 任务 | 优先级 | 规模 | 状态 |
 |----|------|--------|------|------|
-| S0-1 | 继续收口三层 Windows GitHub Actions 验证链 | P0 | M | **已收口**；已引入 Godot 缓存、日志收集与 Release 性能模式 |
-| S0-2 | 把 `docs/bugs` 中的关键问题继续转成可重复验证 | P0 | M | 进行中 |
+| S0-1 | 继续收口三层 Windows GitHub Actions 验证链 | P0 | M | **已完成** |
+| S0-2 | 把 `docs/bugs` 中的关键问题继续转成可重复验证 | P0 | M | **进行中** |
 | S0-3 | 继续扩 Godot `GdUnit4` 覆盖面（存读档一致性、更多边界） | P0 | M | 进行中 |
 | S0-4 | Codex harness engineering | P0 | M | 已确立 **Windows 绝对验证约束**；下一步补更细的模块 -> 最小验证映射 |
 
