@@ -380,7 +380,7 @@ impl PoliticsState {
         self.economic_index = (self.economic_index + eco_drift).min(100.0);
 
         // 重置行动点
-        self.actions_remaining = if self.legitimacy >= 70.0 { 3 } else { 2 };
+        self.actions_remaining = 3;
     }
 
     /// 获取政策冷却表（policy_id → 剩余天数），供 GDExtension 接口读取
