@@ -69,7 +69,7 @@
 | 核心玩法引擎 | 95% | Rust 规则层 + GDScript 前端主循环已跑通 |
 | 存读档系统 | 100% | v4 兼容迁移已落地 |
 | 历史事件内容 | 66% | 66/100+ 条，需补 34+ 条 |
-| 教程/引导 | 10% | 仅有前 10 天 hint 文本，无正式教程流 |
+| 教程/引导 | 45% | 前 10 天结构化教程已落地（10 阶段覆盖三大核心），后续需加深中盘引导和交互式教学 |
 | 结局系统 | 85% | 7 种结局路径已实现（NapoleonVictory / DiplomaticSettlement / MilitaryDominance / WaterlooHistorical / WaterlooDefeat / PoliticalCollapse / MilitaryAnnihilation），含外交进度系统、失败归因、难度标记、UI 文本和变体选择 |
 | 音频 | 10% | AudioManager 框架已建立，缺音频资产文件 |
 | 美术资产 | 0% | 无角色肖像、无地图美术、无战斗特效，仅有 icon.svg |
@@ -122,7 +122,7 @@
 |----|------|--------|------|------|
 | S2-1 | 历史事件扩到 100+ 条 | P3 | XL | 当前 66 条，需补中期政治/外交/社会事件 34+ 条；已降为最低优先级，待核心玩法 / harness / 发布链收口后再恢复 |
 | S2-2 | ~~完成多结局系统~~ | P0 | L | **已完成** — 7 种结局路径 (NapoleonVictory / DiplomaticSettlement / MilitaryDominance / WaterlooHistorical / WaterlooDefeat / PoliticalCollapse / MilitaryAnnihilation)，含外交进度系统、Rust check_outcome() 多路径逻辑、UI OUTCOME_TEXT + 变体选择 |
-| S2-3 | 前 10 天新手教程流 | P0 | L | 引导玩家理解补给、政治、命令偏差三大核心，用场景内提示而非独立教程关 |
+| S2-3 | 前 10 天新手教程流 | P0 | L | **第一版已落地** — 结构化 10 阶段教程（JSON 数据驱动），覆盖补给/政治/命令偏差三大核心 + 外交/策略/总结；侧栏已补政治教学；6 条 GdUnit4 回归 |
 | S2-4 | 中期张力补强 (Day 20-80) | P1 | L | 增加定时危机事件、派系叛变窗口、联军集结压力曲线，避免重复行动感 |
 | S2-5 | ~~失败归因系统~~ | P1 | M | **已完成** — GameState.key_decisions 追踪 + 游戏结束弹窗展示 |
 | S2-6 | ~~难度选择 UI + 难度参数生效~~ | P1 | M | **已完成** — 新局弹窗选择 → TurnManager → Rust 引擎 |

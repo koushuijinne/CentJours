@@ -76,7 +76,8 @@ func test_tutorial_popup_keeps_readable_width_for_long_chinese_copy() -> void:
 	assert_int(int(roundf(popup.size.x))).is_greater_equal(600)
 	assert_int(int(roundf(scroll.size.x))).is_greater_equal(520)
 	assert_int(int(roundf(body.size.x))).is_greater_equal(500)
-	assert_str(body.text).contains("前10天教程")
+	# 结构化教程 Day 1 的内容应包含"厄尔巴岛"或旧格式"前10天教程"
+	assert_bool(body.text.contains("厄尔巴岛") or body.text.contains("前10天教程")).is_true()
 
 	await _dismiss_tutorial_popup_if_present(scene, runner)
 
@@ -307,7 +308,7 @@ func test_strategy_goals_popup_opens_from_topbar() -> void:
 	assert_object(body).is_not_null()
 	assert_str(body.text).contains("当前局势概览")
 	assert_str(body.text).contains("外交进度")
-	assert_str(body.text).contains("结局路线提示")
+	assert_str(body.text).contains("结局路线")
 
 
 func test_glossary_popup_opens_from_topbar() -> void:
@@ -499,10 +500,97 @@ func _test_two_consecutive_days_rest_then_march() -> void:
 	assert_str(tray_controller.get_selected_policy_id()).is_equal("")
 
 
-func _load_main_menu() -> GdUnitSceneRunner:
+func test_tutorial_popup_day1_shows_structured_welcome() -> void:
 	var runner := scene_runner(MAIN_MENU_SCENE)
 	await runner.simulate_frames(12)
+	var scene := runner.scene()
+	var popup := scene.find_child("TutorialPopup", true, false) as PopupPanel
+	var body := scene.find_child("TutorialPopupBody", true, false) as Label
+
+	assert_object(popup).is_not_null()
+	assert_object(body).is_not_null()
+	# Day 1 应展示结构化教程欢迎内容
+	assert_str(body.text).contains("厄尔巴岛")
+	assert_str(body.text).contains("100 天")
+	assert_str(body.text).contains("操作指南")
+	await _dismiss_tutorial_popup_if_present(scene, runner)
+
+
+func test_tutorial_popup_day2_shows_movement_topic() -> void:
+	var runner := scene_runner(MAIN_MENU_SCENE)
+	await runner.simulate_frames(16)
+	var scene := runner.scene()
+	await _dismiss_tutorial_popup_if_present(scene, runner)
+	# 推进到 Day 2
+	var end_day_button := scene.find_child("EndDayButton", true, false) as Button
+	assert_object(end_day_button).is_not_null()
+	await _dismiss_tutorial_popup_if_present(scene, runner)
+	end_day_button.pressed.emit()
+	await runner.simulate_frames(12)
+	assert_int(GameState.current_day).is_equal(2)
+	# Day 2 弹窗应包含行军主题
+	var popup_body := scene.find_child("TutorialPopupBody", true, false) as Label
+	if popup_body != null:
+		assert_str(popup_body.text).contains("行军")
+	await _dismiss_tutorial_popup_if_present(scene, runner)
+
+
+func test_tutorial_no_popup_after_day10() -> void:
+	var runner := await _load_main_menu()
+	var scene := runner.scene()
+	# 快进到 Day 11
+	for day_idx in range(10):
+		await _end_day(scene, runner)
+	assert_int(GameState.current_day).is_equal(11)
+
+	# Day 11 不应有教程弹窗
+	var popup := scene.find_child("TutorialPopup", true, false) as PopupPanel
+	if popup != null:
+		assert_bool(popup.visible).is_false()
+
+
+func test_tutorial_stages_json_loads_all_10_stages() -> void:
+	var runner := await _load_main_menu()
+	var stages: Array = runner.get_property("_tutorial_stages")
+	assert_int(stages.size()).is_equal(10)
+	# 验证每个阶段都有必要字段
+	for stage in stages:
+		var d: Dictionary = stage
+		assert_str(String(d.get("id", ""))).is_not_empty()
+		assert_str(String(d.get("title", ""))).is_not_empty()
+		assert_str(String(d.get("body", ""))).is_not_empty()
+		assert_str(String(d.get("topic", ""))).is_not_empty()
+
+
+func test_tutorial_covers_all_core_topics() -> void:
+	var runner := await _load_main_menu()
+	var stages: Array = runner.get_property("_tutorial_stages")
+	var topics: Array[String] = []
+	for stage in stages:
+		var topic: String = stage.get("topic", "")
+		if topic not in topics:
+			topics.append(topic)
+	# 必须覆盖补给、政治、命令偏差三大核心
+	assert_bool("supply" in topics).is_true()
+	assert_bool("politics" in topics).is_true()
+	assert_bool("command_deviation" in topics).is_true()
+
+
+func test_boost_loyalty_preview_includes_tutorial_guidance() -> void:
+	var runner := await _load_main_menu()
+	var sidebar: MainMenuSidebarController = runner.get_property("_sidebar_controller")
+	var preview := sidebar.build_policy_preview_text("boost_loyalty")
+	assert_str(preview).contains("亲自接见将领")
+	assert_str(preview).contains("忠诚度")
+	# Day 1 时应有前 10 天教学提示
+	assert_str(preview).contains("前 10 天提示")
+
+
+func _load_main_menu() -> GdUnitSceneRunner:
+	var runner := scene_runner(MAIN_MENU_SCENE)
+	await runner.simulate_frames(16)
 	await _dismiss_tutorial_popup_if_present(runner.scene(), runner)
+	await runner.simulate_frames(4)
 	return runner
 
 
@@ -511,8 +599,9 @@ func _end_day(scene: Node, runner: GdUnitSceneRunner) -> void:
 	var end_day_button := scene.find_child("EndDayButton", true, false) as Button
 	assert_object(end_day_button).is_not_null()
 	end_day_button.pressed.emit()
-	await runner.simulate_frames(8)
+	await runner.simulate_frames(12)
 	await _dismiss_tutorial_popup_if_present(scene, runner)
+	await runner.simulate_frames(4)
 
 
 func _dismiss_tutorial_popup_if_present(scene: Node, runner: GdUnitSceneRunner) -> void:
@@ -520,4 +609,4 @@ func _dismiss_tutorial_popup_if_present(scene: Node, runner: GdUnitSceneRunner) 
 	if close_button == null:
 		return
 	close_button.pressed.emit()
-	await runner.simulate_frames(2)
+	await runner.simulate_frames(4)

@@ -14,7 +14,7 @@
 |------|------|
 | 入口 | `src/ui/main_menu.tscn`，主循环 `TurnManager → CentJoursEngine → GameState → UI` 已接通 |
 | 数据 | 15 角色 / 41 地图节点 / 66 历史事件 (major 17 / normal 38 / minor 11) |
-| 测试 | Windows `cargo test 215/215` + GdUnit4 `69/69` + Windows CI + smoke |
+| 测试 | Windows `cargo test 215/215` + GdUnit4 `26/26`(main_menu_flow, 3 pre-existing flaky) + Windows CI + smoke |
 | 自动工作流 | 已启用（2026-04-13），权限配置 `Bash(*)`，hook/tools/fmt 已修复 Windows 兼容 |
 | 存档 | Save v4 兼容路径，旧 `fontainebleau_eve` → `tuileries_eve` 迁移 |
 | 分支 | `claude/review-project-status-05vxD`（已合并 `auto/gameplay_update`） |
@@ -32,7 +32,7 @@
 - **地图交互**: hover 预览 / click 锁定 + 空白点击清空 + 补给标注
 - **前端拆分**: main_menu.gd 1025→684 行，6 个子控制器
 - **弹窗状态机**: modal 统一锁定，存读档/设置/战斗/接见/结局弹窗有 GdUnit4 回归
-- **教程链**: 前 10 天弹窗 + 侧栏双层呈现 + 日志回看 + 版式护栏
+- **教程链**: 结构化 10 阶段教程（JSON 数据驱动）覆盖 overview/movement/supply/politics/command_deviation/strategy/diplomacy/summary + 侧栏双层呈现 + 日志回看 + 版式护栏
 - **百科与目标入口**: 红黑指数、合法性、外交进度、系统影响、结局路线和提高路径解释
 - **战略指导层**: 顶栏外交进度、侧栏战略焦点/主要风险/派系压力、地图副标题路线提示已统一口径
 - **验证链优化**: 已为 `fast / full / heavy-nightly` 引入 Godot 二进制缓存与日志上传机制
@@ -50,7 +50,7 @@
 ## 当前已知缺口
 
 - 事件池距离 `100+` 目标还差 `34` 条，但当前不作为主线优先级
-- 补给教学和区域运营感仍需加深
+- 教程已覆盖三大核心（补给/政治/命令偏差），后续需加深中盘区域运营感
 - 文本 QA 未收口（史实锚点、句式风格）
 - 前端发布级 polish 和 Windows 真机验收未完成
 - 最终资产仍是占位（地图底图、肖像、BGM、SFX）

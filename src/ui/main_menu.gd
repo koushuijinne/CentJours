@@ -68,6 +68,7 @@ var _confirm_button: Button       # 执行行动确认按钮（动态创建）
 var _end_day_button: Button       # 结束今天并推进到次日
 var _awaiting_action: bool = false  # 是否处于等待玩家操作的行动阶段
 var _last_tutorial_popup_day_shown: int = 0
+var _tutorial_stages: Array = []  # 从 tutorial_stages.json 加载的结构化教程数据
 # 上回合数值快照，用于派系趋势箭头和数值变化动效
 var _prev_faction_support: Dictionary = {}
 var _prev_legitimacy: float = 50.0
@@ -140,6 +141,7 @@ func _ready() -> void:
 	_connect_signals()
 	resized.connect(_on_main_menu_resized)
 	call_deferred("_apply_responsive_layout")
+	_load_tutorial_stages()
 	call_deferred("_refresh_ui")
 	# 引导 TurnManager 进入第一回合，必须在所有节点就绪后执行。
 	call_deferred("_start_game")
@@ -583,28 +585,58 @@ func _build_map_context_subtitle(hint_text: String, strategy_context: Dictionary
 		lines.append("操作：点击城市锁定详情，滚轮缩放地图，右键复位。")
 	return "\n".join(lines)
 
+func _load_tutorial_stages() -> void:
+	var file := FileAccess.open("res://src/data/tutorials/tutorial_stages.json", FileAccess.READ)
+	if not file:
+		push_warning("tutorial_stages.json not found, tutorial popups disabled")
+		return
+	var json := JSON.new()
+	if json.parse(file.get_as_text()) != OK:
+		push_warning("tutorial_stages.json parse error: %s" % json.get_error_message())
+		return
+	var data: Dictionary = json.data
+	_tutorial_stages = data.get("stages", [])
+
+
+func _get_tutorial_stage_for_day(day: int) -> Dictionary:
+	for stage in _tutorial_stages:
+		var day_range: Array = stage.get("day_range", [0, 0])
+		if day >= int(day_range[0]) and day <= int(day_range[1]):
+			return stage
+	return {}
+
+
 func _build_tutorial_hint_text() -> String:
 	if GameState.current_day > 10:
 		return ""
-	if GameState.current_day <= 3 and GameState.logistics_objective_target_role_label.strip_edges() != "":
-		return "前10天教程：先离开前沿消耗点，优先把路线接到%s。" % GameState.logistics_objective_target_role_label
+	# 紧急补给提示优先于阶段教程（玩家需要立即行动）
 	if GameState.logistics_runway_days == 0:
 		return "前10天教程：你已经跌进战斗惩罚区。下一步优先休整或补给，不要继续硬顶。"
 	if GameState.logistics_runway_days == 1 or GameState.supply < 55.0:
 		return "前10天教程：补给开始见底时，先打补给牌或休整，不要连续站在低容量节点。"
-	if GameState.current_day <= 10 and GameState.logistics_regional_pressure_short.strip_edges() != "":
-		return "前10天教程：%s" % GameState.logistics_regional_pressure_short
-	if GameState.current_day <= 7 and GameState.logistics_objective_short.strip_edges() != "":
-		return "前10天教程：%s" % GameState.logistics_objective_short
-	if GameState.current_day <= 10 and GameState.logistics_route_chain_short.strip_edges() != "":
-		return "前10天教程：%s" % GameState.logistics_route_chain_short
-	if GameState.current_day <= 10 and GameState.logistics_tempo_plan_short.strip_edges() != "":
-		return "前10天教程：%s" % GameState.logistics_tempo_plan_short
-	if GameState.current_day <= 10 and GameState.logistics_action_plan_short.strip_edges() != "":
-		return "前10天教程：%s" % GameState.logistics_action_plan_short
-	if GameState.current_day <= 10 and GameState.logistics_objective_target_role_label.strip_edges() != "":
-		return "前10天教程：把%s接成跳板后，再考虑发动战役或继续前推。" % GameState.logistics_objective_target_role_label
-	return ""
+	# 阶段教程简短提示（用于地图副标题）
+	var stage := _get_tutorial_stage_for_day(GameState.current_day)
+	if stage.is_empty():
+		return ""
+	var topic: String = stage.get("topic", "")
+	match topic:
+		"supply":
+			if GameState.supply < 55.0:
+				return "前10天教程：补给偏低，试试使用补给类政策牌。"
+			return "前10天教程：留意顶栏补给数值，它是你的生命线。"
+		"politics":
+			if GameState.legitimacy < 40.0:
+				return "前10天教程：合法性偏低，考虑做政治决策巩固支持。"
+			return "前10天教程：四个派系的支持决定你的合法性。"
+		"command_deviation":
+			return "前10天教程：保持补给和士气，减少命令偏差。"
+		"diplomacy":
+			return "前10天教程：外交进度由合法性和控制区域推动。"
+		_:
+			# overview, movement, strategy, summary 等
+			if GameState.logistics_regional_pressure_short.strip_edges() != "":
+				return "前10天教程：%s" % GameState.logistics_regional_pressure_short
+			return "前10天教程：查看侧栏了解当前建议。"
 
 
 func _build_strategy_context() -> Dictionary:
@@ -825,15 +857,51 @@ func _maybe_show_daily_tutorial_popup() -> void:
 		return
 	if _last_tutorial_popup_day_shown == GameState.current_day:
 		return
-	var tutorial_text := _build_tutorial_hint_text().strip_edges()
-	if tutorial_text == "":
-		return
 	_last_tutorial_popup_day_shown = GameState.current_day
-	
-	var full_body := tutorial_text + "\n\n[操作指南]\n- 地图：鼠标左键平移，滚轮缩放\n- 决策：点击政策卡牌 -> 确认执行\n- 视角：点击地图节点查看后勤建议"
-	
-	_show_tutorial_popup("前 10 天教程", full_body)
-	TurnManager.submit_action("log_narrative", {"title": "教程指导", "body": full_body})
+
+	var stage := _get_tutorial_stage_for_day(GameState.current_day)
+	if stage.is_empty():
+		# 回退到旧逻辑：如果 JSON 没加载成功，至少显示条件提示
+		var fallback := _build_tutorial_hint_text().strip_edges()
+		if fallback == "":
+			return
+		_show_tutorial_popup("前 10 天教程", fallback)
+		if GameState.current_phase == "action":
+			TurnManager.submit_action("log_narrative", {"title": "教程指导", "body": fallback})
+		return
+
+	var title: String = stage.get("title", "教程")
+	var body: String = stage.get("body", "")
+	var op_guide: String = stage.get("operation_guide", "")
+
+	# 附加条件提示（如果当前状态满足条件）
+	var condition_hint: Dictionary = stage.get("condition_hint", {})
+	if not condition_hint.is_empty():
+		var field: String = condition_hint.get("field", "")
+		var op: String = condition_hint.get("operator", "")
+		var threshold = condition_hint.get("value", 0)
+		var current_value: float = 0.0
+		match field:
+			"supply": current_value = GameState.supply
+			"legitimacy": current_value = GameState.legitimacy
+			"avg_fatigue": current_value = GameState.avg_fatigue
+			"avg_morale": current_value = GameState.avg_morale
+		var triggered := false
+		match op:
+			"<": triggered = current_value < float(threshold)
+			">": triggered = current_value > float(threshold)
+			"<=": triggered = current_value <= float(threshold)
+			">=": triggered = current_value >= float(threshold)
+		if triggered:
+			body += "\n\n%s" % String(condition_hint.get("hint", ""))
+
+	if op_guide != "":
+		body += "\n\n[操作指南]\n%s" % op_guide
+
+	var popup_title := "教程 Day %d · %s" % [GameState.current_day, title]
+	_show_tutorial_popup(popup_title, body)
+	if GameState.current_phase == "action":
+		TurnManager.submit_action("log_narrative", {"title": popup_title, "body": body})
 
 func _show_tutorial_popup(title: String, body: String) -> void:
 	_dialogs_controller.show_info_popup("TutorialPopup", title, body)

@@ -88,6 +88,8 @@ func build_policy_preview_text(policy_id: String, policy_meta: Dictionary = {}) 
 	if SPECIAL_POLICY_PREVIEW_TEXTS.has(normalized_policy_id):
 		if normalized_policy_id == "rest":
 			return _build_rest_preview_text()
+		if normalized_policy_id == "boost_loyalty":
+			return _build_boost_loyalty_preview_text()
 		return String(SPECIAL_POLICY_PREVIEW_TEXTS[normalized_policy_id])
 	if normalized_policy_id == "requisition_supplies":
 		return _build_requisition_preview_text(policy_meta)
@@ -195,6 +197,26 @@ func _build_regional_corridor_preview_text(policy_meta: Dictionary) -> String:
 	]
 
 
+func _build_boost_loyalty_preview_text() -> String:
+	var base := "亲自接见将领\n\n消耗 5 合法性，目标将领忠诚度 +8。需合法性 >= 10。"
+	var guidance := ""
+	if GameState.legitimacy < 15.0:
+		guidance = "当前合法性已经很低，接见将领会进一步消耗合法性。除非目标将领即将叛逃，否则先稳合法性更安全。"
+	elif GameState.current_day <= 10:
+		guidance = "前 10 天提示：将领忠诚度影响命令执行。忠诚度低于 30 的将领可能抗命或叛逃。如果有将领忠诚度在危险区，优先接见他们。但接见会消耗合法性，不要过度使用。"
+	else:
+		var low_loyalty_count := 0
+		for char_id in GameState.characters:
+			var char_data: Dictionary = GameState.characters[char_id]
+			if float(char_data.get("loyalty", 50.0)) < GameState.DEFECTION_LOYALTY_THRESHOLD:
+				low_loyalty_count += 1
+		if low_loyalty_count > 0:
+			guidance = "当前有 %d 位将领忠诚度低于叛逃线（%.0f），建议优先安抚。" % [low_loyalty_count, GameState.DEFECTION_LOYALTY_THRESHOLD]
+		else:
+			guidance = "当前将领忠诚度整体稳定。可以把合法性留给其他用途。"
+	return "%s\n\n%s\n%s" % [base, guidance, _build_policy_recommendation_line("boost_loyalty")]
+
+
 func _build_policy_recommendation_line(policy_id: String) -> String:
 	var recommendation := _policy_recommendation(policy_id)
 	var label := String(recommendation.get("label", "可考虑"))
@@ -240,6 +262,20 @@ func _policy_recommendation(policy_id: String) -> Dictionary:
 			if GameState.logistics_regional_pressure_id == "corridor_stabilizing":
 				return {"label": "可考虑", "reason": "当前已经在稳线，用它可以把窗口再拉长一截。"}
 			return {"label": "暂缓", "reason": "当前区域走廊还顶得住，这张牌更适合留到线路变脆时再打。"}
+		"boost_loyalty":
+			if GameState.legitimacy < 15.0:
+				return {"label": "暂缓", "reason": "合法性已经很低，消耗合法性接见将领风险太高。"}
+			var has_low_loyalty := false
+			for char_id in GameState.characters:
+				var char_data: Dictionary = GameState.characters[char_id]
+				if float(char_data.get("loyalty", 50.0)) < GameState.DEFECTION_LOYALTY_THRESHOLD:
+					has_low_loyalty = true
+					break
+			if has_low_loyalty:
+				return {"label": "优先", "reason": "有将领忠诚度低于叛逃线，不及时安抚可能导致叛逃。"}
+			if GameState.legitimacy < 30.0:
+				return {"label": "暂缓", "reason": "合法性余量不多，建议留给更紧急的用途。"}
+			return {"label": "可考虑", "reason": "将领忠诚度整体稳定，可以根据需要使用。"}
 		_:
 			return {"label": "可考虑", "reason": "当前没有额外提示。"}
 
