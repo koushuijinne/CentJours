@@ -3125,6 +3125,10 @@ impl GameEngine {
             grouchy_loyalty: self.characters.loyalty("grouchy"),
             fouche_loyalty: self.characters.loyalty("fouche"),
             rouge_noir_index: self.politics.rouge_noir_index,
+            legitimacy: self.politics.legitimacy,
+            supply: self.army.supply,
+            victories: self.army.victories,
+            faction_support: self.politics.faction_support.clone(),
             // 全量忠诚度快照（供 loyalty_min/loyalty_max 通用触发条件使用）
             loyalty_map: self.characters.loyalty.clone(),
             // 联军是否已被击败（仅 NapoleonVictory 结局表示联军被击败）

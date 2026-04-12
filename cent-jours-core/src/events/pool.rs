@@ -18,8 +18,23 @@ pub struct EventTrigger {
     pub grouchy_loyalty_min: Option<f64>,
     pub fouche_loyalty_max: Option<f64>,
     pub rouge_noir_index_max: Option<f64>,
+    pub rouge_noir_index_min: Option<f64>,
     pub day_min: Option<u32>,
     pub coalition_not_defeated: Option<bool>,
+    /// 合法性阈值
+    pub legitimacy_min: Option<f64>,
+    pub legitimacy_max: Option<f64>,
+    /// 派系支持度下限：{ faction_id: min_support }
+    #[serde(default)]
+    pub faction_support_min: HashMap<String, f64>,
+    /// 派系支持度上限：{ faction_id: max_support }
+    #[serde(default)]
+    pub faction_support_max: HashMap<String, f64>,
+    /// 补给阈值
+    pub supply_min: Option<f64>,
+    pub supply_max: Option<f64>,
+    /// 胜场阈值
+    pub victories_min: Option<u32>,
     /// 通用将领忠诚度下限：{ character_id: min_loyalty }
     /// 替代原硬编码的 davout_loyalty_min 等字段，支持任意将领
     #[serde(default)]
@@ -150,6 +165,51 @@ impl HistoricalEvent {
                 return false;
             }
         }
+        // 红黑指数下限
+        if let Some(min) = t.rouge_noir_index_min {
+            if ctx.rouge_noir_index < min {
+                return false;
+            }
+        }
+        // 合法性条件
+        if let Some(min) = t.legitimacy_min {
+            if ctx.legitimacy < min {
+                return false;
+            }
+        }
+        if let Some(max) = t.legitimacy_max {
+            if ctx.legitimacy > max {
+                return false;
+            }
+        }
+        // 补给条件
+        if let Some(min) = t.supply_min {
+            if ctx.supply < min {
+                return false;
+            }
+        }
+        if let Some(max) = t.supply_max {
+            if ctx.supply > max {
+                return false;
+            }
+        }
+        // 胜场条件
+        if let Some(min) = t.victories_min {
+            if ctx.victories < min {
+                return false;
+            }
+        }
+        // 派系支持度条件
+        for (id, &min) in &t.faction_support_min {
+            if ctx.faction_support.get(id.as_str()).copied().unwrap_or(0.0) < min {
+                return false;
+            }
+        }
+        for (id, &max) in &t.faction_support_max {
+            if ctx.faction_support.get(id.as_str()).copied().unwrap_or(100.0) > max {
+                return false;
+            }
+        }
         // 通用将领忠诚度条件（loyalty_min / loyalty_max）
         for (id, &min) in &t.loyalty_min {
             if ctx.loyalty_map.get(id.as_str()).copied().unwrap_or(0.0) < min {
@@ -187,6 +247,11 @@ pub struct TriggerContext {
     pub grouchy_loyalty: f64,
     pub fouche_loyalty: f64,
     pub rouge_noir_index: f64,
+    pub legitimacy: f64,
+    pub supply: f64,
+    pub victories: u32,
+    /// 派系支持度快照：{ faction_id: support }
+    pub faction_support: HashMap<String, f64>,
     /// 所有将领忠诚度快照（供 loyalty_min / loyalty_max 通用条件检查）
     /// key = character_id，与 characters.json 一致
     pub loyalty_map: HashMap<String, f64>,
@@ -343,8 +408,9 @@ mod tests {
             grouchy_loyalty: 72.0,
             fouche_loyalty: 45.0,
             rouge_noir_index: 10.0,
-            loyalty_map: HashMap::new(),
-            coalition_defeated: false,
+            legitimacy: 50.0,
+            supply: 60.0,
+            ..Default::default()
         }
     }
 

@@ -13,7 +13,7 @@
 | 维度 | 状态 |
 |------|------|
 | 入口 | `src/ui/main_menu.tscn`，主循环 `TurnManager → CentJoursEngine → GameState → UI` 已接通 |
-| 数据 | 15 角色 / 41 地图节点 / 66 历史事件 (major 17 / normal 38 / minor 11) |
+| 数据 | 15 角色 / 41 地图节点 / 82 历史事件 (含 16 条中盘危机事件 Day 40-80) |
 | 测试 | Windows `cargo test 215/215` + GdUnit4 `26/26`(main_menu_flow, 3 pre-existing flaky) + Windows CI + smoke |
 | 自动工作流 | 已启用（2026-04-13），权限配置 `Bash(*)`，hook/tools/fmt 已修复 Windows 兼容 |
 | 存档 | Save v4 兼容路径，旧 `fontainebleau_eve` → `tuileries_eve` 迁移 |
@@ -49,7 +49,7 @@
 
 ## 当前已知缺口
 
-- 事件池距离 `100+` 目标还差 `34` 条，但当前不作为主线优先级
+- 事件池 82/100+，距目标还差 `18` 条（中盘已补强，晚期事件仍偏薄）
 - 教程已覆盖三大核心（补给/政治/命令偏差），后续需加深中盘区域运营感
 - 文本 QA 未收口（史实锚点、句式风格）
 - 前端发布级 polish 和 Windows 真机验收未完成

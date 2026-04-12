@@ -1340,5 +1340,321 @@
     ],
     "historical_note": "百日王朝期间巴黎的咖啡馆是政治舆论的主要发酵场所。自由派知识分子和波旁复辟的支持者在这里公开争论，气氛既兴奋又焦虑。普罗科普咖啡馆（Café Procope）是巴黎最古老的咖啡馆之一。",
     "tier": "minor"
+  },
+  {
+    "id": "provincial_tax_revolt",
+    "label": "外省税收抵抗",
+    "day_range": [40, 55],
+    "trigger": {
+      "legitimacy_max": 45.0
+    },
+    "effects": {
+      "populace_support_delta": -8,
+      "liberals_support_delta": -5,
+      "legitimacy_delta": -3
+    },
+    "narratives": [
+      "里昂以南三个省的税吏报告称，征税命令被当面撕掉。农民们说：你先告诉我，这次哪个皇帝在台上，我再决定交不交。",
+      "布尔日的一名行政长官连续两周收不到应缴的税款。他在报告中写：不是叛乱，是冷漠。他们不反对，但也不配合。"
+    ],
+    "historical_note": "1815年4月至5月间，法国中南部多省出现消极抗税现象。地方官员难以执行帝国政府的财政命令，部分原因是百姓对政权更迭感到疲倦。",
+    "tier": "normal"
+  },
+  {
+    "id": "allied_forces_crossing_rhine",
+    "label": "联军渡过莱茵河",
+    "day_range": [42, 52],
+    "trigger": {
+      "coalition_not_defeated": true
+    },
+    "effects": {
+      "military_support_delta": -5,
+      "nobility_support_delta": -8,
+      "populace_support_delta": -4
+    },
+    "narratives": [
+      "第一批渡河报告在黎明时分送到巴黎：奥军前锋在斯特拉斯堡以东三十英里处搭起了浮桥。",
+      "莱茵河已经挡不住了。联军从一个外交谈判桌上的名字变成了地图上正在移动的箭头。",
+      "巴黎的参谋军官在地图上标注新的蓝色图钉时，手停了一下。东线的距离突然变得很短。"
+    ],
+    "historical_note": "1815年5月，第七次反法同盟各路军队开始向法国边境集结。奥军和俄军从东线推进，与北线的英普联军形成钳形态势。",
+    "tier": "major"
+  },
+  {
+    "id": "chamber_constitutional_crisis",
+    "label": "议会宪政质询",
+    "day_range": [43, 58],
+    "trigger": {
+      "legitimacy_max": 55.0,
+      "faction_support_max": { "liberals": 50.0 }
+    },
+    "effects": {
+      "liberals_support_delta": -10,
+      "legitimacy_delta": -5,
+      "rouge_noir_delta": -8
+    },
+    "narratives": [
+      "拉法耶特站起来发言时，整个议会安静了。他的第一句话是：我们把皇冠交还给您，是为了宪政，不是为了独裁。",
+      "自由派议员联名递交质询书，要求明确《附加法案》的施行时间表。措辞已经从请求变成了限期答复。",
+      "议会走廊里，两个自由派议员低声商量着同一个问题：如果皇帝拒绝，我们还有什么牌可以打？"
+    ],
+    "historical_note": "1815年5月，法国议会中的自由派势力对拿破仑的宪政承诺提出越来越尖锐的质疑。拉法耶特等人的立场是支持帝国，但前提是宪法约束。",
+    "tier": "major"
+  },
+  {
+    "id": "desertion_wave_frontier",
+    "label": "前线逃兵潮",
+    "day_range": [45, 60],
+    "trigger": {
+      "supply_max": 40.0
+    },
+    "effects": {
+      "military_support_delta": -6,
+      "military_available_troops_delta": -2000,
+      "napoleon_morale_bonus": -5
+    },
+    "narratives": [
+      "北方军团第三师报告一夜之间少了四百人。没有战斗，没有逮捕——他们只是在天亮前消失了。",
+      "宪兵队长的报告写得很直接：士兵不是怕死，是饿。最后一批军粮三天前就吃完了，征用的面包到现在还没运到。"
+    ],
+    "historical_note": "1815年百日战役期间，补给困难是法军面临的主要问题之一。长期的战争使得法国农村的物资储备严重不足。",
+    "tier": "normal"
+  },
+  {
+    "id": "vendee_royalist_escalation",
+    "label": "旺代王党升级",
+    "day_range": [44, 58],
+    "trigger": {
+      "faction_support_max": { "nobility": 35.0 }
+    },
+    "effects": {
+      "nobility_support_delta": -6,
+      "military_available_troops_delta": -1500,
+      "legitimacy_delta": -2
+    },
+    "narratives": [
+      "从旺代传来的报告越来越紧迫：零散的袭击已经升级成有组织的路障。他们有自己的旗帜、自己的口令、自己的仓库。",
+      "拉马尔克将军被紧急调往西部。他带走了两千名原本准备北上的士兵。每一个人都是从北方防线上抽走的。"
+    ],
+    "historical_note": "1815年百日王朝期间，旺代地区的王党叛乱牵制了法军约两万兵力，拉马尔克将军被调往西部平叛，削弱了北方战线的兵力。",
+    "tier": "normal"
+  },
+  {
+    "id": "fouche_double_dealing",
+    "label": "富歇两面通信",
+    "day_range": [48, 62],
+    "trigger": {
+      "loyalty_max": { "fouche": 45.0 }
+    },
+    "effects": {
+      "loyalty_deltas": { "fouche": -10 },
+      "legitimacy_delta": -4,
+      "nobility_support_delta": -5,
+      "liberals_support_delta": -3
+    },
+    "narratives": [
+      "达武截获了一封信。发件人是富歇，收件人是梅特涅。信的内容很简单：一份巴黎防御部署的摘要，附带一句'为了法兰西的未来'。",
+      "拿破仑读完截获的信后沉默了很久。他最终说：我知道他在做什么。但现在还不能动他——他手里有太多巴黎的线。",
+      "富歇的办公室里，每天有两批信使出发。一批去参谋部，一批去边境。只有富歇自己知道哪批信里写的是真话。"
+    ],
+    "historical_note": "富歇在百日王朝期间同时与拿破仑和反法同盟保持联络，被认为是导致帝国内部瓦解的重要因素之一。拿破仑明知富歇不可信，但因其掌控的情报网络而不敢轻举妄动。",
+    "tier": "major"
+  },
+  {
+    "id": "economic_confidence_collapse",
+    "label": "巴黎金融恐慌",
+    "day_range": [46, 60],
+    "trigger": {
+      "legitimacy_max": 40.0
+    },
+    "effects": {
+      "populace_support_delta": -7,
+      "liberals_support_delta": -4,
+      "legitimacy_delta": -3
+    },
+    "narratives": [
+      "巴黎证券交易所连续第三天无人报价。没有暴跌的戏剧性——只有彻底的沉默。",
+      "银行家们开始把黄金转移到边境。一位债券商对他的客户说：现在唯一安全的投资是一张去伦敦的船票。"
+    ],
+    "historical_note": "1815年百日王朝期间，巴黎金融市场陷入严重信心危机。政权的不确定性使资本外逃加速，这反过来削弱了帝国的财政能力。",
+    "tier": "normal"
+  },
+  {
+    "id": "wellington_army_concentration",
+    "label": "威灵顿集结完毕",
+    "day_range": [50, 65],
+    "trigger": {
+      "coalition_not_defeated": true
+    },
+    "effects": {
+      "military_support_delta": -4,
+      "coalition_troops_bonus": 3
+    },
+    "narratives": [
+      "情报摘要确认：威灵顿在布鲁塞尔集结了约十万人。英军、荷兰军、汉诺威军和不伦瑞克军混编完毕，正在展开战术训练。",
+      "布吕歇尔的普军也已经到位。两支军队之间的联络线已经建立。法国北方面对的威胁从驻军变成了一台完整的战争机器。",
+      "一名从布鲁塞尔潜回的情报员在报告最后加了一句私人评语：我在半岛战争中见过威灵顿的防线。他不会主动进攻，但他会让你进攻他——然后你就完了。"
+    ],
+    "historical_note": "1815年6月初，威灵顿在布鲁塞尔完成了联军的集结和编组。这支约十万人的混编军队成为滑铁卢战役中法军的主要对手。",
+    "tier": "major"
+  },
+  {
+    "id": "diplomatic_window_closing",
+    "label": "外交窗口关闭",
+    "day_range": [52, 68],
+    "trigger": {
+      "coalition_not_defeated": true,
+      "legitimacy_max": 50.0
+    },
+    "effects": {
+      "diplomatic_progress_delta": 0,
+      "legitimacy_delta": -2,
+      "nobility_support_delta": -5
+    },
+    "narratives": [
+      "考兰古尔从维也纳发回最后一封电报：他们不再接见我了。门卫说梅特涅不在，但我从窗户看到他的马车停在院子里。",
+      "外交谈判的大门正在关闭。联军的态度从'有条件谈'变成了'无条件投降'。留给外交解决的时间已经不多了。"
+    ],
+    "historical_note": "1815年5-6月间，拿破仑多次尝试通过外交渠道与反法同盟谈判，但均遭拒绝。维也纳会议已将他定义为'欧洲公敌'，外交解决的可能性在军事集结完成后基本消失。",
+    "tier": "normal"
+  },
+  {
+    "id": "military_pessimism_spreads",
+    "label": "军中悲观情绪蔓延",
+    "day_range": [55, 70],
+    "trigger": {
+      "faction_support_max": { "military": 55.0 }
+    },
+    "effects": {
+      "military_support_delta": -5,
+      "napoleon_morale_bonus": -3,
+      "legitimacy_delta": -2
+    },
+    "narratives": [
+      "一位参加过莫斯科战役的老兵对新兵说：你见过十万人从莫斯科走回来吗？我见过。所以当他们告诉你这次不一样时，你最好自己想想。",
+      "参谋部的走廊里开始流传一个笑话：皇帝的计划永远完美——直到敌人开始执行他们自己的计划。"
+    ],
+    "historical_note": "百日战役期间，法军高层中存在不少对战争前景持悲观态度的军官。多年战争的消耗和1812年俄国战役的记忆对军队士气产生了持续影响。",
+    "tier": "normal"
+  },
+  {
+    "id": "bread_riots_outskirts",
+    "label": "巴黎郊区面包骚乱",
+    "day_range": [50, 68],
+    "trigger": {
+      "supply_max": 45.0,
+      "faction_support_max": { "populace": 55.0 }
+    },
+    "effects": {
+      "populace_support_delta": -10,
+      "legitimacy_delta": -4,
+      "rouge_noir_delta": -5
+    },
+    "narratives": [
+      "圣安托万郊区的女人们砸了三家面包店的窗户。她们举着空篮子喊：皇帝回来了，但面包没有回来。",
+      "国民自卫军被调去维持秩序，但很多士兵自己的家人也在排队等面包。没有人开枪。也没有人能解释为什么面粉突然买不到了。"
+    ],
+    "historical_note": "1815年百日王朝期间，巴黎的粮食供应受到战争动员和贸易中断的影响。郊区底层民众的不满是帝国内部稳定的隐患之一。",
+    "tier": "normal"
+  },
+  {
+    "id": "generals_secret_meeting",
+    "label": "将领密会",
+    "day_range": [55, 72],
+    "trigger": {
+      "legitimacy_max": 35.0,
+      "faction_support_max": { "military": 50.0 }
+    },
+    "effects": {
+      "military_support_delta": -8,
+      "legitimacy_delta": -5,
+      "loyalty_deltas": { "soult": -8, "davout": -5 }
+    },
+    "narratives": [
+      "达武收到了一份匿名邀请，地点在巴黎近郊的一座庄园。他没有去——但他也没有报告。",
+      "苏尔特的副官在深夜离开了总参谋部，去了一个不在行程表上的地址。第二天早上，他什么都没说。但侍从注意到苏尔特的表情变了。",
+      "一名宪兵队长在例行巡逻中注意到三辆没有标识的马车同时停在同一座庄园外。他在报告中写了这件事，但报告在送到达武办公桌之前就消失了。"
+    ],
+    "historical_note": "历史记载表明，百日王朝末期法军高层中存在试图与波旁王朝或联军秘密接触的将领。这些秘密活动削弱了帝国军事指挥的统一性。",
+    "tier": "major"
+  },
+  {
+    "id": "conscription_backlash",
+    "label": "征兵令的反弹",
+    "day_range": [48, 62],
+    "trigger": {},
+    "effects": {
+      "populace_support_delta": -6,
+      "military_available_troops_delta": 3000,
+      "liberals_support_delta": -4,
+      "rouge_noir_delta": 3
+    },
+    "narratives": [
+      "新的征兵令在外省引发了复杂的反应：有的村庄敲锣打鼓送走了年轻人，有的村庄则把征兵官赶了出去。",
+      "一位县长在报告中写：我们征到了三千人。但每征一个人，就制造了一个家庭的敌意。这笔账迟早要算的。"
+    ],
+    "historical_note": "1815年百日王朝期间，拿破仑下令征召约30万新兵。征兵在一些地区引发强烈不满，尤其是在此前已经因多年战争而人口锐减的农村地区。",
+    "tier": "normal"
+  },
+  {
+    "id": "austrian_ultimatum",
+    "label": "奥地利最后通牒",
+    "day_range": [58, 72],
+    "trigger": {
+      "coalition_not_defeated": true,
+      "legitimacy_max": 60.0
+    },
+    "effects": {
+      "nobility_support_delta": -8,
+      "liberals_support_delta": -3,
+      "legitimacy_delta": -4,
+      "diplomatic_progress_delta": 0
+    },
+    "narratives": [
+      "奥地利大使——或者更准确地说，梅特涅的私人信使——递交了一份没有信封的文件。内容只有一句话：24小时内退位，否则战争。",
+      "考兰古尔把文件翻译给拿破仑听时，皇帝的反应是冷笑。但在场的人都注意到，他的手在抖。",
+      "这份最后通牒的措辞没有留下任何谈判余地。梅特涅用的是条约语言：不接受就是宣战。而拿破仑的女儿和儿子还在维也纳。"
+    ],
+    "historical_note": "1815年，奥地利虽然是拿破仑前岳父弗朗茨一世的国家，但在梅特涅的主导下坚定反对拿破仑复辟。维也纳会议将拿破仑宣布为不受法律保护之人。",
+    "tier": "major"
+  },
+  {
+    "id": "supply_line_sabotage",
+    "label": "补给线遭破坏",
+    "day_range": [54, 70],
+    "trigger": {
+      "supply_max": 50.0
+    },
+    "effects": {
+      "military_support_delta": -3,
+      "napoleon_morale_bonus": -4
+    },
+    "narratives": [
+      "从里尔到巴黎的驿道上，三座桥被不明身份的人炸毁。不是联军——是法国人自己干的。",
+      "补给车队的护送军官报告：道路被砍倒的树木堵塞，马匹被人在夜间割断缰绳放跑。当地人否认一切，但每个人的眼神都在说同一件事。"
+    ],
+    "historical_note": "百日战役期间，法国内部的王党分子对帝国军队的补给线进行了小规模破坏活动，尤其在旺代和布列塔尼地区。",
+    "tier": "minor"
+  },
+  {
+    "id": "paris_national_guard_wavering",
+    "label": "巴黎国民自卫军动摇",
+    "day_range": [60, 78],
+    "trigger": {
+      "legitimacy_max": 35.0,
+      "faction_support_max": { "populace": 50.0 }
+    },
+    "effects": {
+      "populace_support_delta": -8,
+      "military_support_delta": -5,
+      "legitimacy_delta": -8
+    },
+    "narratives": [
+      "国民自卫军今天的集合率是百分之四十。指挥官不敢追究缺席的人——因为他不确定追究之后，明天的集合率会不会更低。",
+      "一个中队长说了一句让所有人都不舒服的话：我们是为巴黎服务的，某个人来了又走了，但巴黎一直在。",
+      "达武在报告中用了一个精确的数字：今天有可靠的六千人。上个月是一万二。没有人叛变，但有六千人选择了不出现。"
+    ],
+    "historical_note": "百日王朝末期，巴黎国民自卫军的忠诚度成为帝国能否保住首都的关键因素。历史上，拿破仑在滑铁卢战败后回到巴黎时，发现国民自卫军已经不再可靠。",
+    "tier": "major"
   }
 ]
