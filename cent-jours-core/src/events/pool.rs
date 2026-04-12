@@ -206,7 +206,13 @@ impl HistoricalEvent {
             }
         }
         for (id, &max) in &t.faction_support_max {
-            if ctx.faction_support.get(id.as_str()).copied().unwrap_or(100.0) > max {
+            if ctx
+                .faction_support
+                .get(id.as_str())
+                .copied()
+                .unwrap_or(100.0)
+                > max
+            {
                 return false;
             }
         }
