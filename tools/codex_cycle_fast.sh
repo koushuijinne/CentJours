@@ -16,7 +16,7 @@ bash tools/codex_harness_status.sh
 
 echo
 echo "=== Next Task ==="
-python3 tools/codex_pick_next_task.py --focus "${focus}"
+python tools/codex_pick_next_task.py --focus "${focus}"
 
 echo
 echo "=== Round Summary ==="
