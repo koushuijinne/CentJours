@@ -4391,7 +4391,7 @@ mod tests {
         let ids = vec!["golfe_juan_landing".to_string()];
         engine.triggered_event_ids = ids.clone();
         engine.event_pool.restore_triggered(ids);
-        
+
         engine.army.total_troops = 15_000; // 低于20000阈值
         let mil_before = engine.politics.faction_support["military"];
         let mut rng = seeded_rng();
