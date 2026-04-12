@@ -24,3 +24,6 @@ __pycache__/
 # Windows junk
 Thumbs.db
 Desktop.ini
+
+# agent config
+.gemini

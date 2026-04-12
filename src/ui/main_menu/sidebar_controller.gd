@@ -293,6 +293,7 @@ func refresh_situation(
 	legitimacy: float,
 	supply: float,
 	fatigue: float,
+	diplomatic_progress: int,
 	logistics_runway_label: String,
 	logistics_posture_label: String,
 	logistics_focus_title: String,
@@ -311,6 +312,7 @@ func refresh_situation(
 	logistics_regional_task_detail: String,
 	logistics_regional_task_progress_label: String,
 	logistics_regional_task_reward_label: String,
+	strategy_context: Dictionary,
 	faction_support: Dictionary,
 	prev_faction_support: Dictionary
 ) -> void:
@@ -368,12 +370,37 @@ func refresh_situation(
 		if logistics_regional_task_reward_label.strip_edges() != "":
 			logistics_lines.append(logistics_regional_task_reward_label)
 
-	_situation_body.text = "%s\n%s · 合法性 %.1f\n补给 %.0f · 疲劳 %.0f\n\n%s\n\n%s" % [
+	var strategy_lines: Array[String] = []
+	var focus_title := String(strategy_context.get("focus_title", "")).strip_edges()
+	var focus_reason := String(strategy_context.get("focus_reason", "")).strip_edges()
+	var focus_next_step := String(strategy_context.get("focus_next_step", "")).strip_edges()
+	var risk_title := String(strategy_context.get("risk_title", "")).strip_edges()
+	var risk_detail := String(strategy_context.get("risk_detail", "")).strip_edges()
+	var faction_title := String(strategy_context.get("faction_title", "")).strip_edges()
+	var faction_detail := String(strategy_context.get("faction_detail", "")).strip_edges()
+	if focus_title != "":
+		strategy_lines.append("战略焦点 · %s" % focus_title)
+	if focus_reason != "":
+		strategy_lines.append(focus_reason)
+	if focus_next_step != "":
+		strategy_lines.append("下一步：%s" % focus_next_step)
+	if risk_title != "":
+		strategy_lines.append("当前主要风险 · %s" % risk_title)
+	if risk_detail != "":
+		strategy_lines.append(risk_detail)
+	if faction_title != "":
+		strategy_lines.append(faction_title)
+	if faction_detail != "":
+		strategy_lines.append(faction_detail)
+
+	_situation_body.text = "%s\n%s · 合法性 %.1f\n补给 %.0f · 疲劳 %.0f · 外交 %d / 100\n\n%s\n\n%s\n\n派系风向\n%s" % [
 		MainMenuFormattersLib.phase_display_name(phase_id),
 		napoleon_location_label,
 		legitimacy,
 		supply,
 		fatigue,
+		diplomatic_progress,
+		"\n".join(strategy_lines),
 		"\n".join(logistics_lines),
 		"\n".join(faction_lines)
 	]
@@ -434,6 +461,7 @@ func refresh_all(
 	legitimacy: float,
 	supply: float,
 	fatigue: float,
+	diplomatic_progress: int,
 	logistics_runway_label: String,
 	logistics_posture_label: String,
 	logistics_focus_title: String,
@@ -452,6 +480,7 @@ func refresh_all(
 	logistics_regional_task_detail: String,
 	logistics_regional_task_progress_label: String,
 	logistics_regional_task_reward_label: String,
+	strategy_context: Dictionary,
 	faction_support: Dictionary,
 	prev_faction_support: Dictionary,
 	characters: Dictionary,
@@ -464,6 +493,7 @@ func refresh_all(
 		legitimacy,
 		supply,
 		fatigue,
+		diplomatic_progress,
 		logistics_runway_label,
 		logistics_posture_label,
 		logistics_focus_title,
@@ -482,6 +512,7 @@ func refresh_all(
 		logistics_regional_task_detail,
 		logistics_regional_task_progress_label,
 		logistics_regional_task_reward_label,
+		strategy_context,
 		faction_support,
 		prev_faction_support
 	)

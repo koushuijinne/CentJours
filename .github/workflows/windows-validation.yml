@@ -40,18 +40,29 @@ jobs:
         with:
           workspaces: cent-jours-core -> target
 
+      - name: Cache Godot Binary
+        id: cache-godot
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/godot
+          key: godot-v4.6.1-stable-win64
+
       - name: Download Godot Windows binary
+        if: steps.cache-godot.outputs.cache-hit != 'true'
         shell: pwsh
         run: |
-          $godotDir = Join-Path $env:RUNNER_TEMP "godot"
-          New-Item -ItemType Directory -Force -Path $godotDir | Out-Null
+          $godotDir = New-Item -ItemType Directory -Force -Path (Join-Path $env:RUNNER_TEMP "godot")
           $zipPath = Join-Path $godotDir "godot_win64.zip"
           Invoke-WebRequest -Uri $env:GODOT_ZIP_URL -OutFile $zipPath
           Expand-Archive -Path $zipPath -DestinationPath $godotDir -Force
+          Remove-Item $zipPath
+
+      - name: Locate Godot Binary
+        shell: pwsh
+        run: |
+          $godotDir = Join-Path $env:RUNNER_TEMP "godot"
           $exe = Get-ChildItem -Path $godotDir -Filter "Godot_v*_win64.exe" -Recurse | Select-Object -First 1 -ExpandProperty FullName
-          if (-not $exe) {
-            throw "Godot Windows binary not found after extraction."
-          }
+          if (-not $exe) { throw "Godot Windows binary not found." }
           "GODOT_BINARY=$exe" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           Write-Host "Using Godot binary: $exe"
 
@@ -63,7 +74,7 @@ jobs:
       - name: Build Windows GDExtension
         shell: pwsh
         working-directory: cent-jours-core
-        run: cargo build --features godot-extension
+        run: cargo build --release --features godot-extension
 
       - name: Run full Godot GdUnit4 regression suite
         shell: cmd
@@ -72,12 +83,15 @@ jobs:
       - name: Verify smoke scene
         shell: pwsh
         run: |
-          & "$env:GODOT_BINARY" --headless --path "$env:GITHUB_WORKSPACE" --scene res://src/dev/engine_smoke_test_scene.tscn
+          & "$env:GODOT_BINARY" --headless --path "$env:GITHUB_WORKSPACE" --scene res://src/dev/engine_smoke_test_scene.tscn > godot_smoke.log 2>&1
+          if ($LASTEXITCODE -ne 0) { Get-Content godot_smoke.log; exit $LASTEXITCODE }
 
-      - name: Upload full GdUnit reports
+      - name: Upload Logs and Reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: windows-full-gdunit-reports
-          path: reports/
+          name: windows-full-artifacts
+          path: |
+            reports/
+            godot_smoke.log
           if-no-files-found: warn

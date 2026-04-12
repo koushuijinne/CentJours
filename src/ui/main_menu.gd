@@ -23,6 +23,7 @@ const TopbarActionsControllerScript = preload("res://src/ui/main_menu/topbar_act
 @onready var _rn_slot: Control = $RootLayout/TopBar/TopBarMargin/TopBarRow/RNBlock/RougeNoirSlot
 @onready var _legitimacy_value: Label = $RootLayout/TopBar/TopBarMargin/TopBarRow/LegitimacyBlock/LegitimacyHeader/LegitimacyValue
 @onready var _legitimacy_bar: ProgressBar = $RootLayout/TopBar/TopBarMargin/TopBarRow/LegitimacyBlock/LegitimacyBar
+@onready var _diplomacy_value: Label = $RootLayout/TopBar/TopBarMargin/TopBarRow/DiplomacyBlock/DiplomacyValue
 @onready var _troops_value: Label = $RootLayout/TopBar/TopBarMargin/TopBarRow/ResourceBlock/TroopsBlock/TroopsValue
 @onready var _supply_value: Label = $RootLayout/TopBar/TopBarMargin/TopBarRow/ResourceBlock/SupplyBlock/SupplyValue
 @onready var _morale_value: Label = $RootLayout/TopBar/TopBarMargin/TopBarRow/ResourceBlock/MoraleBlock/MoraleValue
@@ -218,6 +219,7 @@ func _configure_dialogs_controller() -> void:
 
 func _configure_static_ui() -> void:
 	_layout_controller.configure_static_ui()
+	_map_subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_map_controller.refresh_map_inspector()
 
 func _apply_panel_styles() -> void:
@@ -361,6 +363,7 @@ func _refresh_ui() -> void:
 	]
 	_legitimacy_value.text = "%.1f" % GameState.legitimacy
 	_legitimacy_bar.value = GameState.legitimacy
+	_diplomacy_value.text = "%d / 100" % GameState.diplomatic_progress
 	_troops_value.text = _format_number(GameState.total_troops)
 	_supply_value.text = "%.0f" % GameState.supply
 	_morale_value.text = "%.0f" % GameState.avg_morale
@@ -398,12 +401,14 @@ func _flash_value_change(label: Label, current: float, previous: float) -> void:
 	tween.tween_callback(func(): label.add_theme_color_override("font_color", original_color))
 
 func _refresh_situation_panel() -> void:
+	var strategy_context := _build_strategy_context()
 	_sidebar_controller.refresh_situation(
 		GameState.current_phase,
 		_napoleon_location_label(),
 		GameState.legitimacy,
 		GameState.supply,
 		GameState.avg_fatigue,
+		GameState.diplomatic_progress,
 		GameState.logistics_runway_label,
 		GameState.logistics_posture_label,
 		GameState.logistics_focus_title,
@@ -422,6 +427,7 @@ func _refresh_situation_panel() -> void:
 		GameState.logistics_regional_task_detail,
 		GameState.logistics_regional_task_progress_label,
 		GameState.logistics_regional_task_reward_label,
+		strategy_context,
 		GameState.faction_support,
 		_prev_faction_support
 	)
@@ -482,7 +488,7 @@ func _refresh_logistics_guidance() -> void:
 			hint_text = GameState.logistics_objective_short
 		elif GameState.logistics_focus_short.strip_edges() != "":
 			hint_text = GameState.logistics_focus_short
-	var map_subtitle_text := _build_map_context_subtitle(hint_text)
+	var map_subtitle_text := _build_map_context_subtitle(hint_text, _build_strategy_context())
 	_tray_controller.set_enabled_hint_text("%s\n%s" % [_build_action_budget_hint_text(), hint_text])
 	_tray_controller.set_disabled_hint_text(_tray_disabled_hint_text())
 	_map_controller.set_context_subtitle(map_subtitle_text)
@@ -534,21 +540,37 @@ func _tray_confirm_button_text() -> String:
 		return "执行机动"
 	return "执行决策"
 
-func _build_map_context_subtitle(hint_text: String) -> String:
-	var candidates := [
+func _build_map_context_subtitle(hint_text: String, strategy_context: Dictionary) -> String:
+	var lines: Array[String] = []
+	var route_source := ""
+	for candidate_variant in [
 		GameState.logistics_route_chain_short,
 		GameState.logistics_objective_short,
-		GameState.logistics_regional_pressure_short,
-		GameState.logistics_tempo_plan_short,
-		GameState.logistics_focus_short
-	]
-	for candidate_variant in candidates:
+		GameState.logistics_regional_task_short,
+		GameState.logistics_regional_pressure_short
+	]:
 		var candidate := String(candidate_variant).strip_edges()
-		if candidate != "" and candidate != hint_text:
-			return candidate
+		if candidate != "":
+			route_source = candidate
+			break
 	if hint_text.begins_with("前10天教程："):
-		return "提示：点击城市锁定详情，滚轮缩放地图，右键复位。"
-	return hint_text
+		lines.append(hint_text)
+	elif route_source != "":
+		lines.append("路线：%s" % route_source)
+	elif hint_text.strip_edges() != "":
+		lines.append(hint_text)
+
+	var focus_title := String(strategy_context.get("focus_title", "")).strip_edges()
+	var next_step := String(strategy_context.get("focus_next_step", "")).strip_edges()
+	if focus_title != "":
+		var strategy_line := "战略：当前最接近%s" % focus_title
+		if next_step != "":
+			strategy_line += "。%s" % next_step
+		lines.append(strategy_line)
+
+	if hint_text.begins_with("前10天教程："):
+		lines.append("操作：点击城市锁定详情，滚轮缩放地图，右键复位。")
+	return "\n".join(lines)
 
 func _build_tutorial_hint_text() -> String:
 	if GameState.current_day > 10:
@@ -572,6 +594,130 @@ func _build_tutorial_hint_text() -> String:
 	if GameState.current_day <= 10 and GameState.logistics_objective_target_role_label.strip_edges() != "":
 		return "前10天教程：把%s接成跳板后，再考虑发动战役或继续前推。" % GameState.logistics_objective_target_role_label
 	return ""
+
+
+func _build_strategy_context() -> Dictionary:
+	var focus := _build_primary_route_snapshot()
+	var risk := _build_primary_risk_snapshot()
+	var faction_pressure := _build_faction_pressure_snapshot()
+	return {
+		"focus_title": String(focus.get("title", "")).strip_edges(),
+		"focus_reason": String(focus.get("reason", "")).strip_edges(),
+		"focus_next_step": String(focus.get("next_step", "")).strip_edges(),
+		"risk_title": String(risk.get("title", "")).strip_edges(),
+		"risk_detail": String(risk.get("detail", "")).strip_edges(),
+		"faction_title": String(faction_pressure.get("title", "")).strip_edges(),
+		"faction_detail": String(faction_pressure.get("detail", "")).strip_edges()
+	}
+
+
+func _build_primary_route_snapshot() -> Dictionary:
+	var outcome_id := "napoleon_victory"
+	var reason := "当前局面还在塑形期，最值钱的路线仍然是同时把政治、补给和胜场养成能改写历史的组合。"
+	if GameState.legitimacy < 15.0:
+		outcome_id = "political_collapse"
+		reason = "合法性已经压到即时失败区，巴黎可能会先于前线停止承担这场战争。"
+	elif GameState.total_troops < 12000 or (GameState.supply < 30.0 and GameState.victories <= 1):
+		outcome_id = "military_annihilation"
+		reason = "兵力和续航都在危险区，继续用高损耗换位置会更接近军事覆灭。"
+	elif GameState.current_day >= 60 and GameState.legitimacy >= 65.0 and GameState.diplomatic_progress >= 70:
+		outcome_id = "diplomatic_settlement"
+		reason = "你已经跨进外交兑现窗口，当前最接近的是把高合法性和外交进度守到停火落地。"
+	elif GameState.victories >= 3 and GameState.legitimacy >= 50.0:
+		outcome_id = "napoleon_victory"
+		reason = "战场和政治都还站得住，现在最接近的是把中盘优势滚成改写历史的胜局。"
+	elif GameState.victories >= 3:
+		outcome_id = "military_dominance"
+		reason = "你的战果已经跑在政治线前面，当前更像一条靠军功硬压出来的军事霸权路线。"
+	elif GameState.current_day >= 45 and GameState.diplomatic_progress >= 45 and GameState.legitimacy >= 55.0:
+		outcome_id = "diplomatic_settlement"
+		reason = "中盘政治基础还稳，外交进度也已经成形，继续经营外交比硬赌决战更近。"
+	elif GameState.victories >= 2 and GameState.legitimacy >= 45.0:
+		outcome_id = "napoleon_victory"
+		reason = "你已经有了翻盘骨架，只差把优势滚成足够多的有效胜利。"
+	elif GameState.current_day >= 80:
+		outcome_id = "waterloo_historical"
+		reason = "终盘已经逼近，若再不把胜场或外交进度推上去，局面会更像守到滑铁卢。"
+	elif GameState.victories <= 0 and GameState.legitimacy < 40.0:
+		outcome_id = "waterloo_defeat"
+		reason = "战场和政治都没有起色，继续硬顶更像是在滑向彻底败亡。"
+
+	var info: Dictionary = MainMenuConfigData.OUTCOME_TEXT.get(outcome_id, {})
+	return {
+		"id": outcome_id,
+		"title": String(info.get("title", outcome_id)),
+		"reason": reason,
+		"next_step": String(info.get("next_step", "")).strip_edges()
+	}
+
+
+func _build_primary_risk_snapshot() -> Dictionary:
+	if GameState.legitimacy < 15.0:
+		return {
+			"title": "政治崩溃",
+			"detail": "合法性 %.1f，任何继续消耗派系或合法性的动作都可能让巴黎先倒向退位。" % GameState.legitimacy
+		}
+	if GameState.total_troops < 12000:
+		return {
+			"title": "军事覆灭",
+			"detail": "兵力只剩 %s，再用高损耗战斗硬换位置，军队会先于政权崩掉。" % _format_number(GameState.total_troops)
+		}
+	if GameState.supply < 45.0:
+		return {
+			"title": "补给透支",
+			"detail": "当前补给 %.0f，前线已经接近或跌入惩罚区。先保线再推进，否则任何路线都会一起变窄。" % GameState.supply
+		}
+	if GameState.current_day >= 75 and GameState.victories < 2:
+		return {
+			"title": "终盘战果不足",
+			"detail": "已到第 %d 天，胜场只有 %d。若这一段还没有决定性战果，终盘会更像守到历史败局。" % [GameState.current_day, GameState.victories]
+		}
+	var faction_pressure := _build_faction_pressure_snapshot()
+	return {
+		"title": String(faction_pressure.get("title", "派系失衡")),
+		"detail": String(faction_pressure.get("detail", "当前最大的风险来自内部支持失衡。"))
+	}
+
+
+func _build_faction_pressure_snapshot() -> Dictionary:
+	var weakest_id := ""
+	var weakest_support := 101.0
+	var strongest_id := ""
+	var strongest_support := -1.0
+	for faction_id in GameState.faction_support.keys():
+		var support := float(GameState.faction_support.get(faction_id, 0.0))
+		if support < weakest_support:
+			weakest_support = support
+			weakest_id = String(faction_id)
+		if support > strongest_support:
+			strongest_support = support
+			strongest_id = String(faction_id)
+
+	var weakest_label: String = String(MainMenuConfigData.FACTION_LABELS.get(weakest_id, weakest_id))
+	var strongest_label: String = String(MainMenuConfigData.FACTION_LABELS.get(strongest_id, strongest_id))
+	var pressure_reason := ""
+	match weakest_id:
+		"military":
+			pressure_reason = "军方正在变脆，继续战败或压缩军费会直接反噬前线调度。"
+		"populace":
+			pressure_reason = "民众正在变脆，征用、印钞和长期战损都会让巴黎压力继续累积。"
+		"liberals":
+			pressure_reason = "自由派正在变脆，若还想保住议会和行政面的支持，就别长期只靠强压。"
+		"nobility":
+			pressure_reason = "贵族和保守秩序正在变脆，继续冲红线会让政治基础变得更窄。"
+		_:
+			pressure_reason = "当前内部支持并不均衡，别把最脆的一派继续往危险线推。"
+
+	return {
+		"title": "派系压力 · %s最脆" % weakest_label,
+		"detail": "当前最脆的是%s %.0f，最稳的是%s %.0f。%s" % [
+			weakest_label,
+			weakest_support,
+			strongest_label,
+			strongest_support,
+			pressure_reason
+		]
+	}
 
 
 func _clear_tray_selection() -> void:
@@ -804,19 +950,25 @@ func _build_glossary_overview() -> String:
 
 
 func _build_strategy_priority_lines() -> Array[String]:
+	var strategy_context := _build_strategy_context()
 	var lines: Array[String] = []
-	if GameState.legitimacy < 15.0:
-		lines.append("政治线已经接近即时失败区，先稳合法性和派系支持，再谈其他路线。")
-	if GameState.total_troops < 12000:
-		lines.append("兵力已明显见底，继续高损耗换位置会更接近军事覆灭。")
-	if GameState.current_day >= 60 and GameState.legitimacy > 65.0 and GameState.diplomatic_progress >= 70:
-		lines.append("你已经接近外交线兑现窗口，优先保住合法性并继续推进外交进度。")
-	if GameState.victories >= 2 and GameState.legitimacy > 45.0:
-		lines.append("政治线和军事线都还站得住，当前最值得争取的是把中盘优势滚成改写历史的胜局。")
-	elif GameState.victories >= 3 or (GameState.victories >= 2 and GameState.legitimacy <= 45.0):
-		lines.append("战场线已有起色，但政治基础仍偏薄。若继续只靠硬打，更容易落到军事霸权而非最佳结局。")
-	if GameState.supply < 45.0:
-		lines.append("补给已经进入危险区。无论你想追哪条结局线，都要先把前线续航拉回安全值。")
+	if String(strategy_context.get("focus_title", "")).strip_edges() != "":
+		lines.append("当前最接近%s：%s" % [
+			strategy_context.get("focus_title", ""),
+			strategy_context.get("focus_reason", "")
+		])
+	if String(strategy_context.get("risk_title", "")).strip_edges() != "":
+		lines.append("当前主要风险是%s：%s" % [
+			strategy_context.get("risk_title", ""),
+			strategy_context.get("risk_detail", "")
+		])
+	if String(strategy_context.get("faction_title", "")).strip_edges() != "":
+		lines.append("%s：%s" % [
+			strategy_context.get("faction_title", ""),
+			strategy_context.get("faction_detail", "")
+		])
+	if GameState.current_day <= 10:
+		lines.append("前 10 天不要急着追单一路线，先把补给线和跳板节点稳住，避免教程期就把终盘余量交掉。")
 	if lines.is_empty():
 		lines.append("当前局面还在塑形期。先决定今天的位置和补给节奏，再决定要押政治、外交还是战场。")
 	return lines
@@ -848,6 +1000,7 @@ func _build_strategy_status_lines(outcome_id: String) -> Array[String]:
 
 func _build_narrative_log_overview() -> String:
 	var log_body := _narrative_body.text.strip_edges()
+	var strategy_context := _build_strategy_context()
 	var lines: Array[String] = []
 	lines.append("日志说明")
 	lines.append("这里会保留教程、历史事件、行动结算和日记摘录。你可以把它当成回看窗口：先看当前局势，再往下翻最近发生了什么。")
@@ -860,6 +1013,13 @@ func _build_narrative_log_overview() -> String:
 		GameState.diplomatic_progress,
 		GameState.supply
 	])
+	if String(strategy_context.get("focus_title", "")).strip_edges() != "":
+		lines.append("当前最接近%s：%s" % [
+			strategy_context.get("focus_title", ""),
+			strategy_context.get("focus_reason", "")
+		])
+	if String(strategy_context.get("risk_title", "")).strip_edges() != "":
+		lines.append("当前主要风险：%s" % strategy_context.get("risk_detail", ""))
 	lines.append("")
 	lines.append("最近记录")
 	if log_body == "":

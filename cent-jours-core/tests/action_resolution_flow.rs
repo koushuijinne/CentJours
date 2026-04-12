@@ -66,6 +66,10 @@ fn 未注册政策会返回失败事件而不是静默吞掉() {
 #[test]
 fn 行军结算会兑现预判落点与资源变化() {
     let mut engine = GameEngine::new();
+    
+    // 阻止 Day 1 戛纳湾登陆事件的干扰（它会增加兵力，导致补给消耗计算不一致）
+    engine.restore_triggered_events(vec!["golfe_juan_landing".to_string()]);
+
     let preview = engine.preview_march("antibes");
     let mut rng = seeded_rng();
     let before_day = engine.current_day();

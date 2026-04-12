@@ -30,10 +30,10 @@ jobs:
         shell: pwsh
         working-directory: cent-jours-core
         run: |
-          cargo test simulation::monte_carlo::tests::coupled_systems_survive_1000_runs --lib
-          cargo test simulation::monte_carlo::tests::engine_simulated_win_rate_is_in_reasonable_range --lib
-          cargo test simulation::monte_carlo::tests::ney_defection_triggers_at_reasonable_frequency --lib
-          cargo test simulation::monte_carlo::tests::engine_simulation_outcome_counts_are_complete --lib
+          cargo test --release simulation::monte_carlo::tests::coupled_systems_survive_1000_runs --lib
+          cargo test --release simulation::monte_carlo::tests::engine_simulated_win_rate_is_in_reasonable_range --lib
+          cargo test --release simulation::monte_carlo::tests::ney_defection_triggers_at_reasonable_frequency --lib
+          cargo test --release simulation::monte_carlo::tests::engine_simulation_outcome_counts_are_complete --lib
 
       - name: Run large-sample property tests
         shell: pwsh
@@ -41,5 +41,5 @@ jobs:
         env:
           PROPTEST_CASES: 1024
         run: |
-          cargo test --test march_preview_contract
-          cargo test --test save_load_flow
+          cargo test --release --test march_preview_contract
+          cargo test --release --test save_load_flow

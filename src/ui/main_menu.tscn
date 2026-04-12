@@ -98,6 +98,18 @@ layout_mode = 2
 size_flags_horizontal = 3
 value = 50.0
 
+[node name="DiplomacyBlock" type="VBoxContainer" parent="RootLayout/TopBar/TopBarMargin/TopBarRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(96, 0)
+
+[node name="DiplomacyCaption" type="Label" parent="RootLayout/TopBar/TopBarMargin/TopBarRow/DiplomacyBlock"]
+layout_mode = 2
+text = "外交"
+
+[node name="DiplomacyValue" type="Label" parent="RootLayout/TopBar/TopBarMargin/TopBarRow/DiplomacyBlock"]
+layout_mode = 2
+text = "0 / 100"
+
 [node name="ResourceBlock" type="HBoxContainer" parent="RootLayout/TopBar/TopBarMargin/TopBarRow"]
 layout_mode = 2
 theme_override_constants/separation = 16
@@ -184,8 +196,9 @@ text = "战区地图"
 [node name="MapSubtitle" type="Label" parent="RootLayout/MainArea/LeftColumn/MapArea/MapMargin/MapContent"]
 layout_mode = 0
 offset_top = 22.0
-offset_right = 320.0
-offset_bottom = 42.0
+offset_right = 640.0
+offset_bottom = 58.0
+autowrap_mode = 3
 text = "向北推进，连接巴黎与比利时方向。"
 
 [node name="MapHoverPanel" type="PanelContainer" parent="RootLayout/MainArea/LeftColumn/MapArea/MapMargin/MapContent"]

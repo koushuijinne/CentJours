@@ -20,6 +20,7 @@ func test_main_menu_bootstraps_primary_controls() -> void:
 	var day_label := scene.find_child("DayLabel", true, false) as Label
 	var tray_hint := scene.find_child("TrayHint", true, false) as Label
 	var map_subtitle := scene.find_child("MapSubtitle", true, false) as Label
+	var diplomacy_value := scene.find_child("DiplomacyValue", true, false) as Label
 	var execute_button := scene.find_child("ExecuteActionButton", true, false) as Button
 	var end_day_button := scene.find_child("EndDayButton", true, false) as Button
 	var load_button := scene.find_child("LoadGameButton", true, false) as Button
@@ -28,6 +29,7 @@ func test_main_menu_bootstraps_primary_controls() -> void:
 	assert_object(day_label).is_not_null()
 	assert_object(tray_hint).is_not_null()
 	assert_object(map_subtitle).is_not_null()
+	assert_object(diplomacy_value).is_not_null()
 	assert_object(execute_button).is_not_null()
 	assert_object(end_day_button).is_not_null()
 	assert_object(load_button).is_not_null()
@@ -37,6 +39,7 @@ func test_main_menu_bootstraps_primary_controls() -> void:
 	assert_str(tray_hint.text).contains("今天还能做：1 次机动，2 次决策")
 	assert_str(tray_hint.text).contains("前10天教程：")
 	assert_bool(map_subtitle.text != tray_hint.text).is_true()
+	assert_str(diplomacy_value.text).contains("/ 100")
 	assert_bool(execute_button.disabled).is_false()
 	assert_str(execute_button.text).is_equal("先选择动作")
 	assert_bool(end_day_button.disabled).is_false()
@@ -119,8 +122,22 @@ func test_situation_panel_includes_regional_task_context() -> void:
 	assert_bool(GameState.logistics_regional_task_title.strip_edges() != "").is_true()
 	assert_bool(GameState.logistics_regional_task_progress_label.strip_edges() != "").is_true()
 	assert_str(situation_body.text).contains("合法性")
+	assert_str(situation_body.text).contains("外交")
+	assert_str(situation_body.text).contains("战略焦点")
+	assert_str(situation_body.text).contains("当前主要风险")
+	assert_str(situation_body.text).contains("派系压力")
 	assert_str(situation_body.text).contains(GameState.logistics_regional_task_title)
 	assert_str(situation_body.text).contains(GameState.logistics_regional_task_progress_label)
+
+
+func test_map_subtitle_surfaces_route_and_strategy_context() -> void:
+	var runner := await _load_main_menu()
+	var scene := runner.scene()
+	var map_subtitle := scene.find_child("MapSubtitle", true, false) as Label
+
+	assert_object(map_subtitle).is_not_null()
+	assert_str(map_subtitle.text).contains("战略：当前最接近")
+	assert_bool(map_subtitle.text.contains("路线：") or map_subtitle.text.contains("前10天教程：")).is_true()
 
 
 func test_rest_action_consumes_maneuver_until_end_day() -> void:
@@ -279,6 +296,7 @@ func test_strategy_goals_popup_opens_from_topbar() -> void:
 	assert_str(body.text).contains("当前最接近的路线")
 	assert_str(body.text).contains("外交进度")
 	assert_str(body.text).contains("达成要点")
+	assert_str(body.text).contains("当前主要风险")
 
 
 func test_glossary_popup_opens_from_topbar() -> void:
@@ -386,6 +404,8 @@ func test_narrative_log_popup_replays_existing_entries() -> void:
 	assert_str(body.text).contains("日志说明")
 	assert_str(body.text).contains("当前局势快照")
 	assert_str(body.text).contains("外交进度")
+	assert_str(body.text).contains("当前最接近")
+	assert_str(body.text).contains("当前主要风险")
 	assert_str(body.text).contains("测试结算描述")
 
 

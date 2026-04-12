@@ -14,7 +14,7 @@
 |------|------|
 | 入口 | `src/ui/main_menu.tscn`，主循环 `TurnManager → CentJoursEngine → GameState → UI` 已接通 |
 | 数据 | 15 角色 / 41 地图节点 / 66 历史事件 (major 17 / normal 38 / minor 11) |
-| 测试 | Windows `cargo test 215/215` + GdUnit4 `68/68` + Windows CI + smoke |
+| 测试 | Windows `cargo test 215/215` + GdUnit4 `69/69` + Windows CI + smoke |
 | 存档 | Save v4 兼容路径，旧 `fontainebleau_eve` → `tuileries_eve` 迁移 |
 | 分支 | `claude/review-project-status-05vxD`（已合并 `auto/gameplay_update`） |
 
@@ -33,6 +33,8 @@
 - **弹窗状态机**: modal 统一锁定，存读档/设置/战斗/接见/结局弹窗有 GdUnit4 回归
 - **教程链**: 前 10 天弹窗 + 侧栏双层呈现 + 日志回看 + 版式护栏
 - **百科与目标入口**: 红黑指数、合法性、外交进度、系统影响、结局路线和提高路径解释
+- **战略指导层**: 顶栏外交进度、侧栏战略焦点/主要风险/派系压力、地图副标题路线提示已统一口径
+- **Windows 验证链优化**: 已为 `fast / full / heavy-nightly` 引入 Godot 二进制缓存与日志上传机制，提升了远程诊断能力和执行效率。
 - **日内行动节奏**: 1 机动槽 + 2 决策点 + 手动结束今天
 - **多结局系统**: 7 种 GameOutcome + 外交进度 (0-100) + UI OUTCOME_TEXT 7 套文本
 - **Codex harness**: 新增根 `AGENTS.md`、`tools/codex_doc_sync_guard.sh`、`tools/codex_round_check.sh`、`tools/codex_harness_status.sh`、`tools/codex_pick_next_task.py`、`tools/codex_round_summary.py`、`tools/codex_cycle.sh`、`tools/codex_validation_scope.py`、`tools/codex_light_guard.sh` 和可安装 `.githooks/pre-commit + pre-push`
@@ -52,7 +54,7 @@
 - 最终资产仍是占位（地图底图、肖像、BGM、SFX）
 - 叙事系统需从"司汤达日记"迁移为"贝特朗日记"（18 文件 96 处引用）
 - Codex harness 已能输出“下一条任务 / 压缩摘要 / 最小本地验证 / 推荐云端链”，但更细的文件到测试映射还没收口
-- 补给、派系和结局之间的长期因果解释仍偏分散，当前已覆盖百科/结局/日志第一版，但还没形成完整的中盘指导层
+- 补给、派系和结局之间的长期因果解释已接入顶栏/侧栏/地图副标题第一版，但还没覆盖更多中盘事件与区域任务链
 
 ## 写入边界
 

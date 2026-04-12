@@ -2137,6 +2137,13 @@ impl GameEngine {
         &self.last_triggered_events
     }
 
+    /// 从外部恢复已触发事件列表（主要用于测试或状态同步）
+    pub fn restore_triggered_events(&mut self, ids: Vec<String>) {
+        let migrated = migrate_triggered_event_ids(ids);
+        self.triggered_event_ids = migrated.clone();
+        self.event_pool.restore_triggered(migrated);
+    }
+
     // ── 存档 / 读档 ───────────────────────────────────
 
     /// 将当前引擎状态序列化为存档快照
@@ -4288,14 +4295,15 @@ mod tests {
     fn political_collapse_ends_game() {
         let mut engine = GameEngine::new();
         // 强制两派系崩溃
+        // 设为 2.0，即使加上 Day 1 戛纳湾登陆事件的 +5.0 也会保持在 10.0 以下
         engine
             .politics
             .faction_support
-            .insert("liberals".to_string(), 5.0);
+            .insert("liberals".to_string(), 2.0);
         engine
             .politics
             .faction_support
-            .insert("populace".to_string(), 5.0);
+            .insert("populace".to_string(), 2.0);
         let mut rng = seeded_rng();
         engine.process_day(PlayerAction::Rest, &mut rng);
         assert_eq!(
@@ -4378,6 +4386,12 @@ mod tests {
     #[test]
     fn military_support_declines_when_troops_are_too_low() {
         let mut engine = GameEngine::new();
+        // 阻止 Day 1 戛纳湾登陆事件的干扰（它会提升军方支持度）
+        // 必须同步更新 event_pool 的内部状态
+        let ids = vec!["golfe_juan_landing".to_string()];
+        engine.triggered_event_ids = ids.clone();
+        engine.event_pool.restore_triggered(ids);
+        
         engine.army.total_troops = 15_000; // 低于20000阈值
         let mil_before = engine.politics.faction_support["military"];
         let mut rng = seeded_rng();
