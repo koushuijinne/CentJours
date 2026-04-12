@@ -839,12 +839,25 @@ func _show_tutorial_popup(title: String, body: String) -> void:
 	_dialogs_controller.show_info_popup("TutorialPopup", title, body)
 
 
+func _ready() -> void:
+	# ... (原有初始化代码)
+	_strategy_goals_button.pressed.connect(_show_strategy_goals_popup)
+	_glossary_button.pressed.connect(_show_glossary_popup)
+	_narrative_log_button.pressed.connect(_show_narrative_log_popup)
+	# ... (其余信号连接)
+
 func _show_strategy_goals_popup() -> void:
-	_dialogs_controller.show_info_popup(
-		"StrategyGoalsPopup",
-		"结局与战略目标",
-		_build_strategy_goals_overview()
-	)
+	var goals_body := _build_strategy_goals_overview()
+	_dialogs_controller.show_info_popup("StrategyGoalsPopup", "结局与战略目标", goals_body)
+
+func _build_strategy_goals_overview() -> String:
+	var lines: Array[String] = []
+	lines.append("当前局势概览")
+	lines.append("第 %d 天 · 合法性 %.1f · 补给 %.0f" % [GameState.current_day, GameState.legitimacy, GameState.supply])
+	lines.append("\n外交进度: %d / 100" % GameState.diplomatic_progress)
+	lines.append("结局路线提示: %s" % GameState.logistics_objective_label)
+	lines.append("\n当前主要风险: %s" % GameState.logistics_regional_pressure_detail)
+	return "\n".join(lines)
 
 
 func _show_narrative_log_popup() -> void:

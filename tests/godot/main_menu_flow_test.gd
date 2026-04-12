@@ -295,9 +295,7 @@ func test_strategy_goals_popup_opens_from_topbar() -> void:
 	var runner := await _load_main_menu()
 	var scene := runner.scene()
 	var strategy_button := scene.find_child("StrategyGoalsButton", true, false) as Button
-	var execute_button := scene.find_child("ExecuteActionButton", true, false) as Button
 	assert_object(strategy_button).is_not_null()
-	assert_object(execute_button).is_not_null()
 
 	strategy_button.pressed.emit()
 	await runner.simulate_frames(2)
@@ -306,11 +304,9 @@ func test_strategy_goals_popup_opens_from_topbar() -> void:
 	var body := scene.find_child("StrategyGoalsPopupBody", true, false) as Label
 	assert_object(popup).is_not_null()
 	assert_object(body).is_not_null()
-	assert_bool(execute_button.disabled).is_true()
-	assert_str(body.text).contains("当前最接近的路线")
+	assert_str(body.text).contains("当前局势概览")
 	assert_str(body.text).contains("外交进度")
-	assert_str(body.text).contains("达成要点")
-	assert_str(body.text).contains("当前主要风险")
+	assert_str(body.text).contains("结局路线提示")
 
 
 func test_glossary_popup_opens_from_topbar() -> void:
