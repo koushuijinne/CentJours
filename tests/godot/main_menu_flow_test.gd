@@ -14,6 +14,20 @@ func after_test() -> void:
 	TurnManager.reset_engine()
 
 
+func test_tutorial_hints_are_removed_from_sidebar() -> void:
+	var runner := await _load_main_menu()
+	var scene := runner.scene()
+	var tray_hint := scene.find_child("TrayHint", true, false) as Label
+	var map_subtitle := scene.find_child("MapSubtitle", true, false) as Label
+
+	assert_object(tray_hint).is_not_null()
+	assert_object(map_subtitle).is_not_null()
+	
+	# 教程文本现在应只存在于弹窗，不应在侧栏或地图副标题中包含“前10天教程”前缀
+	assert_str(tray_hint.text).excludes("前10天教程：")
+	assert_str(map_subtitle.text).excludes("前10天教程：")
+
+
 func test_main_menu_bootstraps_primary_controls() -> void:
 	var runner := await _load_main_menu()
 	var scene := runner.scene()

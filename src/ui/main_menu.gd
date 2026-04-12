@@ -474,25 +474,36 @@ func _disabled_policy_state_for_current_budget() -> Dictionary:
 
 func _refresh_logistics_guidance() -> void:
 	var hint_text := _build_tutorial_hint_text()
-	if hint_text.strip_edges() == "":
-		hint_text = "先决定今天的机动，再安排剩余决策点。"
+	var is_tutorial := hint_text.begins_with("前10天教程：")
+
+	var display_hint := ""
+	if not is_tutorial:
+		display_hint = hint_text.strip_edges()
+
+	if display_hint == "":
+		display_hint = "先决定今天的机动，再安排剩余决策点。"
 		if GameState.logistics_regional_pressure_short.strip_edges() != "":
-			hint_text = GameState.logistics_regional_pressure_short
+			display_hint = GameState.logistics_regional_pressure_short
 		elif GameState.logistics_route_chain_short.strip_edges() != "":
-			hint_text = GameState.logistics_route_chain_short
+			display_hint = GameState.logistics_route_chain_short
 		elif GameState.logistics_tempo_plan_short.strip_edges() != "":
-			hint_text = GameState.logistics_tempo_plan_short
+			display_hint = GameState.logistics_tempo_plan_short
 		elif GameState.logistics_action_plan_short.strip_edges() != "":
-			hint_text = GameState.logistics_action_plan_short
+			display_hint = GameState.logistics_action_plan_short
 		elif GameState.logistics_objective_short.strip_edges() != "":
-			hint_text = GameState.logistics_objective_short
+			display_hint = GameState.logistics_objective_short
 		elif GameState.logistics_focus_short.strip_edges() != "":
-			hint_text = GameState.logistics_focus_short
-	var map_subtitle_text := _build_map_context_subtitle(hint_text, _build_strategy_context())
-	_tray_controller.set_enabled_hint_text("%s\n%s" % [_build_action_budget_hint_text(), hint_text])
+			display_hint = GameState.logistics_focus_short
+
+	var map_subtitle_text := _build_map_context_subtitle(display_hint, _build_strategy_context())
+
+	# 教程期提示已移至中央弹窗与日志，侧栏 TrayHint 仅保留预算信息，避免视觉拥挤（ADR-008）
+	_tray_controller.set_enabled_hint_text(_build_action_budget_hint_text())
+	if not is_tutorial and display_hint != "":
+		_tray_controller.set_enabled_hint_text("%s\n%s" % [_build_action_budget_hint_text(), display_hint])
+
 	_tray_controller.set_disabled_hint_text(_tray_disabled_hint_text())
 	_map_controller.set_context_subtitle(map_subtitle_text)
-
 
 func _tray_disabled_hint_text() -> String:
 	match _tray_lock_reason:
@@ -818,8 +829,11 @@ func _maybe_show_daily_tutorial_popup() -> void:
 	if tutorial_text == "":
 		return
 	_last_tutorial_popup_day_shown = GameState.current_day
-	_show_tutorial_popup("前 10 天教程", tutorial_text)
-
+	
+	var full_body := tutorial_text + "\n\n[操作指南]\n- 地图：鼠标左键平移，滚轮缩放\n- 决策：点击政策卡牌 -> 确认执行\n- 视角：点击地图节点查看后勤建议"
+	
+	_show_tutorial_popup("前 10 天教程", full_body)
+	TurnManager.submit_action("log_narrative", {"title": "教程指导", "body": full_body})
 
 func _show_tutorial_popup(title: String, body: String) -> void:
 	_dialogs_controller.show_info_popup("TutorialPopup", title, body)
