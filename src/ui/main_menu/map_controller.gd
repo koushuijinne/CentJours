@@ -714,7 +714,7 @@ func _populate_map_inspector(node_id: String) -> void:
 		]
 		_map_inspector_meta.add_theme_color_override("font_color", CentJoursTheme.COLOR["text_primary"])
 	if _map_inspector_stats != null:
-		var marker := "Napoléon 当前所在\n" if node_id == _napoleon_location_id else ""
+		var marker := "拿破仑当前所在\n" if node_id == _napoleon_location_id else ""
 		var base_capacity := int(node_info.get("supply_capacity", 0))
 		var capacity_bonus := _forward_depot_bonus_for_node(node_id)
 		var effective_capacity := base_capacity + capacity_bonus

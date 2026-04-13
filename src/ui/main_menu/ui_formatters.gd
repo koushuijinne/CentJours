@@ -19,7 +19,7 @@ static func character_display_name(characters: Dictionary, hero_id: String) -> S
 static func napoleon_location_label(map_nodes: Array, napoleon_location: String) -> String:
 	for node_info in map_nodes:
 		if String(node_info.get("id", "")) == String(napoleon_location):
-			return String(node_info.get("name_fr", node_info.get("name", "Unknown")))
+			return String(node_info.get("name_fr", node_info.get("name", "未知")))
 	return String(napoleon_location)
 
 static func humanize_token(token: String) -> String:

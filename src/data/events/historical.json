@@ -1656,5 +1656,182 @@
     ],
     "historical_note": "百日王朝末期，巴黎国民自卫军的忠诚度成为帝国能否保住首都的关键因素。历史上，拿破仑在滑铁卢战败后回到巴黎时，发现国民自卫军已经不再可靠。",
     "tier": "major"
+  },
+  {
+    "id": "last_strategic_council",
+    "label": "最后的御前会议",
+    "day_range": [72, 80],
+    "trigger": {
+      "coalition_not_defeated": true
+    },
+    "effects": {
+      "military_support_delta": 3,
+      "legitimacy_delta": 2
+    },
+    "narratives": [
+      "拿破仑在杜伊勒里宫摊开地图，用手指划出两条线：一条从沙勒罗瓦直插布鲁塞尔，另一条沿桑布尔河向东。他说：我们必须在他们合兵之前打垮其中一个。",
+      "苏尔特在旁边做记录，手不停地写。会议结束后，他对副官说了一句话：计划是完美的。但计划总是完美的。",
+      "达武被留在巴黎。他请求随军北上，但拿破仑拒绝了：巴黎比任何一场战役都重要。达武没有争辩，但所有人都看得出他不同意。"
+    ],
+    "historical_note": "1815年6月初，拿破仑在巴黎召开了最后一次大规模军事会议，确定了主动出击、分割英普联军的作战方案。达武被留守巴黎担任战争部长，这一决定后来被认为是一个关键失误。",
+    "tier": "major"
+  },
+  {
+    "id": "frontier_intelligence_chaos",
+    "label": "边境情报混乱",
+    "day_range": [74, 82],
+    "trigger": {
+      "coalition_not_defeated": true
+    },
+    "effects": {
+      "military_support_delta": -3,
+      "napoleon_morale_bonus": -2
+    },
+    "narratives": [
+      "从北方送回的情报互相矛盾：一份说威灵顿在布鲁塞尔，另一份说他已经南下到尼韦尔。第三份报告则声称普军正在后撤。",
+      "参谋部花了整整一天试图拼凑出一幅可靠的态势图。最后他们承认：我们知道敌人大概在哪里，但不知道他们打算做什么。",
+      "一名骑兵侦察连长在报告中写：我的人一天跑了六十公里。看到了三支不同的联军纵队，但没有一支朝同一个方向走。"
+    ],
+    "historical_note": "1815年6月中旬，法军的情报系统未能准确判断英普联军的部署和意图。这种信息混乱直接影响了拿破仑的战术决策，尤其是在四臂村和利尼之战前夕。",
+    "tier": "normal"
+  },
+  {
+    "id": "army_morale_surge_departure",
+    "label": "出征前的士气高涨",
+    "day_range": [76, 82],
+    "trigger": {
+      "faction_support_min": { "military": 45.0 },
+      "legitimacy_min": 25.0
+    },
+    "effects": {
+      "military_support_delta": 5,
+      "napoleon_morale_bonus": 8,
+      "populace_support_delta": 3
+    },
+    "narratives": [
+      "北方军团在集结地检阅时，士兵们看到了皇帝骑在白马上的身影。有人开始喊'皇帝万岁'，然后整个方阵都在喊。",
+      "一个新兵对身边的老兵说：我以为打仗应该害怕。老兵笑了：等到了战场上你就怕了。但现在，先让他们听到我们的声音。",
+      "晚上营火旁，有人拉起了手风琴。旋律是《出征歌》。没有人命令他们唱，但整个营地都在唱。最后连军官们也加入了。"
+    ],
+    "historical_note": "拿破仑离开巴黎北上时，法军的士气处于百日王朝以来的最高点。老近卫军和新征召的部队展现出了超乎预期的战斗意志。",
+    "tier": "normal"
+  },
+  {
+    "id": "final_diplomatic_appeal",
+    "label": "最后的外交呼吁",
+    "day_range": [70, 80],
+    "trigger": {
+      "legitimacy_min": 40.0,
+      "coalition_not_defeated": true
+    },
+    "effects": {
+      "diplomatic_progress_delta": 5,
+      "liberals_support_delta": 3,
+      "nobility_support_delta": -2
+    },
+    "narratives": [
+      "考兰古尔起草了最后一封致各国君主的公开信：法兰西不寻求征服，只寻求被承认。拿破仑在签字前加了一句：以法兰西人民的名义。",
+      "这封信被送往维也纳、伦敦、柏林和圣彼得堡。没有人期望得到回复，但它必须被写出来——为了历史，也为了巴黎那些还相信和平的人。",
+      "自由派议员拿到信的副本后，在议会走廊里传阅。一位议员说：至少他试过了。这比上一次多走了一步。"
+    ],
+    "historical_note": "1815年6月初，拿破仑通过考兰古尔向欧洲各国发出和平呼吁，但均遭拒绝。维也纳会议已将其定义为'欧洲和平的扰乱者'。",
+    "tier": "normal"
+  },
+  {
+    "id": "paris_rumor_mill",
+    "label": "巴黎谣言漩涡",
+    "day_range": [82, 92],
+    "trigger": {},
+    "effects": {
+      "populace_support_delta": -4,
+      "liberals_support_delta": -3,
+      "rouge_noir_delta": -2
+    },
+    "narratives": [
+      "巴黎每天有十个版本的前线消息。早上说打赢了，中午说打平了，晚上又说还没开打。卖报的人已经学会了同时准备三种标题。",
+      "咖啡馆里最值钱的商品是消息。但没有人能分清哪些是真的，哪些是从根特流过来的波旁宣传。"
+    ],
+    "historical_note": "1815年6月中下旬，巴黎市民对前线战况的了解极度依赖谣言和小道消息。信息的不对称加剧了社会焦虑。",
+    "tier": "minor"
+  },
+  {
+    "id": "ligny_aftermath_uncertainty",
+    "label": "利尼战后的迷雾",
+    "day_range": [87, 90],
+    "trigger": {
+      "victories_min": 1
+    },
+    "effects": {
+      "military_support_delta": -2,
+      "napoleon_morale_bonus": -3
+    },
+    "narratives": [
+      "利尼的胜利本该是决定性的，但天亮后才发现：普军没有崩溃，他们只是后撤了。往哪个方向后撤，没有人说得清。",
+      "拿破仑命令格鲁希追击。但追击谁？地图上有三个可能的方向，每个方向都有矛盾的情报。",
+      "一名参谋军官在日记里写：我们赢了一场战役，但输了半天时间。在这种战争里，半天就是一切。"
+    ],
+    "historical_note": "1815年6月16日利尼之战后，拿破仑未能及时追击退却的普军。布吕歇尔率残部向瓦弗方向撤退而非向东回国，这使得普军得以在滑铁卢战役中及时增援威灵顿。",
+    "tier": "normal"
+  },
+  {
+    "id": "eve_of_decision_camp",
+    "label": "决战前夜的营地",
+    "day_range": [89, 91],
+    "trigger": {
+      "coalition_not_defeated": true
+    },
+    "effects": {
+      "napoleon_morale_bonus": 2,
+      "military_support_delta": 2
+    },
+    "narratives": [
+      "雨下了一整夜。士兵们裹着湿透的军大衣，蜷缩在麦田里。火点不着，面包泡成了糊。但没有人抱怨。",
+      "凌晨三点，拿破仑在一间农舍里对着地图站了很久。他量了一下从贝尔联盟到布鲁塞尔的距离：不到二十公里。明天，一切就会有结果。",
+      "老近卫军的鼓手在黎明前开始敲鼓。节奏很慢，像心跳。整个营地在鼓声中醒来，没有人说话。他们知道今天是什么日子。"
+    ],
+    "historical_note": "1815年6月17日夜至18日凌晨，暴雨使战场泥泞不堪。法军在滑铁卢南侧的高地上露营，距威灵顿的防线仅数公里。这场雨迫使拿破仑将进攻推迟到上午11时。",
+    "tier": "normal"
+  },
+  {
+    "id": "retreat_from_waterloo",
+    "label": "从滑铁卢撤退",
+    "day_range": [93, 97],
+    "trigger": {
+      "legitimacy_max": 30.0,
+      "faction_support_max": { "military": 40.0 }
+    },
+    "effects": {
+      "military_support_delta": -15,
+      "populace_support_delta": -10,
+      "legitimacy_delta": -10,
+      "military_available_troops_delta": -8000
+    },
+    "narratives": [
+      "撤退的道路上挤满了丢弃的大炮、翻倒的弹药车和失去建制的士兵。有些人还在跑，有些人已经坐在路边，再也不想动了。",
+      "一名军官试图集合残部。他喊了三遍口令，只有十几个人停下来。其余的人像河水一样从他身边流过，朝着巴黎的方向。",
+      "沿途的村庄关上了门窗。三个月前他们打开门迎接北上的皇帝，现在他们不想看到回来的是什么。"
+    ],
+    "historical_note": "1815年6月18日滑铁卢战败后，法军残部向巴黎方向溃退。在撤退过程中，法军损失了大量火炮和装备，有组织的抵抗实际上已经结束。",
+    "tier": "major"
+  },
+  {
+    "id": "chamber_demands_abdication",
+    "label": "议会要求退位",
+    "day_range": [94, 99],
+    "trigger": {
+      "legitimacy_max": 25.0
+    },
+    "effects": {
+      "liberals_support_delta": -15,
+      "legitimacy_delta": -12,
+      "rouge_noir_delta": -10
+    },
+    "narratives": [
+      "拉法耶特再次站了起来。这一次他的措辞没有留任何余地：陛下，您的光辉生涯已经结束了。现在是法兰西的时刻。",
+      "议会以压倒性多数通过了一项决议：如果皇帝不在二十四小时内退位，议会将自行宣布废黜。",
+      "富歇在走廊里微笑着和每一个人握手。他已经准备好了过渡政府的名单——在投票之前就准备好了。"
+    ],
+    "historical_note": "1815年6月21日拿破仑返回巴黎后，议会在拉法耶特等人主导下要求其退位。6月22日，拿破仑被迫第二次退位，结束了百日王朝。",
+    "tier": "major"
   }
 ]
