@@ -30,7 +30,7 @@
 - **弹窗恢复链**: 外部关闭弹窗后自动回收 modal 锁定
 - **行动面板语义**: 机动/决策预算提示 + 确认按钮切换 + 禁用原因
 - **地图交互**: hover 预览 / click 锁定 + 空白点击清空 + 补给标注
-- **前端拆分**: main_menu.gd 1025→684 行，6 个子控制器
+- **前端拆分**: main_menu.gd 1025→890 行，7 个子控制器（+content_builder.gd 406 行）
 - **弹窗状态机**: modal 统一锁定，存读档/设置/战斗/接见/结局弹窗有 GdUnit4 回归
 - **教程链**: 结构化 10 阶段教程（JSON 数据驱动）覆盖 overview/movement/supply/politics/command_deviation/strategy/diplomacy/summary + 侧栏双层呈现 + 日志回看 + 版式护栏
 - **百科与目标入口**: 红黑指数、合法性、外交进度、系统影响、结局路线和提高路径解释

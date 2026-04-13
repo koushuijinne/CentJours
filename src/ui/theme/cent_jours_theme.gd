@@ -83,6 +83,137 @@ static func create() -> Theme:
 	# Label 颜色
 	theme.set_color("font_color", "Label", COLOR["text_primary"])
 
+	# PanelContainer — 用于侧栏、情报面板等容器
+	var pc_sb := StyleBoxFlat.new()
+	pc_sb.bg_color = COLOR["bg_panel"]
+	pc_sb.border_color = COLOR["border_panel"]
+	pc_sb.set_border_width_all(1)
+	pc_sb.set_corner_radius_all(4)
+	pc_sb.content_margin_left = 8
+	pc_sb.content_margin_right = 8
+	pc_sb.content_margin_top = 6
+	pc_sb.content_margin_bottom = 6
+	theme.set_stylebox("panel", "PanelContainer", pc_sb)
+
+	# PopupPanel — 弹窗样式（教程、百科、设置、战斗等）
+	var popup_sb := StyleBoxFlat.new()
+	popup_sb.bg_color = Color(0.08, 0.08, 0.14, 0.96)
+	popup_sb.border_color = COLOR["gold_dim"]
+	popup_sb.set_border_width_all(2)
+	popup_sb.set_corner_radius_all(6)
+	popup_sb.shadow_color = Color(0, 0, 0, 0.6)
+	popup_sb.shadow_size = 12
+	popup_sb.shadow_offset = Vector2(0, 4)
+	popup_sb.content_margin_left = 16
+	popup_sb.content_margin_right = 16
+	popup_sb.content_margin_top = 12
+	popup_sb.content_margin_bottom = 12
+	theme.set_stylebox("panel", "PopupPanel", popup_sb)
+
+	# ScrollContainer — 去掉默认滚动条背景
+	var scroll_bg := StyleBoxEmpty.new()
+	theme.set_stylebox("panel", "ScrollContainer", scroll_bg)
+
+	# VScrollBar — 金色滚动条轨道和滑块
+	var vscroll_bg := StyleBoxFlat.new()
+	vscroll_bg.bg_color = Color(0.12, 0.12, 0.20, 0.3)
+	vscroll_bg.set_corner_radius_all(3)
+	vscroll_bg.content_margin_left = 2
+	vscroll_bg.content_margin_right = 2
+	theme.set_stylebox("scroll", "VScrollBar", vscroll_bg)
+
+	var vscroll_grabber := StyleBoxFlat.new()
+	vscroll_grabber.bg_color = COLOR["gold_dim"] * Color(1, 1, 1, 0.5)
+	vscroll_grabber.set_corner_radius_all(3)
+	vscroll_grabber.content_margin_left = 2
+	vscroll_grabber.content_margin_right = 2
+	theme.set_stylebox("grabber", "VScrollBar", vscroll_grabber)
+
+	var vscroll_grabber_hl := StyleBoxFlat.new()
+	vscroll_grabber_hl.bg_color = COLOR["gold_dim"] * Color(1, 1, 1, 0.7)
+	vscroll_grabber_hl.set_corner_radius_all(3)
+	vscroll_grabber_hl.content_margin_left = 2
+	vscroll_grabber_hl.content_margin_right = 2
+	theme.set_stylebox("grabber_highlight", "VScrollBar", vscroll_grabber_hl)
+
+	var vscroll_grabber_pr := StyleBoxFlat.new()
+	vscroll_grabber_pr.bg_color = COLOR["gold"]
+	vscroll_grabber_pr.set_corner_radius_all(3)
+	vscroll_grabber_pr.content_margin_left = 2
+	vscroll_grabber_pr.content_margin_right = 2
+	theme.set_stylebox("grabber_pressed", "VScrollBar", vscroll_grabber_pr)
+
+	# HSlider — 音频滑条等
+	var slider_bg := StyleBoxFlat.new()
+	slider_bg.bg_color = Color(0.18, 0.18, 0.28, 0.6)
+	slider_bg.border_color = COLOR["border_panel"]
+	slider_bg.set_border_width_all(1)
+	slider_bg.set_corner_radius_all(3)
+	slider_bg.content_margin_top = 4
+	slider_bg.content_margin_bottom = 4
+	theme.set_stylebox("slider", "HSlider", slider_bg)
+
+	var slider_fill := StyleBoxFlat.new()
+	slider_fill.bg_color = COLOR["gold_dim"]
+	slider_fill.set_corner_radius_all(3)
+	slider_fill.content_margin_top = 4
+	slider_fill.content_margin_bottom = 4
+	theme.set_stylebox("grabber_area", "HSlider", slider_fill)
+
+	var slider_highlight := StyleBoxFlat.new()
+	slider_highlight.bg_color = COLOR["gold"]
+	slider_highlight.set_corner_radius_all(3)
+	slider_highlight.content_margin_top = 4
+	slider_highlight.content_margin_bottom = 4
+	theme.set_stylebox("grabber_area_highlight", "HSlider", slider_highlight)
+
+	# TooltipPanel — 工具提示
+	var tooltip_sb := StyleBoxFlat.new()
+	tooltip_sb.bg_color = Color(0.06, 0.06, 0.10, 0.95)
+	tooltip_sb.border_color = COLOR["gold_dim"]
+	tooltip_sb.set_border_width_all(1)
+	tooltip_sb.set_corner_radius_all(3)
+	tooltip_sb.content_margin_left = 8
+	tooltip_sb.content_margin_right = 8
+	tooltip_sb.content_margin_top = 4
+	tooltip_sb.content_margin_bottom = 4
+	theme.set_stylebox("panel", "TooltipPanel", tooltip_sb)
+	theme.set_color("font_color", "TooltipLabel", COLOR["text_primary"])
+
+	# LineEdit — 输入框
+	var le_normal := StyleBoxFlat.new()
+	le_normal.bg_color = Color(0.10, 0.10, 0.18, 0.8)
+	le_normal.border_color = COLOR["border_panel"]
+	le_normal.set_border_width_all(1)
+	le_normal.set_corner_radius_all(3)
+	le_normal.content_margin_left = 8
+	le_normal.content_margin_right = 8
+	le_normal.content_margin_top = 4
+	le_normal.content_margin_bottom = 4
+	theme.set_stylebox("normal", "LineEdit", le_normal)
+
+	var le_focus := StyleBoxFlat.new()
+	le_focus.bg_color = Color(0.12, 0.12, 0.22, 0.9)
+	le_focus.border_color = COLOR["gold"]
+	le_focus.set_border_width_all(1)
+	le_focus.set_corner_radius_all(3)
+	le_focus.content_margin_left = 8
+	le_focus.content_margin_right = 8
+	le_focus.content_margin_top = 4
+	le_focus.content_margin_bottom = 4
+	theme.set_stylebox("focus", "LineEdit", le_focus)
+	theme.set_color("font_color", "LineEdit", COLOR["text_primary"])
+	theme.set_color("caret_color", "LineEdit", COLOR["gold"])
+	theme.set_color("selection_color", "LineEdit", COLOR["gold_dim"] * Color(1, 1, 1, 0.3))
+
+	# HSeparator / VSeparator — 分隔线
+	var sep_sb := StyleBoxFlat.new()
+	sep_sb.bg_color = COLOR["border_panel"] * Color(1, 1, 1, 0.5)
+	sep_sb.content_margin_top = 1
+	sep_sb.content_margin_bottom = 1
+	theme.set_stylebox("separator", "HSeparator", sep_sb)
+	theme.set_constant("separation", "HSeparator", 8)
+
 	return theme
 
 static func _make_button_style(bg: Color, border: Color) -> StyleBoxFlat:
