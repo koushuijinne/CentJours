@@ -14,7 +14,7 @@
 |------|------|
 | 入口 | `src/ui/main_menu.tscn`，主循环 `TurnManager → CentJoursEngine → GameState → UI` 已接通 |
 | 数据 | 15 角色 / 41 地图节点 / 100 历史事件 (S2-1 已达标) |
-| 测试 | Windows `cargo test 215/215` + GdUnit4 `26/26` (main_menu_flow, 3 pre-existing flaky) + Windows CI + smoke |
+| 测试 | Windows `cargo test 215/215` (state_tests.rs 拆分后仍通过) + GdUnit4 `26/26` + Windows CI + smoke |
 | 自动工作流 | 已启用（2026-04-13），权限配置 `Bash(*)`，hook/tools/fmt 已修复 Windows 兼容 |
 | 存档 | Save v4 兼容路径，旧 `fontainebleau_eve` → `tuileries_eve` 迁移 |
 | 分支 | `claude/review-project-status-05vxD`（已合并 `auto/gameplay_update`） |

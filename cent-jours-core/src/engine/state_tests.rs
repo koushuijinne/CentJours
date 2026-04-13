@@ -911,13 +911,11 @@ fn paris_security_and_political_stability_affect_daily_tick() {
     control.dusk_settlement(&mut rng);
 
     assert!(
-        engine.politics.faction_support["populace"]
-            > control.politics.faction_support["populace"],
+        engine.politics.faction_support["populace"] > control.politics.faction_support["populace"],
         "巴黎治安加成应提升民众支持"
     );
     assert!(
-        engine.politics.faction_support["nobility"]
-            > control.politics.faction_support["nobility"],
+        engine.politics.faction_support["nobility"] > control.politics.faction_support["nobility"],
         "巴黎治安加成应提升贵族支持"
     );
     assert!(
