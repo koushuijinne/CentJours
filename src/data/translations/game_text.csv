@@ -43,3 +43,18 @@ OUTCOME_WATERLOO_HISTORICAL,滑铁卢重演,Waterloo (Historical)
 OUTCOME_WATERLOO_DEFEAT,滑铁卢败亡,Waterloo Defeat
 OUTCOME_POLITICAL_COLLAPSE,政治崩溃,Political Collapse
 OUTCOME_MILITARY_ANNIHILATION,军事覆灭,Military Annihilation
+UI_LOCK_MODAL,设置已打开，先关闭弹窗。,Settings open. Close the dialog first.
+UI_LOCK_RESOLVING,正在结束今天…,Ending the day...
+UI_LOCK_PROCESSING,正在处理当前动作…,Processing current action...
+UI_LOCK_GAME_OVER,战局已结束，请查看结局或开始新局。,"Game over. Review the outcome, or start a new game."
+UI_LOCK_DEFAULT,界面已锁定。,UI locked.
+UI_CARD_LOCK_MODAL,先关闭弹窗,Close dialog first
+UI_CARD_LOCK_RESOLVING,正在结束今天,Ending day
+UI_CARD_LOCK_PROCESSING,正在处理,Processing
+UI_CARD_LOCK_GAME_OVER,战局已结束,Game over
+UI_CARD_LOCK_DEFAULT,界面已锁定,UI locked
+UI_BUDGET_FULL_HINT,今天还能做：1 次机动，{0} 次决策。通常先决定位置，再安排政策。,"Today: 1 maneuver, {0} decisions. Choose position first, then policies."
+UI_BUDGET_NO_DECISIONS_HINT,今天还能做：1 次机动，0 次决策。决策点已用尽，先决定是否机动，或直接结束今天。,"Today: 1 maneuver, 0 decisions. Decide on maneuver, or end the day."
+UI_BUDGET_NO_MANEUVER_HINT,今天还能做：0 次机动，{0} 次决策。机动已完成，接下来专注安排政策。,"Today: 0 maneuvers, {0} decisions. Maneuver done, focus on policies."
+UI_BUDGET_ALL_DONE_HINT,今天的机动和决策都已排完，直接结束今天。,"All maneuvers and decisions used. End the day."
+UI_SELECT_ACTION_FIRST,请先在下方选择一个机动动作或政策,Please select a maneuver or policy below

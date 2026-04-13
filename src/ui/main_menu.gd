@@ -357,7 +357,7 @@ func _connect_signals() -> void:
 	_map_controller.march_feedback.connect(_on_march_feedback)
 
 func _refresh_ui() -> void:
-	_day_label.text = "第 %d 天" % GameState.current_day
+	_day_label.text = tr("UI_DAY_LABEL").replace("{0}", str(GameState.current_day))
 	_phase_label.text = "%s · %s · 决策点 %d" % [
 		_phase_display_name(GameState.current_phase),
 		"机动可用" if GameState.maneuver_available else "机动已用",
@@ -468,10 +468,10 @@ func _disabled_policy_state_for_current_budget() -> Dictionary:
 		return disabled
 	if not GameState.maneuver_available:
 		for policy_id in MANEUVER_POLICY_IDS:
-			disabled[policy_id] = "今日机动已用"
+			disabled[policy_id] = tr("UI_MANEUVER_USED")
 	if GameState.actions_remaining <= 0:
 		for policy_id in _decision_policy_ids():
-			disabled[policy_id] = "决策点已用尽"
+			disabled[policy_id] = tr("UI_DECISIONS_EXHAUSTED")
 	return disabled
 
 func _refresh_logistics_guidance() -> void:
@@ -510,48 +510,48 @@ func _refresh_logistics_guidance() -> void:
 func _tray_disabled_hint_text() -> String:
 	match _tray_lock_reason:
 		TRAY_LOCK_MODAL:
-			return "设置已打开，先关闭弹窗。"
+			return tr("UI_LOCK_MODAL")
 		TRAY_LOCK_RESOLVING:
-			return "正在结束今天…"
+			return tr("UI_LOCK_RESOLVING")
 		TRAY_LOCK_PROCESSING:
-			return "正在处理当前动作…"
+			return tr("UI_LOCK_PROCESSING")
 		TRAY_LOCK_GAME_OVER:
-			return "战局已结束，请查看结局或开始新局。"
+			return tr("UI_LOCK_GAME_OVER")
 		_:
-			return "界面已锁定。"
+			return tr("UI_LOCK_DEFAULT")
 
 
 func _tray_card_lock_reason_text() -> String:
 	match _tray_lock_reason:
 		TRAY_LOCK_MODAL:
-			return "先关闭弹窗"
+			return tr("UI_CARD_LOCK_MODAL")
 		TRAY_LOCK_RESOLVING:
-			return "正在结束今天"
+			return tr("UI_CARD_LOCK_RESOLVING")
 		TRAY_LOCK_PROCESSING:
-			return "正在处理"
+			return tr("UI_CARD_LOCK_PROCESSING")
 		TRAY_LOCK_GAME_OVER:
-			return "战局已结束"
+			return tr("UI_CARD_LOCK_GAME_OVER")
 		_:
-			return "界面已锁定"
+			return tr("UI_CARD_LOCK_DEFAULT")
 
 
 func _build_action_budget_hint_text() -> String:
 	if GameState.maneuver_available and GameState.actions_remaining > 0:
-		return "今天还能做：1 次机动，%d 次决策。通常先决定位置，再安排政策。" % GameState.actions_remaining
+		return tr("UI_BUDGET_FULL_HINT").replace("{0}", str(GameState.actions_remaining))
 	if GameState.maneuver_available and GameState.actions_remaining <= 0:
-		return "今天还能做：1 次机动，0 次决策。决策点已用尽，先决定是否机动，或直接结束今天。"
+		return tr("UI_BUDGET_NO_DECISIONS_HINT")
 	if not GameState.maneuver_available and GameState.actions_remaining > 0:
-		return "今天还能做：0 次机动，%d 次决策。机动已完成，接下来专注安排政策。" % GameState.actions_remaining
-	return "今天的机动和决策都已排完，直接结束今天。"
+		return tr("UI_BUDGET_NO_MANEUVER_HINT").replace("{0}", str(GameState.actions_remaining))
+	return tr("UI_BUDGET_ALL_DONE_HINT")
 
 
 func _tray_confirm_button_text() -> String:
 	var selected_policy_id := _tray_controller.get_selected_policy_id()
 	if selected_policy_id == "":
-		return "先选择动作"
+		return tr("UI_BTN_EXECUTE_IDLE")
 	if MANEUVER_POLICY_IDS.has(selected_policy_id):
-		return "执行机动"
-	return "执行决策"
+		return tr("UI_BTN_EXECUTE_MANEUVER")
+	return tr("UI_BTN_EXECUTE_DECISION")
 
 func _build_map_context_subtitle(hint_text: String, strategy_context: Dictionary) -> String:
 	return MainMenuContentBuilder.build_map_context_subtitle(hint_text, strategy_context)
