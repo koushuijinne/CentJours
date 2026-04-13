@@ -341,8 +341,7 @@ func _connect_signals() -> void:
 	EventBus.legitimacy_changed.connect(_on_legitimacy_changed)
 	EventBus.loyalty_changed.connect(_on_loyalty_changed)
 	EventBus.historical_event_triggered.connect(_on_history_changed)
-	# 接叙事信号：当前仍是 Stendhal 占位命名；后续要按 BUG-2026-03-28-HISTORICAL-NARRATOR 迁移为 Bertrand diary。
-	EventBus.stendhal_diary_entry.connect(_on_stendhal_entry)
+	EventBus.bertrand_diary_entry.connect(_on_bertrand_entry)
 	EventBus.micro_narrative_shown.connect(_on_micro_narrative)
 	EventBus.action_resolution_logged.connect(_on_action_resolution_logged)
 	# 接回合结束信号：驱动下一回合
@@ -1115,9 +1114,8 @@ func _build_narrative_log_overview() -> String:
 		lines.append(log_body)
 	return "\n".join(lines)
 
-## TODO(history): 当前事件源仍挂在原型期的 stendhal 信号上，后续要整体迁移到 Bertrand diary。
-func _on_stendhal_entry(day: int, text: String) -> void:
-	_append_narrative("第 %d 天 — 日记摘录\n%s" % [day, text], CentJoursTheme.COLOR["gold_dim"])
+func _on_bertrand_entry(day: int, text: String) -> void:
+	_append_narrative("第 %d 天 — 贝特朗日记\n%s" % [day, text], CentJoursTheme.COLOR["gold_dim"])
 
 ## 行动后果微叙事：进入滚动日志（ADR-004）
 func _on_micro_narrative(action_type: String, consequence: String) -> void:

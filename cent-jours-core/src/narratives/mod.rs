@@ -1,9 +1,9 @@
 //! 叙事引擎 — `narratives`
 //!
-//! 加载 stendhal_diary.json 和 consequences.json，
+//! 加载 bertrand_diary.json 和 consequences.json，
 //! 根据玩家行动类型随机抽取叙事文本。
 //! GameEngine 通过 `last_report()` 把结果暴露给 Godot UI。
-//! TODO(history): `stendhal_diary.json` 仍是早期原型命名；后续需迁移为 Bertrand diary，并同步 GDExt / GDScript / 文档。
+//! 叙事视角为贝特朗（Henri Gatien Bertrand），拿破仑的宫廷总管兼首席副官。
 
 use rand::Rng;
 use std::collections::HashMap;
@@ -14,30 +14,30 @@ type NarrativeMap = HashMap<String, Vec<String>>;
 
 // ── 叙事池 ────────────────────────────────────────────────────────────────
 
-/// 双文本池：司汤达日记占位文本 + 微叙事后果片段
+/// 双文本池：贝特朗日记文本 + 微叙事后果片段
 pub struct NarrativePool {
-    stendhal: NarrativeMap,
+    bertrand: NarrativeMap,
     consequences: NarrativeMap,
 }
 
 impl NarrativePool {
     /// 从嵌入的 JSON 文件构建池（生产用）
     pub fn new() -> Self {
-        const STENDHAL_JSON: &str =
-            include_str!("../../../src/data/narratives/stendhal_diary.json");
+        const BERTRAND_JSON: &str =
+            include_str!("../../../src/data/narratives/bertrand_diary.json");
         const CONSEQUENCES_JSON: &str =
             include_str!("../../../src/data/narratives/consequences.json");
 
         Self {
-            stendhal: serde_json::from_str(STENDHAL_JSON).expect("stendhal_diary.json parse error"),
+            bertrand: serde_json::from_str(BERTRAND_JSON).expect("bertrand_diary.json parse error"),
             consequences: serde_json::from_str(CONSEQUENCES_JSON)
                 .expect("consequences.json parse error"),
         }
     }
 
-    /// 查询某行动类型的司汤达条目数（测试辅助）
-    pub fn stendhal_count(&self, action_type: &str) -> usize {
-        self.stendhal.get(action_type).map(|v| v.len()).unwrap_or(0)
+    /// 查询某行动类型的贝特朗条目数（测试辅助）
+    pub fn bertrand_count(&self, action_type: &str) -> usize {
+        self.bertrand.get(action_type).map(|v| v.len()).unwrap_or(0)
     }
 
     /// 查询某行动类型的后果条目数（测试辅助）
@@ -48,9 +48,9 @@ impl NarrativePool {
             .unwrap_or(0)
     }
 
-    /// 随机抽取一条司汤达日记文本；action_type 未知则返回 None
-    pub fn pick_stendhal<R: Rng>(&self, action_type: &str, rng: &mut R) -> Option<String> {
-        let pool = self.stendhal.get(action_type)?;
+    /// 随机抽取一条贝特朗日记文本；action_type 未知则返回 None
+    pub fn pick_bertrand<R: Rng>(&self, action_type: &str, rng: &mut R) -> Option<String> {
+        let pool = self.bertrand.get(action_type)?;
         if pool.is_empty() {
             return None;
         }
@@ -116,8 +116,8 @@ mod tests {
         let pool = NarrativePool::new();
         // 两个 JSON 都应有内容
         assert!(
-            pool.stendhal_count("conscription") > 0,
-            "stendhal_diary: conscription 应有条目"
+            pool.bertrand_count("conscription") > 0,
+            "bertrand_diary: conscription 应有条目"
         );
         assert!(
             pool.consequence_count("conscription") > 0,
@@ -126,7 +126,7 @@ mod tests {
     }
 
     #[test]
-    fn all_fifteen_action_types_exist_in_stendhal_pool() {
+    fn all_fifteen_action_types_exist_in_bertrand_pool() {
         let pool = NarrativePool::new();
         for key in &[
             "conscription",
@@ -146,8 +146,8 @@ mod tests {
             "print_money",
         ] {
             assert!(
-                pool.stendhal_count(key) > 0,
-                "stendhal_diary 缺少 '{}' 的条目",
+                pool.bertrand_count(key) > 0,
+                "bertrand_diary 缺少 '{}' 的条目",
                 key
             );
         }
@@ -188,8 +188,8 @@ mod tests {
     fn known_types_return_non_empty_text() {
         let pool = NarrativePool::new();
         let mut rng = seeded_rng();
-        let text = pool.pick_stendhal("conscription", &mut rng);
-        assert!(text.is_some(), "conscription 应返回司汤达文本");
+        let text = pool.pick_bertrand("conscription", &mut rng);
+        assert!(text.is_some(), "conscription 应返回贝特朗文本");
         assert!(!text.unwrap().is_empty(), "文本不应为空字符串");
     }
 
@@ -197,7 +197,7 @@ mod tests {
     fn unknown_types_return_none_without_crashing() {
         let pool = NarrativePool::new();
         let mut rng = seeded_rng();
-        assert!(pool.pick_stendhal("nonexistent_action", &mut rng).is_none());
+        assert!(pool.pick_bertrand("nonexistent_action", &mut rng).is_none());
         assert!(pool
             .pick_consequence("nonexistent_action", &mut rng)
             .is_none());
@@ -209,7 +209,7 @@ mod tests {
         let mut rng = StdRng::seed_from_u64(0);
         // 抽 20 次，应当出现多于 1 种结果（5 个变体）
         let results: std::collections::HashSet<String> = (0..20)
-            .filter_map(|_| pool.pick_stendhal("conscription", &mut rng))
+            .filter_map(|_| pool.pick_bertrand("conscription", &mut rng))
             .collect();
         assert!(
             results.len() > 1,
@@ -256,10 +256,10 @@ mod tests {
     // ── 键名契约验证：映射函数的所有返回键在 JSON 中必须存在 ──────────
 
     /// 所有在 policy_narrative_key() 中声明的映射，
-    /// 其目标 key 必须在 stendhal_diary.json 中有对应条目。
+    /// 其目标 key 必须在 bertrand_diary.json 中有对应条目。
     /// 防止：政策表改了 key 但 JSON 忘更新 → 运行时静默返回 None。
     #[test]
-    fn all_policy_narrative_keys_exist_in_stendhal() {
+    fn all_policy_narrative_keys_exist_in_bertrand() {
         let pool = NarrativePool::new();
         // 所有已注册的 policy_id
         let policy_ids = [
@@ -280,8 +280,8 @@ mod tests {
             let key = policy_narrative_key(pid)
                 .unwrap_or_else(|| panic!("policy_id '{}' 未在 policy_narrative_key 中注册", pid));
             assert!(
-                pool.stendhal_count(key) > 0,
-                "policy '{}' → key '{}' 在 stendhal_diary.json 中无条目，pick_stendhal 将静默失败",
+                pool.bertrand_count(key) > 0,
+                "policy '{}' → key '{}' 在 bertrand_diary.json 中无条目，pick_bertrand 将静默失败",
                 pid,
                 key
             );

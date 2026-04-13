@@ -180,15 +180,14 @@ func _run_action_step(action_type: String, params: Dictionary) -> void:
 	# engine.get_last_report() 返回键（来自 lib.rs CentJoursEngine::get_last_report）:
 	#   day(int)           — 发生该叙事的天数
 	#   has_narrative(bool)— 本回合是否有叙事内容
-	# TODO(history): `stendhal` 字段是早期原型命名，后续迁移为 Bertrand diary，并同步改 GDExt / UI / 存档口径。
-	#   stendhal(String)   — 日记体叙事文本（可为空串）
+	#   bertrand(String)    — 贝特朗日记体叙事文本（可为空串）
 	#   consequence(String)— 行动后果文本（可为空串）
 	var report := engine.get_last_report()
 	var day: int = report.get("day", GameState.current_day)
 	if report.get("has_narrative", false):
-		var stendhal: String = report.get("stendhal", "")
-		if stendhal != "":
-			EventBus.stendhal_diary_entry.emit(day, stendhal)
+		var bertrand_text: String = report.get("bertrand", "")
+		if bertrand_text != "":
+			EventBus.bertrand_diary_entry.emit(day, bertrand_text)
 		var consequence: String = report.get("consequence", "")
 		if consequence != "":
 			var narrative_category := _resolve_report_category(

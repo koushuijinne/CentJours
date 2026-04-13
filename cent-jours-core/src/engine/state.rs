@@ -161,9 +161,8 @@ pub struct DayEvent {
 #[derive(Debug, Clone)]
 pub struct DayReport {
     pub day: u32,
-    /// TODO(history): 当前 narrator 仍是原型期 Stendhal 占位，后续迁移为 Bertrand 宫廷总管日记。
-    /// 司汤达当天的日记评论（基于玩家行动类型）
-    pub stendhal: Option<String>,
+    /// 贝特朗当天的日记评论（基于玩家行动类型）
+    pub bertrand: Option<String>,
     /// 普通人视角的后果片段（基于玩家行动类型）
     pub consequence: Option<String>,
 }
@@ -660,7 +659,7 @@ pub struct GameEngine {
     event_pool: EventPool,
     /// 已触发事件 ID 列表（按触发顺序）
     triggered_event_ids: Vec<String>,
-    /// 叙事文本池（司汤达日记 + 后果片段）
+    /// 叙事文本池（贝特朗日记 + 后果片段）
     narratives: NarrativePool,
     /// 最近一天的叙事报告（可供 UI 层读取）
     last_report: Option<DayReport>,
@@ -3102,13 +3101,13 @@ impl GameEngine {
         if narrative_key.is_empty() {
             return DayReport {
                 day: self.day,
-                stendhal: None,
+                bertrand: None,
                 consequence: None,
             };
         }
         DayReport {
             day: self.day,
-            stendhal: self.narratives.pick_stendhal(narrative_key, rng),
+            bertrand: self.narratives.pick_bertrand(narrative_key, rng),
             consequence: self.narratives.pick_consequence(narrative_key, rng),
         }
     }
@@ -4942,7 +4941,7 @@ mod tests {
             &mut rng,
         );
         let report = engine.last_report().expect("执行政策后应有叙事报告");
-        assert!(report.stendhal.is_some(), "征兵令应有司汤达评论");
+        assert!(report.bertrand.is_some(), "征兵令应有贝特朗评论");
         assert!(report.consequence.is_some(), "征兵令应有后果片段");
     }
 
@@ -4952,12 +4951,12 @@ mod tests {
         let mut rng = seeded_rng();
         engine.process_day(PlayerAction::Rest, &mut rng);
         let report = engine.last_report().expect("执行后应有报告");
-        assert!(report.stendhal.is_none(), "Rest 不应有司汤达文本");
+        assert!(report.bertrand.is_none(), "Rest 不应有贝特朗文本");
         assert!(report.consequence.is_none(), "Rest 不应有后果片段");
     }
 
     #[test]
-    fn boost_loyalty_produces_stendhal_text() {
+    fn boost_loyalty_produces_bertrand_text() {
         let mut engine = GameEngine::new();
         let mut rng = seeded_rng();
         engine.process_day(
@@ -4967,7 +4966,7 @@ mod tests {
             &mut rng,
         );
         let report = engine.last_report().expect("BoostLoyalty 后应有报告");
-        assert!(report.stendhal.is_some(), "强化忠诚应有司汤达评论");
+        assert!(report.bertrand.is_some(), "强化忠诚应有贝特朗评论");
     }
 
     #[test]

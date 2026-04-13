@@ -1833,5 +1833,166 @@
     ],
     "historical_note": "1815年6月21日拿破仑返回巴黎后，议会在拉法耶特等人主导下要求其退位。6月22日，拿破仑被迫第二次退位，结束了百日王朝。",
     "tier": "major"
+  },
+  {
+    "id": "acte_additionnel_debate",
+    "label": "附加法案大辩论",
+    "day_range": [30, 40],
+    "trigger": {},
+    "effects": {
+      "liberals_support_delta": 5,
+      "nobility_support_delta": -3,
+      "rouge_noir_delta": -4
+    },
+    "narratives": [
+      "附加法案的印刷版终于从皮卡尔印刷厂出来了。排版工人连夜工作，但他们读了内容后互相对视了一眼：这是宪法还是妥协？",
+      "贡斯当在他的日记里写了一句话：我帮皇帝起草了一份限制皇帝权力的文件。历史会怎么评价这件事？我不知道。"
+    ],
+    "historical_note": "1815年4月，邦雅曼·贡斯当受拿破仑委托起草《附加法案》（Acte additionnel），试图为帝国政权披上自由主义外衣。这份文件引发了自由派和保皇派之间的激烈辩论。",
+    "tier": "normal"
+  },
+  {
+    "id": "press_censorship_dilemma",
+    "label": "新闻审查的两难",
+    "day_range": [32, 45],
+    "trigger": {
+      "legitimacy_max": 55.0
+    },
+    "effects": {
+      "liberals_support_delta": -4,
+      "populace_support_delta": -2,
+      "rouge_noir_delta": 3
+    },
+    "narratives": [
+      "达武递上了两份报纸：一份骂皇帝是暴君，另一份说联军正在溃败。两份都是假的。问题是：查封哪一份？",
+      "审查令下达后，三家印刷厂被关闭。结果第二天地下传单的数量是前一天的两倍。有些问题你封不住。"
+    ],
+    "historical_note": "百日王朝期间，拿破仑面临新闻管控的两难：放开报禁会让王党宣传泛滥，收紧审查则背叛了他对自由派的宪政承诺。",
+    "tier": "minor"
+  },
+  {
+    "id": "rural_france_indifference",
+    "label": "法国乡村的冷漠",
+    "day_range": [35, 50],
+    "trigger": {},
+    "effects": {
+      "populace_support_delta": -3,
+      "military_available_troops_delta": -1000
+    },
+    "narratives": [
+      "从普罗旺斯到诺曼底，农民们的态度出奇地一致：无论谁当皇帝，麦子都得收，税都得交。唯一的区别是这次交给谁。",
+      "一名县长在巡视后写道：他们没有反对帝国，但他们也不再为帝国激动。二十年的战争把这个国家的热情消耗殆尽了。"
+    ],
+    "historical_note": "1815年春，法国农村地区对政权更迭表现出明显的疲倦和冷漠。多年的战争和征兵已经严重透支了农村人口和资源。",
+    "tier": "minor"
+  },
+  {
+    "id": "fortress_garrisons_recall",
+    "label": "边境要塞守军召回",
+    "day_range": [60, 72],
+    "trigger": {
+      "coalition_not_defeated": true,
+      "legitimacy_min": 20.0
+    },
+    "effects": {
+      "military_available_troops_delta": 4000,
+      "military_support_delta": 3,
+      "napoleon_morale_bonus": 2
+    },
+    "narratives": [
+      "从斯特拉斯堡、梅斯和里尔的边境要塞，三支守军收到了调令：留下最少的骨干，其余全部北上编入野战军。",
+      "要塞指挥官们在执行命令时都明白同一件事：一旦抽走守军，这些城市就只剩城墙在挡了。但北方的决战比什么都重要。",
+      "一名从梅斯出发的步兵连长对士兵们说：我们去的地方比这里更需要我们。但他没说的是：我们走了以后，这里还剩谁。"
+    ],
+    "historical_note": "1815年6月，拿破仑为集中兵力于北方战线，从东部边境要塞抽调了大量守军。这一决定虽增强了野战军实力，但也使法国东部门户洞开。",
+    "tier": "normal"
+  },
+  {
+    "id": "veteran_officers_return",
+    "label": "退役军官归队",
+    "day_range": [60, 75],
+    "trigger": {
+      "faction_support_min": { "military": 40.0 }
+    },
+    "effects": {
+      "military_support_delta": 5,
+      "military_available_troops_delta": 2000,
+      "napoleon_morale_bonus": 3
+    },
+    "narratives": [
+      "他们从各地赶来——有的从农场，有的从商铺，有的从已经生锈的半薪退休生活中。他们的制服不合身了，但他们的眼神没有变。",
+      "一个半薪上尉带着自己的剑和一双新靴子报到。他说：我的剑磨了二十年，靴子是昨天买的。你猜哪个更靠得住？",
+      "登记处的书记员在三天内登记了超过两千名归队军官。他们大多数人的最后一次服役记录还停在1814年的退役文书上。"
+    ],
+    "historical_note": "百日王朝期间，大量半薪退役军官（demi-solde）自愿归队。这些经验丰富的军官为新组建的部队提供了宝贵的骨干力量。",
+    "tier": "normal"
+  },
+  {
+    "id": "smugglers_intelligence_network",
+    "label": "走私客的情报网",
+    "day_range": [62, 78],
+    "trigger": {},
+    "effects": {
+      "military_support_delta": 2,
+      "napoleon_morale_bonus": 1
+    },
+    "narratives": [
+      "北方边境的走私客比任何间谍都更了解联军的动向。他们不在乎政治，但他们在乎生意——而战争是最大的生意。",
+      "一名走私头目通过中间人给参谋部送了一张手绘地图。上面标注了英军的三个仓库位置。作为报酬，他只要求战后不追究他的货物。"
+    ],
+    "historical_note": "1815年，法国北部边境的走私网络在法军情报收集中扮演了非正式但重要的角色。这些走私客对边境地形和联军部署有着第一手了解。",
+    "tier": "minor"
+  },
+  {
+    "id": "church_bells_for_empire",
+    "label": "为帝国敲响的钟声",
+    "day_range": [62, 70],
+    "trigger": {
+      "legitimacy_min": 35.0
+    },
+    "effects": {
+      "populace_support_delta": 4,
+      "nobility_support_delta": 2,
+      "legitimacy_delta": 2
+    },
+    "narratives": [
+      "巴黎圣母院的钟声在周日弥撒后多响了三轮。主教没有解释原因，但所有人都知道这是为谁响的。",
+      "教会的态度是百日王朝最微妙的晴雨表。他们不公开支持，但钟声的长短和祈祷词的措辞传递着比布道更清晰的信号。"
+    ],
+    "historical_note": "百日王朝期间，法国天主教会的态度比较暧昧。部分主教在公开场合保持中立，但通过礼仪性的安排间接表达了对帝国政权的某种认可。",
+    "tier": "minor"
+  },
+  {
+    "id": "arms_factory_overtime",
+    "label": "兵工厂的加班令",
+    "day_range": [35, 55],
+    "trigger": {},
+    "effects": {
+      "military_support_delta": 3,
+      "populace_support_delta": -2,
+      "military_available_troops_delta": 1000
+    },
+    "narratives": [
+      "夏特莱罗和圣艾蒂安的兵工厂收到了同一道命令：两班倒改三班倒。工人们没有抱怨——加班意味着更多的面包。",
+      "一名铁匠一天锻造了十二把刺刀。他的手掌上的水泡已经磨成了茧。他对来访的督察说：给我铁，我就给你武器。但先给我面包。"
+    ],
+    "historical_note": "1815年百日王朝期间，法国的军工生产被迅速动员起来。夏特莱罗（Châtellerault）和圣艾蒂安（Saint-Étienne）的兵工厂在短短数月内大幅提高了产量。",
+    "tier": "minor"
+  },
+  {
+    "id": "london_newspaper_war",
+    "label": "伦敦报纸上的战争",
+    "day_range": [30, 65],
+    "trigger": {},
+    "effects": {
+      "nobility_support_delta": -2,
+      "diplomatic_progress_delta": 0
+    },
+    "narratives": [
+      "《泰晤士报》的社论用了一个词来形容拿破仑的回归：瘟疫。这个词被翻译成法语后在巴黎的沙龙里引起了愤怒——但也引起了恐惧。",
+      "从伦敦传来的报纸比从前线传来的情报更让人不安。因为它们传递的信息很简单：整个欧洲都在为消灭你做准备。"
+    ],
+    "historical_note": "1815年，英国报纸对拿破仑的回归进行了密集的负面报道，将其描绘为欧洲和平的最大威胁。这些报道也影响了法国国内的舆论走向。",
+    "tier": "minor"
   }
 ]

@@ -70,7 +70,7 @@
       "en_fallback":  "Libre Baskerville",
       "zh":           "Noto Serif CJK SC",
       "weight":       400,
-      "use":          "司汤达日记、事件描述、微叙事文本"
+      "use":          "贝特朗日记、事件描述、微叙事文本"
     },
     "ui": {
       "en_primary":   "Inter",
@@ -83,7 +83,7 @@
       "en_primary":   "Dancing Script",
       "en_fallback":  "Great Vibes",
       "weight":       400,
-      "use":          "阶段副标题、司汤达签名、信件落款（极少量）"
+      "use":          "阶段副标题、贝特朗签名、信件落款（极少量）"
     },
     "scale": {
       "xs":   12,

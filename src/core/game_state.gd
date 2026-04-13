@@ -105,7 +105,7 @@ var policy_cooldowns: Dictionary = {}  # 政策冷却缓存（policy_id → 剩�
 var characters: Dictionary = {}     # character_id -> CharacterData（运行时状态）
 
 # ── 叙事状态 ──────────────────────────────────────────
-var stendhal_diary: Array = []      # TODO(history): 迁移为 Bertrand 宫廷总管日记后同步改字段名
+var bertrand_diary: Array = []      # 贝特朗宫廷总管日记条目
 var triggered_events: Array = []    # 已触发的历史事件 id 列表
 
 # ── 难度 ──────────────────────────────────────────────

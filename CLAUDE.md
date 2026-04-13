@@ -27,7 +27,7 @@ godot: 4.6.1
 rust: stable
 characters: 15
 map_nodes: 41
-events: 91 / 100+
+events: 100 / 100+
 outcomes: 7  # NapoleonVictory DiplomaticSettlement MilitaryDominance WaterlooHistorical WaterlooDefeat PoliticalCollapse MilitaryAnnihilation
 difficulty: 3  # Elba Borodino Austerlitz
 save_version: v4

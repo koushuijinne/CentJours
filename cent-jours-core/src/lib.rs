@@ -290,8 +290,8 @@ mod gdext_bindings {
     /// ```gdscript
     /// var engine = CentJoursEngine.new()
     /// engine.process_day_rest()
-    /// var report = engine.get_last_report()   # { stendhal, consequence }
-    /// TODO(history): `stendhal` 键后续会迁移为 Bertrand diary 对应命名。
+    /// var report = engine.get_last_report()   # { bertrand, consequence }
+    /// TODO(history): `bertrand` 键后续会迁移为 Bertrand diary 对应命名。
     /// var state  = engine.get_state()         # { day, legitimacy, troops, ... }
     /// ```
     #[derive(GodotClass)]
@@ -824,20 +824,20 @@ mod gdext_bindings {
         }
 
         /// 获取最近一天的叙事报告
-        /// 返回 Dictionary：{ "stendhal": String|null, "consequence": String|null, "day": int }
+        /// 返回 Dictionary：{ "bertrand": String|null, "consequence": String|null, "day": int }
         #[func]
         pub fn get_last_report(&self) -> Dictionary {
             let mut d = Dictionary::new();
             match self.engine.last_report() {
                 Some(r) => {
                     let _ = d.insert("day", r.day as i64);
-                    let _ = d.insert("stendhal", r.stendhal.as_deref().unwrap_or(""));
+                    let _ = d.insert("bertrand", r.bertrand.as_deref().unwrap_or(""));
                     let _ = d.insert("consequence", r.consequence.as_deref().unwrap_or(""));
-                    let _ = d.insert("has_narrative", r.stendhal.is_some());
+                    let _ = d.insert("has_narrative", r.bertrand.is_some());
                 }
                 None => {
                     let _ = d.insert("day", 0i64);
-                    let _ = d.insert("stendhal", "");
+                    let _ = d.insert("bertrand", "");
                     let _ = d.insert("consequence", "");
                     let _ = d.insert("has_narrative", false);
                 }
