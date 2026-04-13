@@ -73,7 +73,7 @@
 | 结局系统 | 85% | 7 种结局路径已实现（NapoleonVictory / DiplomaticSettlement / MilitaryDominance / WaterlooHistorical / WaterlooDefeat / PoliticalCollapse / MilitaryAnnihilation），含外交进度系统、失败归因、难度标记、UI 文本和变体选择 |
 | 音频 | 10% | AudioManager 框架已建立，缺音频资产文件 |
 | 美术资产 | 0% | 无角色肖像、无地图美术、无战斗特效，仅有 icon.svg |
-| 本地化 | 0% | 中文硬编码，无 i18n 框架，无英文翻译 |
+| 本地化 | 15% | i18n 框架已落地（CSV 运行时加载 + tr()），顶栏按钮已国际化，剩余字符串待抽取 |
 | Steam 集成 | 0% | 无 Steamworks SDK、无成就、无云存档 |
 | 设置系统 | 55% | 窗口模式 + UI 缩放 + 音频滑条 + 难度选择已有，缺按键/语言 |
 | 地图视觉 | 0% | 数据完整(41 节点)，渲染为线框，无美术 |
@@ -157,7 +157,7 @@
 
 | ID | 任务 | 优先级 | 规模 | 说明 |
 |----|------|--------|------|------|
-| S5-1 | 引入 i18n 框架 | P0 | L | 使用 Godot 内置 `tr()` + CSV/PO，抽取所有硬编码中文字符串 |
+| S5-1 | 引入 i18n 框架 | P0 | L | **框架已落地** — CSV 运行时加载 + tr() 顶栏按钮 + 45 个键值对（zh/en），后续继续抽取剩余硬编码字符串 |
 | S5-2 | 英文翻译 | P0 | XL | 全量 UI + 58-100 条事件 + 教程 + 结局文本，约 3-5 万字 |
 | S5-3 | Steamworks SDK 集成 | P0 | L | 使用 GodotSteam 插件，接入初始化、成就、云存档、Overlay |
 | S5-4 | 成就系统设计与实现 | P1 | M | 10-20 个成就：首次胜利、各结局达成、特定历史选择 |
@@ -196,10 +196,29 @@
 
 ---
 
+## 超 500 行文件拆分计划（硬约束 #10）
+
+| 文件 | 行数 | 拆分方案 | 优先级 |
+|------|------|---------|--------|
+| `engine/state.rs` | 5303 | 拆出 test 模块到 `engine/state_tests.rs`，拆出 logistics 到 `engine/logistics.rs` | P1 |
+| `events/pool.rs` | 1313 | 拆出 test 模块到 `events/pool_tests.rs` | P2 |
+| `map_controller.gd` | 1291 | 拆出渲染逻辑到 `map_render_controller.gd`（已部分完成） | P2 |
+| `lib.rs` | 956 | GDExtension 接口按功能分组，考虑 trait 拆分 | P3 |
+| `main_menu.gd` | 890 | 已从 1260→890（提取 content_builder.gd），继续下沉 | 已改善 |
+| `dialogs_controller.gd` | 885 | 拆出 game_over 和 battle popup 到独立文件 | P2 |
+| `characters/network.rs` | 754 | 拆出 test 模块 | P3 |
+| `map_render_controller.gd` | 624 | 评估是否需进一步拆分 | P3 |
+| `battle/march.rs` | 622 | 拆出 preview 逻辑 | P3 |
+| `sidebar_controller.gd` | 611 | 拆出 policy_recommendation 到独立文件 | P3 |
+| `politics/system.rs` | 562 | 拆出 test 模块 | P3 |
+| `topbar_actions_controller.gd` | 556 | 拆出 settings_popup 构建逻辑 | P3 |
+| `simulation/monte_carlo.rs` | 539 | 低优先级，独立工具 | P4 |
+| `turn_manager.gd` | 506 | 评估是否需拆分 | P3 |
+
 ## 当前技术债
 
 - Rust 全局仍有约 `54` 处 `unwrap()` / `expect()` / `panic!()`，集中在 `events/pool.rs` 与 `engine/state.rs`。
-- `main_menu.gd`（684 行）和 `map_controller.gd` 仍偏大，后续还需要继续按职责下沉。
+- 14 个文件超过 500 行（见上表），需按优先级逐步拆分。
 - `tests/monte_carlo_balance.py` 与 Rust 核心基线已漂移，不应继续作为平衡主依据。
 - 多槽存档 UI 已接入并补齐覆盖确认与删除入口，但设置与更多失败恢复链路仍不完整。
 - 代码命名与注释风格仍不统一：存在旧中文测试函数名和"关键路径说明不足"的问题，需渐进治理。

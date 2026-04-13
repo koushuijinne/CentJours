@@ -67,49 +67,49 @@ func load_and_apply_user_settings(window: Window) -> Dictionary:
 func build_topbar_buttons() -> Dictionary:
 	var strategy_btn := Button.new()
 	strategy_btn.name = "StrategyGoalsButton"
-	strategy_btn.text = "结局"
+	strategy_btn.text = tr("UI_BTN_STRATEGY")
 	strategy_btn.custom_minimum_size = Vector2(60, 0)
 	strategy_btn.pressed.connect(func(): strategy_goals_requested.emit())
 	_top_bar_row.add_child(strategy_btn)
 
 	var log_btn := Button.new()
 	log_btn.name = "NarrativeLogButton"
-	log_btn.text = "日志"
+	log_btn.text = tr("UI_BTN_LOG")
 	log_btn.custom_minimum_size = Vector2(60, 0)
 	log_btn.pressed.connect(func(): narrative_log_requested.emit())
 	_top_bar_row.add_child(log_btn)
 
 	var glossary_btn := Button.new()
 	glossary_btn.name = "GlossaryButton"
-	glossary_btn.text = "百科"
+	glossary_btn.text = tr("UI_BTN_GLOSSARY")
 	glossary_btn.custom_minimum_size = Vector2(60, 0)
 	glossary_btn.pressed.connect(func(): glossary_requested.emit())
 	_top_bar_row.add_child(glossary_btn)
 
 	var settings_btn := Button.new()
 	settings_btn.name = "SettingsButton"
-	settings_btn.text = "设置"
+	settings_btn.text = tr("UI_BTN_SETTINGS")
 	settings_btn.custom_minimum_size = Vector2(60, 0)
 	settings_btn.pressed.connect(_on_settings_pressed)
 	_top_bar_row.add_child(settings_btn)
 
 	var new_game_btn := Button.new()
 	new_game_btn.name = "NewGameButton"
-	new_game_btn.text = "新局"
+	new_game_btn.text = tr("UI_BTN_NEW_GAME")
 	new_game_btn.custom_minimum_size = Vector2(60, 0)
 	new_game_btn.pressed.connect(_on_new_game_pressed)
 	_top_bar_row.add_child(new_game_btn)
 
 	var save_btn := Button.new()
 	save_btn.name = "SaveGameButton"
-	save_btn.text = "存档"
+	save_btn.text = tr("UI_BTN_SAVE")
 	save_btn.custom_minimum_size = Vector2(60, 0)
 	save_btn.pressed.connect(_on_save_pressed)
 	_top_bar_row.add_child(save_btn)
 
 	var load_btn := Button.new()
 	load_btn.name = "LoadGameButton"
-	load_btn.text = "读档"
+	load_btn.text = tr("UI_BTN_LOAD")
 	load_btn.custom_minimum_size = Vector2(60, 0)
 	load_btn.pressed.connect(_on_load_pressed)
 	_top_bar_row.add_child(load_btn)

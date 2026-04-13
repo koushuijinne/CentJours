@@ -1,0 +1,45 @@
+keys,zh,en
+UI_DAY_LABEL,第 {0} 天,Day {0}
+UI_BTN_NEW_GAME,新局,New Game
+UI_BTN_SAVE,存档,Save
+UI_BTN_LOAD,读档,Load
+UI_BTN_SETTINGS,设置,Settings
+UI_BTN_STRATEGY,结局,Outcomes
+UI_BTN_LOG,日志,Log
+UI_BTN_GLOSSARY,百科,Glossary
+UI_BTN_END_DAY,结束今天 → 次日,End Day → Next
+UI_BTN_EXECUTE_IDLE,先选择动作,Select Action
+UI_BTN_EXECUTE_MANEUVER,执行机动,Execute Maneuver
+UI_BTN_EXECUTE_DECISION,执行决策,Execute Decision
+UI_MANEUVER_USED,今日机动已用,Maneuver used today
+UI_DECISIONS_EXHAUSTED,决策点已用尽,Decision points exhausted
+UI_BUDGET_FULL,今天还能做：1 次机动，{0} 次决策,Today: 1 maneuver, {0} decisions remaining
+UI_BUDGET_NO_DECISIONS,今天还能做：1 次机动，0 次决策。决策点已用尽,Today: 1 maneuver, 0 decisions. Points exhausted
+UI_BUDGET_NO_MANEUVER,今天还能做：0 次机动，{0} 次决策。机动已完成,Today: 0 maneuvers, {0} decisions. Maneuver done
+UI_BUDGET_ALL_DONE,今天已全部完成，请结束今天,All actions done. End the day
+UI_LEGITIMACY,合法性,Legitimacy
+UI_SUPPLY,补给,Supply
+UI_TROOPS,兵力,Troops
+UI_MORALE,士气,Morale
+UI_FATIGUE,疲劳,Fatigue
+UI_DIPLOMACY_PROGRESS,外交进度,Diplomatic Progress
+UI_SETTINGS_TITLE,设置,Settings
+UI_SETTINGS_WINDOW,窗口模式,Window Mode
+UI_SETTINGS_SCALE,界面缩放,UI Scale
+UI_SETTINGS_DIFFICULTY,难度,Difficulty
+UI_CLOSE,关闭,Close
+UI_CONFIRM,确认,Confirm
+UI_CANCEL,取消,Cancel
+UI_SAVE_CONFIRM,存档将覆盖槽位 {0}，确定吗？,Overwrite save slot {0}?
+UI_LOAD_CONFIRM,读档将覆盖当前进度，确定读取槽位 {0} 吗？,Load slot {0}? Current progress will be lost.
+UI_NAPOLEON_LOCATION,拿破仑当前所在,Napoleon's current position
+UI_UNKNOWN,未知,Unknown
+TUTORIAL_PREFIX,前10天教程,Tutorial (Day 1-10)
+NARRATIVE_BERTRAND_DIARY,贝特朗日记,Bertrand's Diary
+OUTCOME_NAPOLEON_VICTORY,拿破仑大捷,Napoleon's Victory
+OUTCOME_DIPLOMATIC_SETTLEMENT,外交调停,Diplomatic Settlement
+OUTCOME_MILITARY_DOMINANCE,军事霸权,Military Dominance
+OUTCOME_WATERLOO_HISTORICAL,滑铁卢重演,Waterloo (Historical)
+OUTCOME_WATERLOO_DEFEAT,滑铁卢败亡,Waterloo Defeat
+OUTCOME_POLITICAL_COLLAPSE,政治崩溃,Political Collapse
+OUTCOME_MILITARY_ANNIHILATION,军事覆灭,Military Annihilation

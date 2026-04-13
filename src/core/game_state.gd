@@ -130,8 +130,39 @@ func _ready() -> void:
 	_load_all_data()
 
 func _load_all_data() -> void:
+	_load_translations()
 	_load_characters()
 	_load_map()
+
+func _load_translations() -> void:
+	var csv_path := DATA_PATH + "translations/game_text.csv"
+	var file := FileAccess.open(csv_path, FileAccess.READ)
+	if not file:
+		push_warning("game_text.csv not found, i18n disabled")
+		return
+	var header_line := file.get_csv_line()
+	if header_line.size() < 2:
+		push_warning("game_text.csv: invalid header")
+		return
+	# 为每个语言列创建 Translation 对象
+	var translations: Array[Translation] = []
+	for col_idx in range(1, header_line.size()):
+		var t := Translation.new()
+		t.locale = header_line[col_idx].strip_edges()
+		translations.append(t)
+	# 逐行读取键值对
+	while not file.eof_reached():
+		var row := file.get_csv_line()
+		if row.size() < 2 or row[0].strip_edges() == "":
+			continue
+		var key := row[0].strip_edges()
+		for col_idx in range(1, mini(row.size(), header_line.size())):
+			var value := row[col_idx].strip_edges()
+			if value != "":
+				translations[col_idx - 1].add_message(key, value)
+	# 注册到 TranslationServer
+	for t in translations:
+		TranslationServer.add_translation(t)
 
 func _load_characters() -> void:
 	var file := FileAccess.open(DATA_PATH + "characters.json", FileAccess.READ)

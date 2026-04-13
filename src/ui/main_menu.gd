@@ -288,7 +288,7 @@ func _build_confirm_button() -> void:
 		_confirm_button.name = "ExecuteActionButton"
 	_end_day_button = Button.new()
 	_end_day_button.name = "EndDayButton"
-	_end_day_button.text = "结束今天 → 次日"
+	_end_day_button.text = tr("UI_BTN_END_DAY")
 	_end_day_button.size_flags_horizontal = Control.SIZE_SHRINK_END
 	_end_day_button.custom_minimum_size = Vector2(132, 28)
 	_end_day_button.pressed.connect(_on_end_day_pressed)
