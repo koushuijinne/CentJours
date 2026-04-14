@@ -1,6 +1,6 @@
 # Agent 交接
 
-> **更新**: 2026-04-13
+> **更新**: 2026-04-14
 > **约束和流程**: 见 `CLAUDE.md`（项目根目录，Claude Code 自动读取）
 > **Codex 入口**: 见 `AGENTS.md`（项目根目录，Codex 默认读取）
 > **开发历史**: 见 [docs/history/development_logs/](docs/history/development_logs/)
@@ -26,13 +26,12 @@
 - **难度系统**: Rust Difficulty 枚举 (Elba/Borodino/Austerlitz) + GDExtension + 新局 UI
 - **失败归因**: GameState.key_decisions 追踪 + 游戏结束弹窗展示
 - **音频框架**: AudioManager autoload (BGM 交叉淡入 + SFX 池)，缺音频资产
-- **设置系统**: 窗口模式 + UI 缩放 + 音频滑条 + 锁定语义拆分
+- **设置系统**: 窗口模式 + UI 缩放 + 音频滑条 + 语言选择 + 锁定语义拆分
 - **弹窗恢复链**: 外部关闭弹窗后自动回收 modal 锁定
 - **行动面板语义**: 机动/决策预算提示 + 确认按钮切换 + 禁用原因
 - **地图交互**: hover 预览 / click 锁定 + 空白点击清空 + 补给标注
 - **代码拆分**: main_menu.gd 1025→890(+content_builder 406); engine/state.rs 5303→3638(+state_tests 1664); events/pool.rs 1313→370(+pool_tests 945)
-- **i18n**: CSV 运行时加载 + 60+ 翻译键（zh/en），顶栏/托盘/日期/预算文本已 tr() 化
-- **i18n 框架**: CSV 运行时加载 + tr() 顶栏按钮，45 键值对（zh/en），框架可用
+- **i18n**: CSV 运行时加载 + 115+ 翻译键（zh/en），顶栏/托盘/日期/预算/存读档/设置/终局/侧栏事件标签/政策预览已 tr() 化，设置面板含语言切换
 - **弹窗状态机**: modal 统一锁定，存读档/设置/战斗/接见/结局弹窗有 GdUnit4 回归
 - **教程链**: 结构化 10 阶段教程（JSON 数据驱动）覆盖 overview/movement/supply/politics/command_deviation/strategy/diplomacy/summary + 侧栏双层呈现 + 日志回看 + 版式护栏
 - **百科与目标入口**: 红黑指数、合法性、外交进度、系统影响、结局路线和提高路径解释

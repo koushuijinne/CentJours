@@ -123,7 +123,9 @@ func is_modal_active() -> bool:
 	return _game_over_overlay != null or _difficulty_popup != null or _battle_popup != null or _boost_popup != null or _info_popup != null
 
 
-func show_info_popup(popup_name: String, title_text: String, body_text: String, close_text: String = "关闭") -> void:
+func show_info_popup(popup_name: String, title_text: String, body_text: String, close_text: String = "") -> void:
+	if close_text == "":
+		close_text = tr("UI_CLOSE")
 	_close_info_popup()
 	_call_optional(CALLBACK_SET_TRAY_INTERACTIVE, [false, "modal"])
 
@@ -231,7 +233,7 @@ func show_game_over(outcome: String, stats: Dictionary = {}) -> void:
 	var supply := float(game_over_state[STATE_KEY_SUPPLY])
 	_append_game_over_section(
 		vbox,
-		"终局尾声",
+		tr("UI_GAME_OVER_EPILOGUE"),
 		_build_game_over_epilogue(outcome, game_over_state, info),
 		CentJoursTheme.COLOR["gold_dim"],
 		CentJoursTheme.COLOR["text_primary"]
@@ -239,14 +241,16 @@ func show_game_over(outcome: String, stats: Dictionary = {}) -> void:
 
 	var stats_label := Label.new()
 	stats_label.name = "GameOverStatsLabel"
-	stats_label.text = "\n最终统计\n天数: %d  |  合法性: %.0f  |  外交进度: %d\n胜场: %d  |  兵力: %d  |  士气: %.0f  |  补给: %.0f" % [
-		current_day,
-		legitimacy,
-		diplomatic_progress,
-		victories,
-		total_troops,
-		avg_morale,
-		supply
+	stats_label.text = "\n%s\n%s" % [
+		tr("UI_GAME_OVER_STATS_HEADER"),
+		tr("UI_GAME_OVER_STATS_FORMAT") \
+			.replace("{0}", str(current_day)) \
+			.replace("{1}", str(int(legitimacy))) \
+			.replace("{2}", str(diplomatic_progress)) \
+			.replace("{3}", str(victories)) \
+			.replace("{4}", str(total_troops)) \
+			.replace("{5}", str(int(avg_morale))) \
+			.replace("{6}", str(int(supply)))
 	]
 	stats_label.add_theme_color_override("font_color", CentJoursTheme.COLOR["text_primary"])
 	stats_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -254,7 +258,7 @@ func show_game_over(outcome: String, stats: Dictionary = {}) -> void:
 
 	_append_game_over_section(
 		vbox,
-		"战局复盘",
+		tr("UI_GAME_OVER_REVIEW"),
 		_build_game_over_review(outcome, game_over_state, info),
 		CentJoursTheme.COLOR["gold_dim"],
 		CentJoursTheme.COLOR["text_secondary"]
@@ -265,7 +269,7 @@ func show_game_over(outcome: String, stats: Dictionary = {}) -> void:
 	if not key_decisions.is_empty():
 		_append_game_over_section(
 			vbox,
-			"关键决策",
+			tr("UI_GAME_OVER_KEY_DECISIONS"),
 			_build_key_decisions_text(key_decisions),
 			CentJoursTheme.COLOR["gold_dim"],
 			CentJoursTheme.COLOR["text_secondary"]
@@ -277,7 +281,7 @@ func show_game_over(outcome: String, stats: Dictionary = {}) -> void:
 		var diff_info: Dictionary = MainMenuConfigData.DIFFICULTY_OPTIONS.get(diff_id, {})
 		var diff_label: String = String(diff_info.get("label", diff_id))
 		var diff_note := Label.new()
-		diff_note.text = "难度：%s" % diff_label
+		diff_note.text = tr("UI_GAME_OVER_DIFFICULTY").replace("{0}", diff_label)
 		diff_note.add_theme_color_override("font_color", CentJoursTheme.COLOR["text_secondary"])
 		diff_note.add_theme_font_size_override("font_size", 12)
 		diff_note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -285,7 +289,7 @@ func show_game_over(outcome: String, stats: Dictionary = {}) -> void:
 
 	var restart_btn := Button.new()
 	restart_btn.name = "GameOverRestartButton"
-	restart_btn.text = "重新开始"
+	restart_btn.text = tr("UI_GAME_OVER_RESTART")
 	restart_btn.custom_minimum_size = Vector2(140, 36)
 	restart_btn.pressed.connect(_on_restart_requested)
 	vbox.add_child(restart_btn)
@@ -408,7 +412,7 @@ func _build_key_decisions_text(decisions: Array) -> String:
 		var day: int = int(d.get("day", 0))
 		var desc: String = String(d.get("desc", ""))
 		if desc != "":
-			lines.append("第 %d 天 — %s" % [day, desc])
+			lines.append(tr("UI_KEY_DECISION_LINE").replace("{0}", str(day)).replace("{1}", desc))
 	if lines.is_empty():
 		return ""
 	# 最多展示最后 8 条关键决策

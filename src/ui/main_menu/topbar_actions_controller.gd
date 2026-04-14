@@ -157,7 +157,7 @@ func _show_settings_popup() -> void:
 
 	var title := Label.new()
 	title.name = "SettingsTitle"
-	title.text = "设置"
+	title.text = tr("UI_SETTINGS_TITLE")
 	title.add_theme_font_size_override("font_size", 16)
 	content.add_child(title)
 
@@ -168,7 +168,7 @@ func _show_settings_popup() -> void:
 		window_mode_option.add_item(String(option.get("label", "")))
 		window_mode_option.set_item_metadata(window_mode_option.item_count - 1, String(option.get("id", "")))
 	window_mode_option.select(SettingsManagerScript.find_window_mode_index(String(current_settings.get("window_mode", "windowed"))))
-	content.add_child(_build_settings_option_row("窗口模式", window_mode_option))
+	content.add_child(_build_settings_option_row(tr("UI_SETTINGS_WINDOW"), window_mode_option))
 
 	var ui_scale_option := OptionButton.new()
 	ui_scale_option.name = "SettingsUiScaleOption"
@@ -176,20 +176,35 @@ func _show_settings_popup() -> void:
 		ui_scale_option.add_item(String(option.get("label", "")))
 		ui_scale_option.set_item_metadata(ui_scale_option.item_count - 1, float(option.get("value", 1.0)))
 	ui_scale_option.select(SettingsManagerScript.find_ui_scale_index(float(current_settings.get("ui_scale", 1.0))))
-	content.add_child(_build_settings_option_row("界面缩放", ui_scale_option))
+	content.add_child(_build_settings_option_row(tr("UI_SETTINGS_SCALE"), ui_scale_option))
+
+	# 语言选择
+	var language_option := OptionButton.new()
+	language_option.name = "SettingsLanguageOption"
+	language_option.add_item("中文")
+	language_option.set_item_metadata(0, "zh")
+	language_option.add_item("English")
+	language_option.set_item_metadata(1, "en")
+	var current_locale := TranslationServer.get_locale()
+	language_option.select(1 if current_locale.begins_with("en") else 0)
+	language_option.item_selected.connect(func(idx: int):
+		var locale_id: String = language_option.get_item_metadata(idx)
+		TranslationServer.set_locale(locale_id)
+	)
+	content.add_child(_build_settings_option_row(tr("UI_SETTINGS_LANGUAGE"), language_option))
 
 	# 音频音量控制
 	if Engine.has_singleton("AudioManager") or has_node("/root/AudioManager"):
 		var audio_mgr: Node = _get_audio_manager()
 		if audio_mgr != null:
 			content.add_child(_build_volume_row(
-				"音乐音量",
+				tr("UI_SETTINGS_MUSIC_VOLUME"),
 				audio_mgr.get_music_volume(),
 				func(v: float): audio_mgr.set_music_volume(v),
 				"SettingsMusicVolume"
 			))
 			content.add_child(_build_volume_row(
-				"音效音量",
+				tr("UI_SETTINGS_SFX_VOLUME"),
 				audio_mgr.get_sfx_volume(),
 				func(v: float): audio_mgr.set_sfx_volume(v),
 				"SettingsSfxVolume"
@@ -202,19 +217,19 @@ func _show_settings_popup() -> void:
 
 	var reset_button := Button.new()
 	reset_button.name = "SettingsResetButton"
-	reset_button.text = "恢复默认"
+	reset_button.text = tr("UI_SETTINGS_RESET")
 	reset_button.pressed.connect(func(): _reset_settings_from_popup(popup))
 	buttons.add_child(reset_button)
 
 	var cancel_button := Button.new()
 	cancel_button.name = "SettingsCancelButton"
-	cancel_button.text = "取消"
+	cancel_button.text = tr("UI_CANCEL")
 	cancel_button.pressed.connect(func(): _close_transient_popup(popup))
 	buttons.add_child(cancel_button)
 
 	var apply_button := Button.new()
 	apply_button.name = "SettingsApplyButton"
-	apply_button.text = "应用"
+	apply_button.text = tr("UI_SETTINGS_APPLY")
 	apply_button.pressed.connect(func(): _apply_settings_from_popup(window_mode_option, ui_scale_option, popup))
 	buttons.add_child(apply_button)
 
@@ -301,9 +316,9 @@ func _on_new_game_pressed() -> void:
 	var confirm := ConfirmationDialog.new()
 	confirm.name = "NewGameConfirmDialog"
 	confirm.exclusive = true
-	confirm.dialog_text = "重新开始将丢失当前未保存进度，确定吗？"
-	confirm.ok_button_text = "确认新开一局"
-	confirm.cancel_button_text = "取消"
+	confirm.dialog_text = tr("UI_NEW_GAME_CONFIRM_TEXT")
+	confirm.ok_button_text = tr("UI_NEW_GAME_CONFIRM_OK")
+	confirm.cancel_button_text = tr("UI_CANCEL")
 	_prepare_transient_confirmation_dialog(confirm)
 	confirm.confirmed.connect(func():
 		_close_transient_popup(confirm)
@@ -335,7 +350,7 @@ func _show_slot_picker(mode: String) -> void:
 
 	var title := Label.new()
 	title.name = "SlotPickerTitle"
-	title.text = "选择存档槽位" if mode == "save" else "选择要读取的存档"
+	title.text = tr("UI_SLOT_PICKER_SAVE_TITLE") if mode == "save" else tr("UI_SLOT_PICKER_LOAD_TITLE")
 	title.add_theme_font_size_override("font_size", 16)
 	content.add_child(title)
 
@@ -347,7 +362,7 @@ func _show_slot_picker(mode: String) -> void:
 		row.add_theme_constant_override("separation", 8)
 		var button := Button.new()
 		button.name = "%sSlotButton%d" % ["Save" if mode == "save" else "Load", slot_id]
-		button.text = String(slot.get("label", "槽位 %d" % slot_id))
+		button.text = String(slot.get("label", tr("UI_SLOT_LABEL").replace("{0}", str(slot_id))))
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		button.disabled = mode == "load" and not exists
 		if mode == "save" and exists:
@@ -361,7 +376,7 @@ func _show_slot_picker(mode: String) -> void:
 		if exists:
 			var delete_btn := Button.new()
 			delete_btn.name = "%sDeleteSlotButton%d" % ["Save" if mode == "save" else "Load", slot_id]
-			delete_btn.text = "删除"
+			delete_btn.text = tr("UI_DELETE")
 			delete_btn.custom_minimum_size = Vector2(68, 0)
 			delete_btn.pressed.connect(_confirm_delete_save.bind(slot_id, popup))
 			row.add_child(delete_btn)
@@ -370,7 +385,7 @@ func _show_slot_picker(mode: String) -> void:
 
 	var cancel_btn := Button.new()
 	cancel_btn.name = "SlotPickerCancelButton"
-	cancel_btn.text = "取消"
+	cancel_btn.text = tr("UI_CANCEL")
 	cancel_btn.pressed.connect(func(): _close_transient_popup(popup))
 	content.add_child(cancel_btn)
 
@@ -385,16 +400,16 @@ func _save_to_slot(slot_id: int, popup: PopupPanel) -> void:
 	var success := TurnManager.save_to_file(slot_id)
 	if success:
 		refresh_save_load_buttons()
-		_save_btn.text = "已存档 ✓"
+		_save_btn.text = tr("UI_SAVED_OK")
 		_host.get_tree().create_timer(1.0).timeout.connect(func():
 			if is_instance_valid(_save_btn):
-				_save_btn.text = "存档"
+				_save_btn.text = tr("UI_BTN_SAVE")
 		)
 	else:
-		_save_btn.text = "存档失败"
+		_save_btn.text = tr("UI_SAVE_FAILED")
 		_host.get_tree().create_timer(1.5).timeout.connect(func():
 			if is_instance_valid(_save_btn):
-				_save_btn.text = "存档"
+				_save_btn.text = tr("UI_BTN_SAVE")
 		)
 	save_completed.emit(slot_id, success)
 
@@ -404,9 +419,9 @@ func _load_from_slot(slot_id: int, popup: PopupPanel) -> void:
 	var confirm := ConfirmationDialog.new()
 	confirm.name = "LoadConfirmDialog"
 	confirm.exclusive = true
-	confirm.dialog_text = "读档将覆盖当前进度，确定读取槽位 %d 吗？" % slot_id
-	confirm.ok_button_text = "确认读档"
-	confirm.cancel_button_text = "取消"
+	confirm.dialog_text = tr("UI_LOAD_CONFIRM").replace("{0}", str(slot_id))
+	confirm.ok_button_text = tr("UI_LOAD_CONFIRM_OK")
+	confirm.cancel_button_text = tr("UI_CANCEL")
 	_prepare_transient_confirmation_dialog(confirm)
 	confirm.confirmed.connect(func():
 		_close_transient_popup(confirm)
@@ -433,9 +448,9 @@ func _confirm_save_overwrite(slot_id: int, popup: PopupPanel) -> void:
 	var confirm := ConfirmationDialog.new()
 	confirm.name = "SaveOverwriteConfirmDialog"
 	confirm.exclusive = true
-	confirm.dialog_text = "槽位 %d 已有存档（%s），确定覆盖吗？" % [slot_id, _slot_meta_summary(slot_id)]
-	confirm.ok_button_text = "确认覆盖"
-	confirm.cancel_button_text = "取消"
+	confirm.dialog_text = tr("UI_SAVE_OVERWRITE_TEXT").replace("{0}", str(slot_id)).replace("{1}", _slot_meta_summary(slot_id))
+	confirm.ok_button_text = tr("UI_SAVE_OVERWRITE_OK")
+	confirm.cancel_button_text = tr("UI_CANCEL")
 	_prepare_transient_confirmation_dialog(confirm)
 	confirm.canceled.connect(func(): _show_slot_picker("save"))
 	confirm.confirmed.connect(func():
@@ -453,9 +468,9 @@ func _confirm_delete_save(slot_id: int, popup: PopupPanel) -> void:
 	var confirm := ConfirmationDialog.new()
 	confirm.name = "DeleteSaveConfirmDialog"
 	confirm.exclusive = true
-	confirm.dialog_text = "确定删除槽位 %d（%s）吗？" % [slot_id, _slot_meta_summary(slot_id)]
-	confirm.ok_button_text = "确认删除"
-	confirm.cancel_button_text = "取消"
+	confirm.dialog_text = tr("UI_DELETE_CONFIRM_TEXT").replace("{0}", str(slot_id)).replace("{1}", _slot_meta_summary(slot_id))
+	confirm.ok_button_text = tr("UI_DELETE_CONFIRM_OK")
+	confirm.cancel_button_text = tr("UI_CANCEL")
 	_prepare_transient_confirmation_dialog(confirm)
 	confirm.canceled.connect(func(): _show_slot_picker(mode))
 	confirm.confirmed.connect(func():
@@ -471,11 +486,10 @@ func _confirm_delete_save(slot_id: int, popup: PopupPanel) -> void:
 func _slot_meta_summary(slot_id: int) -> String:
 	var meta := SaveManager.get_save_meta(slot_id)
 	if meta.is_empty():
-		return "空槽位"
-	return "第 %d 天 · %s" % [
-		int(meta.get("day", 0)),
+		return tr("UI_SLOT_EMPTY")
+	return tr("UI_SLOT_META").replace("{0}", str(int(meta.get("day", 0)))).replace("{1}",
 		SaveManager._outcome_label(SaveManager._normalize_outcome(meta.get("outcome", "in_progress")))
-	]
+	)
 
 
 # ── 模态管理 ──────────────────────────────────────────

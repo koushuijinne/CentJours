@@ -58,3 +58,60 @@ UI_BUDGET_NO_DECISIONS_HINT,今天还能做：1 次机动，0 次决策。决策
 UI_BUDGET_NO_MANEUVER_HINT,今天还能做：0 次机动，{0} 次决策。机动已完成，接下来专注安排政策。,"Today: 0 maneuvers, {0} decisions. Maneuver done, focus on policies."
 UI_BUDGET_ALL_DONE_HINT,今天的机动和决策都已排完，直接结束今天。,"All maneuvers and decisions used. End the day."
 UI_SELECT_ACTION_FIRST,请先在下方选择一个机动动作或政策,Please select a maneuver or policy below
+UI_SETTINGS_LANGUAGE,语言,Language
+UI_SETTINGS_RESET,恢复默认,Reset Defaults
+UI_SETTINGS_APPLY,应用,Apply
+UI_SETTINGS_MUSIC_VOLUME,音乐音量,Music Volume
+UI_SETTINGS_SFX_VOLUME,音效音量,SFX Volume
+UI_SAVE_FAILED,存档失败,Save Failed
+UI_GAME_OVER,战局已结束,Game Over
+UI_NEW_GAME_CONFIRM,开始新局将丢失当前进度，确定吗？,Start a new game? Current progress will be lost.
+UI_DIFFICULTY_TITLE,选择难度,Select Difficulty
+UI_POLICY_REST,休整 · 养精蓄锐,Rest · Recuperate
+UI_POLICY_MARCH,行军部署,March Deployment
+UI_POLICY_BATTLE,发动战役,Launch Battle
+UI_POLICY_BOOST,亲自接见将领,Audience with General
+UI_NEW_GAME_CONFIRM_TEXT,重新开始将丢失当前未保存进度，确定吗？,Start a new game? Unsaved progress will be lost.
+UI_NEW_GAME_CONFIRM_OK,确认新开一局,Confirm New Game
+UI_SLOT_PICKER_SAVE_TITLE,选择存档槽位,Select Save Slot
+UI_SLOT_PICKER_LOAD_TITLE,选择要读取的存档,Select Save to Load
+UI_SLOT_LABEL,槽位 {0},Slot {0}
+UI_DELETE,删除,Delete
+UI_SAVED_OK,已存档 ✓,Saved ✓
+UI_LOAD_CONFIRM_OK,确认读档,Confirm Load
+UI_SAVE_OVERWRITE_TEXT,槽位 {0} 已有存档（{1}），确定覆盖吗？,"Slot {0} has a save ({1}), overwrite?"
+UI_SAVE_OVERWRITE_OK,确认覆盖,Confirm Overwrite
+UI_DELETE_CONFIRM_TEXT,确定删除槽位 {0}（{1}）吗？,Delete slot {0} ({1})?
+UI_DELETE_CONFIRM_OK,确认删除,Confirm Delete
+UI_SLOT_EMPTY,空槽位,Empty Slot
+UI_SLOT_META,第 {0} 天 · {1},Day {0} · {1}
+UI_GAME_OVER_EPILOGUE,终局尾声,Epilogue
+UI_GAME_OVER_REVIEW,战局复盘,Campaign Review
+UI_GAME_OVER_KEY_DECISIONS,关键决策,Key Decisions
+UI_GAME_OVER_DIFFICULTY,难度：{0},Difficulty: {0}
+UI_GAME_OVER_RESTART,重新开始,Restart
+UI_SIDEBAR_EVENT_MAJOR,重大史事,Major Event
+UI_SIDEBAR_EVENT_NORMAL,历史事件,Historical Event
+UI_SIDEBAR_EVENT_MINOR,历史片段,Historical Fragment
+UI_SIDEBAR_RESULT_POLICY,政策结算,Policy Resolution
+UI_SIDEBAR_RESULT_POLICY_FAILED,政策受阻,Policy Blocked
+UI_SIDEBAR_RESULT_BATTLE,战役结算,Battle Resolution
+UI_SIDEBAR_RESULT_BATTLE_FAILED,战役受阻,Battle Blocked
+UI_SIDEBAR_RESULT_MARCH,行军结算,March Resolution
+UI_SIDEBAR_RESULT_MARCH_FAILED,行军受阻,March Blocked
+UI_SIDEBAR_RESULT_SUPPLY,补给结算,Supply Resolution
+UI_SIDEBAR_RESULT_BOOST,将领关系,General Relations
+UI_SIDEBAR_RESULT_BOOST_FAILED,关系经营受阻,Relations Blocked
+UI_SIDEBAR_RESULT_REST,休整结算,Rest Resolution
+UI_SIDEBAR_RESULT_REST_FAILED,休整受阻,Rest Blocked
+UI_SIDEBAR_RESULT_ACTION_FAILED,行动受阻,Action Blocked
+UI_SIDEBAR_LOYALTY_OVERFLOW,…另 {0} 位将领,…{0} more generals
+UI_SIDEBAR_AWAITING,等待结算…,Awaiting resolution…
+UI_SIDEBAR_DEFAULT_NARRATIVE,第 1 天 · 厄尔巴岛出发\n\n选择行动，历史将在此处展开。,"Day 1 · Departure from Elba\n\nSelect an action, and history will unfold here."
+UI_GAME_OVER_STATS_HEADER,最终统计,Final Statistics
+UI_GAME_OVER_STATS_FORMAT,天数: {0}  |  合法性: {1}  |  外交进度: {2}\n胜场: {3}  |  兵力: {4}  |  士气: {5}  |  补给: {6},"Days: {0}  |  Legitimacy: {1}  |  Diplomacy: {2}\nVictories: {3}  |  Troops: {4}  |  Morale: {5}  |  Supply: {6}"
+UI_KEY_DECISION_LINE,第 {0} 天 — {1},Day {0} — {1}
+UI_POLICY_REST_DESC,休整 · 养精蓄锐\n\n让军队获得喘息之机，为下一步行动积蓄力量。,Rest · Recuperate\n\nGive the army respite to build strength for the next move.
+UI_POLICY_MARCH_DESC,行军部署\n\n选择一个与当前位置相邻的节点，确认后执行今日机动并同步拿破仑位置。日期要等你手动结束今天才会推进。前线低容量节点会明显拉高补给压力。,"March Deployment\n\nSelect an adjacent node, confirm to execute today's maneuver and update Napoleon's position. The day advances only when you manually end it. Low-capacity frontline nodes significantly increase supply pressure."
+UI_POLICY_BATTLE_DESC,发动战役\n\n选择将领和兵力，与反法联军决战。点击确认后选择参数。,"Launch Battle\n\nSelect a general and troops to fight the Coalition. Click confirm to set parameters."
+UI_POLICY_BOOST_DESC,亲自接见将领\n\n消耗 5 合法性，目标将领忠诚度 +8。需合法性 >= 10。,"Audience with General\n\nCosts 5 legitimacy, target general loyalty +8. Requires legitimacy >= 10."

@@ -5,34 +5,31 @@ const MainMenuConfigData = preload("res://src/ui/main_menu/main_menu_config.gd")
 const MainMenuFormattersLib = preload("res://src/ui/main_menu/ui_formatters.gd")
 
 const DEFAULT_VISIBLE_LOYALTY_COUNT := 6
-const DEFAULT_NARRATIVE_TEXT := "第 1 天 · 厄尔巴岛出发\n\n选择行动，历史将在此处展开。"
 const POLICY_PREVIEW_COLOR := CentJoursTheme.COLOR["text_secondary"]
-const SPECIAL_POLICY_PREVIEW_TEXTS := {
-	"rest": "休整 · 养精蓄锐\n\n让军队获得喘息之机，为下一步行动积蓄力量。",
-	"march": "行军部署\n\n选择一个与当前位置相邻的节点，确认后执行今日机动并同步拿破仑位置。日期要等你手动结束今天才会推进。前线低容量节点会明显拉高补给压力。",
-	"battle": "发动战役\n\n选择将领和兵力，与反法联军决战。点击确认后选择参数。",
-	"boost_loyalty": "亲自接见将领\n\n消耗 5 合法性，目标将领忠诚度 +8。需合法性 >= 10。"
-}
 const FACTION_ORDER := ["military", "populace", "liberals", "nobility"]
-const EVENT_TIER_LABELS := {
-	"major": "重大史事",
-	"normal": "历史事件",
-	"minor": "历史片段"
-}
-const ACTION_EVENT_LABELS := {
-	"policy": "政策结算",
-	"policy_failed": "政策受阻",
-	"battle": "战役结算",
-	"battle_failed": "战役受阻",
-	"march": "行军结算",
-	"march_failed": "行军受阻",
-	"supply": "补给结算",
-	"boost_loyalty": "将领关系",
-	"boost_failed": "关系经营受阻",
-	"rest": "休整结算",
-	"rest_failed": "休整受阻",
-	"action_failed": "行动受阻"
-}
+
+func _get_event_tier_labels() -> Dictionary:
+	return {
+		"major": tr("UI_SIDEBAR_EVENT_MAJOR"),
+		"normal": tr("UI_SIDEBAR_EVENT_NORMAL"),
+		"minor": tr("UI_SIDEBAR_EVENT_MINOR"),
+	}
+
+func _get_action_event_labels() -> Dictionary:
+	return {
+		"policy": tr("UI_SIDEBAR_RESULT_POLICY"),
+		"policy_failed": tr("UI_SIDEBAR_RESULT_POLICY_FAILED"),
+		"battle": tr("UI_SIDEBAR_RESULT_BATTLE"),
+		"battle_failed": tr("UI_SIDEBAR_RESULT_BATTLE_FAILED"),
+		"march": tr("UI_SIDEBAR_RESULT_MARCH"),
+		"march_failed": tr("UI_SIDEBAR_RESULT_MARCH_FAILED"),
+		"supply": tr("UI_SIDEBAR_RESULT_SUPPLY"),
+		"boost_loyalty": tr("UI_SIDEBAR_RESULT_BOOST"),
+		"boost_failed": tr("UI_SIDEBAR_RESULT_BOOST_FAILED"),
+		"rest": tr("UI_SIDEBAR_RESULT_REST"),
+		"rest_failed": tr("UI_SIDEBAR_RESULT_REST_FAILED"),
+		"action_failed": tr("UI_SIDEBAR_RESULT_ACTION_FAILED"),
+	}
 const LOYALTY_VALUE_WIDTH := 126.0
 const LOYALTY_MIN_NAME_WIDTH := 96.0
 const LOYALTY_MIN_ROW_WIDTH := 228.0
@@ -43,7 +40,7 @@ var _loyalty_list: VBoxContainer = null
 var _narrative_body: Label = null
 
 var _loyalty_visible_limit: int = DEFAULT_VISIBLE_LOYALTY_COUNT
-var _loyalty_overflow_template: String = "…另 %d 位将领"
+var _loyalty_overflow_template: String = ""
 var _narrative_log: Array[String] = []
 var _narrative_preview_text: String = ""
 var _narrative_preview_color: Color = CentJoursTheme.COLOR["text_secondary"]
@@ -68,9 +65,9 @@ func set_loyalty_overflow_template(template: String) -> void:
 	if template.strip_edges() != "":
 		_loyalty_overflow_template = template
 
-func reset_narrative(initial_text: String = DEFAULT_NARRATIVE_TEXT, color: Color = CentJoursTheme.COLOR["text_secondary"]) -> void:
+func reset_narrative(initial_text: String = "", color: Color = CentJoursTheme.COLOR["text_secondary"]) -> void:
 	_narrative_log.clear()
-	_narrative_preview_text = initial_text
+	_narrative_preview_text = initial_text if initial_text != "" else tr("UI_SIDEBAR_DEFAULT_NARRATIVE")
 	_narrative_preview_color = color
 	_narrative_log_color = CentJoursTheme.COLOR["text_primary"]
 	_render_narrative()
@@ -85,12 +82,18 @@ func set_policy_preview(policy_id: String, policy_meta: Dictionary = {}, color: 
 
 func build_policy_preview_text(policy_id: String, policy_meta: Dictionary = {}) -> String:
 	var normalized_policy_id := String(policy_id)
-	if SPECIAL_POLICY_PREVIEW_TEXTS.has(normalized_policy_id):
+	var special_keys := {
+		"rest": "UI_POLICY_REST_DESC",
+		"march": "UI_POLICY_MARCH_DESC",
+		"battle": "UI_POLICY_BATTLE_DESC",
+		"boost_loyalty": "UI_POLICY_BOOST_DESC",
+	}
+	if special_keys.has(normalized_policy_id):
 		if normalized_policy_id == "rest":
 			return _build_rest_preview_text()
 		if normalized_policy_id == "boost_loyalty":
 			return _build_boost_loyalty_preview_text()
-		return String(SPECIAL_POLICY_PREVIEW_TEXTS[normalized_policy_id])
+		return tr(special_keys[normalized_policy_id])
 	if normalized_policy_id == "requisition_supplies":
 		return _build_requisition_preview_text(policy_meta)
 	if normalized_policy_id == "stabilize_supply_lines":
@@ -101,7 +104,7 @@ func build_policy_preview_text(policy_id: String, policy_meta: Dictionary = {}) 
 		return _build_regional_corridor_preview_text(policy_meta)
 
 	var policy_name := String(policy_meta.get("name", normalized_policy_id))
-	var policy_summary := String(policy_meta.get("summary", "等待结算…"))
+	var policy_summary := String(policy_meta.get("summary", tr("UI_SIDEBAR_AWAITING")))
 	return "▷ %s\n\n%s" % [policy_name, policy_summary]
 
 
@@ -293,7 +296,7 @@ func build_historical_event_entry(event_id: String, event_data: Dictionary = {})
 	var tier := String(event_data.get("tier", "normal"))
 	var narrative := String(event_data.get("narrative", "")).strip_edges()
 	var historical_note := String(event_data.get("historical_note", "")).strip_edges()
-	var header := "◆ [%s] %s" % [EVENT_TIER_LABELS.get(tier, "历史事件"), label]
+	var header := "◆ [%s] %s" % [_get_event_tier_labels().get(tier, tr("UI_SIDEBAR_EVENT_NORMAL")), label]
 
 	var sections: Array[String] = [header]
 	if narrative != "":
@@ -307,7 +310,7 @@ func build_action_resolution_entry(
 	description: String,
 	effects: Array = []
 ) -> String:
-	var header := "● [%s]" % ACTION_EVENT_LABELS.get(event_type, "行动结算")
+	var header := "● [%s]" % _get_action_event_labels().get(event_type, tr("UI_SIDEBAR_RESULT_ACTION_FAILED"))
 	var sections: Array[String] = [header]
 	var normalized_description := description.strip_edges()
 	if normalized_description != "":
@@ -487,7 +490,7 @@ func refresh_loyalty(
 
 	if hidden_count > 0:
 		var overflow := Label.new()
-		overflow.text = _loyalty_overflow_template % hidden_count
+		overflow.text = _loyalty_overflow_template.replace("{0}", str(hidden_count))
 		overflow.add_theme_color_override("font_color", CentJoursTheme.COLOR["text_secondary"])
 		_loyalty_list.add_child(overflow)
 
@@ -578,7 +581,7 @@ func _render_narrative() -> void:
 		sections.append(NARRATIVE_SEPARATOR.join(_narrative_log))
 
 	if sections.is_empty():
-		_narrative_body.text = DEFAULT_NARRATIVE_TEXT
+		_narrative_body.text = tr("UI_SIDEBAR_DEFAULT_NARRATIVE")
 		_narrative_body.add_theme_color_override("font_color", CentJoursTheme.COLOR["text_secondary"])
 		return
 

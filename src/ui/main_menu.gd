@@ -234,7 +234,7 @@ func _build_rouge_noir_slider() -> void:
 func _configure_sidebar_controller() -> void:
 	_sidebar_controller.bind(_situation_body, _loyalty_list, _narrative_body)
 	_sidebar_controller.set_loyalty_visible_limit(6)
-	_sidebar_controller.set_loyalty_overflow_template("…另 %d 位将领")
+	_sidebar_controller.set_loyalty_overflow_template(tr("UI_SIDEBAR_LOYALTY_OVERFLOW"))
 
 func _configure_tray_controller() -> void:
 	_tray_controller.bind_nodes(_decision_row, _tray_hint, _confirm_button)
