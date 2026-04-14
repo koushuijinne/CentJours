@@ -31,126 +31,136 @@ const POLICY_EMOJIS := {
 	"print_money": "🏦"
 }
 
-const POLICY_EFFECTS := {
-	"conscription": [
-		{"label": "兵力", "value": 8, "type": "positive"},
-		{"label": "民众", "value": -3, "type": "negative"},
-		{"label": "红派", "value": 5, "type": "rn"}
-	],
-	"public_speech": [
-		{"label": "民众", "value": 5, "type": "positive"},
-		{"label": "贵族", "value": -2, "type": "negative"},
-		{"label": "红派", "value": 3, "type": "rn"}
-	],
-	"constitutional_promise": [
-		{"label": "自由派", "value": 7, "type": "positive"},
-		{"label": "贵族", "value": -3, "type": "negative"},
-		{"label": "黑派", "value": -8, "type": "rn"}
-	],
-	"increase_military_budget": [
-		{"label": "军方", "value": 6, "type": "positive"},
-		{"label": "经济", "value": -4, "type": "negative"},
-		{"label": "红派", "value": 4, "type": "rn"}
-	],
-	"requisition_supplies": [
-		{"label": "补给", "value": 18, "type": "positive"},
-		{"label": "军方", "value": 6, "type": "positive"},
-		{"label": "民众", "value": -6, "type": "negative"},
-		{"label": "红派", "value": 4, "type": "rn"}
-	],
-	"stabilize_supply_lines": [
-		{"label": "补给", "value": 6, "type": "positive"},
-		{"label": "线路", "value": 18, "type": "positive"},
-		{"label": "军方", "value": 5, "type": "positive"},
-		{"label": "民众", "value": -3, "type": "negative"},
-		{"label": "黑派", "value": -2, "type": "rn"}
-	],
-	"establish_forward_depot": [
-		{"label": "补给", "value": 4, "type": "positive"},
-		{"label": "粮站", "value": 4, "type": "positive"},
-		{"label": "军方", "value": 4, "type": "positive"},
-		{"label": "民众", "value": -2, "type": "negative"},
-		{"label": "黑派", "value": -1, "type": "rn"}
-	],
-	"secure_regional_corridor": [
-		{"label": "补给", "value": 8, "type": "positive"},
-		{"label": "线路", "value": 12, "type": "positive"},
-		{"label": "粮站", "value": 3, "type": "positive"},
-		{"label": "军方", "value": 5, "type": "positive"},
-		{"label": "民众", "value": -4, "type": "negative"},
-		{"label": "黑派", "value": -1, "type": "rn"}
-	],
-	"grant_titles": [
-		{"label": "贵族", "value": 12, "type": "positive"},
-		{"label": "自由派", "value": -5, "type": "negative"},
-		{"label": "民众", "value": -3, "type": "negative"},
-		{"label": "黑派", "value": -5, "type": "rn"}
-	],
-	"reduce_taxes": [
-		{"label": "民众", "value": 10, "type": "positive"},
-		{"label": "自由派", "value": 3, "type": "positive"},
-		{"label": "经济", "value": -8, "type": "negative"}
-	],
-	"secret_diplomacy": [
-		{"label": "代价", "value": 2, "type": "negative"},
-		{"label": "黑派", "value": -3, "type": "rn"}
-	],
-	"print_money": [
-		{"label": "经济", "value": 15, "type": "positive"},
-		{"label": "民众", "value": -5, "type": "negative"},
-		{"label": "自由派", "value": -8, "type": "negative"},
-		{"label": "贵族", "value": -5, "type": "negative"},
-		{"label": "红派", "value": 8, "type": "rn"}
-	]
-}
+static var POLICY_EFFECTS: Dictionary:
+	get:
+		return {
+			"conscription": [
+				{"label": TranslationServer.translate("UI_EFFECT_TROOPS"), "value": 8, "type": "positive"},
+				{"label": TranslationServer.translate("UI_EFFECT_POPULACE"), "value": -3, "type": "negative"},
+				{"label": TranslationServer.translate("UI_EFFECT_RED"), "value": 5, "type": "rn"}
+			],
+			"public_speech": [
+				{"label": TranslationServer.translate("UI_EFFECT_POPULACE"), "value": 5, "type": "positive"},
+				{"label": TranslationServer.translate("UI_EFFECT_NOBILITY"), "value": -2, "type": "negative"},
+				{"label": TranslationServer.translate("UI_EFFECT_RED"), "value": 3, "type": "rn"}
+			],
+			"constitutional_promise": [
+				{"label": TranslationServer.translate("UI_EFFECT_LIBERALS"), "value": 7, "type": "positive"},
+				{"label": TranslationServer.translate("UI_EFFECT_NOBILITY"), "value": -3, "type": "negative"},
+				{"label": TranslationServer.translate("UI_EFFECT_BLACK"), "value": -8, "type": "rn"}
+			],
+			"increase_military_budget": [
+				{"label": TranslationServer.translate("UI_EFFECT_MILITARY"), "value": 6, "type": "positive"},
+				{"label": TranslationServer.translate("UI_EFFECT_ECONOMY"), "value": -4, "type": "negative"},
+				{"label": TranslationServer.translate("UI_EFFECT_RED"), "value": 4, "type": "rn"}
+			],
+			"requisition_supplies": [
+				{"label": TranslationServer.translate("UI_EFFECT_SUPPLY"), "value": 18, "type": "positive"},
+				{"label": TranslationServer.translate("UI_EFFECT_MILITARY"), "value": 6, "type": "positive"},
+				{"label": TranslationServer.translate("UI_EFFECT_POPULACE"), "value": -6, "type": "negative"},
+				{"label": TranslationServer.translate("UI_EFFECT_RED"), "value": 4, "type": "rn"}
+			],
+			"stabilize_supply_lines": [
+				{"label": TranslationServer.translate("UI_EFFECT_SUPPLY"), "value": 6, "type": "positive"},
+				{"label": TranslationServer.translate("UI_EFFECT_SUPPLY_LINE"), "value": 18, "type": "positive"},
+				{"label": TranslationServer.translate("UI_EFFECT_MILITARY"), "value": 5, "type": "positive"},
+				{"label": TranslationServer.translate("UI_EFFECT_POPULACE"), "value": -3, "type": "negative"},
+				{"label": TranslationServer.translate("UI_EFFECT_BLACK"), "value": -2, "type": "rn"}
+			],
+			"establish_forward_depot": [
+				{"label": TranslationServer.translate("UI_EFFECT_SUPPLY"), "value": 4, "type": "positive"},
+				{"label": TranslationServer.translate("UI_EFFECT_DEPOT"), "value": 4, "type": "positive"},
+				{"label": TranslationServer.translate("UI_EFFECT_MILITARY"), "value": 4, "type": "positive"},
+				{"label": TranslationServer.translate("UI_EFFECT_POPULACE"), "value": -2, "type": "negative"},
+				{"label": TranslationServer.translate("UI_EFFECT_BLACK"), "value": -1, "type": "rn"}
+			],
+			"secure_regional_corridor": [
+				{"label": TranslationServer.translate("UI_EFFECT_SUPPLY"), "value": 8, "type": "positive"},
+				{"label": TranslationServer.translate("UI_EFFECT_SUPPLY_LINE"), "value": 12, "type": "positive"},
+				{"label": TranslationServer.translate("UI_EFFECT_DEPOT"), "value": 3, "type": "positive"},
+				{"label": TranslationServer.translate("UI_EFFECT_MILITARY"), "value": 5, "type": "positive"},
+				{"label": TranslationServer.translate("UI_EFFECT_POPULACE"), "value": -4, "type": "negative"},
+				{"label": TranslationServer.translate("UI_EFFECT_BLACK"), "value": -1, "type": "rn"}
+			],
+			"grant_titles": [
+				{"label": TranslationServer.translate("UI_EFFECT_NOBILITY"), "value": 12, "type": "positive"},
+				{"label": TranslationServer.translate("UI_EFFECT_LIBERALS"), "value": -5, "type": "negative"},
+				{"label": TranslationServer.translate("UI_EFFECT_POPULACE"), "value": -3, "type": "negative"},
+				{"label": TranslationServer.translate("UI_EFFECT_BLACK"), "value": -5, "type": "rn"}
+			],
+			"reduce_taxes": [
+				{"label": TranslationServer.translate("UI_EFFECT_POPULACE"), "value": 10, "type": "positive"},
+				{"label": TranslationServer.translate("UI_EFFECT_LIBERALS"), "value": 3, "type": "positive"},
+				{"label": TranslationServer.translate("UI_EFFECT_ECONOMY"), "value": -8, "type": "negative"}
+			],
+			"secret_diplomacy": [
+				{"label": TranslationServer.translate("UI_EFFECT_COST"), "value": 2, "type": "negative"},
+				{"label": TranslationServer.translate("UI_EFFECT_BLACK"), "value": -3, "type": "rn"}
+			],
+			"print_money": [
+				{"label": TranslationServer.translate("UI_EFFECT_ECONOMY"), "value": 15, "type": "positive"},
+				{"label": TranslationServer.translate("UI_EFFECT_POPULACE"), "value": -5, "type": "negative"},
+				{"label": TranslationServer.translate("UI_EFFECT_LIBERALS"), "value": -8, "type": "negative"},
+				{"label": TranslationServer.translate("UI_EFFECT_NOBILITY"), "value": -5, "type": "negative"},
+				{"label": TranslationServer.translate("UI_EFFECT_RED"), "value": 8, "type": "rn"}
+			]
+		}
 
-const BATTLE_CARD_META := {
-	"policy_id": "battle",
-	"name": "发动战役",
-	"emoji": "⚔️",
-	"effects": [
-		{"label": "风险", "value": 0, "type": "negative"}
-	]
-}
+static var BATTLE_CARD_META: Dictionary:
+	get:
+		return {
+			"policy_id": "battle",
+			"name": TranslationServer.translate("UI_CARD_BATTLE"),
+			"emoji": "⚔️",
+			"effects": [
+				{"label": TranslationServer.translate("UI_EFFECT_RISK"), "value": 0, "type": "negative"}
+			]
+		}
 
-const MARCH_CARD_META := {
-	"policy_id": "march",
-	"name": "行军",
-	"emoji": "🧭",
-	"effects": [
-		{"label": "行军", "value": 1, "type": "positive"},
-		{"label": "疲劳", "value": -10, "type": "positive"}
-	]
-}
+static var MARCH_CARD_META: Dictionary:
+	get:
+		return {
+			"policy_id": "march",
+			"name": TranslationServer.translate("UI_CARD_MARCH"),
+			"emoji": "🧭",
+			"effects": [
+				{"label": TranslationServer.translate("UI_EFFECT_MARCH"), "value": 1, "type": "positive"},
+				{"label": TranslationServer.translate("UI_EFFECT_FATIGUE"), "value": -10, "type": "positive"}
+			]
+		}
 
-const BOOST_CARD_META := {
-	"policy_id": "boost_loyalty",
-	"name": "亲自接见将领",
-	"emoji": "🤝",
-	"effects": [
-		{"label": "合法性", "value": -5, "type": "negative"},
-		{"label": "忠诚", "value": 8, "type": "positive"}
-	]
-}
+static var BOOST_CARD_META: Dictionary:
+	get:
+		return {
+			"policy_id": "boost_loyalty",
+			"name": TranslationServer.translate("UI_CARD_BOOST"),
+			"emoji": "🤝",
+			"effects": [
+				{"label": TranslationServer.translate("UI_EFFECT_LEGITIMACY"), "value": -5, "type": "negative"},
+				{"label": TranslationServer.translate("UI_EFFECT_LOYALTY"), "value": 8, "type": "positive"}
+			]
+		}
 
-const NARRATIVE_CATEGORY_LABELS := {
-	"battle_victory": "战役胜利余波",
-	"battle_defeat": "战役失利余波",
-	"boost_loyalty": "将领接见余波",
-	"conscription": "征兵令余波",
-	"constitutional_promise": "宪政承诺余波",
-	"public_speech": "公开演说余波",
-	"grant_titles": "封爵令余波",
-	"reduce_taxes": "减税令余波",
-	"increase_military_budget": "军费拨款余波",
-	"requisition_supplies": "征用仓储余波",
-	"stabilize_supply_lines": "驿站整顿余波",
-	"establish_forward_depot": "粮秣站余波",
-	"secure_regional_corridor": "区域走廊余波",
-	"secret_diplomacy": "秘密外交余波",
-	"diplomatic_secret": "秘密外交余波",
-	"print_money": "印钞令余波"
-}
+static var NARRATIVE_CATEGORY_LABELS: Dictionary:
+	get:
+		return {
+			"battle_victory": TranslationServer.translate("UI_NARRATIVE_CAT_BATTLE_VICTORY"),
+			"battle_defeat": TranslationServer.translate("UI_NARRATIVE_CAT_BATTLE_DEFEAT"),
+			"boost_loyalty": TranslationServer.translate("UI_NARRATIVE_CAT_BOOST"),
+			"conscription": TranslationServer.translate("UI_NARRATIVE_CAT_CONSCRIPTION"),
+			"constitutional_promise": TranslationServer.translate("UI_NARRATIVE_CAT_CONSTITUTIONAL"),
+			"public_speech": TranslationServer.translate("UI_NARRATIVE_CAT_SPEECH"),
+			"grant_titles": TranslationServer.translate("UI_NARRATIVE_CAT_TITLES"),
+			"reduce_taxes": TranslationServer.translate("UI_NARRATIVE_CAT_TAXES"),
+			"increase_military_budget": TranslationServer.translate("UI_NARRATIVE_CAT_MILITARY_BUDGET"),
+			"requisition_supplies": TranslationServer.translate("UI_NARRATIVE_CAT_REQUISITION"),
+			"stabilize_supply_lines": TranslationServer.translate("UI_NARRATIVE_CAT_SUPPLY_LINES"),
+			"establish_forward_depot": TranslationServer.translate("UI_NARRATIVE_CAT_DEPOT"),
+			"secure_regional_corridor": TranslationServer.translate("UI_NARRATIVE_CAT_CORRIDOR"),
+			"secret_diplomacy": TranslationServer.translate("UI_NARRATIVE_CAT_DIPLOMACY"),
+			"diplomatic_secret": TranslationServer.translate("UI_NARRATIVE_CAT_DIPLOMACY"),
+			"print_money": TranslationServer.translate("UI_NARRATIVE_CAT_PRINT_MONEY")
+		}
 
 const OUTCOME_TEXT := {
 	"napoleon_victory": {
@@ -417,15 +427,17 @@ const DIFFICULTY_OPTIONS := {
 	}
 }
 
-const REST_CARD_META := {
-	"policy_id": "rest",
-	"name": "休整",
-	"emoji": "🌙",
-	"effects": [
-		{"label": "疲劳", "value": -10, "type": "positive"},
-		{"label": "士气", "value": 3, "type": "positive"}
-	]
-}
+static var REST_CARD_META: Dictionary:
+	get:
+		return {
+			"policy_id": "rest",
+			"name": TranslationServer.translate("UI_CARD_REST"),
+			"emoji": "🌙",
+			"effects": [
+				{"label": TranslationServer.translate("UI_EFFECT_FATIGUE"), "value": -10, "type": "positive"},
+				{"label": TranslationServer.translate("UI_MORALE"), "value": 3, "type": "positive"}
+			]
+		}
 
 const NARRATIVE_MAX_ENTRIES: int = 5
 

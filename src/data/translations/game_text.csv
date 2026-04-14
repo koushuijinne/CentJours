@@ -143,3 +143,40 @@ UI_NARRATIVE_CONSEQUENCE,▸ [{0}]\n{1},▸ [{0}]\n{1}
 UI_SIDEBAR_EVENT_DEFAULT,历史事件,Historical Event
 UI_PHASE_STATUS,{0} · {1} · 决策点 {2},{0} · {1} · Decisions {2}
 UI_OPERATION_GUIDE_HEADER,[操作指南],[Operation Guide]
+UI_EFFECT_TROOPS,兵力,Troops
+UI_EFFECT_POPULACE,民众,Populace
+UI_EFFECT_NOBILITY,贵族,Nobility
+UI_EFFECT_LIBERALS,自由派,Liberals
+UI_EFFECT_MILITARY,军方,Military
+UI_EFFECT_ECONOMY,经济,Economy
+UI_EFFECT_SUPPLY,补给,Supply
+UI_EFFECT_SUPPLY_LINE,线路,Supply Line
+UI_EFFECT_DEPOT,粮站,Depot
+UI_EFFECT_CORRIDOR,走廊,Corridor
+UI_EFFECT_RISK,风险,Risk
+UI_EFFECT_MARCH,行军,March
+UI_EFFECT_FATIGUE,疲劳,Fatigue
+UI_EFFECT_LEGITIMACY,合法性,Legitimacy
+UI_EFFECT_LOYALTY,忠诚,Loyalty
+UI_EFFECT_RED,红派,Red
+UI_EFFECT_BLACK,黑派,Black
+UI_EFFECT_COST,代价,Cost
+UI_CARD_BATTLE,发动战役,Launch Battle
+UI_CARD_MARCH,行军,March
+UI_CARD_REST,休整,Rest
+UI_CARD_BOOST,亲自接见将领,Audience with General
+UI_NARRATIVE_CAT_BATTLE_VICTORY,战役胜利余波,Battle Victory Aftermath
+UI_NARRATIVE_CAT_BATTLE_DEFEAT,战役失利余波,Battle Defeat Aftermath
+UI_NARRATIVE_CAT_BOOST,将领接见余波,General Audience Aftermath
+UI_NARRATIVE_CAT_CONSCRIPTION,征兵令余波,Conscription Aftermath
+UI_NARRATIVE_CAT_CONSTITUTIONAL,宪政承诺余波,Constitutional Promise Aftermath
+UI_NARRATIVE_CAT_SPEECH,公开演说余波,Public Speech Aftermath
+UI_NARRATIVE_CAT_TITLES,封爵令余波,Title Grant Aftermath
+UI_NARRATIVE_CAT_TAXES,减税令余波,Tax Reduction Aftermath
+UI_NARRATIVE_CAT_MILITARY_BUDGET,军费拨款余波,Military Budget Aftermath
+UI_NARRATIVE_CAT_REQUISITION,征用仓储余波,Requisition Aftermath
+UI_NARRATIVE_CAT_SUPPLY_LINES,驿站整顿余波,Supply Line Stabilization Aftermath
+UI_NARRATIVE_CAT_DEPOT,粮秣站余波,Forward Depot Aftermath
+UI_NARRATIVE_CAT_CORRIDOR,区域走廊余波,Regional Corridor Aftermath
+UI_NARRATIVE_CAT_DIPLOMACY,秘密外交余波,Secret Diplomacy Aftermath
+UI_NARRATIVE_CAT_PRINT_MONEY,印钞令余波,Money Printing Aftermath
