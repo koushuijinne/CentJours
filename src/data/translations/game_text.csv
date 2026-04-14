@@ -115,3 +115,31 @@ UI_POLICY_REST_DESC,休整 · 养精蓄锐\n\n让军队获得喘息之机，为�
 UI_POLICY_MARCH_DESC,行军部署\n\n选择一个与当前位置相邻的节点，确认后执行今日机动并同步拿破仑位置。日期要等你手动结束今天才会推进。前线低容量节点会明显拉高补给压力。,"March Deployment\n\nSelect an adjacent node, confirm to execute today's maneuver and update Napoleon's position. The day advances only when you manually end it. Low-capacity frontline nodes significantly increase supply pressure."
 UI_POLICY_BATTLE_DESC,发动战役\n\n选择将领和兵力，与反法联军决战。点击确认后选择参数。,"Launch Battle\n\nSelect a general and troops to fight the Coalition. Click confirm to set parameters."
 UI_POLICY_BOOST_DESC,亲自接见将领\n\n消耗 5 合法性，目标将领忠诚度 +8。需合法性 >= 10。,"Audience with General\n\nCosts 5 legitimacy, target general loyalty +8. Requires legitimacy >= 10."
+UI_POLICY_CURRENT_SUPPLY,当前补给 {0}。,Current supply: {0}.
+UI_POLICY_RECOMMENDATION,当前建议：{0}。{1},Recommendation: {0}. {1}
+UI_POLICY_REC_PRIORITY,优先,Priority
+UI_POLICY_REC_CONSIDER,可考虑,Consider
+UI_POLICY_REC_HOLD,暂缓,Hold
+UI_POLICY_REC_NO_HINT,当前没有额外提示。,No additional guidance at this time.
+UI_TRAY_SECTION_MANEUVER,机动,Maneuver
+UI_TRAY_SECTION_DECISION,决策,Decision
+UI_TRAY_DEFAULT_HINT,选择一项政策或直接休整,Select a policy or rest
+UI_TRAY_PROCESSING_HINT,结算中…,Processing…
+UI_TRAY_CONFIRM_DEFAULT,执行行动 →,Execute Action →
+UI_TRAY_MANEUVER_HINT,先决定今天的机动，再安排剩余决策点。,"Decide today's maneuver first, then arrange remaining decisions."
+UI_TRAY_MANEUVER_AVAILABLE,机动可用,Maneuver available
+UI_TRAY_MANEUVER_USED,机动已用,Maneuver used
+UI_POPUP_STRATEGY_TITLE,当前战略目标,Current Strategy
+UI_POPUP_GLOSSARY_TITLE,游戏百科,Glossary
+UI_POPUP_NARRATIVE_LOG_TITLE,历史日志,Historical Log
+UI_POPUP_TUTORIAL_TITLE,教程 Day {0} · {1},Tutorial Day {0} · {1}
+UI_POPUP_TUTORIAL_DEFAULT,教程,Tutorial
+UI_POPUP_TUTORIAL_LOG_TITLE,教程指导,Tutorial Guidance
+UI_POPUP_TUTORIAL_FIRST10,前10天教程,Tutorial (First 10 Days)
+UI_POPUP_SELECT_ACTION_TITLE,先选动作再执行,Select an Action First
+UI_POPUP_SELECT_ACTION_BODY,请先在下方选择一个机动动作或政策；如果今天已经安排完毕，直接点击"结束今天 → 次日"。,"Select a maneuver or policy below. If done for today, click ""End Day → Next""."
+UI_NARRATIVE_DIARY,第 {0} 天 — 贝特朗日记\n{1},Day {0} — Bertrand's Diary\n{1}
+UI_NARRATIVE_CONSEQUENCE,▸ [{0}]\n{1},▸ [{0}]\n{1}
+UI_SIDEBAR_EVENT_DEFAULT,历史事件,Historical Event
+UI_PHASE_STATUS,{0} · {1} · 决策点 {2},{0} · {1} · Decisions {2}
+UI_OPERATION_GUIDE_HEADER,[操作指南],[Operation Guide]

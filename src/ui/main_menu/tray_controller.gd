@@ -19,9 +19,9 @@ var _disabled_policy_reasons: Dictionary = {}
 var _selected_policy_id: String = ""
 var _awaiting_action: bool = false
 
-var _enabled_hint_text: String = "选择一项政策或直接休整"
-var _disabled_hint_text: String = "结算中…"
-var _confirm_button_text: String = "执行行动 →"
+var _enabled_hint_text: String = ""
+var _disabled_hint_text: String = ""
+var _confirm_button_text: String = ""
 
 
 func configure(decision_row: HBoxContainer, tray_hint: Label = null, confirm_button: Button = null, card_specs: Array = []) -> void:
@@ -81,7 +81,7 @@ func set_state(policy_id: String = "", awaiting_action: bool = false, emit_selec
 	set_tray_state(policy_id, awaiting_action, emit_selection_changed)
 
 
-func create_confirm_button(parent: Container, text: String = "执行行动 →") -> Button:
+func create_confirm_button(parent: Container, text: String = "") -> Button:
 	if parent == null:
 		return null
 	var button := Button.new()
@@ -239,7 +239,7 @@ func build_default_card_specs(
 	var specs: Array[Dictionary] = []
 	specs.append({
 		"section_break": true,
-		"label": "机动",
+		"label": tr("UI_TRAY_SECTION_MANEUVER"),
 		"label_only": true
 	})
 	specs.append(_make_card_spec(rest_meta))
@@ -247,7 +247,7 @@ func build_default_card_specs(
 	specs.append(_make_card_spec(battle_meta))
 	specs.append({
 		"section_break": true,
-		"label": "决策"
+		"label": tr("UI_TRAY_SECTION_DECISION")
 	})
 	specs.append(_make_card_spec(boost_meta))
 

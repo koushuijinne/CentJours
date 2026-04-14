@@ -222,9 +222,9 @@ func _build_boost_loyalty_preview_text() -> String:
 
 func _build_policy_recommendation_line(policy_id: String) -> String:
 	var recommendation := _policy_recommendation(policy_id)
-	var label := String(recommendation.get("label", "可考虑"))
-	var reason := String(recommendation.get("reason", "当前没有额外提示。"))
-	return "当前建议：%s。%s" % [label, reason]
+	var label := String(recommendation.get("label", tr("UI_POLICY_REC_CONSIDER")))
+	var reason := String(recommendation.get("reason", tr("UI_POLICY_REC_NO_HINT")))
+	return tr("UI_POLICY_RECOMMENDATION").replace("{0}", label).replace("{1}", reason)
 
 
 func _policy_recommendation(policy_id: String) -> Dictionary:
