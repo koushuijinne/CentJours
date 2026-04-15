@@ -586,6 +586,27 @@ func test_boost_loyalty_preview_includes_tutorial_guidance() -> void:
 	assert_str(preview).contains("前 10 天提示")
 
 
+func test_layout_does_not_overflow_viewport() -> void:
+	# Regression: UI溢出窗口边界（反馈06）。
+	# 验证 RootLayout 的实际高度不超过视口高度。
+	var runner := await _load_main_menu()
+	var scene := runner.scene()
+	var root_layout := scene.find_child("RootLayout", true, false) as VBoxContainer
+	assert_object(root_layout).is_not_null()
+	# Root layout should clip its contents
+	assert_bool(root_layout.clip_contents).is_true()
+	# Combined minimum size of children should not exceed viewport
+	var viewport_rect := root_layout.get_viewport_rect()
+	var viewport_h := viewport_rect.size.y
+	var root_min := root_layout.get_combined_minimum_size().y
+	# The root layout has vertical margins, so the effective area is smaller
+	var effective_h := viewport_h - root_layout.offset_top + root_layout.offset_bottom
+	assert_float(root_min).is_less_equal(effective_h)\
+		.override_failure_message(
+			"RootLayout minimum height (%.0f) exceeds viewport (%.0f). Layout will overflow." % [root_min, effective_h]
+		)
+
+
 func _load_main_menu() -> GdUnitSceneRunner:
 	var runner := scene_runner(MAIN_MENU_SCENE)
 	await runner.simulate_frames(16)

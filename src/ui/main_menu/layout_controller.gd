@@ -299,20 +299,38 @@ func apply_responsive_layout(viewport_size: Vector2 = Vector2.ZERO) -> void:
 	var scroll_height := row_height + hover_padding + scroll_safe_bottom
 	if _decision_scroll != null:
 		_decision_scroll.custom_minimum_size = Vector2(0.0, scroll_height)
+	var raw_tray_height := _compute_tray_min_height(scroll_height, tray_margin)
 	if _decision_tray != null:
 		_decision_tray.size_flags_vertical = 0
-		_decision_tray.custom_minimum_size.y = _compute_tray_min_height(scroll_height, tray_margin)
+		_decision_tray.custom_minimum_size.y = raw_tray_height
+
+	# ── Viewport height budget ──────────────────────────────────
+	# Calculate how much vertical space is available for MainArea,
+	# then cap panel minimums so the sidebar and tray never overflow.
+	var topbar_height := _compute_topbar_min_height(topbar_margin_top, topbar_margin_bottom)
+	var available_height := viewport.y - float(vertical_safe * 2) - topbar_height - float(root_sep)
+	# Cap tray so left column (map + sep + tray) doesn't exceed available height.
+	# Map needs at least 40% of the remaining height.
+	var max_tray := available_height * 0.35
+	if raw_tray_height > max_tray and _decision_tray != null:
+		_decision_tray.custom_minimum_size.y = maxf(120.0, max_tray)
+	# Sidebar overhead: margins (top+bottom 14+14=28) + title (~22) + 3 separations (~36) + panel margins (~60)
+	var sidebar_overhead := 146.0
+	var sidebar_content_budget := maxf(200.0, available_height - sidebar_overhead)
+	# Distribute sidebar budget: situation 40%, loyalty 25%, narrative 35%
+	var situation_budget := sidebar_content_budget * 0.40
+	var narrative_budget := sidebar_content_budget * 0.35
 
 	if _situation_panel != null:
-		_situation_panel.custom_minimum_size.y = clampf(viewport.y * 0.27, 176.0, 248.0)
+		_situation_panel.custom_minimum_size.y = clampf(situation_budget, 104.0, 248.0)
 	if _situation_scroll != null:
-		_situation_scroll.custom_minimum_size = Vector2(0.0, clampf(viewport.y * 0.19, 116.0, 176.0))
+		_situation_scroll.custom_minimum_size = Vector2(0.0, clampf(situation_budget - 50.0, 60.0, 176.0))
 		_situation_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		_situation_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	if _narrative_panel != null:
-		_narrative_panel.custom_minimum_size.y = clampf(viewport.y * 0.21, 152.0, 208.0)
+		_narrative_panel.custom_minimum_size.y = clampf(narrative_budget, 100.0, 208.0)
 	if _narrative_scroll != null:
-		_narrative_scroll.custom_minimum_size = Vector2(0.0, clampf(viewport.y * 0.16, 104.0, 156.0))
+		_narrative_scroll.custom_minimum_size = Vector2(0.0, clampf(narrative_budget - 50.0, 56.0, 156.0))
 		_narrative_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		_narrative_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	if _loyalty_panel != null:
@@ -325,12 +343,16 @@ func apply_responsive_layout(viewport_size: Vector2 = Vector2.ZERO) -> void:
 		_loyalty_list.custom_minimum_size.x = _compute_loyalty_content_width(sidebar_width)
 
 	if _top_bar != null:
-		_top_bar.custom_minimum_size.y = _compute_topbar_min_height(topbar_margin_top, topbar_margin_bottom)
+		_top_bar.custom_minimum_size.y = topbar_height
 		_top_bar.update_minimum_size()
 	if _decision_tray != null:
 		_decision_tray.update_minimum_size()
 	if _sidebar != null:
 		_sidebar.update_minimum_size()
+
+	# Safety: clip the root layout so nothing ever overflows the viewport
+	if _root_layout != null:
+		_root_layout.clip_contents = true
 
 
 func apply_decision_card_metrics(card_size: Vector2) -> void:
