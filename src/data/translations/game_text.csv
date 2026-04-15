@@ -143,6 +143,34 @@ UI_NARRATIVE_CONSEQUENCE,▸ [{0}]\n{1},▸ [{0}]\n{1}
 UI_SIDEBAR_EVENT_DEFAULT,历史事件,Historical Event
 UI_PHASE_STATUS,{0} · {1} · 决策点 {2},{0} · {1} · Decisions {2}
 UI_OPERATION_GUIDE_HEADER,[操作指南],[Operation Guide]
+UI_STRATEGY_OVERVIEW_HEADER,当前局势概览,Current Situation Overview
+UI_STRATEGY_SITUATION_FORMAT,第 {0} 天 · 合法性 {1} · 胜场 {2} · 外交进度 {3}/100 · 补给 {4},"Day {0} · Legitimacy {1} · Victories {2} · Diplomacy {3}/100 · Supply {4}"
+UI_STRATEGY_NEAREST_ROUTE,当前最接近的路线,Nearest Outcome Route
+UI_STRATEGY_OUTCOME_ROUTES,结局路线,Outcome Routes
+UI_STRATEGY_CURRENT_STATUS,当前状态,Current Status
+UI_STRATEGY_REQUIREMENTS,达成要点,Requirements
+UI_STRATEGY_WATCH_FOR,要避开,Watch For
+UI_STRATEGY_NEXT_STEP,下一步,Next Step
+UI_STRATEGY_ADVICE_HEADER,当前建议,Current Advice
+UI_GLOSSARY_RN_HEADER,红 / 黑指数,Red / Black Index
+UI_GLOSSARY_LEGITIMACY_HEADER,合法性,Legitimacy
+UI_GLOSSARY_IMPROVE_LEGITIMACY,如何提高合法性,How to Improve Legitimacy
+UI_GLOSSARY_DIPLOMACY_HEADER,外交进度,Diplomatic Progress
+UI_GLOSSARY_SUPPLY_HEADER,补给,Supply
+UI_GLOSSARY_DAILY_RHYTHM,一天的节奏,Daily Rhythm
+UI_GLOSSARY_COMMAND_DEVIATION,命令偏差,Command Deviation
+UI_GLOSSARY_OUTCOME_READING,结局怎么读,Reading the Outcomes
+UI_GLOSSARY_CURRENT_HINT,当前局面提示,Current Situation Hint
+UI_NARRATIVE_LOG_HEADER,日志说明,Log Guide
+UI_NARRATIVE_LOG_SNAPSHOT,当前局势快照,Current Situation Snapshot
+UI_NARRATIVE_LOG_RECENT,最近记录,Recent Entries
+UI_NARRATIVE_LOG_EMPTY,当前还没有可回看的日志。,No log entries yet.
+UI_MAP_TITLE,战区地图,Theater Map
+UI_MAP_INSPECTOR_TITLE,地图详情,Map Details
+UI_MAP_INSPECTOR_HINT,悬停查看预览，点击后锁定详情。滚轮缩放，右键复位。,"Hover to preview, click to lock details. Scroll to zoom, right-click to reset."
+UI_STRATEGY_ROUTE_PREFIX,路线：{0},Route: {0}
+UI_STRATEGY_LINE_PREFIX,战略：当前最接近{0},Strategy: Nearest to {0}
+UI_MAP_OPERATION_HINT,操作：点击城市锁定详情，滚轮缩放地图，右键复位。,"Controls: Click city to lock details, scroll to zoom, right-click to reset."
 UI_EFFECT_TROOPS,兵力,Troops
 UI_EFFECT_POPULACE,民众,Populace
 UI_EFFECT_NOBILITY,贵族,Nobility

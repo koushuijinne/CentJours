@@ -8,9 +8,9 @@ const MainMenuFormattersLib = preload("res://src/ui/main_menu/ui_formatters.gd")
 const MAP_RENDER_CONTROLLER_PATH := "res://src/ui/main_menu/map_render_controller.gd"
 
 const DEFAULT_MAP_NODES_PATH := "res://src/data/map_nodes.json"
-const DEFAULT_MAP_TITLE := "战区地图"
-const DEFAULT_INSPECTOR_TITLE := "地图详情"
-const DEFAULT_INSPECTOR_HINT := "悬停查看预览，点击后锁定详情。滚轮缩放，右键复位。"
+const _DEFAULT_MAP_TITLE_KEY := "UI_MAP_TITLE"
+const _DEFAULT_INSPECTOR_TITLE_KEY := "UI_MAP_INSPECTOR_TITLE"
+const _DEFAULT_INSPECTOR_HINT_KEY := "UI_MAP_INSPECTOR_HINT"
 const SUPPLY_WARNING_THRESHOLD := 45.0
 const SUPPLY_HUB_IDS := ["golfe_juan", "grenoble", "lyon", "paris", "lille", "maubeuge"]
 const MAP_ZOOM_MIN := 1.0
@@ -300,7 +300,9 @@ func _clear_loaded_map_data() -> void:
 
 # ── 公共 Getter ──────────────────────────────────────────────
 
-func refresh_map_header(title_text: String = DEFAULT_MAP_TITLE, subtitle_text: String = "") -> void:
+func refresh_map_header(title_text: String = "", subtitle_text: String = "") -> void:
+	if title_text == "":
+		title_text = TranslationServer.translate(_DEFAULT_MAP_TITLE_KEY)
 	if _map_title != null:
 		_map_title.text = title_text
 	if _map_subtitle != null:
@@ -680,10 +682,10 @@ func _reset_map_inspector() -> void:
 	if _map_inspector_panel != null:
 		_map_inspector_panel.visible = false
 	if _map_inspector_title != null:
-		_map_inspector_title.text = DEFAULT_INSPECTOR_TITLE
+		_map_inspector_title.text = TranslationServer.translate(_DEFAULT_INSPECTOR_TITLE_KEY)
 		_map_inspector_title.add_theme_color_override("font_color", CentJoursTheme.COLOR["text_heading"])
 	if _map_inspector_meta != null:
-		_map_inspector_meta.text = DEFAULT_INSPECTOR_HINT
+		_map_inspector_meta.text = TranslationServer.translate(_DEFAULT_INSPECTOR_HINT_KEY)
 		_map_inspector_meta.add_theme_color_override("font_color", CentJoursTheme.COLOR["text_secondary"])
 	if _map_inspector_stats != null:
 		_map_inspector_stats.text = ""
