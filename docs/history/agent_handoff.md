@@ -43,6 +43,8 @@
 - **多结局系统**: 7 种 GameOutcome + 外交进度 (0-100) + UI OUTCOME_TEXT 7 套文本
 - **Codex harness**: 新增根 `AGENTS.md`、`tools/codex_doc_sync_guard.sh`、`tools/codex_round_check.sh`、`tools/codex_harness_status.sh`、`tools/codex_pick_next_task.py`、`tools/codex_round_summary.py`、`tools/codex_cycle.sh`、`tools/codex_validation_scope.py`、`tools/codex_light_guard.sh` 和可安装 `.githooks/pre-commit + pre-push`
 
+- **Windows 发布构建链**: export_presets.cfg + build_release.cmd + release DLL 已构建，需安装 Godot export templates 才能实际导出
+
 ## 当前最高优先级
 
 1. `S0-1` 到 `S0-4` 作为默认验证链和 Codex harness 主线持续推进
