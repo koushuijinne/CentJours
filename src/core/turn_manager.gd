@@ -142,6 +142,15 @@ func get_march_preview(target_node: String) -> Dictionary:
 ## 在当前日内执行一次动作，不推进日期。
 func _run_action_step(action_type: String, params: Dictionary) -> void:
 	_ensure_engine()
+
+	# log_narrative 仅写入叙事日志，不消耗引擎资源（教程弹窗用）
+	if action_type == "log_narrative":
+		var title: String = params.get("title", "")
+		var body: String = params.get("body", "")
+		if title != "" or body != "":
+			EventBus.micro_narrative_shown.emit("tutorial", "%s\n%s" % [title, body])
+		return
+
 	current_phase = Phase.ACTION
 	GameState.current_phase = PHASE_NAMES[Phase.ACTION]
 	var previous_location: String = GameState.napoleon_location

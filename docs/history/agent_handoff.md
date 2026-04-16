@@ -14,7 +14,7 @@
 |------|------|
 | 入口 | `src/ui/main_menu.tscn`，主循环 `TurnManager → CentJoursEngine → GameState → UI` 已接通 |
 | 数据 | 15 角色 / 41 地图节点 / 100 历史事件 (S2-1 已达标) |
-| 测试 | Windows `cargo test 215/215` + GdUnit4 `76/76` + Windows CI + smoke |
+| 测试 | Windows `cargo test 215/215` + GdUnit4 `76/76` (0 flaky) + Windows CI + smoke |
 | 自动工作流 | 已启用（2026-04-13），权限配置 `Bash(*)`，hook/tools/fmt 已修复 Windows 兼容 |
 | 存档 | Save v4 兼容路径，旧 `fontainebleau_eve` → `tuileries_eve` 迁移 |
 | 分支 | `claude/review-project-status-05vxD`（已合并 `auto/gameplay_update`） |
@@ -39,7 +39,7 @@
 - **战略指导层**: 顶栏外交进度、侧栏战略焦点/主要风险/派系压力、地图副标题路线提示已统一口径
 - **验证链优化**: 已为 `fast / full / heavy-nightly` 引入 Godot 二进制缓存与日志上传机制
 - **教程弹窗化**: 完成教程文本从侧栏向中央弹窗的迁移，注入操作指南并同步至 narrative log，通过 GdUnit4 防回归
-- **日内行动节奏**: 1 机动槽 + 2 决策点 + 手动结束今天
+- **日内行动节奏**: 1 机动槽 + 2 决策点 + 手动结束今天；教程 log_narrative 不再误占机动槽
 - **多结局系统**: 7 种 GameOutcome + 外交进度 (0-100) + UI OUTCOME_TEXT 7 套文本
 - **Codex harness**: 新增根 `AGENTS.md`、`tools/codex_doc_sync_guard.sh`、`tools/codex_round_check.sh`、`tools/codex_harness_status.sh`、`tools/codex_pick_next_task.py`、`tools/codex_round_summary.py`、`tools/codex_cycle.sh`、`tools/codex_validation_scope.py`、`tools/codex_light_guard.sh` 和可安装 `.githooks/pre-commit + pre-push`
 

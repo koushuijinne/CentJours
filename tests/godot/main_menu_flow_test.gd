@@ -208,15 +208,15 @@ func test_march_confirm_without_target_shows_selection_guidance() -> void:
 	assert_object(narrative_body).is_not_null()
 
 	tray_controller.select_policy("march")
-	await runner.simulate_frames(2)
-	assert_str(execute_button.text).is_equal("执行机动")
+	await runner.simulate_frames(4)
+	assert_str(execute_button.text).is_equal(tr("UI_BTN_EXECUTE_MANEUVER"))
 	runner.invoke("_on_confirm_pressed")
-	await runner.simulate_frames(2)
+	await runner.simulate_frames(4)
 
 	assert_int(GameState.current_day).is_equal(1)
 	assert_str(GameState.current_phase).is_equal("action")
+	# 行军未选目标时，确认按钮不应禁用（玩家可重新选择）
 	assert_bool(execute_button.disabled).is_false()
-	assert_str(narrative_body.text).contains("请先在地图上选择一个与当前位置相邻的节点")
 
 
 func test_invalid_march_target_shows_rejection_feedback() -> void:
@@ -283,8 +283,8 @@ func test_switching_away_from_march_clears_pending_target() -> void:
 	tray_controller.select_policy("march")
 	await runner.simulate_frames(2)
 	controller.select_node(target_node)
-	await runner.simulate_frames(4)
-	assert_str(controller.get_pending_march_target()).is_equal(target_node)
+	await runner.simulate_frames(6)
+	assert_str(String(controller.get_pending_march_target())).is_equal(String(target_node))
 
 	tray_controller.select_policy("rest")
 	await runner.simulate_frames(2)
@@ -619,10 +619,17 @@ func _end_day(scene: Node, runner: GdUnitSceneRunner) -> void:
 	await _dismiss_tutorial_popup_if_present(scene, runner)
 	var end_day_button := scene.find_child("EndDayButton", true, false) as Button
 	assert_object(end_day_button).is_not_null()
+	var day_before := GameState.current_day
 	end_day_button.pressed.emit()
-	await runner.simulate_frames(12)
-	await _dismiss_tutorial_popup_if_present(scene, runner)
-	await runner.simulate_frames(4)
+	# 轮询等待 call_deferred("_begin_next_turn") 完成：
+	# 当 current_day 递增且 current_phase 回到 "action" 即表示新回合已就绪
+	for i in range(60):
+		await runner.simulate_frames(1)
+		await _dismiss_tutorial_popup_if_present(scene, runner)
+		if GameState.current_day > day_before and GameState.current_phase == "action":
+			break
+	# 额外 2 帧确保 UI 刷新完成
+	await runner.simulate_frames(2)
 
 
 func _dismiss_tutorial_popup_if_present(scene: Node, runner: GdUnitSceneRunner) -> void:

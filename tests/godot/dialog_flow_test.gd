@@ -392,6 +392,8 @@ func test_battle_submit_success_keeps_day_until_manual_end() -> void:
 	assert_bool(execute_button.disabled).is_false()
 
 	end_day_button.pressed.emit()
+	await runner.simulate_frames(20)
+	await _dismiss_tutorial_popup_if_present(scene, runner)
 	await runner.simulate_frames(8)
 
 	assert_int(GameState.current_day).is_equal(2)
@@ -543,6 +545,14 @@ func _load_main_menu() -> GdUnitSceneRunner:
 		close_button.pressed.emit()
 		await runner.simulate_frames(2)
 	return runner
+
+
+func _dismiss_tutorial_popup_if_present(scene: Node, runner: GdUnitSceneRunner) -> void:
+	var close_button := scene.find_child("TutorialPopupCloseButton", true, false) as Button
+	if close_button == null:
+		return
+	close_button.pressed.emit()
+	await runner.simulate_frames(2)
 
 
 func _cleanup_settings() -> void:
