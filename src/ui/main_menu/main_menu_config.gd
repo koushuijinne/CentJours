@@ -159,7 +159,8 @@ static var NARRATIVE_CATEGORY_LABELS: Dictionary:
 			"secure_regional_corridor": TranslationServer.translate("UI_NARRATIVE_CAT_CORRIDOR"),
 			"secret_diplomacy": TranslationServer.translate("UI_NARRATIVE_CAT_DIPLOMACY"),
 			"diplomatic_secret": TranslationServer.translate("UI_NARRATIVE_CAT_DIPLOMACY"),
-			"print_money": TranslationServer.translate("UI_NARRATIVE_CAT_PRINT_MONEY")
+			"print_money": TranslationServer.translate("UI_NARRATIVE_CAT_PRINT_MONEY"),
+			"tutorial": TranslationServer.translate("UI_NARRATIVE_CAT_TUTORIAL")
 		}
 
 const OUTCOME_TEXT := {
