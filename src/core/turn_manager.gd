@@ -504,6 +504,7 @@ func reset_engine() -> void:
 		engine.set_difficulty(_pending_difficulty)
 		_pending_difficulty = ""
 	current_phase = Phase.DAWN
+	GameState.current_phase = PHASE_NAMES[Phase.DAWN]
 	# 重新加载角色数据
 	GameState._load_all_data()
 	GameState.triggered_events.clear()

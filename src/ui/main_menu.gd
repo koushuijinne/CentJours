@@ -143,9 +143,10 @@ func _ready() -> void:
 	resized.connect(_on_main_menu_resized)
 	call_deferred("_apply_responsive_layout")
 	_load_tutorial_stages()
-	call_deferred("_refresh_ui")
 	# 引导 TurnManager 进入第一回合，必须在所有节点就绪后执行。
+	# _start_game 在 _refresh_ui 前，确保行动阶段已就绪再触发教程弹窗等。
 	call_deferred("_start_game")
+	call_deferred("_refresh_ui")
 
 
 func _configure_layout_controller() -> void:
