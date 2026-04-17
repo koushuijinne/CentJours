@@ -32,7 +32,7 @@ outcomes: 7  # NapoleonVictory DiplomaticSettlement MilitaryDominance WaterlooHi
 difficulty: 3  # Elba Borodino Austerlitz
 save_version: v4
 tests_rust: 215
-tests_gdunit4: 76
+tests_gdunit4: 77
 ci: windows-fast / windows-full / windows-heavy-nightly
 ```
 

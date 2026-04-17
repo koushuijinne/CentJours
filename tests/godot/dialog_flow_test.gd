@@ -537,6 +537,53 @@ func test_game_over_stats_clamp_display_day_to_100() -> void:
 	assert_str(stats_label.text).contains("天数: 100")
 
 
+func test_game_over_shows_failure_attribution_when_key_decisions_exist() -> void:
+	var runner := await _load_main_menu()
+	var scene := runner.scene()
+	var dialogs_controller := scene.find_child("DialogsController", true, false)
+	assert_object(dialogs_controller).is_not_null()
+
+	# 模拟玩家关键决策记录（key 为 "desc"，与 GameState.record_key_decision 一致）
+	var decisions := [
+		{"day": 3, "type": "march", "desc": "强行军至里昂"},
+		{"day": 7, "type": "policy", "desc": "发表公开演说"},
+	]
+
+	dialogs_controller.call(
+		"show_game_over",
+		"political_collapse",
+		{
+			"current_day": 42,
+			"legitimacy": 8.0,
+			"victories": 1,
+			"total_troops": 4000,
+			"avg_morale": 30.0,
+			"supply": 15.0,
+			"key_decisions": decisions,
+		}
+	)
+	await runner.simulate_frames(2)
+
+	# 验证失败归因区段存在且包含关键决策内容
+	var overlay := scene.find_child("GameOverOverlay", true, false)
+	assert_object(overlay).is_not_null()
+	var found_decisions := false
+	for child in _find_labels_recursive(overlay):
+		if child.text.contains("强行军至里昂") or child.text.contains("发表公开演说"):
+			found_decisions = true
+			break
+	assert_bool(found_decisions).is_true()
+
+
+func _find_labels_recursive(node: Node) -> Array[Label]:
+	var labels: Array[Label] = []
+	if node is Label:
+		labels.append(node as Label)
+	for child in node.get_children():
+		labels.append_array(_find_labels_recursive(child))
+	return labels
+
+
 func _load_main_menu() -> GdUnitSceneRunner:
 	var runner := scene_runner(MAIN_MENU_SCENE)
 	await runner.simulate_frames(12)
