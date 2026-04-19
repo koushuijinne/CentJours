@@ -28,6 +28,7 @@
 | 今天还能做什么不清楚；行动点用尽后政策和机动语义仍混在一起 | `tests/godot/main_menu_flow_test.gd` | Tray 直接显示机动 / 决策预算，确认按钮按“机动 / 决策”切换，政策卡在决策点耗尽时显示禁用原因 |
 | 结局入口与日志回看信息太薄，玩家不知道外交线和当前局势怎么关联 | `tests/godot/main_menu_flow_test.gd` + Windows smoke scene | 结局入口必须包含“当前最接近的路线”“外交进度”“达成要点”；日志回看必须包含“当前局势快照” |
 | 顶栏、侧栏和地图副标题各说各话，玩家不知道当前最接近哪条路线 | `tests/godot/main_menu_flow_test.gd` + Windows smoke scene | 顶栏必须显示外交进度，侧栏必须显示“战略焦点 / 当前主要风险 / 派系压力”，地图副标题必须显示路线与战略提示 |
+| 中盘不知道该先稳政治、追战果、做外交还是补运营 | `tests/godot/main_menu_flow_test.gd` + Windows smoke scene | 侧栏、战略目标弹窗、百科和日志回看都必须出现“政治线 / 战场线 / 外交线 / 区域运营线”与当前下一步建议 |
 
 ## 仍需 Windows 真机
 

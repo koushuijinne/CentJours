@@ -139,9 +139,14 @@ func test_situation_panel_includes_regional_task_context() -> void:
 	assert_bool(GameState.logistics_regional_task_progress_label.strip_edges() != "").is_true()
 	assert_str(situation_body.text).contains("合法性")
 	assert_str(situation_body.text).contains("外交")
+	assert_str(situation_body.text).contains("四线态势")
+	assert_str(situation_body.text).contains("政治线")
+	assert_str(situation_body.text).contains("战场线")
+	assert_str(situation_body.text).contains("区域运营线")
 	assert_str(situation_body.text).contains("战略焦点")
 	assert_str(situation_body.text).contains("当前主要风险")
 	assert_str(situation_body.text).contains("派系压力")
+	assert_str(situation_body.text).contains("区域运营任务")
 	assert_str(situation_body.text).contains(GameState.logistics_regional_task_title)
 	assert_str(situation_body.text).contains(GameState.logistics_regional_task_progress_label)
 
@@ -307,6 +312,10 @@ func test_strategy_goals_popup_opens_from_topbar() -> void:
 	assert_object(popup).is_not_null()
 	assert_object(body).is_not_null()
 	assert_str(body.text).contains("当前局势概览")
+	assert_str(body.text).contains("四线态势")
+	assert_str(body.text).contains("政治线")
+	assert_str(body.text).contains("外交线")
+	assert_str(body.text).contains("区域运营任务")
 	assert_str(body.text).contains("外交进度")
 	assert_str(body.text).contains("结局路线")
 
@@ -335,6 +344,9 @@ func test_glossary_popup_opens_from_topbar() -> void:
 	assert_str(body.text).contains("当前倾向")
 	assert_str(body.text).contains("每天会多 1 个决策点")
 	assert_str(body.text).contains("维持帝国战争机器")
+	assert_str(body.text).contains("区域运营怎么读")
+	assert_str(body.text).contains("战略大仓")
+	assert_str(body.text).contains("当前运营快照")
 	assert_str(body.text).contains("军事覆灭")
 	assert_str(body.text).contains("政治崩溃")
 
@@ -381,7 +393,6 @@ func test_action_budget_copy_updates_when_only_maneuver_remains() -> void:
 func test_main_menu_modal_locks_tray_interactions() -> void:
 	var runner := await _load_main_menu()
 	var scene := runner.scene()
-	var tray_controller = runner.get_property("_tray_controller")
 	var settings_button := scene.find_child("SettingsButton", true, false) as Button
 	var execute_button := scene.find_child("ExecuteActionButton", true, false) as Button
 	assert_object(settings_button).is_not_null()
@@ -426,6 +437,8 @@ func test_narrative_log_popup_replays_existing_entries() -> void:
 	assert_str(body.text).contains("外交进度")
 	assert_str(body.text).contains("当前最接近")
 	assert_str(body.text).contains("当前主要风险")
+	assert_str(body.text).contains("四线态势")
+	assert_str(body.text).contains("区域运营任务")
 	assert_str(body.text).contains("测试结算描述")
 
 

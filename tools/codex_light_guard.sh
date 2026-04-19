@@ -45,7 +45,7 @@ mapfile -t python_files < <(printf '%s\n' "${changed_files[@]}" | awk '/\.py$/ {
 if (( ${#python_files[@]} > 0 )); then
   echo
   echo "Python syntax checks:"
-  python -m py_compile "${python_files[@]}"
+  python3 -m py_compile "${python_files[@]}"
 fi
 
 if printf '%s\n' "${changed_files[@]}" | grep -qE '^cent-jours-core/(src|tests)/'; then
@@ -55,7 +55,7 @@ if printf '%s\n' "${changed_files[@]}" | grep -qE '^cent-jours-core/(src|tests)/
 fi
 
 echo
-python tools/codex_validation_scope.py "${changed_files[@]}"
+python3 tools/codex_validation_scope.py "${changed_files[@]}"
 
 echo
 echo "Codex light guard passed."

@@ -417,6 +417,14 @@ func refresh_situation(
 	var risk_detail := String(strategy_context.get("risk_detail", "")).strip_edges()
 	var faction_title := String(strategy_context.get("faction_title", "")).strip_edges()
 	var faction_detail := String(strategy_context.get("faction_detail", "")).strip_edges()
+	var track_lines := Array(strategy_context.get("track_lines", []))
+	var operations_title := String(strategy_context.get("operations_title", "")).strip_edges()
+	var operations_status := String(strategy_context.get("operations_status", "")).strip_edges()
+	var operations_next_step := String(strategy_context.get("operations_next_step", "")).strip_edges()
+	if not track_lines.is_empty():
+		strategy_lines.append("四线态势")
+		for track_line in track_lines:
+			strategy_lines.append("• %s" % String(track_line))
 	if focus_title != "":
 		strategy_lines.append("战略焦点 · %s" % focus_title)
 	if focus_reason != "":
@@ -431,6 +439,12 @@ func refresh_situation(
 		strategy_lines.append(faction_title)
 	if faction_detail != "":
 		strategy_lines.append(faction_detail)
+	if operations_title != "":
+		strategy_lines.append(operations_title)
+	if operations_status != "":
+		strategy_lines.append(operations_status)
+	if operations_next_step != "":
+		strategy_lines.append("下一步：%s" % operations_next_step)
 
 	_situation_body.text = "%s\n%s · 合法性 %.1f\n补给 %.0f · 疲劳 %.0f · 外交 %d / 100\n\n%s\n\n%s\n\n派系风向\n%s" % [
 		MainMenuFormattersLib.phase_display_name(phase_id),

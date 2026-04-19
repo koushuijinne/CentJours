@@ -82,6 +82,8 @@ static func build_strategy_context() -> Dictionary:
 	var focus := build_primary_route_snapshot()
 	var risk := build_primary_risk_snapshot()
 	var faction_pressure := build_faction_pressure_snapshot()
+	var track_lines := build_campaign_track_summary_lines()
+	var operations_snapshot := build_regional_operations_snapshot()
 	return {
 		"focus_title": String(focus.get("title", "")).strip_edges(),
 		"focus_reason": String(focus.get("reason", "")).strip_edges(),
@@ -89,7 +91,11 @@ static func build_strategy_context() -> Dictionary:
 		"risk_title": String(risk.get("title", "")).strip_edges(),
 		"risk_detail": String(risk.get("detail", "")).strip_edges(),
 		"faction_title": String(faction_pressure.get("title", "")).strip_edges(),
-		"faction_detail": String(faction_pressure.get("detail", "")).strip_edges()
+		"faction_detail": String(faction_pressure.get("detail", "")).strip_edges(),
+		"track_lines": track_lines,
+		"operations_title": String(operations_snapshot.get("title", "")).strip_edges(),
+		"operations_status": String(operations_snapshot.get("status", "")).strip_edges(),
+		"operations_next_step": String(operations_snapshot.get("next_step", "")).strip_edges()
 	}
 
 
@@ -162,21 +168,12 @@ static func build_primary_risk_snapshot() -> Dictionary:
 
 
 static func build_faction_pressure_snapshot() -> Dictionary:
-	var weakest_id := ""
-	var weakest_support := 101.0
-	var strongest_id := ""
-	var strongest_support := -1.0
-	for faction_id in GameState.faction_support.keys():
-		var support := float(GameState.faction_support.get(faction_id, 0.0))
-		if support < weakest_support:
-			weakest_support = support
-			weakest_id = String(faction_id)
-		if support > strongest_support:
-			strongest_support = support
-			strongest_id = String(faction_id)
-
-	var weakest_label: String = String(MainMenuConfigData.FACTION_LABELS.get(weakest_id, weakest_id))
-	var strongest_label: String = String(MainMenuConfigData.FACTION_LABELS.get(strongest_id, strongest_id))
+	var faction_extremes := _build_faction_extremes_snapshot()
+	var weakest_id := String(faction_extremes.get("weakest_id", ""))
+	var weakest_label := String(faction_extremes.get("weakest_label", weakest_id))
+	var weakest_support := float(faction_extremes.get("weakest_support", 0.0))
+	var strongest_label := String(faction_extremes.get("strongest_label", ""))
+	var strongest_support := float(faction_extremes.get("strongest_support", 0.0))
 	var pressure_reason := ""
 	match weakest_id:
 		"military":
@@ -202,6 +199,200 @@ static func build_faction_pressure_snapshot() -> Dictionary:
 	}
 
 
+static func build_campaign_track_snapshot() -> Array[Dictionary]:
+	var tracks: Array[Dictionary] = []
+	tracks.append(_build_political_track_snapshot())
+	tracks.append(_build_battle_track_snapshot())
+	tracks.append(_build_diplomatic_track_snapshot())
+	tracks.append(_build_operations_track_snapshot())
+	return tracks
+
+
+static func build_campaign_track_summary_lines() -> Array[String]:
+	var lines: Array[String] = []
+	for track in build_campaign_track_snapshot():
+		var title := String(track.get("title", "")).strip_edges()
+		var status := String(track.get("status", "")).strip_edges()
+		var next_step := String(track.get("next_step", "")).strip_edges()
+		if title == "" or status == "":
+			continue
+		lines.append("%s：%s" % [title, status])
+		if next_step != "":
+			lines.append("下一步：%s" % next_step)
+	return lines
+
+
+static func build_regional_operations_snapshot() -> Dictionary:
+	var title := "区域运营任务"
+	var status := ""
+	var next_step := ""
+	var objective_label := GameState.logistics_objective_label.strip_edges()
+	var posture := GameState.logistics_posture_label.strip_edges()
+	var task_title := GameState.logistics_regional_task_title.strip_edges()
+	var task_progress := GameState.logistics_regional_task_progress_label.strip_edges()
+	var task_reward := GameState.logistics_regional_task_reward_label.strip_edges()
+	var route_short := GameState.logistics_route_chain_short.strip_edges()
+	var pressure_short := GameState.logistics_regional_pressure_short.strip_edges()
+	var primary_action := GameState.logistics_primary_action_label.strip_edges()
+	var primary_reason := GameState.logistics_primary_action_reason.strip_edges()
+
+	if task_title != "":
+		status = task_title
+		if task_progress != "":
+			status += "。%s" % task_progress
+	elif objective_label != "":
+		status = "当前阶段目标是%s。" % objective_label
+	elif posture != "":
+		status = "当前后勤态势是%s。" % posture
+	else:
+		status = "当前还在铺第一条稳定运营线。"
+
+	if route_short != "":
+		status += " 路线提示：%s" % route_short
+	if pressure_short != "":
+		status += " 区域压力：%s" % pressure_short
+	if task_reward != "":
+		status += " 完成后回报：%s" % task_reward
+
+	if primary_action != "":
+		next_step = "先做“%s”。" % primary_action
+		if primary_reason != "":
+			next_step += primary_reason
+	elif GameState.logistics_action_plan_short.strip_edges() != "":
+		next_step = GameState.logistics_action_plan_short.strip_edges()
+	elif GameState.logistics_tempo_plan_short.strip_edges() != "":
+		next_step = GameState.logistics_tempo_plan_short.strip_edges()
+	else:
+		next_step = "先把当前位置接到更稳的整补节点，再决定是否继续往前线压。"
+
+	return {
+		"title": title,
+		"status": status,
+		"next_step": next_step
+	}
+
+
+static func _build_political_track_snapshot() -> Dictionary:
+	var faction_extremes := _build_faction_extremes_snapshot()
+	var weakest_label := String(faction_extremes.get("weakest_label", "派系"))
+	var weakest_support := float(faction_extremes.get("weakest_support", 0.0))
+	var status := ""
+	var next_step := ""
+	if GameState.legitimacy >= 65.0:
+		status = "合法性 %.1f，政治线仍稳；最脆的是%s %.0f。" % [GameState.legitimacy, weakest_label, weakest_support]
+		next_step = "利用这段余量做需要政治信誉背书的动作，但不要连续两天压同一派系。"
+	elif GameState.legitimacy >= 45.0:
+		status = "合法性 %.1f，政权还能承担战争；最脆的是%s %.0f。" % [GameState.legitimacy, weakest_label, weakest_support]
+		next_step = "先稳住最脆的一派，再决定要不要继续押高代价政策。"
+	elif GameState.legitimacy >= 25.0:
+		status = "合法性 %.1f，政治线开始变窄；最脆的是%s %.0f。" % [GameState.legitimacy, weakest_label, weakest_support]
+		next_step = "当前更该把合法性和派系支持拉回安全线，不要再靠连续高代价动作硬顶。"
+	else:
+		status = "合法性 %.1f，巴黎已经接近提前出局区；最脆的是%s %.0f。" % [GameState.legitimacy, weakest_label, weakest_support]
+		next_step = "先止血政治线，避免在巴黎先被否决。"
+	return {
+		"title": "政治线",
+		"status": status,
+		"next_step": next_step
+	}
+
+
+static func _build_battle_track_snapshot() -> Dictionary:
+	var status := ""
+	var next_step := ""
+	if GameState.total_troops < 15000:
+		status = "兵力只剩 %s，军队已经接近无法持续作战。" % _format_number(GameState.total_troops)
+		next_step = "先保住军队还能继续作战，再谈终盘翻盘。"
+	elif GameState.supply < 45.0:
+		status = "胜场 %d，但补给只剩 %.0f，当前每次推进都在透支后续战斗力。" % [GameState.victories, GameState.supply]
+		next_step = "先把补给和疲劳拉回安全线，再去换决定性战果。"
+	elif GameState.victories >= 3:
+		status = "你已经拿到 %d 场有效胜利，战场线有资格去冲改写历史或军事霸权。" % GameState.victories
+		next_step = "别把优势耗在低价值硬顶上，把下一场胜利打成决定性窗口。"
+	elif GameState.current_day >= 60:
+		status = "已到第 %d 天，胜场只有 %d，中盘优势还没兑现成足够多的战果。" % [GameState.current_day, GameState.victories]
+		next_step = "后续每一步都要围绕“能不能转成有效胜利”来排，而不是只求站住。"
+	else:
+		status = "当前胜场 %d，兵力 %s，战场线还在铺势。" % [GameState.victories, _format_number(GameState.total_troops)]
+		next_step = "先把位置、补给和疲劳排顺，再找第一场能改变路线判断的胜利。"
+	return {
+		"title": "战场线",
+		"status": status,
+		"next_step": next_step
+	}
+
+
+static func _build_diplomatic_track_snapshot() -> Dictionary:
+	var status := ""
+	var next_step := ""
+	if GameState.current_day >= 60 and GameState.diplomatic_progress >= 70 and GameState.legitimacy >= 65.0:
+		status = "外交进度 %d/100，且合法性 %.1f，已经进入可以兑现停火的窗口。" % [GameState.diplomatic_progress, GameState.legitimacy]
+		next_step = "当前要做的是守住政治基础，别在最后几步把外交窗口自己掐掉。"
+	elif GameState.diplomatic_progress >= 45:
+		status = "外交进度 %d/100，路线已经成形，但还没到自动兑现的程度。" % GameState.diplomatic_progress
+		next_step = "继续经营外交事件和政治信誉，不要把它当成终盘临时补课。"
+	elif GameState.current_day <= 30:
+		status = "外交进度 %d/100，目前还在铺垫期。" % GameState.diplomatic_progress
+		next_step = "前期先稳合法性和基本盘，给中盘外交留出信誉和时间。"
+	else:
+		status = "外交进度 %d/100，当前更像一条还没真正长出来的备选路线。" % GameState.diplomatic_progress
+		next_step = "如果想保外交线，现在就要持续经营，而不是只靠最后几天补一次。"
+	return {
+		"title": "外交线",
+		"status": status,
+		"next_step": next_step
+	}
+
+
+static func _build_operations_track_snapshot() -> Dictionary:
+	var posture := GameState.logistics_posture_label.strip_edges()
+	var objective_label := GameState.logistics_objective_label.strip_edges()
+	var route_short := GameState.logistics_route_chain_short.strip_edges()
+	var pressure_short := GameState.logistics_regional_pressure_short.strip_edges()
+	var status := ""
+	if posture != "":
+		status = "后勤态势是%s。" % posture
+	if objective_label != "":
+		status += " 当前目标：%s。" % objective_label
+	if route_short != "":
+		status += " 当前最稳的链路：%s。" % route_short
+	if pressure_short != "":
+		status += " 区域压力：%s" % pressure_short
+	if status == "":
+		status = "当前还在摸第一条稳定运营线。"
+
+	var next_step: String = String(build_regional_operations_snapshot().get("next_step", "先把中继和整补节点接顺。"))
+	return {
+		"title": "区域运营线",
+		"status": status.strip_edges(),
+		"next_step": String(next_step).strip_edges()
+	}
+
+
+static func _build_faction_extremes_snapshot() -> Dictionary:
+	var weakest_id := ""
+	var weakest_support := 101.0
+	var strongest_id := ""
+	var strongest_support := -1.0
+	for faction_id in GameState.faction_support.keys():
+		var support := float(GameState.faction_support.get(faction_id, 0.0))
+		if support < weakest_support:
+			weakest_support = support
+			weakest_id = String(faction_id)
+		if support > strongest_support:
+			strongest_support = support
+			strongest_id = String(faction_id)
+
+	return {
+		"weakest_id": weakest_id,
+		"weakest_label": String(MainMenuConfigData.FACTION_LABELS.get(weakest_id, weakest_id)),
+		"weakest_support": weakest_support,
+		"strongest_id": strongest_id,
+		"strongest_label": String(MainMenuConfigData.FACTION_LABELS.get(strongest_id, strongest_id)),
+		"strongest_support": strongest_support
+	}
+
+
 static func build_strategy_goals_overview() -> String:
 	var lines: Array[String] = []
 	lines.append(TranslationServer.translate("UI_STRATEGY_OVERVIEW_HEADER"))
@@ -215,6 +406,23 @@ static func build_strategy_goals_overview() -> String:
 	lines.append(TranslationServer.translate("UI_STRATEGY_NEAREST_ROUTE"))
 	for summary in build_strategy_priority_lines():
 		lines.append("• %s" % summary)
+	lines.append("")
+	lines.append("四线态势")
+	for track in build_campaign_track_snapshot():
+		lines.append("【%s】%s" % [
+			String(track.get("title", "")).strip_edges(),
+			String(track.get("status", "")).strip_edges()
+		])
+		var next_step := String(track.get("next_step", "")).strip_edges()
+		if next_step != "":
+			lines.append("下一步：%s" % next_step)
+	lines.append("")
+	var operations_snapshot := build_regional_operations_snapshot()
+	lines.append(String(operations_snapshot.get("title", "区域运营任务")).strip_edges())
+	lines.append(String(operations_snapshot.get("status", "")).strip_edges())
+	var operations_next_step := String(operations_snapshot.get("next_step", "")).strip_edges()
+	if operations_next_step != "":
+		lines.append("下一步：%s" % operations_next_step)
 	lines.append("")
 	lines.append(TranslationServer.translate("UI_STRATEGY_OUTCOME_ROUTES"))
 	for outcome_id in [
@@ -287,6 +495,13 @@ static func build_glossary_overview() -> String:
 	lines.append("补给不是单纯库存，而是你维持帝国战争机器的「生命线」。它取决于你当前节点容量、补给线稳定性，以及区域走廊的链路质量。")
 	lines.append("影响：补给充足时（>60），行军损耗更低，战斗有加成；补给匮乏时（<45），不仅战斗力受损，还会引发合法性持续流失，甚至导致军队逃兵。")
 	lines.append("补救方法：在容量高的城市节点「休整」，或使用补给相关政策牌。不要在低容量的前沿节点长期逗留。")
+	lines.append("")
+	lines.append("区域运营怎么读")
+	lines.append("战略大仓负责给整段线路提供稳定补给，区域整补点负责把中盘推进接成可持续跳板，前线消耗点则是为了位置优势付补给代价的地方。")
+	lines.append("当侧栏提示“区域压力”时，说明你这段线路已经开始变脆；当它提示“区域运营任务”时，说明当前最值钱的不是再赌一张战役牌，而是先把这段路接顺。")
+	var operations_snapshot := build_regional_operations_snapshot()
+	lines.append("当前运营快照：%s" % String(operations_snapshot.get("status", "暂无额外提示。")).strip_edges())
+	lines.append("当前运营下一步：%s" % String(operations_snapshot.get("next_step", "先把当前位置接到更稳的整补节点。")).strip_edges())
 	lines.append("")
 	lines.append(TranslationServer.translate("UI_GLOSSARY_DAILY_RHYTHM"))
 	lines.append("当前日内模型是：1 次机动槽（行军 / 战役 / 休整）+ 2 次决策点。机动区和决策区分开看，通常先决定位置，再决定当天政策。")
@@ -387,6 +602,22 @@ static func build_narrative_log_overview(current_log_body: String, strategy_cont
 		])
 	if String(strategy_context.get("risk_title", "")).strip_edges() != "":
 		lines.append("当前主要风险：%s" % strategy_context.get("risk_detail", ""))
+	var track_lines: Array = Array(strategy_context.get("track_lines", []))
+	if not track_lines.is_empty():
+		lines.append("")
+		lines.append("四线态势")
+		for track_line in track_lines:
+			lines.append("• %s" % String(track_line))
+	var operations_title := String(strategy_context.get("operations_title", "")).strip_edges()
+	var operations_status := String(strategy_context.get("operations_status", "")).strip_edges()
+	var operations_next_step := String(strategy_context.get("operations_next_step", "")).strip_edges()
+	if operations_title != "" or operations_status != "":
+		lines.append("")
+		lines.append(operations_title if operations_title != "" else "区域运营任务")
+		if operations_status != "":
+			lines.append(operations_status)
+		if operations_next_step != "":
+			lines.append("下一步：%s" % operations_next_step)
 	lines.append("")
 	lines.append(TranslationServer.translate("UI_NARRATIVE_LOG_RECENT"))
 	if current_log_body == "":

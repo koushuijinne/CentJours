@@ -27,12 +27,12 @@ godot: 4.6.1
 rust: stable
 characters: 15
 map_nodes: 41
-events: 66 / 100+
+events: 100
 outcomes: 7
 difficulty: 3
 save_version: v4
 tests_rust: 215
-tests_gdunit4: 69
+tests_gdunit4: 77
 ci: windows-fast / windows-full / windows-heavy-nightly
 harness: AGENTS.md / doc-sync guard / round check / harness status / task picker / round summary / cycle / validation scope / light guard / optional git hooks
 ```
