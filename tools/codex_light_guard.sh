@@ -6,6 +6,9 @@ REPO_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
 
 cd "${REPO_ROOT}"
 
+# shellcheck source=tools/codex_python.sh
+source "${SCRIPT_DIR}/codex_python.sh"
+
 if [[ $# -gt 0 ]]; then
   changed_files=("$@")
 else
@@ -45,7 +48,7 @@ mapfile -t python_files < <(printf '%s\n' "${changed_files[@]}" | awk '/\.py$/ {
 if (( ${#python_files[@]} > 0 )); then
   echo
   echo "Python syntax checks:"
-  python3 -m py_compile "${python_files[@]}"
+  "${PY}" -m py_compile "${python_files[@]}"
 fi
 
 if printf '%s\n' "${changed_files[@]}" | grep -qE '^cent-jours-core/(src|tests)/'; then
@@ -55,7 +58,7 @@ if printf '%s\n' "${changed_files[@]}" | grep -qE '^cent-jours-core/(src|tests)/
 fi
 
 echo
-python3 tools/codex_validation_scope.py "${changed_files[@]}"
+"${PY}" tools/codex_validation_scope.py "${changed_files[@]}"
 
 echo
 echo "Codex light guard passed."
