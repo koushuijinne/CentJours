@@ -7,7 +7,9 @@
       "Edit",
       "Glob",
       "Grep",
-      "Agent"
+      "Agent",
+      "PowerShell(git commit *)",
+      "PowerShell(python3 tools/check_doc_sync.py --files project.godot 2>&1; Write-Host \"EXIT $LASTEXITCODE\")"
     ]
   }
 }
