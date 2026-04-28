@@ -31,10 +31,10 @@ window/size/viewport_height=720
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
 
-[internationalization]
-
-locale/fallback="zh"
-
 [editor_plugins]
 
 enabled=PackedStringArray("res://addons/gdUnit4/plugin.cfg")
+
+[internationalization]
+
+locale/fallback="zh"
